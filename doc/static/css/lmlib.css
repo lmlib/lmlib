@@ -1,0 +1,246 @@
+
+@media (min-width: 720px) {
+    .col-xl-8 {
+        flex: 0 0 83.33332%;
+        max-width: 83.33332%;
+    }
+    body {
+        background-image: url("../images/background.png");
+        background-repeat: repeat-y;
+        }
+}
+.title {
+ color: #101060;
+ font-weight: bold;
+}
+
+@media (min-width: 960px) {
+    .col-lg-9 {
+        flex: 0 0 82.5%;
+        max-width: 82.5%;
+    }
+}
+
+pre {
+    font-size: 90%;
+    line-height: 135%;
+}
+
+body {
+    font-family: 'Open Sans', sans-serif;
+    color: #4A4A4A;
+}
+
+
+/* --- Main Page --- */
+.img-banner { /* positioning of banner */
+   margin-left: 00px;
+   margin-top: 30px;
+}
+
+.slogan {
+  margin-left: 250px;
+  margin-top: -0px;
+  margin-bottom: 20px;
+  font-style: italic;
+  font-family: "Computer Modern Sans", serif;
+  font-size: 150%;
+  color: #666666;
+}
+
+
+.subtitletext { /* subtitle of main page */
+   margin-top: -8px;
+   margin-bottom: 8px;
+}
+
+.versiontext { /* version text of main page */
+   margin-top: -12px;
+}
+
+.maintext1 { /* version text of main page */
+   margin-top: 10px;
+   margin-bottom: -0px;
+}
+/* ----------------- */
+
+
+dt:target, span.highlighted {
+    background-color: #eeeeee;
+}
+
+.sig {
+    border-top: 1px solid #eeeeee;
+}
+
+:root {
+    /*--pst-color-inline-code: 73, 142, 241;*/
+    --pst-color-inline-code: 206, 92, 0;
+    /*--pst-font-family-monospace: 'JetBrain Mono', monospace;*/
+    /*--pst-font-family-monospace-system: 'JetBrain Mono', monospace;*/
+}
+
+
+
+h1 {
+    font-size: 180%;
+    font-weight: bold;
+}
+
+h2 {
+    font-size: 120%;
+    font-weight: bold;
+}
+
+h3 {
+    font-size: 100%;
+    font-weight: bold;
+}
+
+/* internal link text */
+span.std-ref  {
+   font-weight: bold;
+}
+
+/* Gallery Links */
+span.std.std-ref  {
+   font-weight: normal;
+}
+
+/* Background of toctrees */
+h2 + div.toctree-wrapper.compound  {
+   background-color: #EEEEEE;
+   border: 1px solid #CCCCCC;
+}
+
+
+/* Subtitles in Gallery */
+#examples  h2, #coding  h2 {
+	color: black;
+	font-size: 120%;
+    border-bottom: 1px solid grey;
+	font-weight: bold;
+}
+
+
+/* Gallery Thumbnails https://sphinx-gallery.github.io/stable/configuration.html#setting-gallery-thumbnail-size */
+.sphx-glr-thumbcontainer {
+    min-height: 320px !important;
+    margin: 10px !important;
+}
+.sphx-glr-thumbcontainer figure {
+    width: 400px !important;
+}
+.sphx-glr-thumbcontainer img {
+    max-height: 300px !important;
+    max-width: 400px !important;
+    /*width: 400px !important;*/
+    /*height: 300px;*/
+}
+.sphx-glr-thumbcontainer a.internal {
+    padding: 320px 0px 0 !important;
+}
+
+.sphx-glr-thumbcontainer[tooltip]:hover:before {
+  bottom: 55%;
+  left: 90%;
+}
+/* ---  Old css ---*/
+
+
+a.headerlink {
+	color: grey;
+}
+
+
+code {
+  color: black;
+}
+
+code.descname {
+
+   font-size: 100%
+}
+
+/* prefix class, method, etc. before header */
+.property {
+   font-weight: 100;
+   font-style: normal;
+}
+
+/* function parameters */
+.sig-param {
+   font-style: normal;
+}
+
+/* set main window column width (enlarge it at cost of right column)*/
+/*.col-xl-7 { !* main column *!*/
+/*   flex: 0  0 73%;  !* 16% for left sidebar *!*/
+/*   max-width: 73%;*/
+/*}*/
+
+/*.bd-sidebar { !* right column *!*/
+/*   flex: 0  0 10%;*/
+/*   max-width: 10%;*/
+/*}*/
+
+
+.bd-sidebar.no-sidebar{
+    display: none;
+}
+.bd-toc{
+  order: 0;
+}
+@media (min-width: 1200px) {
+    .col-xl-8 {
+        flex: 0 0 83.33332%;
+        max-width: 83.33332%;
+    }
+}
+@media (max-width: 1200px) {
+    .col-xl-8 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+/* backgorund of function headers */
+dl.method > dt, dl.class > dt, dl.function > dt  {
+   background-color: #EEEEEE;
+   padding-left: 5px;
+}
+
+/* Note box */
+.note {
+  padding-top: 1px;
+  padding-bottom: 1px;
+}
+
+div.admonition {
+  margin-top: 2px;
+  margin-left: 0px;
+}
+
+.admonition .admonition-title {
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+
+
+dl.footnote > dt, dl.citation > dt {
+  float: none;
+}
+
+/*!* Smaller search box *!*/
+/*#search-input {*/
+/*  font-size: 0.8rem;*/
+/*  width: 80%;*/
+/*}*/
+/*.bd-search {*/
+/*    padding-right: 0px;*/
+/*}*/
+
+/* next/last buttons */
+.prev-next-bottom a.left-prev, .prev-next-bottom a.right-next {
+  border: none;
+  text-decoration: underline;
+}

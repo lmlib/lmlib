@@ -1,0 +1,49 @@
+.. _lmlib.statespace.cost:
+
+.. currentmodule:: lmlib.statespace.cost
+
+lmlib.statespace.cost
+=====================
+
+Functions
+---------
+
+.. autosummary::
+    :toctree: _autosummary
+    :recursive:
+
+    map_windows
+    map_trajectories
+    create_rls
+
+Classes
+-------
+
+.. autosummary::
+    :toctree: _autosummary
+    :recursive:
+
+    Segment
+    CostSegment
+    CompositeCost
+    CostBase
+    ConstrainMatrix
+
+    RLSAlssm
+    RLSAlssmSet
+    RLSAlssmSteadyState
+    RLSAlssmSetSteadyState
+    RLSAlssmBase
+    SEParam
+
+Constants
+---------
+
+.. autosummary::
+    :toctree: _autosummary
+    :recursive:
+
+    FORWARD
+    FW
+    BACKWARD
+    BW

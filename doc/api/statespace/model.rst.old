@@ -1,0 +1,34 @@
+.. _lmlib.statespace.model:
+
+.. currentmodule:: lmlib.statespace.model
+
+lmlib.statespace.model
+======================
+
+
+Test
+
+.. autosummary::
+    :toctree: _autosummary
+    :template: custom-module-template.rst
+    :recursive:
+	
+	lmlib.statespace
+
+
+Classes
+-------
+
+.. autosummary::
+    :toctree: _autosummary
+    :recursive:
+
+    Alssm
+    AlssmPoly
+    AlssmPolyJordan
+    AlssmSin
+    AlssmExp
+    AlssmStacked
+    AlssmStackedSO
+    AlssmProd
+    ModelBase
