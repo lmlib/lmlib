@@ -20,6 +20,11 @@ Direct Links to:
 ---
 ## Install lmlib
 * **pip: ```pip install lmlib ```**
-* **pip (dev-mode): ```pip install -e lmlib ```**
 
 * **conda: [see here](http://lmlib.ch/2.0/html/install.html)**
+
+## Developer Info
+
+Installation via:
+* **pip (dev-mode): ```pip install -e lmlib ```**
+* **[Git Workflow Guide](https://nvie.com/posts/a-successful-git-branching-model/)**
