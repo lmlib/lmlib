@@ -19,6 +19,9 @@ ks = [3780]
 
 bounds_l = [-200, -80, -50, -20, 0]
 bounds_r = [0, 20,  50, 80, 200]
+
+
+
 bounds_r = np.arange(0, 100, 10)
 bounds_l = -np.flip(bounds_r)
 print(bounds_r, bounds_l)
