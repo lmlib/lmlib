@@ -1601,7 +1601,7 @@ class RLSAlssmSteadyState(RLSAlssmBase):
             forward_recursion_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
                                  beta, *init_vars)
         if self._backend == 'jit':
-            forward_recursion_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
+            forward_recursion_xi_kappa_nu_jit(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
                                   beta, *init_vars)
 
     def _backward_recursion(self, A, C, segment, y, v, beta):
@@ -1611,7 +1611,7 @@ class RLSAlssmSteadyState(RLSAlssmBase):
             backward_recursion_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
                                   beta, *init_vars)
         if self._backend == 'jit':
-            backward_recursion_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
+            backward_recursion_xi_kappa_nu_jit(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
                                    beta, *init_vars)
 
     def minimize_v(self, H=None, h=None, return_constrains=False):
