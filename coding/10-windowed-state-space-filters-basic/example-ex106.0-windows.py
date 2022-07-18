@@ -16,12 +16,12 @@ import lmlib as lm
 K = 1000
 ks = [500]
 k = range(K)
-thd = 0.1
+thd = 0.5
 
-segment_left_infinite = lm.Segment(a=-np.inf, b=-20, direction=lm.FORWARD, g=80, delta=-20)
+segment_left_infinite = lm.Segment(a=-np.inf, b=-20, direction=lm.FORWARD, g=200, delta=-20)
 segment_left_finite = lm.Segment(a=-19, b=-1, direction=lm.FORWARD, g=1e6, delta=0)
 segment_right_finite = lm.Segment(a=0, b=19, direction=lm.BACKWARD, g=1e6, delta=0)
-segment_right_infinite = lm.Segment(a=20, b=np.inf, direction=lm.BACKWARD, g=80, delta=20)
+segment_right_infinite = lm.Segment(a=20, b=np.inf, direction=lm.BACKWARD, g=200, delta=20)
 
 cost = lm.CompositeCost((lm.AlssmPoly(3),),
                         [segment_left_infinite, segment_left_finite, segment_right_finite, segment_right_infinite],
@@ -37,5 +37,5 @@ plt.axhline(thd, lw=0.6, c='k', ls='--', label='threshold for infinite windows')
 plt.xlabel('time index $k$')
 plt.ylabel('window weight')
 plt.title(f'Window Weights at $k={ks}$')
-plt.legend()
+plt.legend(loc=1, fontsize=8)
 plt.show()

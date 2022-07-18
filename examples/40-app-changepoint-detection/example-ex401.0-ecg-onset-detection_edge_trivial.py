@@ -14,8 +14,6 @@ from scipy.signal import find_peaks
 
 import lmlib as lm
 from lmlib.utils.generator import gen_slopes, gen_wgn
-from lmlib.utils.generator import *
-
 
 
 # Linear Constraints

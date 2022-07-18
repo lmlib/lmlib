@@ -80,7 +80,7 @@ sphinx_gallery_conf = {
     ]),
     'within_subsection_order': FileNameSortKey,
     'filename_pattern': '(/example-|/fig-)',
-    'ignore_pattern': r'L',
+    'ignore_pattern': r'(L|draft_)',
     # directory where function/class granular galleries are stored
     'backreferences_dir'  : '_gallery_api/',
     # Modules for which function/class level galleries are created. In

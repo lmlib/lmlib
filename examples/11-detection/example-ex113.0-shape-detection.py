@@ -11,12 +11,12 @@ from scipy.signal import find_peaks
 from scipy.linalg import block_diag
 
 import lmlib as lm
-from lmlib.utils.generator import load_data
+from lmlib.utils.generator import load_lib_csv
 
 # --------------- loading test signal -----------------------
 file_name = 'EECG_BASELINE_1CH_10S_FS2400HZ.csv'
 K = 10000  # number of samples to process
-y = load_data(file_name, K)
+y = load_lib_csv(file_name, K)
 
 # --------------- parameters of example -----------------------
 LCR_THD = 0.15  # minimum log-cost ratio to detect a pulse in noise

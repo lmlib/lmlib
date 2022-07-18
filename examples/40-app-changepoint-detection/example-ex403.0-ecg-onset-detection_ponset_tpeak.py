@@ -14,8 +14,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 
 import lmlib as lm
-from lmlib.utils.generator import gen_slopes, gen_wgn
-from lmlib.utils.generator import *
+from lmlib.utils.generator import gen_wgn, load_csv
 
 
 # Linear Constraints
@@ -67,7 +66,6 @@ H_Step = np.array([[1, 0],  # x_A,left : offset of left line
 
 
 
-
 # Implementation of Two-Sided Line Model (TSLM)
 # y: input signal vector
 # a,b: left and right sided interval border (in number of samples)
@@ -110,8 +108,7 @@ k = range(K)
 # y = y1_mc[0:,1] # select single channel
 
 # load alternative ECG signal
-y1_mc = np.loadtxt('ECG_001-nohead.csv', delimiter=",")
-y = y1_mc[0:K,1] # select single channel
+y = load_csv('ECG_001-nohead.csv', K, channel=1)
 
 y = y + gen_wgn(K, sigma, seed=233453)*np.concatenate((np.ones(K//2),3*np.ones(K-K//2)))
 

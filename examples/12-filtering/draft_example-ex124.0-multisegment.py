@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.linalg import block_diag
 import lmlib as lm
-from lmlib.utils import load_data
+from lmlib.utils import load_lib_csv
 
 
-y = load_data('EECG_BASELINE_1CH_10S_FS2400HZ.csv')
+y = load_lib_csv('EECG_BASELINE_1CH_10S_FS2400HZ.csv')
 K = len(y)
 ks = [3780]
 
@@ -51,11 +51,11 @@ F_l = np.rot90(np.tril(np.ones((n_segs_l, n_segs_l))))
 F_r = np.tril(np.ones((n_segs_r, n_segs_r)))
 F = np.concatenate([F_l, F_r], axis=-1)
 F = block_diag(F_l, F_r)
-print(F)
+
 # F = F_l
 # segs = segs_l
 cost = lm.CompositeCost(alssms, segs, F)
-print(F)
+print('F= \n', F)
 
 
 rls = lm.RLSAlssm(cost)
@@ -67,7 +67,6 @@ trajs = []
 for m, f in enumerate(F):
     F_  = np.zeros_like(F)
     F_[m] = f
-    print(F_)
     t_ = lm.map_trajectories(cost.trajectories(xs[ks], F=F_), ks, K, merge_ks=True, merge_seg=True)
     trajs.append(t_)
 

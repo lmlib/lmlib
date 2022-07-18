@@ -13,9 +13,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 
 import lmlib as lm
-from lmlib.utils.generator import gen_slopes, gen_wgn
-from lmlib.utils.generator import *
-from lmlib.utils.beta import load_source_csv
+from lmlib.utils.generator import gen_wgn, load_csv
 
 
 
@@ -104,8 +102,7 @@ fs = 600        # Sampling Frequency [Hz]
 k = range(K)
 
 # -- TEST SIGNAL --
-y = load_source_csv('cerebral-vasoreg-diabetes-heaad-up-tilt_day1-s0030DA-noheader.csv', time_format = "H:M:S") # probably sampled at 600Hz
-y = y[0:K,3] # select single channel
+y = load_csv('cerebral-vasoreg-diabetes-heaad-up-tilt_day1-s0030DA-noheader.csv', K, channel=3) # probably sampled at 600Hz
 y = y + gen_wgn(K, sigma, seed=233453)  # Add Gaussian Noise
 
 
