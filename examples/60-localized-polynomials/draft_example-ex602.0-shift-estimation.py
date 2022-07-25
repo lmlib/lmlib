@@ -65,7 +65,7 @@ def poly_newton(alphaD, qD, alphaDD, qDD, x0, min_step):
     return cur_x
 
 
-y = load_csv_mc('shift_estimation.csv')
+y = load_csv_mc('shift_estimation_data.csv')
 true_shift = .52e-3 # seconds
 # true_shift = .1e-3 # seconds
 # true_shift = 1
