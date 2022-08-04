@@ -7,7 +7,7 @@ Kalman Smoother with Scalar NUV Input [ex601.0]
 
     .. container:: col-fig
        
-       .. image:: ./workaround/../../../../../_static/gallery/example-ex501.0-kalman-nuv-input.png   
+       .. image:: ./do-not-remove/../../../../../_static/gallery/example-ex501.0-kalman-nuv-input.png   
           :width: 400
 
 
