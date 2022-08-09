@@ -1925,53 +1925,6 @@ class ConstrainMatrix:
         assert len(index_2) == 1, 'index of label_2 contains more the one element'
         return self.constrain(index_1 + index_2, value)
 
-    def constrain_TSLM_type(self, TSLM_type):
-        """
-        Sets the type for a Two Segment Line Model (TSLM)
-
-        Parameters
-        ----------
-        TSLM_type: str
-            type of two segment line model constrain, options:
-            'free', continuous', 'straight','horizontal', 'left horizontal', 'right horizontal', 'peak', 'step'
-
-        Returns
-        -------
-        cm : ConstrainMatrix
-            self
-        """
-        assert len(self._cost.segments) == 2, 'Only available for two segment models'
-        assert len(self._cost.alssms) == 2, 'Only available for two line models'
-        assert TSLM_type in self.TSLM_TYPES, f'Unknown TSLM type {TSLM_type}'
-        assert [a.N for a in self._cost.alssms] == [2, 2], 'Faulty model orders. Each line model needs N=2.'
-
-        TSLM_type = TSLM_type.lower()
-        if TSLM_type == self.TSLM_TYPES[0]:  # 'free'
-            pass
-        if TSLM_type == self.TSLM_TYPES[1]:  # 'continuous'
-            self.constrain((0, 2), 1)
-        if TSLM_type == self.TSLM_TYPES[2]:  # 'straight'
-            self.constrain((0, 2), 1)
-            self.constrain((1, 3), 1)
-        if TSLM_type == self.TSLM_TYPES[3]:  # 'horizontal'
-            self.constrain((0, 2), 1)
-            self.constrain((1, 1), 0)
-            self.constrain((3, 3), 0)
-        if TSLM_type == self.TSLM_TYPES[4]:  # 'left horizontal'
-            self.constrain((0, 2), 1)
-            self.constrain((1, 1), 0)
-        if TSLM_type == self.TSLM_TYPES[5]:  # 'right horizontal'
-            self.constrain((0, 2), 1)
-            self.constrain((3, 3), 0)
-        if TSLM_type == self.TSLM_TYPES[6]:  # 'peak'
-            self.constrain((0, 2), 1)
-            self.constrain((1, 3), -1)
-        if TSLM_type == self.TSLM_TYPES[7]:  # 'step'
-            self.constrain((1, 1), 0)
-            self.constrain((3, 3), 0)
-
-        return self
-
     def digest(self):
         """
         Reruns a "snapshot" of the constraint matrix with the applied constrains
