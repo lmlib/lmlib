@@ -101,21 +101,6 @@ mask = ENERGY_THD < model_energy_obs
 k_range_mask = np.flatnonzero(mask)
 k_min = k_range_mask[np.argmin(cost_ratio[mask])]
 
-fig, axs = plt.subplots(5, 1, sharex='all')
-axs[0].plot(J, c='k', lw=0.6, ls=':')
-axs[0].plot(k_range_mask, J[mask])
-axs[1].plot(cost_ratio, c='k', lw=0.6, ls=':')
-axs[1].plot(k_range_mask, cost_ratio[mask])
-axs[2].plot(time_scaling_hat, c='k', lw=0.6, ls=':')
-axs[2].plot(k_range_mask, time_scaling_hat[mask])
-axs[3].plot(amplitude_hat, c='k', lw=0.6, ls=':')
-axs[3].plot(k_range_mask, amplitude_hat[mask])
-axs[4].plot(model_energy_obs, c='k', lw=0.6, ls=':')
-axs[4].plot(k_range_mask, model_energy_obs[mask])
-for ax in axs:
-    ax.axvline(k_min, c='k', lw=0.5)
-plt.show()
-
 
 
 L_dilate = lm.poly_dilation_coef_L(np.arange(Q), time_scaling_hat[k_min])
@@ -153,3 +138,23 @@ for ax in fig.axes:
     ax.set_yticks([1, 2, 3])
 
 plt.show()
+
+
+# show cost and estimate over time
+if True:
+    fig, axs = plt.subplots(5, 1, sharex='all')
+    axs[0].plot(J, c='k', lw=0.6, ls=':', label='cost')
+    axs[0].plot(k_range_mask, J[mask], c='b', lw=1)
+    axs[1].plot(cost_ratio, c='k', lw=0.6, ls=':', label='cost_ratio')
+    axs[1].plot(k_range_mask, cost_ratio[mask], c='b', lw=1)
+    axs[2].plot(time_scaling_hat, c='k', lw=0.6, ls=':', label=r'time scaling $\eta$')
+    axs[2].plot(k_range_mask, time_scaling_hat[mask], c='b', lw=1)
+    axs[3].plot(amplitude_hat, c='k', lw=0.6, ls=':', label=r'amplitude scaling $\lambda$')
+    axs[3].plot(k_range_mask, amplitude_hat[mask], c='b', lw=1)
+    axs[4].plot(model_energy_obs, c='k', lw=0.6, ls=':', label=r'Model Energy Observation')
+    axs[4].plot(k_range_mask, model_energy_obs[mask], c='b', lw=1)
+    for ax in axs:
+        ax.axvline(k_min, c='k', lw=0.5)
+        ax.legend(loc=1, fontsize=8)
+    axs[-1].set_xlabel('k')
+    plt.show()

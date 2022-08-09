@@ -73,6 +73,7 @@ sphinx_gallery_conf = {
                                         '../examples/20-polynomials-basics',
                                         '../examples/50-convolution',
                                         '../examples/21-polynomials-calculus',
+                                        '../examples/70-localized-polynomials',
                                         # '../examples/30-utils',
                                         '../coding/10-windowed-state-space-filters-basic',
                                         '../coding/13-backend',
