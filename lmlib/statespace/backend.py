@@ -1,26 +1,70 @@
+"""Selection tool to switch between Python interpreter (default) and JIT (Just-in-Time) compilation execution for time-critical routines in package :mod:`lmlib.statespace`. """
+
 import importlib.util
 import sys
 
-__all__ = ['set_backend', 'get_backend', 'BACKEND_TYPES', 'AVAILABLE_BACKENDS']
+__all__ = ['set_backend', 'is_backend_available', 'get_backend', 'BACKEND_TYPES', 'AVAILABLE_BACKENDS']
 
-_backend = 'py'
+_backend = 'py' # current backend selection (global)
 
-BACKEND_TYPES = ('jit', 'py')
-AVAILABLE_BACKENDS = ('py',)
+BACKEND_TYPES = ('jit', 'py', 'python') # known backends
+AVAILABLE_BACKENDS = ('py',) # available backends
 
 
 def set_backend(backend):
+    """
+    Selects one out of multiple available backends (to optimize execution performance).
+
+    Parameters
+    ----------
+    backend : str ("jit", "py", "python")
+        
+          - "py" (default), "python": Plain Python 
+          - "jit": Just-in-Time compilation (if available)
+ 
+    
+    If the selected backend is not available, an assert is risen. 
+    Use :meth:`is_backend_available` to check availability first. 
+    """    
     backend = backend.lower()
     global _backend
-    assert backend in BACKEND_TYPES + ('python',), "Wrong backend name."
+    assert backend in BACKEND_TYPES, "Unknown backend name."
     if backend == 'jit':
-        assert backend in AVAILABLE_BACKENDS + ('python',), "jit backend not availalbe. Install numba package!"
+        assert backend in AVAILABLE_BACKENDS, "jit backend not availabe. Check that numba package is installed!"
         _backend = 'jit'
     if backend in ('py', 'python'):
         _backend = 'py'
 
 
+def is_backend_available(backend):
+    """
+    Checks if the backend :code:`backend` is available on this system. 
+
+    Parameters
+    ----------
+    backend : str 
+              or a list of valid backends, see :meth:`set_backend`
+
+    Returns
+    ----------
+    output : bool
+             :code:`True` or :code:`False`
+    """    
+    
+    return (backend in AVAILABLE_BACKENDS)
+
+
 def get_backend():
+    """
+    Returns the name of the currently selected backend.
+
+
+    Returns
+    ----------
+    output : str
+             for a list of valid backends, see :meth:`set_backend`
+    """    
+        
     global _backend
     return _backend
 

@@ -1,4 +1,4 @@
-"""Definition of recurively computed squared error cost functions (such as *Cost Segments* and *Composite Costs*), all based on ALSSMs"""
+"""Definition of recursively computed squared error cost functions (such as *Cost Segments* and *Composite Costs*), all based on ALSSMs"""
 
 import warnings
 import numpy as np
@@ -66,7 +66,7 @@ def _covariance_matrix_closed_form(A, C, gamma, a, b, delta):
 
 def create_rls(cost, multi_channel_set=False, steady_state=False, kappa_diag=True, steady_state_method='closed_form'):
     """
-    Returns the right Recursive Least Square Obeject by configureation
+    Returns a 'Recursive Least Squares Object' according to the provided parameters.
 
     Parameters
     ----------

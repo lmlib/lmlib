@@ -1,8 +1,9 @@
 """
-Comparing Python and JIT Backend [ex130.0]
-==========================================
+Benchmarking of Python vs. JIT Backend [ex130.0]
+===============================================
 
-This example demonstrates the usage of Just-in-Time (JIT) compilation for different RLSAlssm* classes and signal channels.
+This example demonstrates the usage of Just-in-Time (JIT) compilation in RLSAlssm* classes.
+
 
 """
 import timeit
@@ -87,13 +88,13 @@ proc_time_jit_set_ss = np.nan
 mspsec_jit_set_ss = K*M*n_exe*1e-6/proc_time_jit_set_ss
 
 
-labels = ('1 Ch.', '1 Ch. \nSteady State', f'{M} Ch. Set', f'{M} Ch. Set \nSteady State')
+labels = ('RLSAlssm() \n 1 Channel', 'RLSAlssmSteadyState() \n  1 Channel', f'RLSAlssmSet() \n {M} Channels', f'RLSAlssmSetSteadyState() \n {M} Channels')
 mspsecs_py = (mspsec_py, mspsec_pyss, mspsec_py_set, mspsec_py_set_ss)
 mspsecs_jit = (mspsec_jit, mspsec_jitss, mspsec_jit_set, mspsec_jit_set_ss)
 locs = np.arange(len(labels))  # the label locations
 width = 0.35  # the width of the bars
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(6, 5))
 
 rect0 = ax.barh(locs - width/2, mspsecs_py, width, label='py', color='k')
 rect1 = ax.barh(locs + width/2, mspsecs_jit, width, label='jit', color='b')
@@ -104,7 +105,7 @@ ax.invert_yaxis()  # labels read top-to-bottom
 
 # Add some text for labels, title and custom x-axis tick labels, etc.
 ax.set_xlabel('MS/s')
-ax.set_title('Performance of Python and JIT backends')
+ax.set_title('Benchmarking of ALSSM filters: Python vs. JIT backends')
 ax.set_yticks(locs, labels)
 ax.legend()
 
