@@ -1,9 +1,14 @@
 """
-Basic Edge Detection [ex401.0] 
+(Edu) Edge Detection [ex401.0] 
 ====================================================
-Example 1 published in [Waldmann2022]_.
+This example is published in [Waldmann2022]_ as Example 1.
 
 This basic example illustrates the detection of edges using a Two-Sided Line Model (TSLM), weighting the two options of a "Continuous" versus a "Straight" line in a LCR term. 
+
+
+   **Education Examples (Edu):** This is an illustraive example to demonstrates the use of the core package(s) :ref:`lmlib.statespace.model` and :ref:`lmlib.statespace.cost`. 
+   The implementation of this example could be significantly simplified when additionally using creator functions from package :ref:`lmlib.statespace.application`, 
+   as demonstrated in [Example ex401.1].
 
 
 """
@@ -15,7 +20,6 @@ from scipy.signal import find_peaks
 import lmlib as lm
 from lmlib.utils.generator import gen_slopes, gen_wgn
 from lmlib.utils.generator import *
-
 
 
 # Linear Constraints

@@ -28,6 +28,7 @@ Modules
    lmlib.statespace.model
    lmlib.statespace.cost
    lmlib.statespace.backend   
+   lmlib.statespace.applications
 
 
 

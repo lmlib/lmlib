@@ -1,6 +1,8 @@
 """Generators for deterministic and stochastic (test) signals"""
 
 import os
+from warnings import warn
+
 import numpy as np
 from .check import *
 
@@ -9,6 +11,8 @@ __all__ = ['gen_sine', 'gen_rect', 'gen_tri', 'gen_saw', 'gen_pulse', 'gen_exp',
            'gen_rand_walk', 'gen_rand_pulse',
            'gen_conv',
            'load_data','load_data_mc',
+           'load_lib_csv','load_lib_csv_mc',
+           'load_csv','load_csv_mc',
            'k_period_to_omega']
 
 # Get data_path
@@ -91,7 +95,7 @@ def gen_exp(K, decay, k0=0):
     return np.power(decay, np.arange(0 - k0, K - k0))
 
 
-def gen_rect(K, k_period, k_on):
+def gen_rect(K, k_period, k_on=None, duty_cycle=None, k0=0):
     """
     Rectangular (pulse wave) signal generator
 
@@ -101,22 +105,29 @@ def gen_rect(K, k_period, k_on):
         Signal length
     k_period: int
         periodicity, number of samples per period
-    k_on : int
-        Number of samples of value 1, followed by **k_period**-**k_on** samples of value 0.
+    k_on : int, optional
+        Number of samples of value 1, followed by **k_period**-**k_on** samples of value 0. Default is k_period//2 (only k_on or duty_cycle can be used)
+    duty_cycle : float, optional
+        Duty Cycle of a period (starts with 1). Default is k_period//2 (only k_on or duty_cycle can be used)
+    k0 : int, optional
+        Start shift of a period, default k0=0
 
     Returns
     -------
     out : :class:`~numpy.ndarray`, shape=(K,)
         Returns a rectangular wave signal of length `K`.
 
-    Example
-    -------
-    .. plot:: pyplots/gen_rectangle_plot.py
-        :include-source:
     """
-    assert k_on <= k_period, "k_on must be smaller equal than period."
+
+    assert k_on is None or duty_cycle is None, "Set only k_on or duty_cycle. These cannot be used at the same time."
+    if k_on is None:
+        k_on = k_period //2 if duty_cycle is None else int(k_period*duty_cycle)
+        assert k_on <= k_period, "duty_cycle not in range from 0 to 1"
+
+    assert k_on <= k_period, "k_on must be smaller equal than k_period."
+
     out = np.zeros(K, )
-    for p in np.arange(0, K, k_period):
+    for p in np.arange(-(k0%k_period), K, k_period):
         p_range = np.arange(p, min(p + k_on, K))
         out[p_range] = np.ones((p_range.size,))
     return out
@@ -370,7 +381,7 @@ def gen_conv(base, template):
         return np.stack(*[np.convolve(ych, y2, 'same') for ych in y1], axis=-1)
     return np.convolve(y1, y2, 'same')
 
-
+@deprecated
 def load_data(name, K=-1, kstart=0, chIdx=0):
     """
     Loads a single channel signal from the signal catalog, see :ref:`lmlib_signal_catalog`.
@@ -395,13 +406,16 @@ def load_data(name, K=-1, kstart=0, chIdx=0):
         Signal with shape=(K,)
 
     """
+    warn('load_data will be deprecated, use load_lib_csv instead.', DeprecationWarning, stacklevel=2)
+
     y_out = load_data_mc(name, K, kstart, [chIdx])
     return y_out[:, 0]
 
 
+@deprecated
 def load_data_mc(name, K=-1, kstart=0, chIdxs=None):
     """
-    Loads a multi channel signal from the signal catalog, see :ref:`lmlib_signal_catalog`.
+    Loads a multi-channel signal from the signal catalog, see :ref:`lmlib_signal_catalog`.
 
     Parameters
     ----------
@@ -421,13 +435,15 @@ def load_data_mc(name, K=-1, kstart=0, chIdxs=None):
     Returns
     -------
     out : :class:`~numpy.ndarray`, shape=(K, M)
-        else shape=(K, M) for multi-channel signals or uf `channels` is a array_like of length `M`
+        else shape=(K, M) for multichannel signals or uf `channels` is a array_like of length `M`
 
     Note
     ----
-    If a the files contains only one signal it will be loaded in a shapw of a multichannel signal (K, 1)
+    If a the files contains only one signal it will be loaded in a shape of a multi-channel signal (K, 1)
 
     """
+    warn('load_data_mc will be deprecated, use load_lib_csv_mc instead.', DeprecationWarning, stacklevel=2)
+
     assert isinstance(name, str), "Filename is not a string."
 
     y = np.loadtxt(data_path+name, delimiter=",")
@@ -458,3 +474,120 @@ def k_period_to_omega(k_period):
 
     """
     return 2 * np.pi / k_period
+
+
+def load_csv(file, K=-1, k_start=0, channel=0, **kwargs):
+    """
+    loads csv data as a single-channel data shape
+
+    `load_csv` calls numpy.genfromtxt with a different interface.
+
+    Parameters
+    ----------
+    file : str
+        path to csv file (with '.csv' ending )
+    K : int, optional
+        signal length, default loads whole data (K=-1)
+    k_start : int, optional
+        start of signal, default starts at k_start=0
+    channel : int, optional
+        load column of csv with the index specified by `channel
+        default is 0 and loads the first column
+    kwargs : optional
+        keyword arguments passed to `numpy.genfromtxt`
+        to exclude header add `skip_header=numbers_of_header_lines`
+
+    Returns
+    -------
+    y : np.ndarray
+        1 dimensional array of containing signal values over time
+    """
+    return load_csv_mc(file, K, k_start, (channel,), **kwargs)
+
+def load_csv_mc(file, K=-1, k_start=0, channels=None, **kwargs):
+    """
+    loads csv data as a multi-channel data shape
+
+    `load_csv_mc` calls numpy.genfromtxt with a different interface.
+
+    Parameters
+    ----------
+    file : str
+        path to csv file (with '.csv' ending )
+    K : int, optional
+        signal length, default loads whole data (K=-1)
+    k_start : int, optional
+        start of signal, default starts at k_start=0
+    channels : list, None, optional
+        load columns of csv with the index specified in `channels`
+        default is None and loads all channels
+    kwargs : optional
+        keyword arguments passed to `numpy.genfromtxt`
+        to exclude header add `skip_header=numbers_of_header_lines`
+
+    Returns
+    -------
+    y : np.ndarray
+        2 dimensional array, first is time dimensions, second, channels dimension
+    """
+    max_rows = None if K==-1 else K+k_start
+    y = np.genfromtxt(fname=file, delimiter=',', usecols=channels, max_rows=max_rows, **kwargs)[k_start::]
+    return y
+
+def load_lib_csv(filename, K=-1, k_start=0, channel=0, **kwargs):
+    """
+    loads a library-internal csv data file from the signal catalog as a single-channel data shape
+
+    See filenames as :ref:`lmlib_signal_catalog`
+    `load_lib_csv` calls numpy.genfromtxt with a different interface.
+
+    Parameters
+    ----------
+    filename : str
+        filename (with '.csv' ending ) See :ref:`lmlib_signal_catalog`.
+    K : int, optional
+        signal length, default loads whole data (K=-1)
+    k_start : int, optional
+        start of signal, default starts at k_start=0
+    channel : int, optional
+        load column of csv with the index specified by `channel
+        default is 0 and loads the first column
+    kwargs : optional
+        keyword arguments passed to `numpy.genfromtxt`
+        to exclude header add `skip_header=numbers_of_header_lines`
+
+    Returns
+    -------
+    y : np.ndarray
+        1 dimensional array of containing signal values over time
+    """
+    return load_csv(data_path+filename, K, k_start, channel, **kwargs)
+
+def load_lib_csv_mc(filename, K=-1, k_start=0, channels=None, **kwargs):
+    """
+    loads a library-internal csv data file from the signal catalog as a multi-channel data shape
+
+    See filenames as :ref:`lmlib_signal_catalog`
+    `load_csv_mc` calls numpy.genfromtxt with a different interface.
+
+    Parameters
+    ----------
+    filename : str
+        filename (with '.csv' ending ) See :ref:`lmlib_signal_catalog`.
+    K : int, optional
+        signal length, default loads whole data (K=-1)
+    k_start : int, optional
+        start of signal, default starts at k_start=0
+    channels : list, None, optional
+        load columns of csv with the index specified in `channels`
+        default is None and loads all channels
+    kwargs : optional
+        keyword arguments passed to `numpy.genfromtxt`
+        to exclude header add `skip_header=numbers_of_header_lines`
+
+    Returns
+    -------
+    y : np.ndarray
+        2 dimensional array, first is time dimensions, second, channels dimension
+    """
+    return load_csv_mc(data_path+filename, K, k_start, channels, **kwargs)

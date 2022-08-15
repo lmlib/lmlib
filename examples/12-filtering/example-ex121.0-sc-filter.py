@@ -1,6 +1,6 @@
 """
 Symmetric Moving Average Filters with ALSSMs [ex121.0]
-=============================================
+======================================================
 
 Applies a Composite Cost with a two-sided, symmetric window as a symmetric moving average filter of length L=100.
 

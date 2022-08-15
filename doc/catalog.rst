@@ -10,9 +10,11 @@ Functions
 
 .. autosummary::
 
-    load_data
-    load_data_mc
+    load_lib_csv
+    load_lib_csv_mc
 
+    load_csv
+    load_csv_mc
 
 Signals
 ^^^^^^^
@@ -21,10 +23,10 @@ Just import the submodule and load one of the signals as show down below.
 
 .. code-block::
 
-    from lmlib.utils import load_data
+    from lmlib.utils import load_lib_csv
 
     # load signal
-    y = load_data('EECG_BASELINE_1CH_10S_FS2400HZ.csv')
+    y = load_lib_csv('EECG_BASELINE_1CH_10S_FS2400HZ.csv')
 
 
 .. contents::
@@ -42,10 +44,10 @@ EECG_BASELINE_1CH_10S_FS2400HZ.csv
 .. plot::
     :include-source:
 
-    from lmlib.utils import load_data
+    from lmlib.utils import load_lib_csv
     import matplotlib.pyplot as plt
 
-    y = load_data('EECG_BASELINE_1CH_10S_FS2400HZ.csv')
+    y = load_lib_csv('EECG_BASELINE_1CH_10S_FS2400HZ.csv')
 
     plt.figure(figsize=(12, 6))
     plt.plot(y)
@@ -64,10 +66,10 @@ EECG_FILT_1CH_10S_FS2400HZ.csv
 .. plot::
     :include-source:
 
-    from lmlib.utils import load_data
+    from lmlib.utils import load_lib_csv
     import matplotlib.pyplot as plt
 
-    y = load_data('EECG_FILT_1CH_10S_FS2400HZ.csv')
+    y = load_lib_csv('EECG_FILT_1CH_10S_FS2400HZ.csv')
 
     plt.figure(figsize=(12, 6))
     plt.plot(y)
@@ -86,10 +88,10 @@ EECG_FILT_9CH_10S_FS2400HZ.csv
 .. plot::
     :include-source:
 
-    from lmlib.utils import load_data_mc
+    from lmlib.utils import load_lib_csv_mc
     import matplotlib.pyplot as plt
 
-    y = load_data_mc('EECG_FILT_9CH_10S_FS2400HZ.csv')
+    y = load_lib_csv_mc('EECG_FILT_9CH_10S_FS2400HZ.csv')
 
     plt.figure(figsize=(12, 6))
     for m in range(9):
@@ -110,10 +112,10 @@ SECG3_FILT_HP51_3CH_20S_FS2400HZ.csv
 .. plot::
     :include-source:
 
-    from lmlib.utils import load_data_mc
+    from lmlib.utils import load_lib_csv_mc
     import matplotlib.pyplot as plt
 
-    y = load_data_mc('SECG3_FILT_HP51_3CH_20S_FS2400HZ.csv')
+    y = load_lib_csv_mc('SECG3_FILT_HP51_3CH_20S_FS2400HZ.csv')
 
     plt.figure(figsize=(12, 6))
     for m in range(3):
@@ -134,10 +136,10 @@ SECG3_RAW_3CH_20S_FS2400HZ.csv
 .. plot::
     :include-source:
 
-    from lmlib.utils import load_data_mc
+    from lmlib.utils import load_lib_csv_mc
     import matplotlib.pyplot as plt
 
-    y = load_data_mc('SECG3_RAW_3CH_20S_FS2400HZ.csv')
+    y = load_lib_csv_mc('SECG3_RAW_3CH_20S_FS2400HZ.csv')
 
     plt.figure(figsize=(12, 6))
     for m in range(3):

@@ -73,13 +73,16 @@ sphinx_gallery_conf = {
                                         '../examples/20-polynomials-basics',
                                         '../examples/50-convolution',
                                         '../examples/21-polynomials-calculus',
+                                        '../examples/70-localized-polynomials',
+                                        '../examples/100-state-space-applications',
                                         # '../examples/30-utils',
                                         '../coding/10-windowed-state-space-filters-basic',
-                                        '../coding/20-polynomials-basics',
+                                        '../coding/13-backend',
+                                        '../coding/20-polynomials-basics'
     ]),
     'within_subsection_order': FileNameSortKey,
     'filename_pattern': '(/example-|/fig-)',
-    'ignore_pattern': r'L',
+    'ignore_pattern': r'(L|draft_)',
     # directory where function/class granular galleries are stored
     'backreferences_dir'  : '_gallery_api/',
     # Modules for which function/class level galleries are created. In

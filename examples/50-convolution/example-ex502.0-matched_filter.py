@@ -11,17 +11,14 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import time
 import lmlib as lm
-from lmlib.utils.generator import gen_rect
-from lmlib.utils.generator import gen_wgn
-from lmlib.utils.generator import gen_conv
-from lmlib.utils import load_data_mc
+from lmlib.utils import load_lib_csv_mc
 
 
 # -- 0. Loading Test signal ---
 K = 8000  # number of samples to process
 file_name = 'EECG_FILT_9CH_10S_FS2400HZ.csv'
 K_REF = 450 # Location of reference template (Index of shape to correlate with)
-y_mc = load_data_mc(file_name, K, chIdxs=[0,1,2,3,4,5,6,7,8]) 
+y_mc = load_lib_csv_mc(file_name, K, channels=[0,1,2,3,4,5,6,7,8])
 NOFCH = y_mc.shape[1]
 
 k = range(K)

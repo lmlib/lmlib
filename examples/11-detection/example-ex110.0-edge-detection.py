@@ -32,8 +32,16 @@ ccost = lm.CompositeCost((alssm_left, alssm_right), (segment_left, segment_right
 print('---- MODEL ----')
 print(ccost)
 
-H_line = lm.ConstrainMatrix(ccost).constrain_TSLM_type('straight').digest()
-H_edge = lm.ConstrainMatrix(ccost).constrain_TSLM_type('continuous').digest()
+H_line = H_Straight = np.array(
+                  [[1, 0],  # x_A,left : offset of left line
+                   [0, 1],  # x_B,left : slope of left line
+                   [1, 0],  # x_A,right : offset of right line
+                   [0, 1]])  # x_B,right : slope of right line
+H_edge = H_Continuous = np.array(
+                  [[1, 0, 0],  # x_A,left : offset of left line
+                   [0, 1, 0],  # x_B,left : slope of left line
+                   [1, 0, 0],  # x_A,right : offset of right line
+                   [0, 0, 1]])  # x_B,right : slope of right line
 
 
 # Filter

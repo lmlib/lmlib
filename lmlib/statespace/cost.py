@@ -1,4 +1,4 @@
-"""Definition of recurively computed squared error cost functions (such as *Cost Segments* and *Composite Costs*), all based on ALSSMs"""
+"""Definition of recursively computed squared error cost functions (such as *Cost Segments* and *Composite Costs*), all based on ALSSMs"""
 
 import warnings
 import numpy as np
@@ -7,7 +7,7 @@ from collections.abc import Iterable
 
 from lmlib.statespace.model import ModelBase, AlssmStackedSO
 from lmlib.statespace.recursion import *
-from lmlib.statespace.backend import get_backend, BACKEND_TYPES, AVAILABLE_BACKENDS
+from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backends
 from lmlib.utils.check import *
 
 __all__ = ['ConstrainMatrix', 'CompositeCost', 'CostSegment', 'Segment', 'RLSAlssm',
@@ -66,7 +66,7 @@ def _covariance_matrix_closed_form(A, C, gamma, a, b, delta):
 
 def create_rls(cost, multi_channel_set=False, steady_state=False, kappa_diag=True, steady_state_method='closed_form'):
     """
-    Returns the right Recursive Least Square Obeject by configureation
+    Returns a 'Recursive Least Squares Object' according to the provided parameters.
 
     Parameters
     ----------
@@ -162,8 +162,8 @@ def map_windows(windows, ks, K, merge_ks=False, merge_seg=False, fill_value=0):
         ab_range = np.arange(ab_range.start, ab_range.stop)
 
         for i, k in enumerate(ks):
-            boundary_mask = np.bitwise_and(0 <= ab_range+k, ab_range+k < K)
-            w[i, p, ab_range[boundary_mask]+k] = weights[boundary_mask]
+            boundary_mask = np.bitwise_and(0 <= ab_range + k, ab_range + k < K)
+            w[i, p, ab_range[boundary_mask] + k] = weights[boundary_mask]
 
     return _merge_ks_seg(w, merge_ks, merge_seg)
 
@@ -231,7 +231,7 @@ def map_trajectories(trajectories, ks, K, merge_ks=False, merge_seg=False, fill_
     XS = len(trajectories)
     assert XS == len(ks), "number of trajecotries and ks does not match up"
 
-    if t_.ndim == 2: # check if trajecotry is from a RLSAlssmSet
+    if t_.ndim == 2:  # check if trajecotry is from a RLSAlssmSet
         S = t_.shape[1]
         t = np.full((XS, P, K, S), fill_value)
     else:
@@ -239,7 +239,7 @@ def map_trajectories(trajectories, ks, K, merge_ks=False, merge_seg=False, fill_
 
     for i, k in enumerate(ks):
         for p, (j_range, trajectory) in enumerate(trajectories[i]):
-            mask =  np.bitwise_and(k + np.array(j_range)>=0, k + np.array(j_range)<K)
+            mask = np.bitwise_and(k + np.array(j_range) >= 0, k + np.array(j_range) < K)
             t[i, p, k + np.array(j_range)[mask], ...] = trajectory[mask]
 
     return _merge_ks_seg(t, merge_ks, merge_seg)
@@ -325,8 +325,13 @@ class Segment:
         self.label = 'n/a' if label is None else label
 
     def __str__(self):
-        return f'{type(self).__name__}(a:{self.a}, b:{self.b}, {self.direction}, g:{self.g}, delta:{self.delta}, label: ' \
-               f'{self.label})'
+        return f'{type(self).__name__}(' \
+               f'a={self.a}, ' \
+               f'b={self.b}, ' \
+               f'direction={self.direction}, ' \
+               f'g={self.g}, ' \
+               f'delta={self.delta}, ' \
+               f'label={self.label})'
 
     @property
     def a(self):
@@ -453,13 +458,13 @@ class Segment:
         """
 
         if self.direction == FW:
-            a_lim = max(np.log(thd) / np.log(self.gamma) - 1 +self.delta, self.a)
+            a_lim = max(np.log(thd) / np.log(self.gamma) - 1 + self.delta, self.a)
             b_lim = self.b
         else:  # self.direction == BW:
             a_lim = self.a
-            b_lim = min(np.log(thd) / np.log(self.gamma) + 1+self.delta, self.b)
-        ab_range = range(int(a_lim), int(b_lim)+1)
-        return ab_range, self.gamma**(np.array(ab_range)-self.delta)
+            b_lim = min(np.log(thd) / np.log(self.gamma) + 1 + self.delta, self.b)
+        ab_range = range(int(a_lim), int(b_lim) + 1)
+        return ab_range, self.gamma ** (np.array(ab_range) - self.delta)
 
 
 class CostBase(ABC):
@@ -609,7 +614,7 @@ class CostBase(ABC):
         `list of shape=(P) of tuples` :code:`(range, array)`
             Each element is a tuple with
 
-            * :code:`range` of length `JR`: relative index range of window with respect to semgent's boundaries.
+            * :code:`range` of length `JR`: relative index range of window with respect to segment's boundaries.
             * :code:`array` of shape=(JR) of floats: per-index window weight over the reported index range
 
 
@@ -649,7 +654,8 @@ class CostBase(ABC):
         for i, segment in enumerate(self.segments):
             alssm = AlssmStackedSO(self.alssms, self.F[:, i])
             if method == 'closed_form':
-                W += _covariance_matrix_closed_form(alssm.A, alssm.C, segment.gamma, segment.a, segment.b, segment.delta)
+                W += _covariance_matrix_closed_form(alssm.A, alssm.C, segment.gamma, segment.a, segment.b,
+                                                    segment.delta)
         return W
 
     def eval_alssm_output(self, xs, alssm_weights):
@@ -798,6 +804,11 @@ class CompositeCost(CostBase):
         self.segments = segments
         self.F = F
 
+    def __str__(self):
+        return f'CompositeCost(label={self.label}) \n' \
+               f'  └- {[alssm.__str__() for alssm in self.alssms]}, \n' \
+               f'  └- {[segment.__str__() for segment in self.segments]} '
+
 
 class CostSegment(CostBase):
     r"""
@@ -940,6 +951,7 @@ class RLSAlssmBase(ABC):
         Segment Scalars. Factors weighting each of the `P` cost segments.
         If `betas` is not set, the weight is for each cost segment 1.
     """
+
     def __init__(self, betas=None):
         self._cost_model = None
         self._W = None
@@ -1009,7 +1021,7 @@ class RLSAlssmBase(ABC):
 
         """
         assert backend in BACKEND_TYPES, f'Wrong backend name {backend}'
-        assert backend in AVAILABLE_BACKENDS, f'{backend} not available, check {backend} installation.'
+        assert backend in available_backends, f'{backend} not available, check {backend} installation.'
         self._backend = backend
 
     @abstractmethod
@@ -1332,6 +1344,7 @@ class RLSAlssmSet(RLSAlssmBase):
         Forwarded to :class:`.RLSAlssmBase`
 
     """
+
     def __init__(self, cost_model, kappa_diag=True):
         super().__init__()
         self._kappa_diag = None
@@ -1359,11 +1372,13 @@ class RLSAlssmSet(RLSAlssmBase):
         init_vars = forward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 
         if self._backend == 'py':
-            forward_recursion_set_py(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
+            forward_recursion_set_py(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
+                                     v,
                                      beta, *init_vars, self._kappa_diag)
         if self._backend == 'jit':
-            forward_recursion_set_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
-                                     beta, *init_vars, self._kappa_diag)
+            forward_recursion_set_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
+                                      v,
+                                      beta, *init_vars, self._kappa_diag)
 
     def _backward_recursion(self, A, C, segment, y, v, beta):
         init_vars = backward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
@@ -1373,7 +1388,7 @@ class RLSAlssmSet(RLSAlssmBase):
                                       v, beta, *init_vars, self._kappa_diag)
         if self._backend == 'jit':
             backward_recursion_set_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
-                                      v, beta, *init_vars, self._kappa_diag)
+                                       v, beta, *init_vars, self._kappa_diag)
 
     def minimize_v(self, H=None, h=None, broadcast_h=True, return_constrains=False):
         r"""
@@ -1581,6 +1596,7 @@ class RLSAlssmSteadyState(RLSAlssmBase):
     :class:`RLSAlssm`
     
     """
+
     def __init__(self, cost_model, steady_state_method='closed_form', **kwargs):
         super().__init__(**kwargs)
         self.cost_model = cost_model
@@ -1599,20 +1615,23 @@ class RLSAlssmSteadyState(RLSAlssmBase):
 
         if self._backend == 'py':
             forward_recursion_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
-                                 beta, *init_vars)
+                                             beta, *init_vars)
         if self._backend == 'jit':
-            forward_recursion_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
-                                  beta, *init_vars)
+            forward_recursion_xi_kappa_nu_jit(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
+                                              v,
+                                              beta, *init_vars)
 
     def _backward_recursion(self, A, C, segment, y, v, beta):
         init_vars = backward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 
         if self._backend == 'py':
-            backward_recursion_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
-                                  beta, *init_vars)
+            backward_recursion_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
+                                              v,
+                                              beta, *init_vars)
         if self._backend == 'jit':
-            backward_recursion_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
-                                   beta, *init_vars)
+            backward_recursion_xi_kappa_nu_jit(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
+                                               v,
+                                               beta, *init_vars)
 
     def minimize_v(self, H=None, h=None, return_constrains=False):
         """
@@ -1705,6 +1724,7 @@ class RLSAlssmSetSteadyState(RLSAlssmBase):
     :class:`RLSAlssmSet`
 
     """
+
     def __init__(self, cost_model, steady_state_method='closed_form', kappa_diag=True, **kwargs):
         super().__init__(**kwargs)
         self._kappa_diag = None
@@ -1732,21 +1752,24 @@ class RLSAlssmSetSteadyState(RLSAlssmBase):
         init_vars = forward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 
         if self._backend == 'py':
-            forward_recursion_set_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
-                                     beta, *init_vars, self._kappa_diag)
+            forward_recursion_set_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta,
+                                                 y, v,
+                                                 beta, *init_vars, self._kappa_diag)
         if self._backend == 'jit':
-            forward_recursion_set_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
-                                     beta, *init_vars, self._kappa_diag)
+            forward_recursion_set_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
+                                      v,
+                                      beta, *init_vars, self._kappa_diag)
 
     def _backward_recursion(self, A, C, segment, y, v, beta):
         init_vars = backward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 
         if self._backend == 'py':
-            backward_recursion_set_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
-                                      v, beta, *init_vars, self._kappa_diag)
+            backward_recursion_set_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta,
+                                                  y,
+                                                  v, beta, *init_vars, self._kappa_diag)
         if self._backend == 'jit':
             backward_recursion_set_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
-                                      v, beta, *init_vars, self._kappa_diag)
+                                       v, beta, *init_vars, self._kappa_diag)
 
     def minimize_v(self, H=None, h=None, broadcast_h=True, return_constrains=False):
         """
@@ -1925,53 +1948,6 @@ class ConstrainMatrix:
         assert len(index_2) == 1, 'index of label_2 contains more the one element'
         return self.constrain(index_1 + index_2, value)
 
-    def constrain_TSLM_type(self, TSLM_type):
-        """
-        Sets the type for a Two Segment Line Model (TSLM)
-
-        Parameters
-        ----------
-        TSLM_type: str
-            type of two segment line model constrain, options:
-            'free', continuous', 'straight','horizontal', 'left horizontal', 'right horizontal', 'peak', 'step'
-
-        Returns
-        -------
-        cm : ConstrainMatrix
-            self
-        """
-        assert len(self._cost.segments) == 2, 'Only available for two segment models'
-        assert len(self._cost.alssms) == 2, 'Only available for two line models'
-        assert TSLM_type in self.TSLM_TYPES, f'Unknown TSLM type {TSLM_type}'
-        assert [a.N for a in self._cost.alssms] == [2, 2], 'Faulty model orders. Each line model needs N=2.'
-
-        TSLM_type = TSLM_type.lower()
-        if TSLM_type == self.TSLM_TYPES[0]:  # 'free'
-            pass
-        if TSLM_type == self.TSLM_TYPES[1]:  # 'continuous'
-            self.constrain((0, 2), 1)
-        if TSLM_type == self.TSLM_TYPES[2]:  # 'straight'
-            self.constrain((0, 2), 1)
-            self.constrain((1, 3), 1)
-        if TSLM_type == self.TSLM_TYPES[3]:  # 'horizontal'
-            self.constrain((0, 2), 1)
-            self.constrain((1, 1), 0)
-            self.constrain((3, 3), 0)
-        if TSLM_type == self.TSLM_TYPES[4]:  # 'left horizontal'
-            self.constrain((0, 2), 1)
-            self.constrain((1, 1), 0)
-        if TSLM_type == self.TSLM_TYPES[5]:  # 'right horizontal'
-            self.constrain((0, 2), 1)
-            self.constrain((3, 3), 0)
-        if TSLM_type == self.TSLM_TYPES[6]:  # 'peak'
-            self.constrain((0, 2), 1)
-            self.constrain((1, 3), -1)
-        if TSLM_type == self.TSLM_TYPES[7]:  # 'step'
-            self.constrain((1, 1), 0)
-            self.constrain((3, 3), 0)
-
-        return self
-
     def digest(self):
         """
         Reruns a "snapshot" of the constraint matrix with the applied constrains
@@ -2001,9 +1977,9 @@ class ConstrainMatrix:
                 for i, c2 in enumerate(H.T):
                     c2_norm = np.linalg.norm(c2)
                     if c2_norm != 0.0:
-                        is_multiple = np.all(c1/c1_norm -c2/c2_norm == 0.0)
-                        is_multiple  = is_multiple or np.all(-c1/np.linalg.norm(-c1) -c2/c2_norm == 0.0)
-                        if is_multiple and i>j:
+                        is_multiple = np.all(c1 / c1_norm - c2 / c2_norm == 0.0)
+                        is_multiple = is_multiple or np.all(-c1 / np.linalg.norm(-c1) - c2 / c2_norm == 0.0)
+                        if is_multiple and i > j:
                             del_cols.append(i)
 
         # delete columns
@@ -2017,4 +1993,3 @@ class ConstrainMatrix:
         print(' ——' * self._N)
         for r, row in enumerate(self._data):
             print(row, ' | ', r)
-
