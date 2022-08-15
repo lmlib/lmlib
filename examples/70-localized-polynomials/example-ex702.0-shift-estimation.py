@@ -1,9 +1,11 @@
 """
 Audio Signal Shift Estimation [ex602.0]
 =======================================
-Example 2 published in [Wildhaber2020]_.
+Example 2 as published in [Wildhaber2020]_.
+Equation references in the code (such as e.g. # Eq. 6.52) refere to equations in [Wildhaber2019]_, .
 
-Top: two-channel acoustic signal from left (L, solid line) and right (R, dashed line) ear with interaural time delay. Bottom: sˆ shows the local time delay estimate of corresponding local polynomial fits, while s is the averaged version of sˆ using a rectangular window according to (42). The true delay (dashed black line), calculated according to head geometry and speed of sound for an azimuth of 45°, is approximately 0.52 ms.
+Top Plot: two-channel acoustic signal from left (L) and right (R) ear with an (unknown, to be estimated) interaural time delay. 
+Middle Plot: `s` show the local time delay estimate of corresponding local polynomial fits (local and averaged estimate), 
 """
 
 import numpy as np
@@ -137,30 +139,38 @@ for k0 in range(K):
 
 # -------- plot ------------
 
-ks = [747, 2997] # index of trajectories
+ks = [2997,] # index of trajectories
 trajs = lm.map_trajectories(cost.trajectories(xs[ks]), ks, K, True, True)
 
-fig, (ax1, ax11, ax2, ax3) = plt.subplots(4, sharex='all')
-ax1.plot(y[:, 0],c=(0.5, 0.5, 0.5), lw=1, label='channel 1')
-ax1.plot(y[:, 1],c=(0.1, 0.1, 0.1), lw=1, label='channel 2')
-ax1.plot(trajs, label='trajectories')
+fig, (ax1, ax2, ax3) = plt.subplots(3, sharex='all')
+ax1.plot(y[:, 0], '-', c=(0.3,)*3, lw=.8, label='L')
+ax1.plot(y[:, 1], '--', c=(0,)*3, lw=.8, label='R')
+ax1.plot(trajs[:, 0], c='b', label='L poly approx.')
+ax1.plot(trajs[:, 1], c='r', label='R poly approx.')
 ax1.legend(loc=1, fontsize=8)
+ax1.set(ylabel='input', xlabel='$k$')
 
-print(np.median(shifts_hat), np.median(shifts_hat)/fs)
-k_corr_ch1 = np.clip(np.arange(K)-int(np.median(shifts_hat)/2), 0, K-1)
-k_corr_ch2 = np.clip(np.arange(K)+int(np.median(shifts_hat)/2), 0, K-1)
-ax11.plot(y[k_corr_ch1, 0], c='b', ls='--',lw=1, label='shifted channel 1')
-ax11.plot(y[k_corr_ch2, 1], c='r', ls='--',lw=1, label='shifted channel 2')
-ax11.legend(loc=1, fontsize=8)
+ax1.set_title(f'L/R Audio Signal @ fs={fs} Hz')
 
-ax2.axhline(-true_shift, c='k', ls='--', lw=0.8, label='expected shift')
-ax2.plot(shifts_hat/fs, label=r'estimated shift $\hat{s}_k$')
-ax2.plot(shifts_hat_MA/fs, label=r'estimated shift $\bar{s}_k$')
+if False: # plotting of shift-corrected signals
+    print(np.median(shifts_hat), np.median(shifts_hat)/fs)
+    k_corr_ch1 = np.clip(np.arange(K)-int(np.median(shifts_hat)/2), 0, K-1)
+    k_corr_ch2 = np.clip(np.arange(K)+int(np.median(shifts_hat)/2), 0, K-1)
+    ax11.plot(y[k_corr_ch1, 0], c='b', ls='--',lw=1, label='# 1')
+    ax11.plot(y[k_corr_ch2, 1], c='r', ls='--',lw=1, label='# 2')
+    ax11.legend(loc=1, fontsize=8)
+
+ax2.axhline(-true_shift*1000, c='k', ls='--', lw=0.8, label='expected shift')
+ax2.plot(shifts_hat/fs*1000, c='gray', lw=0.5, label=r'shift est. $\hat{s}_k$')
+ax2.plot(shifts_hat_MA/fs*1000, c='k', lw=1.0, label=r'shift est. $\bar{s}_k$')
 ax2.legend(loc=1, fontsize=8)
+ax2.set(ylabel='shift est. [ms]')
+ax2.set_ylim(-0.7, 0.1)
 
 
-ax3.plot(Js, label=r'$J(\hat{s}_k)=$')
-ax3.plot(Js_MA, label=r'$J(\bar{s}_k)=$')
+ax3.plot(Js, c='gray', lw=0.5,  label=r'$J(\hat{s}_k)$')
+ax3.plot(Js_MA, c='blue', lw=0.75, label=r'$J(\bar{s}_k)$')
 ax3.legend(loc=1, fontsize=8)
-ax3.set_xlabel(f'k (fs:{fs})')
+ax3.set_xlabel(f'k')
+ax3.set(ylabel='SE fit error')
 plt.show()

@@ -609,7 +609,7 @@ class CostBase(ABC):
         `list of shape=(P) of tuples` :code:`(range, array)`
             Each element is a tuple with
 
-            * :code:`range` of length `JR`: relative index range of window with respect to semgent's boundaries.
+            * :code:`range` of length `JR`: relative index range of window with respect to segment's boundaries.
             * :code:`array` of shape=(JR) of floats: per-index window weight over the reported index range
 
 
