@@ -29,6 +29,7 @@ a = -150
 b = 150
 cost = lm.TSLM.create_cost(ab=(a, b), gs=(50, 50))
 rls = lm.RLSAlssm(cost)
+print(cost)
 
 fig, axs = plt.subplots( 4*M-1, sharex='all', figsize=(8, 14), gridspec_kw={'height_ratios': [2.0, 1, 1]+[0.8, 2.0, 1, 1]*(M-1)})
 fig.subplots_adjust(left=0.08, right=.98, top=.98, bottom=0.02)
@@ -49,31 +50,31 @@ for H0, H1, c0, name0, name1 in zip(H0s, H1s, colors0,  H0s_Labels, H1s_Labels):
 
     trajs_0 = lm.map_trajectories(cost.trajectories(xs_0[ks_max]), ks_max, K, True, True)
     trajs_1 = lm.map_trajectories(cost.trajectories(xs_1[ks_max]), ks_max, K, True, True)
- 
+
     # add spacer between subplots   
     if i>0:
         axs[iaxs].set_visible(False)
-        iaxs += 1 
-        
-    axs[iaxs].set_title(  "─ $H_0:$ "+name0 + '          ' + "-- $H_1:$ "+name1)    
-    axs[iaxs].plot(y, c=(0.5,)*3, lw=1.0, label='y')    
+        iaxs += 1
+
+    axs[iaxs].set_title(  "─ $H_0:$ "+name0 + '          ' + "-- $H_1:$ "+name1)
+    axs[iaxs].plot(y, c=(0.5,)*3, lw=1.0, label='y')
     axs[iaxs].plot(trajs_0, c=c0,  lw=2.0, label=r': $s_k(H_0 v_0)$')
     axs[iaxs].plot(trajs_1, c='k', ls='--', lw=1.00, label=r': $s_k(H_1 v_1)$')
     axs[iaxs].legend(loc=1, fontsize=7)
-    axs[iaxs].axvline(x=ks_max, ls='--', c='k', lw=0.5)    
+    axs[iaxs].axvline(x=ks_max, ls='--', c='k', lw=0.5)
     iaxs += 1
 
     axs[iaxs].plot(ks_range, J_0[ks_range], c=c0, ls='-', lw=1, label='$J(H_0 v_0)$')
     axs[iaxs].plot(ks_range, J_1[ks_range], c='k', ls='--', lw=1, label='$J(H_1 v_1)$')
-    axs[iaxs].axvline(x=ks_max, ls='--', c='k', lw=0.5)    
+    axs[iaxs].axvline(x=ks_max, ls='--', c='k', lw=0.5)
     axs[iaxs].legend(loc=1, fontsize=7)
     iaxs += 1
-    
+
     axs[iaxs].plot(ks_range, LCR[ks_range], c=c0, ls='-', lw=1.5, label= 'LCR')
     axs[iaxs].legend(loc=1, fontsize=7)
-    axs[iaxs].axvline(x=ks_max, ls='--', c='k', lw=0.5)    
+    axs[iaxs].axvline(x=ks_max, ls='--', c='k', lw=0.5)
 #    axs[3+3*i].set_xlabel('k')
-    iaxs += 1 
-    i+=1       
+    iaxs += 1
+    i+=1
 
 plt.show()

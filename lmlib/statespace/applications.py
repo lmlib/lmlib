@@ -14,7 +14,15 @@ class TSLM(ABC):
     Full implementation of the Two-Sided Line Model (TSLM) as published in "Onset Detection of Pulse-Shaped Bioelectrical Signals Using Linear State Space Models" [Waldmann2022]_.
     
     Comprehensive examples on how to apply TSLMs are provided at :ref:`Onset and Peak Detection With Two-Sided Line Models (TSLMs) <onset>`.
-    
+
+    .. image:: /static/images/api/tslm_fig1.png
+      :width: 400
+      :alt: TSLM Fig. 1 [Waldmann2022]_
+
+    .. image:: /static/images/api/tslm_tab2.png
+      :width: 400
+      :alt: TSLM Tab. 2 [Waldmann2022]_
+
     """
 
     H_Free = np.array([[1, 0, 0, 0],  # x_A,left : offset of left line
@@ -117,9 +125,12 @@ class TSLM(ABC):
         --------
         >>> ccost = lm.TSLM.create_cost( ab=(-15, 30), gs=(50, 50) )
         >>> print(ccost)
-        (To be done - not yet working)
+        CompositeCost(label=TSLM)
+        └- ['AlssmPoly(A=[[1,1],[0,1]], C=[1,0], label=left line model)', 'AlssmPoly(A=[[1,1],[0,1]], C=[1,0], label=right line model)'],
+        └- ['Segment(a=-15, b=-1, direction=fw, g=50, delta=0, label=left segment)', 'Segment(a=0, b=30, direction=bw, g=50, delta=0, label=right segment)']
         
         """
-        return CompositeCost([AlssmPoly(1), AlssmPoly(1)],
-                             [Segment(ab[0], -1, 'fw', gs[0]), Segment(0, ab[1], 'bw', gs[1])],
-                             np.eye(2))
+        return CompositeCost([AlssmPoly(1, label='left line model'), AlssmPoly(1, label='right line model')],
+                             [Segment(ab[0], -1, 'fw', gs[0], label='left segment'),
+                              Segment(0, ab[1], 'bw', gs[1], label='right segment')],
+                             np.eye(2), label='TSLM')
