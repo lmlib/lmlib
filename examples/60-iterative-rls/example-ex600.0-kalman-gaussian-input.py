@@ -7,7 +7,7 @@ Kalman Smoother with Gaussian Input [ex600.0]
 
     .. container:: col-fig
        
-       .. image:: ./do-not-remove/../../../../../_static/gallery/example-ex500.0-kalman-gaussian-input.png   
+       .. image:: ./do-not-remove/../../../../../_static/gallery/example-ex600.0-kalman-gaussian-input.png   
           :width: 400
 
 
