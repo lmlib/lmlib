@@ -476,7 +476,7 @@ def k_period_to_omega(k_period):
     return 2 * np.pi / k_period
 
 
-def load_csv(file, K=-1, k_start=0, channel=0, **kwargs):
+def load_csv(file, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
     """
     loads csv data as a single-channel data shape
 
@@ -493,6 +493,8 @@ def load_csv(file, K=-1, k_start=0, channel=0, **kwargs):
     channel : int, optional
         load column of csv with the index specified by `channel
         default is 0 and loads the first column
+    ds_rate : int
+        down-sample rate (ds_rate >= 1)
     kwargs : optional
         keyword arguments passed to `numpy.genfromtxt`
         to exclude header add `skip_header=numbers_of_header_lines`
@@ -502,9 +504,9 @@ def load_csv(file, K=-1, k_start=0, channel=0, **kwargs):
     y : np.ndarray
         1 dimensional array of containing signal values over time
     """
-    return load_csv_mc(file, K, k_start, (channel,), **kwargs)
+    return load_csv_mc(file, K, k_start, (channel,), ds_rate, **kwargs)
 
-def load_csv_mc(file, K=-1, k_start=0, channels=None, **kwargs):
+def load_csv_mc(file, K=-1, k_start=0, channels=None, ds_rate=1, **kwargs):
     """
     loads csv data as a multi-channel data shape
 
@@ -521,6 +523,8 @@ def load_csv_mc(file, K=-1, k_start=0, channels=None, **kwargs):
     channels : list, None, optional
         load columns of csv with the index specified in `channels`
         default is None and loads all channels
+    ds_rate : int
+        down-sample rate (ds_rate >= 1)
     kwargs : optional
         keyword arguments passed to `numpy.genfromtxt`
         to exclude header add `skip_header=numbers_of_header_lines`
@@ -530,11 +534,12 @@ def load_csv_mc(file, K=-1, k_start=0, channels=None, **kwargs):
     y : np.ndarray
         2 dimensional array, first is time dimensions, second, channels dimension
     """
+    assert ds_rate >= 1, "ds_rate : down-sample rate has to larger equal 1"
     max_rows = None if K==-1 else K+k_start
-    y = np.genfromtxt(fname=file, delimiter=',', usecols=channels, max_rows=max_rows, **kwargs)[k_start::]
+    y = np.genfromtxt(fname=file, delimiter=',', usecols=channels, max_rows=max_rows, **kwargs)[k_start::ds_rate]
     return y
 
-def load_lib_csv(filename, K=-1, k_start=0, channel=0, **kwargs):
+def load_lib_csv(filename, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
     """
     loads a library-internal csv data file from the signal catalog as a single-channel data shape
 
@@ -552,6 +557,8 @@ def load_lib_csv(filename, K=-1, k_start=0, channel=0, **kwargs):
     channel : int, optional
         load column of csv with the index specified by `channel
         default is 0 and loads the first column
+    ds_rate : int
+        down-sample rate (ds_rate >= 1)
     kwargs : optional
         keyword arguments passed to `numpy.genfromtxt`
         to exclude header add `skip_header=numbers_of_header_lines`
@@ -561,9 +568,9 @@ def load_lib_csv(filename, K=-1, k_start=0, channel=0, **kwargs):
     y : np.ndarray
         1 dimensional array of containing signal values over time
     """
-    return load_csv(data_path+filename, K, k_start, channel, **kwargs)
+    return load_csv(data_path+filename, K, k_start, channel, ds_rate, **kwargs)
 
-def load_lib_csv_mc(filename, K=-1, k_start=0, channels=None, **kwargs):
+def load_lib_csv_mc(filename, K=-1, k_start=0, channels=None, ds_rate=1, **kwargs):
     """
     loads a library-internal csv data file from the signal catalog as a multi-channel data shape
 
@@ -581,6 +588,8 @@ def load_lib_csv_mc(filename, K=-1, k_start=0, channels=None, **kwargs):
     channels : list, None, optional
         load columns of csv with the index specified in `channels`
         default is None and loads all channels
+    ds_rate : int
+        down-sample rate (ds_rate >= 1)
     kwargs : optional
         keyword arguments passed to `numpy.genfromtxt`
         to exclude header add `skip_header=numbers_of_header_lines`
@@ -590,4 +599,4 @@ def load_lib_csv_mc(filename, K=-1, k_start=0, channels=None, **kwargs):
     y : np.ndarray
         2 dimensional array, first is time dimensions, second, channels dimension
     """
-    return load_csv_mc(data_path+filename, K, k_start, channels, **kwargs)
+    return load_csv_mc(data_path+filename, K, k_start, channels, ds_rate, **kwargs)
