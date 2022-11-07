@@ -22,7 +22,7 @@ copyright = '2022, lmlib'
 author = 'Reto Wildhaber, Frédéric Waldmann'
 
 # The full version, including alpha/beta/rc tags
-release = '2.0 CFR 1'
+release = '2.1.1 CFR 1'
 
 # -- General configuration ---------------------------------------------------
 
