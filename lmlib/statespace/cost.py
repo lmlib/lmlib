@@ -1200,12 +1200,12 @@ class RLSAlssm(RLSAlssmBase):
 
         # check and init H
         H = np.eye(N) if H is None else np.asarray(H)
-        assert H.shape[0] == N, ""
+        assert H.shape[0] == N, f"first dimension of constrain matrix H needs to be of size {N} (model order), found size {H.shape[0]}"
         M = H.shape[1]
 
         # check and init h
         h = np.zeros(N) if h is None else np.asarray(h)
-        assert h.shape == (N,), ""
+        assert h.shape == (N,), f"offset vector h needs to be of shape ({N},) (model order), {info_str_found_shape(h)}"
 
         # allocate v and minimize
         v = np.full((len(self.W), M), np.nan)
@@ -1440,7 +1440,7 @@ class RLSAlssmSet(RLSAlssmBase):
 
         # check and init H
         H = np.eye(N) if H is None else np.asarray(H)
-        assert H.shape[0] == N, ""
+        assert H.shape[0] == N, f"first dimension of constrain matrix H needs to be of size {N} (model order), found size {H.shape[0]}"
         M = H.shape[1]
 
         # check and init h
@@ -1451,7 +1451,8 @@ class RLSAlssmSet(RLSAlssmBase):
                 h = np.repeat(h, S, axis=1)
             else:
                 h = np.asarray(h)
-        assert h.shape == (N, S), ""
+        assert h.shape == (N, S), f"offset vector h needs to be of shape ({N}, {S}) (model order,  multi-channel set size), {info_str_found_shape(h)}"
+
 
         # allocate v and minimize
         v = np.full((len(self.W), M, S), np.nan)
