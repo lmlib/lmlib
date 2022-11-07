@@ -7,8 +7,8 @@ exponentially decaying window.
 
 See also:
 :ref:`Cost Function Classes <classes_costfunctions>`,
-:class:`~lmlib.statespace.costfunc.CostSegment`,
-:class:`~lmlib.statespace.costfunc.Segment`
+:class:`~lmlib.statespace.cost.CostSegment`,
+:class:`~lmlib.statespace.cost.Segment`
 """
 import matplotlib.pyplot as plt
 import numpy as np
