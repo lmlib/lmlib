@@ -1177,9 +1177,9 @@ class RLSAlssm(RLSAlssmBase):
 
         Parameters
         ----------
-        constraint_matrix : array_like, shape=(N, M)
+        H : array_like, shape=(N, M)
             Matrix for linear constraining :math:`H`
-        offset_vector : array_like, shape=(N, [S]), optional
+        h : array_like, shape=(N, [S]), optional
             Offset vector for linear constraining :math:`h`
         return_constrains : bool
             If set to True, the output is extened by H and h
@@ -1437,9 +1437,9 @@ class RLSAlssmSet(RLSAlssmBase):
 
         Parameters
         ----------
-        constraint_matrix : array_like, shape=(N, M)
+        H : array_like, shape=(N, M)
             Matrix for linear constraining :math:`H`
-        offset_vector : array_like, shape=(N, [S]), optional
+        h : array_like, shape=(N, [S]), optional
             Offset vector for linear constraining :math:`h`
         broadcast_h : bool
             if True each channel has the same h vectore else h needs same shape as `x`.
