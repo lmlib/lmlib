@@ -1286,6 +1286,29 @@ class RLSAlssm(RLSAlssmBase):
         self.filter(y, v)
         return self.minimize_x(H, h)
 
+
+    def filter_minimize_v(self, y, v=None, H=None, h=None):
+        """
+        Combination of :meth:`RLSAlssm.filter` and :meth:`RLSAlssm.minimize_v`.
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            rls.filter(y)
+            xs = rls.minimize_v()
+
+
+        See Also
+        --------
+        :meth:`RLSAlssm.filter`, :meth:`RLSAlssm.minimize_v`
+
+        """
+
+        self.filter(y, v)
+        return self.minimize_v(H, h)
+
+
     def eval_errors(self, xs, ks=None):
         r"""
         Evaluation of the squared error for multiple state vectors `xs`.
@@ -1534,6 +1557,27 @@ class RLSAlssmSet(RLSAlssmBase):
         self.filter(y, v)
         return self.minimize_x(H, h, **kwargs)
 
+    def filter_minimize_v(self, y, v=None, H=None, h=None, **kwargs):
+        """
+        Combination of :meth:`RLSAlssmSet.filter` and :meth:`RLSAlssmSet.minimize_v`.
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            rls.filter(y)
+            xs = rls.minimize_v()
+
+
+        See Also
+        --------
+        :meth:`RLSAlssmSet.filter`, :meth:`RLSAlssmSet.minimize_v`
+
+        """
+
+        self.filter(y, v)
+        return self.minimize_v(H, h, **kwargs)
+
     def eval_errors(self, xs, ks=None):
         r"""
         Evaluation of the squared error for multiple state vectors `xs`.
@@ -1693,6 +1737,27 @@ class RLSAlssmSteadyState(RLSAlssmBase):
         self.filter(y, v)
         return self.minimize_x(H, h)
 
+    def filter_minimize_v(self, y, v=None, H=None, h=None):
+        """
+        Combination of :meth:`RLSAlssmSteadyState.filter` and :meth:`RLSAlssmSteadyState.minimize_v`.
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            rls.filter(y)
+            xs = rls.minimize_v()
+
+
+        See Also
+        --------
+        :meth:`RLSAlssmSteadyState.filter`, :meth:`RLSAlssmSteadyState.minimize_v`
+
+        """
+
+        self.filter(y, v)
+        return self.minimize_v(H, h)
+
     def eval_errors(self, xs, ks=None):
         r"""
         Evaluation of the squared error for multiple state vectors `xs`.
@@ -1837,6 +1902,27 @@ class RLSAlssmSetSteadyState(RLSAlssmBase):
         """
         self.filter(y, v)
         return self.minimize_x(H, h, **kwargs)
+
+    def filter_minimize_v(self, y, v=None, H=None, h=None, **kwargs):
+        """
+        Combination of :meth:`RLSAlssmSetSteadyState.filter` and :meth:`RLSAlssmSetSteadyState.minimize_v`.
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            rls.filter(y)
+            xs = rls.minimize_v()
+
+
+        See Also
+        --------
+        :meth:`RLSAlssmSetSteadyState.filter`, :meth:`RLSAlssmSetSteadyState.minimize_v`
+
+        """
+
+        self.filter(y, v)
+        return self.minimize_v(H, h, **kwargs)
 
     def eval_errors(self, xs, ks=None):
         r"""
