@@ -4,6 +4,7 @@ import warnings
 import numpy as np
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+import warnings
 
 from lmlib.statespace.model import ModelBase, AlssmStackedSO
 from lmlib.statespace.recursion import *
@@ -277,7 +278,7 @@ class Segment:
         Left boundary of the segment's interval
     b : int, np.inf
         Right boundary of the segment's interval
-    g : int, float
+    g : int, float, None
         :math:`g > 0`. Effective number of samples under the window. This is used as a (more readable) surrogate for the
         window decay of exponential windows, see [Wildhaber2018]_. |br|
         :math:`g` is counted to the left or right of :math:`k+ \delta`, for for forward or backward computation
@@ -288,6 +289,11 @@ class Segment:
         :data:`statespace.BACKWARD` or `'bw'` use backward computation with backward recursions
     delta : int, optional
         Exponential window is normalized to 1 at relative index :code:`delta`.
+    gamma : float, int
+        Window Constant Decay, (Alternative for `g`. If gamma is set `g` has to be None)
+        `gamma` is to choose dependent of the direction (forward, backward). Forward directions with `gamma <= 1` will
+        raise a warning for possible instability, backwards directions with `gamma >= 1`.
+        See [Wildhaber2018]_ Table IV
     label : str, None, optional
         Segment label, useful for debugging in more complex systems (default: label = None)
 
@@ -311,16 +317,25 @@ class Segment:
 
     """
 
-    def __init__(self, a, b, direction, g, delta=0, label=None):
+    def __init__(self, a, b, direction, g, delta=0, label=None, gamma=None):
         self._a = None
         self._b = None
         self.set_boundaries(a, b)
         self.direction = direction
-        self.g = g
-        if self.direction == FW:
-            self.gamma = self.g / (self.g - 1)
+        if gamma is not None:
+            assert g is None, "g is not None. If gamma is set, g has to be None."
+            self._g = None
+            self.gamma = gamma
+            if self.direction == FW and self.gamma <= 1:
+                warnings.warn('gamma <= 1 in forward direction can result into instability')
+            if self.direction == BW and self.gamma >= 1:
+                warnings.warn('gamma >= 1 in backward direction can result into instability')
         else:
-            self.gamma = (self.g - 1) / self.g
+            self.g = g
+            if self.direction == FW:
+                self.gamma = self.g / (self.g - 1)
+            else:
+                self.gamma = (self.g - 1) / self.g
         self.delta = delta
         self.label = 'n/a' if label is None else label
 
@@ -345,7 +360,7 @@ class Segment:
 
     @property
     def g(self):
-        """int, float : Effective number of samples :math:`g`, setting the window with
+        """int, float, None : Effective number of samples :math:`g`, setting the window with
 
         The effective number of samples :math:`g` is used to derive
         and set the window decay factor :math:`\\gamma` internally.
@@ -458,11 +473,17 @@ class Segment:
         """
 
         if self.direction == FW:
-            a_lim = max(np.log(thd) / np.log(self.gamma) - 1 + self.delta, self.a)
+            if self.gamma > 1:
+                a_lim = max(np.log(thd) / np.log(self.gamma) - 1 + self.delta, self.a)
+            else:
+                a_lim = max(np.log(thd) / np.log(1/self.gamma) - 1 + self.delta, self.a)
             b_lim = self.b
         else:  # self.direction == BW:
             a_lim = self.a
-            b_lim = min(np.log(thd) / np.log(self.gamma) + 1 + self.delta, self.b)
+            if self.gamma < 1:
+                b_lim = min(np.log(thd) / np.log(self.gamma) + 1 + self.delta, self.b)
+            else:
+                b_lim = min(np.log(thd) / np.log(1/self.gamma) + 1 + self.delta, self.b)
         ab_range = range(int(a_lim), int(b_lim) + 1)
         return ab_range, self.gamma ** (np.array(ab_range) - self.delta)
 
