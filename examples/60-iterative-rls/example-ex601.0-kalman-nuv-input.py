@@ -157,7 +157,7 @@ for ii in range(0,I_MAX):
        G = np.linalg.inv(VB_Y_[k] + C@VF_AX_[k]@CT)  #  V.3
        mF_X[k] = mF_AX_[k]+VF_AX_[k]@CT@G@(mB_Y_[k] - C@mF_AX_[k]) #  V.1
        VF_X[k] = VF_AX_[k]-VF_AX_[k]@CT@G@C@VF_AX_[k] #  V.2
-
+       
 
     # 2) Backward
     for k in range(K-1,0,-1):
@@ -168,6 +168,7 @@ for ii in range(0,I_MAX):
         # ---
         F = np.eye(SZ_C[1])-VF_X[k]@CT@W_Y_@C #  V.8
         FT = F.transpose()
+        
 
         # "AX_ = X = Y"
         # --- Option 1
@@ -178,16 +179,16 @@ for ii in range(0,I_MAX):
         # XI_AX_[k] = FT@XI_X[k]+CT@G@(C@mF_AX_[k]-mB_y_)  #  V.5
         # W_AX_[k] = FT@W_X[k]@F+CT@G@C  #  V.7
         # ---
+    
 
         # "AX + BU = AX_"
         XI_X[k-1] = AT@XI_AX_[k] #  II.6, III.7
         W_X[k-1] = AT@W_AX_[k]@A #  II.7, III.8
 
         # 3) Input U_k estimate (not needed for Kalman smoothing with Gaussian inputs)
-        # XI_U[k] = BT @ XI_X[k]   # II.6, III.7  --> wrong xi and W_tilde, we need the ones at the plus node
-        # W_U[k] = BT @ W_X[k] @ B # II.7, III.8
         XI_U[k] = BT @ XI_AX_[k]   # II.6, III.7
         W_U[k] = BT @ W_AX_[k] @ B # II.7, III.8
+        
 
 
     # 4) Posterior Mean (marginals)
@@ -207,14 +208,15 @@ for ii in range(0,I_MAX):
         # 2)  vanilla NUV prior using AM
         VF_U[k] = m_U[k]**2   # Update sigmaU_k according to Eq. (13)
 
-        # 3)  box prior to constraint m_U[k] \in [a, b]
-        # a = -0.007  # lower bound
-        # b = 0.004  # upper bound 
-        # gamma = 100  # design param, make this smaller and observe how the constraint will fail
-        # eps = 1e-6  # to avoid numerical issues
-        # VF_U[k] = 1 / (gamma * ( 1/(eps + np.abs(m_U[k] - a)) + 1/(eps + np.abs(m_U[k] - b)) ) )   # According to Table 7.1, diss keusch
-        # mF_U[k] = gamma * VF_U[k] * ( a/(eps + np.abs(m_U[k] - a)) + b/(eps + np.abs(m_U[k] - b)))
-
+       if (False):
+           # 3)  box prior to constraint m_U[k] \in [a, b]
+           a = -0.007  # lower bound
+           b = 0.004  # upper bound 
+           gamma = 100  # design param, make this smaller and observe how the constraint will fail
+           eps = 1e-6  # to avoid numerical issues
+           VF_U[k] = 1 / (gamma * ( 1/(eps + np.abs(m_U[k] - a)) + 1/(eps + np.abs(m_U[k] - b)) ) )   # According to Table 7.1, diss keusch
+           mF_U[k] = gamma * VF_U[k] * ( a/(eps + np.abs(m_U[k] - a)) + b/(eps + np.abs(m_U[k] - b)))
+        
 
 
 ## -- Plotting ---
