@@ -1111,10 +1111,53 @@ class RLSAlssmBase(ABC):
             else:
                 ValueError('segment.direction has wrong value.')
 
+    @abstractmethod
+    def eval_errors(self, xs, ks=None):
+        """Abstract method"""
+        pass
+
+    def eval_observation_energy(self, ks=None):
+        """
+        Evaluates the observation energy :math:`kappa_k`
+
+        Parameters
+        ----------
+        ks : None, array_like of int of shape=(XS,)
+            List of indices where to evaluate the observation energy
+
+        Returns
+        -------
+        out : :class:`np.ndarray`
+            Observation energy for each state vector. Return shape is (K,)
+            If `ks` is not None return shape is (XS,)
+            
+        """
+        return self.kappa if ks is None else self.kappa[ks]
+
+    def eval_model_energy(self, xs, ks=None):
+        r"""
+        Evaluates the model energy :math:`x^{\mathsf{T}}W_k x -2x^{\mathsf{T}}\xi_k`
+
+        Parameters
+        ----------
+        xs : array_like of shape=(K, N, [S])
+            List of state vectors :math:`x`
+        ks : None, array_like of int of shape=(XS,)
+            List of indices where to evaluate the model energy
+
+        Returns
+        -------
+        out : :class:`np.ndarray`
+            Model energy for each state vector. Return shape is (K,[S])
+            If `ks` is not None return shape is (XS,)
+
+
+        """
+        return self.eval_errors(xs, ks)-self.eval_observation_energy(ks)
 
 class RLSAlssm(RLSAlssmBase):
     """
-    Filter and Data container for Recursive Least Sqaure Alssm Filters
+    Filter and Data container for Recursive Least Square Alssm Filters
 
     :class:`RLSAlssm` computes and stores intermediate values such as covariances,
     as required to efficiently solve recursive least squares problems
@@ -1351,8 +1394,9 @@ class RLSAlssm(RLSAlssmBase):
 
         Returns
         -------
-        J : :class:`np.ndarray` of shape=(XS,)
-            Squared Error for each state vector
+        J : :class:`np.ndarray`
+            Squared Error for each state vector. Return shape is (K,)
+            If `ks` is not None return shape is (XS,)
 
 
         |def_K|

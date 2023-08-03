@@ -42,18 +42,18 @@ segment_right = lm.Segment(a=len_sp+1, b=len_sp+1+len_bl, direction=lm.BACKWARD,
 # Cost
 F = [[0, 1, 0],
      [1, 1, 1]]
-ccost = lm.CompositeCost((alssm_sp, alssm_bl), (segment_left, segment_middle, segment_right), F)
+cost = lm.CompositeCost((alssm_sp, alssm_bl), (segment_left, segment_middle, segment_right), F)
 
-se_param = lm.RLSAlssmSet(ccost)
-se_param.filter(y)
+rls = lm.RLSAlssmSet(cost)
+rls.filter(y)
 H_sp = block_diag([[0], [1]], np.eye(alssm_bl.N))
-xs_sp = se_param.minimize_x(H_sp)
+xs_sp = rls.minimize_x(H_sp)
 H_bl = np.vstack([np.zeros((alssm_sp.N, alssm_bl.N)), np.eye(alssm_bl.N)])
-xs_bl = se_param.minimize_x(H_bl)
+xs_bl = rls.minimize_x(H_bl)
 
 # Error
-J = se_param.eval_errors(xs_sp)
-J_bl = se_param.eval_errors(xs_bl)
+J = rls.eval_errors(xs_sp)
+J_bl = rls.eval_errors(xs_bl)
 J_sum = np.sum(J, axis=-1)
 J_bl_sum = np.sum(J_bl, axis=-1)
 
@@ -65,12 +65,12 @@ peaks, _ = find_peaks(lcr, height=0.041, distance=30)
 fig, axs = plt.subplots(5, 1, figsize=(9, 8), gridspec_kw={'height_ratios': [1, 1, 3, 1, 1]}, sharex='all')
 
 # Window
-wins = lm.map_windows(ccost.windows(segment_indices=[0,1,2]), peaks, K, merge_ks=True)
+wins = lm.map_windows(cost.windows(segment_indices=[0,1,2]), peaks, K, merge_ks=True)
 
 # Trajectories
-trajs_baseline = lm.map_trajectories(ccost.trajectories(xs_sp[peaks], F=[[0, 0, 0], [1, 1, 1]], thd=0.01), peaks, K,
+trajs_baseline = lm.map_trajectories(cost.trajectories(xs_sp[peaks], F=[[0, 0, 0], [1, 1, 1]], thd=0.01), peaks, K,
                                      merge_ks=True, merge_seg=True)
-trajs_pulse = lm.map_trajectories(ccost.trajectories(xs_sp[peaks], F=[[0, 1, 0], [1, 1, 1]], thd=0.01), peaks, K,
+trajs_pulse = lm.map_trajectories(cost.trajectories(xs_sp[peaks], F=[[0, 1, 0], [1, 1, 1]], thd=0.01), peaks, K,
                                   merge_ks=True, merge_seg=True)
 
 axs[0].set(ylabel='$w_k$')
