@@ -11,6 +11,7 @@ Packages & Modules
 
    api/lmlib.statespace 
    api/lmlib.polynomial
+   api/lmlib.irrls 
    api/lmlib.utils 
   
 
@@ -24,6 +25,7 @@ Modules Attributes
 
    api/lmlib.statespace 
    api/lmlib.polynomial
+   api/lmlib.irrls    
    api/lmlib.utils 
 
 

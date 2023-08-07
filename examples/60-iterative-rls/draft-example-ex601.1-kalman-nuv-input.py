@@ -147,7 +147,7 @@ class Box:
 
 
 
-class Box_Lin_Transition(Box):
+class Node_Linear_Transition(Box):
 
 # linear transition block as e.g. block A in Fig. 2
 
@@ -349,7 +349,7 @@ for ii in range(0,I_MAX):
     # 2) Backward
     for k in range(K-1,0,-1):
         dXW_AX_[k] = box_Y.bw_get_in1_dXW( dXW_X[k], fMV_X[k], y[k], C, sigmaZ2)
-        # dXW_AX_[k] = box_Y.bw_get_in1_dXW_opt2( dXW_X[k], fMV_X[k], y[k], C, sigmaZ2)
+        # dXW_AX_[k] = box_Y.bw_get_in1_dXW_opt2( dXW_X[k], fMV_X[k], y[k], C, sigmaZ2) # Alternative implementation
         dXW_AXk = box_BNUV.bw_get_in1_dXW( dXW_AX_[k] ) # dummy, nothing to do ...            
         dXW_X[k-1] = box_A.bw_get_in1_dXW( dXW_AXk , A)            
         

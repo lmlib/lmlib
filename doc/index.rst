@@ -25,6 +25,7 @@
    This library implements Recurisve Least Squares (RLS) algorithms with 
    
    * **Windowed Linear State-Space Models**  (Package :ref:`lmlib.statespace`)
+   * **Interatively Reweighted Least Squares** (Package :ref:`lmlib.irrls`) 
    * **Continuous-Time Polynomial Signal Models** (Package :ref:`lmlib.polynomial`) 
  
    |

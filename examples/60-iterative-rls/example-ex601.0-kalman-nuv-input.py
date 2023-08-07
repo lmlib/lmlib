@@ -208,7 +208,7 @@ for ii in range(0,I_MAX):
         # 2)  vanilla NUV prior using AM
         VF_U[k] = m_U[k]**2   # Update sigmaU_k according to Eq. (13)
 
-       if (False):
+        if (False):
            # 3)  box prior to constraint m_U[k] \in [a, b]
            a = -0.007  # lower bound
            b = 0.004  # upper bound 

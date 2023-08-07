@@ -42,6 +42,7 @@ extensions = ['sphinx.ext.autodoc',
 
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # autoclass_content = 'class'
+# autoclass_content = 'both' # to show constructors
 # add_module_names = False  # hides the module path to the class in the class title
 # napoleon_use_rtype = False  # includes the return type into the return variable description
 # napoleon_use_admonition_for_examples = False
@@ -73,6 +74,7 @@ sphinx_gallery_conf = {
                                         '../examples/20-polynomials-basics',
                                         '../examples/50-convolution',
                                         '../examples/21-polynomials-calculus',
+                                        '../examples/70-localized-polynomials',
                                         '../examples/60-iterative-rls',
                                         # '../examples/30-utils',
                                         '../coding/10-windowed-state-space-filters-basic',
