@@ -357,6 +357,8 @@ class ModelBase(ABC):
     def _init_state_var_labels(self):
         for n in range(self.N):
             self._state_var_labels['x' + str(n)] = (n,)
+        for n in range(self.N, 0, -1):
+            self._state_var_labels['x-' + str(n)] = (-n,)
         self._state_var_labels['x'] = list(range(self.N))
 
     def _rec_tree(self, level):
@@ -370,7 +372,7 @@ class ModelBase(ABC):
 
     def get_state_var_labels(self):
         """
-        Retruns a list of state variable labels
+        Returns a list of state variable labels
 
         Returns
         -------
