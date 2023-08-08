@@ -965,7 +965,6 @@ class RLSAlssmBase(ABC):
     """
     Base Class for Recursive Least Square Alssm Classes
 
-
     Parameters
     ----------
     betas : array_like of shape=(P,) of floats, None, optional
@@ -1027,6 +1026,35 @@ class RLSAlssmBase(ABC):
         """:class:`~numpy.ndarray`  : Filter Parameter :math:`\\nu`"""
         return self._nu
 
+    def _check_output_dimensions(self, y):
+        C = AlssmStackedSO(self.cost_model.alssms).C
+
+        is_multichannel = np.ndim(C) == 2
+        is_multiset = isinstance(self, (RLSAlssmSet, RLSAlssmSetSteadyState))
+
+        if is_multichannel:
+            if is_multiset:
+                assert np.ndim(y) == 3 and np.shape(C)[0] == np.shape(y)[1], \
+                    'Model output and observation shape does not match. ' \
+                    'Multi-channel and -set systems expect shapes: ' \
+                    'C shape (L, N) and y shape (K, L, S)'
+            else:
+                assert np.ndim(y) == 2 and np.shape(C)[0] == np.shape(y)[1], \
+                    'Model output and observation shape does not match. ' \
+                    'Multi-channel system expect shapes: ' \
+                    'C shape (L, N) and y shape (K, L)'
+        else:
+            if is_multiset:
+                assert np.ndim(y) == 2, \
+                    'Model output and observation shape does not match. ' \
+                    'Multi-set systems expect shapes: ' \
+                    'C shape (N,) and y shape (K, S)'
+            else:
+                assert np.ndim(y) == 1, \
+                    'Model output and observation shape does not match. ' \
+                    'Scalar systems (non multi-channel/set) expect shapes:' \
+                    'C shape (N,) and y shape (K,)'
+
     @abstractmethod
     def _allocate_parameter_storage(self, input_shape):
         pass
@@ -1084,6 +1112,7 @@ class RLSAlssmBase(ABC):
 
         """
 
+        self._check_output_dimensions(y)
         self._allocate_parameter_storage(np.shape(y))
 
         segments = self.cost_model.segments
