@@ -1116,9 +1116,12 @@ class RLSAlssmBase(ABC):
         """Abstract method"""
         pass
 
-    def eval_observation_energy(self, ks=None):
+    def eval_model_energies(self, xs, ks=None):
+        """Abstract Method"""
+
+    def eval_observation_energies(self, ks=None):
         """
-        Evaluates the observation energy :math:`kappa_k`
+        Evaluates the observation energies :math:`kappa_k`
 
         Parameters
         ----------
@@ -1134,26 +1137,7 @@ class RLSAlssmBase(ABC):
         """
         return self.kappa if ks is None else self.kappa[ks]
 
-    def eval_model_energy(self, xs, ks=None):
-        r"""
-        Evaluates the model energy :math:`x^{\mathsf{T}}W_k x -2x^{\mathsf{T}}\xi_k`
 
-        Parameters
-        ----------
-        xs : array_like of shape=(K, N, [S])
-            List of state vectors :math:`x`
-        ks : None, array_like of int of shape=(XS,)
-            List of indices where to evaluate the model energy
-
-        Returns
-        -------
-        out : :class:`np.ndarray`
-            Model energy for each state vector. Return shape is (K,[S])
-            If `ks` is not None return shape is (XS,)
-
-
-        """
-        return self.eval_errors(xs, ks)-self.eval_observation_energy(ks)
 
 class RLSAlssm(RLSAlssmBase):
     """
@@ -1413,6 +1397,33 @@ class RLSAlssm(RLSAlssmBase):
                     - 2 * np.einsum('kn, kn->k', self.xi[ks], xs[ks])
                     + self.kappa[ks])
 
+
+    def eval_model_energies(self, xs, ks=None):
+        r"""
+        Evaluates the model energies :math:`x_k^{\mathsf{T}}W_k x_k`
+
+        Parameters
+        ----------
+        xs : array_like of shape=(K, N, [S])
+            List of state vectors :math:`x`
+        ks : None, array_like of int of shape=(XS,)
+            List of indices where to evaluate the model energy
+
+        Returns
+        -------
+        out : :class:`np.ndarray`
+            Model energy for each state vector. Return shape is (K,[S])
+            If `ks` is not None return shape is (XS,)
+
+        |def_K|
+        |def_XS|
+        |def_N|
+
+        """
+        if ks is None:
+            return np.einsum('kn, kn->k', xs, np.einsum('knm, km->kn', self.W, xs))
+        else:
+            return np.einsum('kn, kn->k', xs[ks], np.einsum('knm, km->kn', self.W[ks], xs[ks]))
 
 class RLSAlssmSet(RLSAlssmBase):
     """
@@ -1693,6 +1704,39 @@ class RLSAlssmSet(RLSAlssmBase):
                         + self.kappa[ks])
 
 
+    def eval_model_energies(self, xs, ks=None):
+        r"""
+        Evaluates the model energies :math:`x_k^{\mathsf{T}}W_k x_k`
+
+        Parameters
+        ----------
+        xs : array_like of shape=(K, N, [S])
+            List of state vectors :math:`x`
+        ks : None, array_like of int of shape=(XS,)
+            List of indices where to evaluate the model energy
+
+        Returns
+        -------
+        out : :class:`np.ndarray`
+            Model energy for each state vector. Return shape is (K,[S])
+            If `ks` is not None return shape is (XS,)
+
+        |def_K|
+        |def_XS|
+        |def_N|
+
+        """
+        if ks is None:
+            if self._kappa_diag:
+                return np.einsum('kns, kns->ks', xs, np.einsum('knm, kmt->knt', self.W, xs))
+            else:
+                return np.einsum('kns, knt->kst', xs, np.einsum('knm, kmt->knt', self.W, xs))
+        else:
+            if self._kappa_diag:
+                return np.einsum('kns, kns->ks', xs[ks], np.einsum('knm, kmt->knt', self.W[ks], xs[ks]))
+            else:
+                return np.einsum('kns, knt->kst', xs[ks], np.einsum('knm, kmt->knt', self.W[ks], xs[ks]))
+
 class RLSAlssmSteadyState(RLSAlssmBase):
     """
     Filter and Data container for Recursive Least Sqaure Alssm Filters in Steady State Mode
@@ -1841,6 +1885,32 @@ class RLSAlssmSteadyState(RLSAlssmBase):
                     - 2 * np.einsum('kn, kn->k', self.xi[ks], xs[ks])
                     + self.kappa[ks])
 
+    def eval_model_energies(self, xs, ks=None):
+        r"""
+        Evaluates the model energies :math:`x_k^{\mathsf{T}}W_k x_k`
+
+        Parameters
+        ----------
+        xs : array_like of shape=(K, N, [S])
+            List of state vectors :math:`x`
+        ks : None, array_like of int of shape=(XS,)
+            List of indices where to evaluate the model energy
+
+        Returns
+        -------
+        out : :class:`np.ndarray`
+            Model energy for each state vector. Return shape is (K,[S])
+            If `ks` is not None return shape is (XS,)
+
+        |def_K|
+        |def_XS|
+        |def_N|
+
+        """
+        if ks is None:
+            return np.einsum('kn, kn->k', xs, np.einsum('nm, km->kn', self.W, xs))
+        else:
+            return np.einsum('kn, kn->k', xs[ks], np.einsum('nm, km->kn', self.W, xs[ks]))
 
 class RLSAlssmSetSteadyState(RLSAlssmBase):
     """
@@ -2017,6 +2087,39 @@ class RLSAlssmSetSteadyState(RLSAlssmBase):
                         - 2 * np.einsum('kns, knt->kst', self.xi[ks], xs[ks])
                         + self.kappa[ks])
 
+
+    def eval_model_energies(self, xs, ks=None):
+        r"""
+        Evaluates the model energies :math:`x_k^{\mathsf{T}}W_k x_k`
+
+        Parameters
+        ----------
+        xs : array_like of shape=(K, N, [S])
+            List of state vectors :math:`x`
+        ks : None, array_like of int of shape=(XS,)
+            List of indices where to evaluate the model energy
+
+        Returns
+        -------
+        out : :class:`np.ndarray`
+            Model energy for each state vector. Return shape is (K,[S])
+            If `ks` is not None return shape is (XS,)
+
+        |def_K|
+        |def_XS|
+        |def_N|
+
+        """
+        if ks is None:
+            if self._kappa_diag:
+                return np.einsum('kns, kns->ks', xs, np.einsum('nm, kmt->knt', self.W, xs))
+            else:
+                return np.einsum('kns, knt->kst', xs, np.einsum('nm, kmt->knt', self.W, xs))
+        else:
+            if self._kappa_diag:
+                return np.einsum('kns, kns->ks', xs[ks], np.einsum('nm, kmt->knt', self.W, xs[ks]))
+            else:
+                return np.einsum('kns, knt->kst', xs[ks], np.einsum('nm, kmt->knt', self.W, xs[ks]))
 
 class ConstrainMatrix:
     """
