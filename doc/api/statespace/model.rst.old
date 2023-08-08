@@ -29,6 +29,6 @@ Classes
     AlssmSin
     AlssmExp
     AlssmStacked
-    AlssmStackedSO
+    AlssmSum
     AlssmProd
     ModelBase

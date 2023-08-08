@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import warnings
 
-from lmlib.statespace.model import ModelBase, AlssmStackedSO
+from lmlib.statespace.model import ModelBase, AlssmSum
 from lmlib.statespace.recursion import *
 from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backends
 from lmlib.utils.check import *
@@ -554,7 +554,7 @@ class CostBase(ABC):
 
     def get_model_order(self):
         """int : Order of the (stacked) Alssm Model"""
-        return AlssmStackedSO(self.alssms).N
+        return AlssmSum(self.alssms).N
 
     def trajectories(self, xs, F=None, thd=1e-6):
         """
@@ -608,7 +608,7 @@ class CostBase(ABC):
         for x in xs:
             trajectories_per_segment = []
             for alssm_weights, (ab_range, _) in zip(np.transpose(F), windows):
-                y = AlssmStackedSO(self.alssms, deltas=alssm_weights).trajectory(x, ab_range)
+                y = AlssmSum(self.alssms, deltas=alssm_weights).trajectory(x, ab_range)
                 trajectories_per_segment.append([ab_range, y])
             trajectories.append(trajectories_per_segment)
         return trajectories
@@ -673,7 +673,7 @@ class CostBase(ABC):
         N = self.get_model_order()
         W = np.zeros((N, N))
         for i, segment in enumerate(self.segments):
-            alssm = AlssmStackedSO(self.alssms, self.F[:, i])
+            alssm = AlssmSum(self.alssms, self.F[:, i])
             if method == 'closed_form':
                 W += _covariance_matrix_closed_form(alssm.A, alssm.C, segment.gamma, segment.a, segment.b,
                                                     segment.delta)
@@ -710,7 +710,7 @@ class CostBase(ABC):
 
         """
 
-        return AlssmStackedSO(self.alssms, alssm_weights).eval_states(xs)
+        return AlssmSum(self.alssms, alssm_weights).eval_states(xs)
 
     def get_state_var_indices(self, label):
         """
@@ -726,7 +726,7 @@ class CostBase(ABC):
         out : list of int
             state indices of the label
         """
-        return AlssmStackedSO(self.alssms, label='cost').get_state_var_indices('cost.' + label)
+        return AlssmSum(self.alssms, label='cost').get_state_var_indices('cost.' + label)
 
 
 class CompositeCost(CostBase):
@@ -1089,7 +1089,7 @@ class RLSAlssmBase(ABC):
         segments = self.cost_model.segments
         alssms = self.cost_model.alssms
 
-        A = AlssmStackedSO(alssms).A
+        A = AlssmSum(alssms).A
 
         if v is None:
             v = np.ones(np.shape(y)[0])
