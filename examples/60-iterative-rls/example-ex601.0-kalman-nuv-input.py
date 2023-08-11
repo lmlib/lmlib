@@ -60,11 +60,11 @@ y = y_ref + gen_wgn(K, sigma=0.2, seed=1000)
 
 
 # Configuration iterations and initial values
-I_MAX = 200 # Number of iterations
+I_MAX = 100 # Number of iterations
 sigmaZ2 = 0.12 # initial value for Sigma Z^2
 sigmaU2 = 0.001 # initial value for Sigma U^2
 
-SYS_ORDER = 1 # signal model order to use
+SYS_ORDER = 2 # signal model order to use
 
 
 if SYS_ORDER == 1: # N=1 (first order system)
@@ -138,26 +138,27 @@ mF_U[:] = 0
 # Interrative Optimization
 for ii in range(0,I_MAX):
 
+
     # 1) Forward Kalman
     for k in range(1,K):
-       # "A" node
-       mF_AX[k] = A@mF_X[k-1]     # III.1
-       VF_AX[k] = A@VF_X[k-1]@AT   # III.2
+        # "A" node
+        mF_AX[k] = A@mF_X[k-1]     # III.1
+        VF_AX[k] = A@VF_X[k-1]@AT   # III.2
 
-       # "AX+B@U=AX_" Node
-       mF_AX_[k] = mF_AX[k] + B@mF_U[k] # II.1, III.1
-       VF_AX_[k] = VF_AX[k] + B@VF_U[k]@BT  # II.2, III.2
+        # "AX+B@U=AX_" Node
+        mF_AX_[k] = mF_AX[k] + B@mF_U[k] # II.1, III.1
+        VF_AX_[k] = VF_AX[k] + B@VF_U[k]@BT  # II.2, III.2
 
-       # "Y_+Z=Y" Node
-       mB_Y_[k] = y[k]
-       VB_Y_[k] = sigmaZ2
+        # "Y_+Z=Y" Node
+        mB_Y_[k] = y[k]
+        VB_Y_[k] = sigmaZ2
 
 
-       # "C=" Node
-       G = np.linalg.inv(VB_Y_[k] + C@VF_AX_[k]@CT)  #  V.3
-       mF_X[k] = mF_AX_[k]+VF_AX_[k]@CT@G@(mB_Y_[k] - C@mF_AX_[k]) #  V.1
-       VF_X[k] = VF_AX_[k]-VF_AX_[k]@CT@G@C@VF_AX_[k] #  V.2
-       
+        # "C=" Node
+        G = np.linalg.inv(VB_Y_[k] + C@VF_AX_[k]@CT)  #  V.3
+        mF_X[k] = mF_AX_[k]+VF_AX_[k]@CT@G@(mB_Y_[k] - C@mF_AX_[k]) #  V.1
+        VF_X[k] = VF_AX_[k]-VF_AX_[k]@CT@G@C@VF_AX_[k] #  V.2
+
 
     # 2) Backward
     for k in range(K-1,0,-1):
@@ -172,12 +173,12 @@ for ii in range(0,I_MAX):
 
         # "AX_ = X = Y"
         # --- Option 1
-        XI_AX_[k] = FT@XI_X[k]+CT@W_Y_@(C@mF_X[k]-mB_y_)  #  V.4
-        W_AX_[k] = FT@W_X[k]@F+CT@W_Y_@C@F  #  V.6
+        #XI_AX_[k] = FT@XI_X[k]+CT@W_Y_@(C@mF_X[k]-mB_y_)  #  V.4
+        #W_AX_[k] = FT@W_X[k]@F+CT@W_Y_@C@F  #  V.6
         # --- Option 2 (reusing G)
-        # G = np.linalg.inv(VB_Y_[k] + C @ VF_AX_[k] @ CT)  # V.3
-        # XI_AX_[k] = FT@XI_X[k]+CT@G@(C@mF_AX_[k]-mB_y_)  #  V.5
-        # W_AX_[k] = FT@W_X[k]@F+CT@G@C  #  V.7
+        G = np.linalg.inv(VB_Y_[k] + C @ VF_AX_[k] @ CT)  # V.3
+        XI_AX_[k] = FT@XI_X[k]+CT@G@(C@mF_AX_[k]-mB_y_)  #  V.5
+        W_AX_[k] = FT@W_X[k]@F+CT@G@C  #  V.7
         # ---
     
 
