@@ -8,7 +8,7 @@ from numpy.linalg import matrix_power
 from scipy.linalg import block_diag, pascal
 from lmlib.utils import *
 
-__all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmSin', 'AlssmExp',
+__all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyBinomial', 'AlssmSin', 'AlssmExp',
            'AlssmStacked', 'AlssmStackedSO', 'AlssmProd', 'ModelBase']
 
 
@@ -572,15 +572,17 @@ class AlssmPoly(ModelBase):
         self._poly_degree = poly_degree
 
 
-class AlssmPolyJordan(ModelBase):
+class AlssmPolyBinomial(ModelBase):
     r"""
-    ALSSM with discrete-time polynomial output sequence, in Jordanian normal form
-    This yields the polynomial in the binomial basis.
+    ALSSM with discrete-time polynomial output sequence, with the coefficients in the binomial basis.
 
+    Representation of a `Q`-th degree polynomial.rst in `i` of the form
 
-    Discrete-time polynomial with ALSSM with transition matrix in Jordanian normal form, see [Zalmai2017]_
+    .. math::
+        P_Q(i) = x_0 binom(i,0) + x_1 binom(i,1) + ... + x_Q binom(i,Q)
+
+    as an ALSSM, with transition matrix in Jordan normal form, see [Zalmai2017]_
     :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/176652/zalmai_thesis.pdf#page=41>`.
-
 
     .. math::
         A =
@@ -597,7 +599,7 @@ class AlssmPolyJordan(ModelBase):
        Polynomial degree. Corresponds to the highest exponent of the polynomial. `N = poly_degree+1`.
     C : array_like, shape=(L, N), optional
         Output Matrix.
-        If C is not set, C is initialized to `[[..., 0, 1]]` of shape `(1, N)`. (default: C=None)
+        If C is not set, C is initialized to `[[1, 0, ...]]` of shape `(1, N)`. (default: C=None)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
@@ -611,7 +613,7 @@ class AlssmPolyJordan(ModelBase):
     Setting up a 3th degree polynomial ALSSM.
 
     >>> poly_degree = 3
-    >>> alssm = lm.AlssmPolyJordan(poly_degree, label='poly')
+    >>> alssm = lm.AlssmPolyBinomial(poly_degree, label='poly')
     >>> print(alssm)
     A =
     [[1. 1. 0. 0.]
@@ -647,6 +649,14 @@ class AlssmPolyJordan(ModelBase):
         assert isinstance(poly_degree, int), 'poly_degree is not of type int'
         assert poly_degree >= 0, 'poly_degree is not larger then 0'
         self._poly_degree = poly_degree
+
+def binomial_to_canonical(poly_degree):
+    """transformation matrix to obtain canonical polynomial coefficients from binomial coefficients"""
+    pass
+
+def canonical_to_canonical(poly_degree):
+    """transformation matrix to obtain binomial polynomial coefficients from canonical coefficients"""
+    pass
 
 
 class AlssmSin(ModelBase):
