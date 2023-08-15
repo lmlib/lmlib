@@ -8,7 +8,7 @@ from numpy.linalg import matrix_power
 from scipy.linalg import block_diag, pascal
 from lmlib.utils import *
 
-__all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmSin', 'AlssmExp',
+__all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan','AlssmPolyBinomial', 'AlssmSin', 'AlssmExp',
            'AlssmStacked', 'AlssmStackedSO', 'AlssmProd', 'ModelBase']
 
 
@@ -573,6 +573,81 @@ class AlssmPoly(ModelBase):
 
 
 class AlssmPolyJordan(ModelBase):
+    r"""
+    ALSSM with discrete-time polynomial output sequence, in Jorandian normal form
+
+
+    Discrete-time polynomial with ALSSM with transition matrix in Jordanian normal form, see [Zalmai2017]_
+    :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/176652/zalmai_thesis.pdf#page=41>`.
+
+
+    .. math::
+        A =
+        \begin{bmatrix}
+            1 & 1 & 0 \\
+            0 & 1 & 1 \\
+            0 & 0 & 1
+        \end{bmatrix}
+
+
+    Parameters
+    ----------
+    poly_degree : int
+       Polynomial degree. Corresponds to the highest exponent of the polynomial. `N = poly_degree+1`.
+    C : array_like, shape=(L, N), optional
+        Output Matrix.
+        If C is not set, C is initialized to `[[..., 0, 1]]` of shape `(1, N)`. (default: C=None)
+    **kwargs
+        Forwarded to :class:`.ModelBase`
+
+
+    |def_N|
+    |def_L|
+
+
+    Examples
+    --------
+    Setting up a 3th degree polynomial ALSSM.
+
+    >>> poly_degree = 3
+    >>> alssm = lm.AlssmPolyJordan(poly_degree, label='poly')
+    >>> print(alssm)
+    A =
+    [[1. 1. 0. 0.]
+     [0. 1. 1. 0.]
+     [0. 0. 1. 1.]
+     [0. 0. 0. 1.]]
+    C =
+    [[1 0 0 0]]
+
+   """
+
+    def __init__(self, poly_degree, C=None, **kwargs):
+        super().__init__(**kwargs)
+        self.poly_degree = poly_degree
+        self.C_init = C
+        self.update()
+
+    def update(self):
+        if self.C_init is None:
+            self.C = np.hstack([[1], [0] * self.poly_degree])
+        else:
+            self.C = self.C_init
+        self.A = np.eye(self.poly_degree + 1) + np.diagflat(np.ones(self.poly_degree), 1)
+        self._init_state_var_labels()
+
+    @property
+    def poly_degree(self):
+        """int : Polynomial degree :math:`Q` (highest exponent/ order - 1)"""
+        return self._poly_degree
+
+    @poly_degree.setter
+    def poly_degree(self, poly_degree):
+        assert isinstance(poly_degree, int), 'poly_degree is not of type int'
+        assert poly_degree >= 0, 'poly_degree is not larger then 0'
+        self._poly_degree = poly_degree
+
+class AlssmPolyBinomial(ModelBase):
     r"""
     ALSSM with discrete-time polynomial output sequence, in Jorandian normal form
 
