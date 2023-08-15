@@ -34,8 +34,6 @@ K = 800  # number of samples (length of test signal)
 y_ref = np.cumsum(gen_steps(K, [200, 250, 450, 590, 690], [.02, -.02, .03, -.04, -.03]))
 y = y_ref + gen_wgn(K, sigma=0.2, seed=1000)
 
-y_ref = gen_steps(K, [200, 250, 450, 590, 690], [1, .4, -1.1, -.4, -.5])
-y = y_ref + gen_wgn(K, sigma=0.2, seed=1000)
 
 
 # --------------- Main ------------------------------------------------------
@@ -65,10 +63,10 @@ y = y_ref + gen_wgn(K, sigma=0.2, seed=1000)
 
 
 # Configuration iterations and initial values
-N = 1 # signal model order to use
+N = 2 # signal model order to use
 I_MAX = 100  # 200 # Number of iterations
 sigmaZ2 = 0.12 # initial value for Sigma Z^2
-sigmaU2 = [0.001,] # initial value for Sigma U^2
+sigmaU2 = [0.001,] # initial value for Sigma U^2 (diagonal Elements of covariance matrix)
 
 DISPPLAY_U_THERSHOLD = 0.001 # threshold value to sparcify input (for visualization only)
 
@@ -78,41 +76,28 @@ DISPPLAY_U_THERSHOLD = 0.001 # threshold value to sparcify input (for visualizat
 
 # Block:   AX := A@X[k-1]
 A = lm.AlssmPoly( poly_degree=N-1 ).A
-#block_A = MBF.Block_System_A(A) 
-fX  = Messages_MV(K, A.shape[0]) # forward MV message on X
-dX  = Messages_XW(K, A.shape[0])  # dual XW message on X
+block_A = MBF.Block_System_A( A ) 
 
 # Block: A_ := AX+B@N(0, sigmaU2)
 B = np.concatenate( (np.zeros((N-1, 1)), np.ones((1, 1))) ) # generate input matrix of the form [0, ..., 0, 1]^T
-#block_input_NUV = MBF.Block_Input_NUV(B)
-fU  = Messages_MV(K, B.shape[1], sigma2=sigmaU2, m=0, border_suppression = True) # # forward MV message on U, initial value for Sigma_U2
-dU  = Messages_XW(K, B.shape[1]) # dual XW message on U
-
-X_fMVs  = Messages_MV(K, B.shape[1]) # dual XW message on U
-mU  = Messages_MV(K, B.shape[1] ) # # marginals MV on U, initial value for Sigma_U2
-
+block_input_NUV = MBF.Block_Input_NUV(B, sigmaU2, K = K, border_suppression = True)
 
 # Block:  X[k] := A_ = C(y[k] + N(0, simgaZ2))
 C = lm.AlssmPoly(poly_degree=N-1).C.reshape((1, -1)) #workaraound. C must be 2D
+block_output_Y = MBF.Block_Output_Y( K, C, y, sigmaZ2 ) 
+block_marginals = MBF.Block_Marginals( K, N )
 
-sigmaU2s = np.ones( (K, B.shape[1], B.shape[1]) )*sigmaU2
-
-block_A = MBF.Block_System_A( A ) 
-block_input_NUV = MBF.Block_Input_NUV(B, sigmaU2s, fU, mU)
-block_output_Y = MBF.Block_Output_Y( C, y, fX, sigmaZ2 ) 
-block_marginal = MBF.Block_Marginal( K, N )
-
-section = Section( K )
+section = Section( K, N )
 section.add_block(block_A, 'block_A')
 section.add_block(block_input_NUV, 'block_input_NUV')
 section.add_block(block_output_Y, 'block_Output_Y')
-section.add_block(block_marginal, 'block_marginal')
+section.add_block(block_marginals, 'block_marginal')
 
-section.optimize(max_itr=I_MAX, msg_fwrd_x0 = fX[0], msg_bwrd_x0 = dX[0])
+section.optimize(max_itr=I_MAX)
 
 # ---  computing marginals for final plotting ---
-mU = block_input_NUV.get_marginals_U()
-mX = block_marginal.get_marginals()
+mU = block_input_NUV.get_input_marginals()
+mX = block_marginals.get_state_marginals()
 
 
 

@@ -24,7 +24,7 @@ Messages Classes
     Messages_XW
 
 
-Node Classes
+Block Classes
 ------------------
 .. _classes_polynomial:
 
@@ -32,21 +32,23 @@ Node Classes
     :toctree: _autosummary
     :recursive:
 
-	Node
-	Node_Mul_A
-	Node_Input_BU
-	Node_Output_Y
-	Node_Input_NUV
+	MBF
+	MBF.Block
+	MBF.Block_Marginals
+	MBF.Block_System_A
+	MBF.Block_Input_BU
+	MBF.Block_Input_NUV
+	MBF.Block_Output_Y
 
 
-Node Classes by Factor Graphs
+List by Factor Graphs (of Block Classes)
 -----------------------------------
 
 .. autosummary::
     :toctree: _autosummary
     :recursive:
 	
-    Node
+    MBF.Block
 	
 .. image:: ./../../_static/lmlib/irrls/Node_Base.png   
        :width: 200
@@ -55,17 +57,25 @@ Node Classes by Factor Graphs
     :toctree: _autosummary
     :recursive:
 	
-    Node_Mul_A
+    MBF.Block_Marginals
 	
-.. image:: ./../../_static/lmlib/irrls/Node_Mul_A.png   
+.. image:: ./../../_static/lmlib/irrls/Node_Marginals.png   
       :width: 200
-
 
 .. autosummary::
     :toctree: _autosummary
     :recursive:
 	
-    Node_Input_BU
+    MBF.Block_System_A
+	
+.. image:: ./../../_static/lmlib/irrls/Node_System_A.png   
+      :width: 200
+
+.. autosummary::
+    :toctree: _autosummary
+    :recursive:
+	
+    MBF.Block_Input_BU
 	
 .. image:: ./../../_static/lmlib/irrls/Node_Input_BU.png   
       :width: 250
@@ -75,7 +85,7 @@ Node Classes by Factor Graphs
     :toctree: _autosummary
     :recursive:
 	
-    Node_Output_Y
+    MBF.Block_Output_Y
 	
 .. image:: ./../../_static/lmlib/irrls/Node_Output_Y.png   
       :width: 250
@@ -85,7 +95,7 @@ Node Classes by Factor Graphs
     :toctree: _autosummary
     :recursive:
 	
-    Node_Input_NUV
+    MBF.Block_Input_NUV
 	
 .. image:: ./../../_static/lmlib/irrls/Node_Input_NUV.png   
       :width: 250

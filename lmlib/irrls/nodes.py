@@ -12,8 +12,9 @@ __all__ = ['Messages_MV', 'Messages_XW',
 
 class Section():
     """ Defines the (repeating) part of a factor graph prapagating messages from time index k-1 to k """
-    def __init__(self, K):
+    def __init__(self, K, N):
        self._K = K
+       self._N = N
        self._block_entries = [] # list of tuples of sequential blocks with (block object, block label)
        pass
 
@@ -21,9 +22,14 @@ class Section():
        """ Addes a new block to the end of the previous blocks """
        self._block_entries.append( (label, block) )
 
-    def optimize(self, max_itr, msg_fwrd_x0, msg_bwrd_x0):
+    def optimize(self, max_itr, msg_fwrd_x0 = None , msg_bwrd_x0 = None):
         """ Optimizes the factor graph defined by the section by (iterrative) message passing """
 
+        if msg_fwrd_x0 == None:
+            msg_fwrd_x0 = Messages_MV(1, self._N)[0] # todo: do this more elegant
+
+        if msg_bwrd_x0 == None:
+            msg_bwrd_x0 = Messages_XW(1, self._N)[0] # todo: do this more elegant
 
         # --- Interrative Optimization
         for ii in range(0, max_itr):
@@ -33,31 +39,11 @@ class Section():
                     # 1) Forward Kalman
                     msg_fwrd = block.pass_forward( msg_fwrd, k)
 
-                    #fAX_k  = block_A.pass_forward( fX[k-1])
-                    #fAX__k = block_input_NUV.pass_forward( fAX_k, fU._V[k], m=[0,])
-                    #fX[k]   = block_output_Y.pass_forward( fAX__k, y[k], sigmaZ2)
-
-
-
             msg_bwrd = msg_bwrd_x0
             for k in range(self._K-1,0,-1):
                 for (label, block) in reversed(self._block_entries):                
-                    # 2) Backward
+                    # 2) Backward and 3) marginals
                     msg_bwrd = block.pass_backward( msg_bwrd, k )
-
-                    # dAX__k = block_output_Y.pass_backward( dX[k], fX[k], y[k], sigmaZ2)
-                    # dAX_k = block_input_NUV.pass_backward( dAX__k ) # ... is actually a dummy call ...           
-                    # dX[k-1] = block_A.pass_backward( dAX_k)            
-                    
-                    # 4) Posterior Mean (marginals), State U estimate
-                    # dU[k] = block_input_NUV.get_U_dualXW( dAX_k)
-                    # mU_k = Block.marginal_MV( fU[k], dU[k] )
-                    # fU._V[k] = block_input_NUV.update_variance_U_EM( mU_k[0] )
-
-
-# 
-#                   
-
 
 
          
@@ -167,17 +153,16 @@ class Block():
 class MBF():
     """ Implementation of Modified Bryson–Frazier (MBF) algorithm according to Loeliger et al. 2016, "On Sparsity by NUV-EM, Gaussian Message Passing, and Kalman Smoothing". """
   
-    class Block_Marginal():
+    class Block_Marginals():
         """
-        Dummy node X=Y. Enables the computation of the marginals anywhere in the Section.
-
+        Dummy node X=Y, enables marginals computation at block location by storing all forward- and backward messages.
 
         .. container:: twocol
 
             .. container:: col-fig
         
-            .. image:: ./do-not-remove/../../../../../_static/lmlib/irrls/Node-Mul-A.png   
-                :width: 400
+            .. image:: ./do-not-remove/../../../../../_static/lmlib/irrls/Block_Marginals.png   
+                :width: 250
 
 
 
@@ -251,7 +236,7 @@ class MBF():
             self._X_dXWs[k] = Y_dXW
             return (Y_dXW)
         
-        def get_marginals(self):
+        def get_state_marginals(self):
             K = self._X_dXWs._K
             fX  = Messages_MV( K, self._X_dXWs._N ) # forward MV message on X
            
@@ -271,7 +256,7 @@ class MBF():
 
             .. container:: col-fig
         
-            .. image:: ./do-not-remove/../../../../../_static/lmlib/irrls/Node-Mul-A.png   
+            .. image:: ./do-not-remove/../../../../../_static/lmlib/irrls/Block_System_A.png   
                 :width: 400
 
 
@@ -384,7 +369,7 @@ class MBF():
 
             .. container:: col-fig
         
-            .. image:: ./do-not-remove/../../../../../_static/lmlib/irrls/Node_Input_BU.png   
+            .. image:: ./do-not-remove/../../../../../_static/lmlib/irrls/Block_Input_BU.png   
                 :width: 300
 
 
@@ -409,7 +394,7 @@ class MBF():
         #                       X --> (+) -->  Z
 
 
-        def __init__(self, B, sigmaU2):
+        def __init__(self, B ):
             """
             Constructor
             
@@ -525,7 +510,7 @@ class MBF():
 
             .. container:: col-fig
         
-            .. image:: ./do-not-remove/../../../../../_static/lmlib/irrls/Node_Output_Y.png   
+            .. image:: ./do-not-remove/../../../../../_static/lmlib/irrls/Block_Output_Y.png   
                 :width: 400
 
 
@@ -553,22 +538,44 @@ class MBF():
         #                              v
         #                       X --> (+) -->  Z
 
-        def __init__(self, B, sigmaU2s, fU_mV, mU_VU):
+        def __init__(self, B, sigmaU2, K = None, fU_mV = None, mU_VU = None, border_suppression = False):
             """
             Constructor
             
             Parameters
             ----------
             B      :  array_like, shape=(N, M),
-                    matrix to multiply with, i.e., Z  = X + BU (also known as input matrix B in linear systems)
+                      matrix to multiply with, i.e., Z  = X + BU (also known as input matrix B in linear systems)
+
+            sigmaU2 : array_like, shape=(M,) or array_like, shape=(M, K)
+                      input variance(s) initial values (for M>1, the diagonal elements of the covariance matrices are expected)
+                      if dimension is (M,) array is extended to shape (M, K) by repetition over dimension K-times.
+                      (not fully implented yet)
+
+            border_suppression:  Boolean
+                      If `True`, variance at k=0 and k=K-1 are set to zero (avoids border artefacts), optional, default: False
+                       
             """
             #self._B = B
-            self._sigmaU2s = sigmaU2s # todo: only store variance, not mean
-            self._fU_mV = fU_mV
+            
+            M = B.shape[1] # input dimension
+            if K == None:
+                assert False , "Signal length parameter K must be defined" 
 
-            self._mU_UV = mU_VU # only in last round needed (see comment below)
+            if fU_mV is None:
+                self._fU_mV =  Messages_MV(K, M, sigma2=sigmaU2, m=0, border_suppression=border_suppression) # forward MV message on X
+            else:
+                assert M == fU_mV._N, "Message container fU_mV not of correct shape." 
+                self._fU_mV = fU_mV
 
-            super().__init__( B, sigmaU2s )
+            if mU_VU is None:
+                self._mU_UV =  Messages_MV(K, M) # marginals MV on U
+            else:
+                assert M == fU_mV._N, "Message container fU_mV not of correct shape." 
+                self._mU_UV = mU_VU # only in last round where marginals are computed needed (see comment below)
+
+
+            super().__init__( B )
 
         def pass_forward(self, X_fMV, k):
             """
@@ -640,7 +647,7 @@ class MBF():
 
 
 
-        def get_marginals_U(self):  
+        def get_input_marginals(self):  
             """
             Returns marginals on input U.
             Todo: If marginals are not needed, it is still beeing stored. This could be optimized.
@@ -717,7 +724,7 @@ class MBF():
 
             .. container:: col-fig
         
-            .. image:: ./do-not-remove/../../../../../_static/lmlib/irrls/Node_Output_Y.png   
+            .. image:: ./do-not-remove/../../../../../_static/lmlib/irrls/Block_Output_Y.png   
                 :width: 250
 
 
@@ -732,7 +739,7 @@ class MBF():
         """
             
             
-        def __init__(self, C, y , Z_fMVs, sigmaZ2):
+        def __init__(self, K, C, y, sigmaZ2, Z_fMVs = None):
             """
             Constructor
             
@@ -740,6 +747,8 @@ class MBF():
             ----------
             C     :  array_like, shape=(M, N),
                     matrix to multiply with, i.e., Y  = CX + N(0, sigmaZ2) (also known as input matrix B in linear systems)
+
+
             """
             self._C = C # matrix B
             self._M = C.shape[0] # input Y dimension
@@ -748,7 +757,13 @@ class MBF():
             self._y = y  # input signal
             self._sigmaZ2 = sigmaZ2 # sigmaZ^2
 
-            self._Z_fMVs = Z_fMVs # memory for MV forwared message on branch Z
+            if Z_fMVs is None:
+                self._Z_fMVs =  Messages_MV(K, self._N) # memory for MV forwared message on branch Z
+            else:
+                assert Z_fMVs._M == self._M, "Message container Z_fMVs not of correct shape." 
+                assert K == Z_fMVs._K, "Message container Z_fMVs not of correct shape." 
+                self._Z_fMVs = Z_fMVs # memory for MV forwared message on branch Z
+
             # self._X_fMVs = X_fMVs # memory for MV forwared message on branch X
             
             
