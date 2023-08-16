@@ -650,14 +650,66 @@ class AlssmPolyBinomial(ModelBase):
         assert poly_degree >= 0, 'poly_degree is not larger then 0'
         self._poly_degree = poly_degree
 
-def binomial_to_canonical(poly_degree):
-    """transformation matrix to obtain canonical polynomial coefficients from binomial coefficients"""
-    pass
+def binomial_to_canonical(poly_degree, coeff=None):
+    """
+    compute binomial to canonical polynomial basis transformation matrix, 
+    if binomial coefficients given, then output the transformed coefficients
+    see [Ren2023, Prop. 2.18]_
+    :download:`PDF <https://www.research-collection.ethz.ch/handle/20.500.11850/612247>.
+    inputs: 
+        poly_degree - poly degree Q
+    coeff - binomial coefficients in column array beta = [beta_0,...,beta_Q]
+    outputs: 
+        Trafo - transformation matrix for alpha = Trafo * beta
+        canonical coefficients in column array alpha = [alpha_0,...,alpha_Q]
+    """
+    if poly_degree < 0:
+        raise ValueError("Polynomial degree must be non-negative integer.")
+    
+    Trafo = np.zeros((poly_degree+1,poly_degree+1))
+    #recursion over rows of Trafo
+    Trafo[poly_degree,poly_degree] = 1
+    if poly_degree > 0:
+        for row in range(1,poly_degree):
+            for col in range(1,row):
+                Trafo[poly_degree-row,poly_degree-col] = (-(row-1)/row*Trafo[poly_degree-row+1,poly_degree-col] 
+                                                + 1/row*Trafo[poly_degree-row+1,poly_degree-col+1])
+    Trafo = np.fliplr(np.flipud(Trafo.T))
 
-def canonical_to_canonical(poly_degree):
-    """transformation matrix to obtain binomial polynomial coefficients from canonical coefficients"""
-    pass
+    if coeff == None:
+        return Trafo, None
+    else:
+        return Trafo, Trafo @ coeff
 
+def canonical_to_binomial(poly_degree, coeff=None):
+    """
+    compute canonical to binomial polynomial basis transformation matrix, if canonical coefficients given, 
+    then output the transformed coefficients
+    see [Ren2023, Prop. 2.18]_
+    :download:`PDF <https://www.research-collection.ethz.ch/handle/20.500.11850/612247>.
+    inputs: 
+        degree - poly degree Q
+        coeff - canonical coefficients in column array alpha = [alpha,...,alpha]
+    outputs: 
+        Trafo - transformation matrix for beta = Trafo * alpha
+        binomial coefficients in column array beta = [beta_0,...,beta_Q]
+    """
+    if poly_degree < 0:
+        raise ValueError("Polynomial degree must be non-negative integer.")
+    
+    Trafo = np.zeros((poly_degree+1,poly_degree+1))
+    #recursion over rows of Trafo
+    Trafo[poly_degree,poly_degree] = 1
+    if poly_degree > 0:
+        for row in range(1,poly_degree):
+            for col in range(1,row):
+                Trafo[poly_degree-row,poly_degree-col] = row*(Trafo[poly_degree-row+1,poly_degree-col] + Trafo[poly_degree-row+1,poly_degree-col+1])
+    Trafo = np.fliplr(np.flipud(Trafo.T))
+
+    if coeff == None:
+        return Trafo, None
+    else:
+        return Trafo, Trafo @ coeff
 
 class AlssmSin(ModelBase):
     r"""
