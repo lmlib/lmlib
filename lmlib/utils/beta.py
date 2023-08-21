@@ -431,7 +431,7 @@ def edge_detection(y, ab, g):
 
     # -- MODEL FITTING --
     # Filter
-    separam = lm.SEParam(ccost)
+    separam = lm.RLSAlssm(ccost)
     separam.filter(y)
 
     # constraint minimization
@@ -490,7 +490,7 @@ def poly_filter(y, ab, g, poly_degree=0):
 
     # -- MODEL FITTING --
     # Filter
-    separam = lm.SEParam(ccost)
+    separam = lm.RLSAlssm(ccost)
     separam.filter(y)
 
     # minimization

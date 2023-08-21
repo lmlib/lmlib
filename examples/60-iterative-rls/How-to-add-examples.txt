@@ -1,0 +1,4 @@
+
+All png figures must be manually copied to ./static/gallery
+
+reto wildhaber, 17.7.2022

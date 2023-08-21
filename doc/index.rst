@@ -25,6 +25,7 @@
    This library implements Recurisve Least Squares (RLS) algorithms with 
    
    * **Windowed Linear State-Space Models**  (Package :ref:`lmlib.statespace`)
+   * **Interatively Reweighted Least Squares** (Package :ref:`lmlib.irrls`) 
    * **Continuous-Time Polynomial Signal Models** (Package :ref:`lmlib.polynomial`) 
  
    |
@@ -38,11 +39,12 @@
    * and others. 
   
 
-      
 
 
 
 .. rst-class:: maintext1
+
+   This library also supports :ref:`JIT (Just-in-Time) <jit>` compilation for fast processing. 
 
    This library is the result of many years of :ref:`research <about>` documented in various publications (see :ref:`bibliography`).
 

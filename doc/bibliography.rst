@@ -28,3 +28,4 @@ Bibliography
 .. [Loeliger2016]
    \ H.-A. Loeliger, L. Bruderer, H. Malmberg, F. Wadehn, and N. Zalmai, "On Sparsity by NUV-EM, Gaussian Message Passing, and Kalman Smoothing", CoRR, vol. abs/1602.02673, 2016. arXiv: 1602 . 02673. [Online]. Available: http://arxiv.org/abs/1602.02673.
 
+

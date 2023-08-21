@@ -22,7 +22,7 @@ copyright = '2022, lmlib'
 author = 'Reto Wildhaber, Frédéric Waldmann'
 
 # The full version, including alpha/beta/rc tags
-release = '2.1.1 CFR 1'
+release = '2.0 CFR 1'
 
 # -- General configuration ---------------------------------------------------
 
@@ -42,6 +42,7 @@ extensions = ['sphinx.ext.autodoc',
 
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 # autoclass_content = 'class'
+# autoclass_content = 'both' # to show constructors
 # add_module_names = False  # hides the module path to the class in the class title
 # napoleon_use_rtype = False  # includes the return type into the return variable description
 # napoleon_use_admonition_for_examples = False
@@ -74,15 +75,15 @@ sphinx_gallery_conf = {
                                         '../examples/50-convolution',
                                         '../examples/21-polynomials-calculus',
                                         '../examples/70-localized-polynomials',
-                                        '../examples/100-state-space-applications',
+                                        '../examples/60-iterative-rls',
                                         # '../examples/30-utils',
                                         '../coding/10-windowed-state-space-filters-basic',
                                         '../coding/13-backend',
-                                        '../coding/20-polynomials-basics'
+                                        '../coding/20-polynomials-basics',                                      
     ]),
     'within_subsection_order': FileNameSortKey,
     'filename_pattern': '(/example-|/fig-)',
-    'ignore_pattern': r'(L|draft_)',
+    'ignore_pattern': r'L',
     # directory where function/class granular galleries are stored
     'backreferences_dir'  : '_gallery_api/',
     # Modules for which function/class level galleries are created. In

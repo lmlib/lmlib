@@ -82,6 +82,19 @@ dt:target, span.highlighted {
 
 
 
+/* Two column layout */
+div.col-fig {
+  width: 30%;
+  padding: 0px 3px 0px 0px;
+  float: right;
+}
+div.col-text {
+  margin-right: 40px;
+  width: 100%;
+  /* float: right; */
+}
+
+
 h1 {
     font-size: 180%;
     font-weight: bold;
