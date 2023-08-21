@@ -262,14 +262,14 @@ def gen_slopes(K, ks, deltas):
     return np.interp(np.arange(K), ks, np.cumsum(deltas))
 
 
-def gen_wgn(K, sigma, seed=None):
+def gen_wgn(size, sigma, seed=None):
     """
     White Gaussian noise signal generator
 
     Parameters
     ----------
-    K : int
-        Signal length
+    size : int or tuple of ints
+        Signal length when 'size' is integer. If 'size' is a tuple, the output shape corresponds to the tuple entries
     sigma : float
         Sample variance
     seed : int, None
@@ -277,8 +277,8 @@ def gen_wgn(K, sigma, seed=None):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
-        Returns a white Gaussian noise signal of length `K`  and variance `sigma`.
+    out : :class:`~numpy.ndarray`
+        Returns a white Gaussian noise signal of shape like `size`  and variance `sigma`.
 
     Example
     -------
@@ -286,24 +286,23 @@ def gen_wgn(K, sigma, seed=None):
         :include-source:
     """
     np.random.seed(seed)
-    return np.random.normal(0, sigma, K)
+    return np.random.normal(0, sigma, size)
 
 
-def gen_rand_walk(K, seed=None):
+def gen_rand_walk(size, seed=None):
     """Random walk generator
 
     Parameters
     ----------
-    K : int
-        Signal length
+    size : int or tuple of ints
+        Signal length when 'size' is integer. If 'size' is a tuple, the output shape corresponds to the tuple entries
     seed : int, None
         random number generator seed, default = *None*.
 
-
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
-        Returns a signal of length `K` with a random walk
+    out : :class:`~numpy.ndarray`
+        Returns a signal of shape `size` with a random walk
 
     Example
     -------
@@ -311,19 +310,20 @@ def gen_rand_walk(K, seed=None):
         :include-source:
     """
     np.random.seed(seed)
-    return np.cumsum(np.sign(np.random.randn(K)) * np.random.ranf(K, ))
+    size = (size,) if isinstance(size, int) else size
+    return np.cumsum(np.sign(np.random.randn(*size)) * np.random.ranf(size), axis=0)
 
 
-def gen_rand_pulse(K, n_pulses, length=1, seed=None):
+def gen_rand_pulse(size, n_pulses, length=1, seed=None):
     """
     Random pulse signal generator
 
     Parameters
     ----------
-    K : int
-        Signal length
+    size : int or tuple of ints
+        Signal length when 'size' is integer. If 'size' is a tuple, the output shape corresponds to the tuple entries
     n_pulses : int
-        Number of pulses in the signal
+        Number of pulses in the per signal
     length : int
         pulse length (number of samples per pulse set to `1`)
     seed : int, None
@@ -332,8 +332,8 @@ def gen_rand_pulse(K, n_pulses, length=1, seed=None):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
-        Returns signal of length `K` with exactly `N` unity pulses of length `N` at random positions.
+    out : :class:`~numpy.ndarray`
+        Returns signal of shape `size` with exactly `N` unity pulses of length `N` at random positions per signal
 
     Example
     -------
@@ -341,10 +341,16 @@ def gen_rand_pulse(K, n_pulses, length=1, seed=None):
         :include-source:
     """
     np.random.seed(seed)
+    K = size[0] if isinstance(size, tuple) else size
+
     rui = np.zeros(K)
     ks = np.random.randint(0, K-1, size=n_pulses)
     rui[ks] = np.ones(n_pulses)
-    return np.convolve(rui, np.ones((length,)), 'same')
+
+    out = np.convolve(rui, np.ones((length,)), 'same')
+    if isinstance(size, tuple):
+        return np.tile(np.reshape(out, (K, ) + (1, )*(len(size)-1)), (1,) + size[1:])
+    return out
 
 
 def gen_conv(base, template):
