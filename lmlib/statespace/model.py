@@ -22,9 +22,11 @@ class ModelBase(ABC):
         Label of Alssm, default: 'n/a'
     C_init : array_like, None, optional
         Initialized Output Matrix, default: 'None'
+    force_MC : bool, optional
+        Broadcasts an 1-dimensional `C`-vector to a 2-dimensional array of shape (1, N)
     """
 
-    def __init__(self, label='n/a', C_init=None):
+    def __init__(self, label='n/a', C_init=None, force_MC=False):
         self._alssms = list()
         self._deltas = list()
         self._A = None
@@ -32,6 +34,7 @@ class ModelBase(ABC):
         self.label = label
         self.C_init = C_init
         self._state_var_labels = dict()
+        self.force_MC = force_MC
 
     def __str__(self):
         A_str = re.sub('\s+', ',', np.array_str(self.A).replace('\n', '')).replace('[,', '[')
@@ -134,6 +137,16 @@ class ModelBase(ABC):
     def state_var_labels(self):
         """dict : Dictionary containing state variable labels and index"""
         return self._state_var_labels
+
+    @property
+    def force_MC(self):
+        """bool : Flag to broadcast to a 2-dimensional `C` state space variable"""
+        return self._force_MC
+
+    @force_MC.setter
+    def force_MC(self, force_MC):
+        assert isinstance(force_MC, bool), 'force_MC is not of type boolean'
+        self._force_MC = force_MC
 
     def eval_states(self, xs):
         r"""
@@ -412,6 +425,9 @@ class ModelBase(ABC):
             if label == l:
                 return indices
 
+    def _broadcast_C_to_multichannel(self):
+        if self.force_MC:
+            self.C = np.atleast_2d(self.C)
 
 class Alssm(ModelBase):
     r"""
@@ -475,7 +491,7 @@ class Alssm(ModelBase):
     def update(self):
         self.C = self.C_init
         self._init_state_var_labels()
-
+        self._broadcast_C_to_multichannel()
 
 class AlssmPoly(ModelBase):
     r"""
@@ -565,6 +581,7 @@ class AlssmPoly(ModelBase):
             self.C = self.C_init
         self.A = pascal(self.poly_degree + 1, kind='upper')
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
     @property
     def poly_degree(self):
@@ -641,6 +658,7 @@ class AlssmPolyJordan(ModelBase):
             self.C = self.C_init
         self.A = np.eye(self.poly_degree + 1) + np.diagflat(np.ones(self.poly_degree), 1)
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
     @property
     def poly_degree(self):
@@ -728,6 +746,7 @@ class AlssmSin(ModelBase):
         c, s = np.cos(self.omega), np.sin(self.omega)
         self.A = self.rho * np.array([[c, -s], [s, c]])
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
     @property
     def omega(self):
@@ -801,6 +820,7 @@ class AlssmExp(ModelBase):
             self.C = self.C_init
         self.A = np.array([[self.gamma]])
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
     @property
     def gamma(self):
@@ -923,6 +943,7 @@ class AlssmStacked(ModelBase):
         self.A = A
         self.C = C
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
 
 class AlssmStackedSO(ModelBase):
@@ -1002,6 +1023,7 @@ class AlssmStackedSO(ModelBase):
         self.A = A
         self.C = C
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
 
 class AlssmProd(ModelBase):
@@ -1072,3 +1094,4 @@ class AlssmProd(ModelBase):
         self.A = A
         self.C = C
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
