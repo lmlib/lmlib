@@ -7,7 +7,7 @@ from collections.abc import Iterable
 import warnings
 import copy
 
-from lmlib.statespace.model import ModelBase, AlssmStackedSO
+from lmlib.statespace.model import ModelBase, AlssmSum
 from lmlib.statespace.recursion import *
 from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backends
 from lmlib.utils.check import *
@@ -555,7 +555,7 @@ class CostBase(ABC):
 
     def get_model_order(self):
         """int : Order of the (stacked) Alssm Model"""
-        return AlssmStackedSO(self.alssms).N
+        return AlssmSum(self.alssms).N
 
     def trajectories(self, xs, F=None, thd=1e-6):
         """
@@ -609,7 +609,7 @@ class CostBase(ABC):
         for x in xs:
             trajectories_per_segment = []
             for alssm_weights, (ab_range, _) in zip(np.transpose(F), windows):
-                y = AlssmStackedSO(self.alssms, deltas=alssm_weights).trajectory(x, ab_range)
+                y = AlssmSum(self.alssms, deltas=alssm_weights).trajectory(x, ab_range)
                 trajectories_per_segment.append([ab_range, y])
             trajectories.append(trajectories_per_segment)
         return trajectories
@@ -674,7 +674,7 @@ class CostBase(ABC):
         N = self.get_model_order()
         W = np.zeros((N, N))
         for i, segment in enumerate(self.segments):
-            alssm = AlssmStackedSO(self.alssms, self.F[:, i])
+            alssm = AlssmSum(self.alssms, self.F[:, i])
             if method == 'closed_form':
                 W += _covariance_matrix_closed_form(alssm.A, alssm.C, segment.gamma, segment.a, segment.b,
                                                     segment.delta)
@@ -743,7 +743,7 @@ class CostBase(ABC):
 
         assert input_type != '', "c0s input unknown type"
 
-        alssm_sum = AlssmStackedSO(self.alssms, alssm_weights)
+        alssm_sum = AlssmSum(self.alssms, alssm_weights)
 
         if input_type == 'scalar':
             alssm_sum.C = np.full(N, c0s)
@@ -759,7 +759,7 @@ class CostBase(ABC):
                     c0 = np.full_like(alssm_.C, c0)
                 alssm_.C_init = c0
                 alssms.append(alssm_)
-            alssm_sum = AlssmStackedSO(alssms, alssm_weights)
+            alssm_sum = AlssmSum(alssms, alssm_weights)
 
         return alssm_sum.eval_states(xs)
 
@@ -777,7 +777,7 @@ class CostBase(ABC):
         out : list of int
             state indices of the label
         """
-        return AlssmStackedSO(self.alssms, label='cost').get_state_var_indices('cost.' + label)
+        return AlssmSum(self.alssms, label='cost').get_state_var_indices('cost.' + label)
 
 
 class CompositeCost(CostBase):
@@ -1042,6 +1042,7 @@ class RLSAlssmBase(ABC):
     """
     Base Class for Recursive Least Square Alssm Classes
 
+
     Parameters
     ----------
     betas : array_like of shape=(P,) of floats, None, optional
@@ -1105,7 +1106,7 @@ class RLSAlssmBase(ABC):
         return self._nu
 
     def _check_output_dimensions(self, y):
-        C = AlssmStackedSO(self.cost_model.alssms).C
+        C = AlssmSum(self.cost_model.alssms).C
 
         is_multichannel = np.ndim(C) == 2
         is_multiset = isinstance(self, (RLSAlssmSet, RLSAlssmSetSteadyState))
@@ -1196,7 +1197,7 @@ class RLSAlssmBase(ABC):
         segments = self.cost_model.segments
         alssms = self.cost_model.alssms
 
-        A = AlssmStackedSO(alssms).A
+        A = AlssmSum(alssms).A
 
         if v is None:
             v = np.ones(np.shape(y)[0])

@@ -9,7 +9,7 @@ from scipy.linalg import block_diag, pascal
 from lmlib.utils import *
 
 __all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmSin', 'AlssmExp',
-           'AlssmStacked', 'AlssmStackedSO', 'AlssmProd', 'ModelBase']
+           'AlssmStacked', 'AlssmSum', 'AlssmSum', 'AlssmProd', 'ModelBase']
 
 
 class ModelBase(ABC):
@@ -403,7 +403,7 @@ class ModelBase(ABC):
         N = 0
         for alssm in self.alssms:
             for var_label, indices in alssm.get_state_var_labels():
-                state_list.extend([(self.label + '.' + var_label, tuple(i+N for i in indices))])
+                state_list.extend([(self.label + '.' + var_label, tuple(i + N for i in indices))])
             N += alssm.N
         return state_list
 
@@ -946,7 +946,7 @@ class AlssmStacked(ModelBase):
         self._broadcast_C_to_multichannel()
 
 
-class AlssmStackedSO(ModelBase):
+class AlssmSum(ModelBase):
     r"""
     Stacking multiple ALSSMs, generating summed output vector of ALSSMs.
 
@@ -994,7 +994,7 @@ class AlssmStackedSO(ModelBase):
     >>> A = [[1, 1], [0, 1]]
     >>> C = [[1, 0]]
     >>> alssm_line = lm.Alssm(A, C)
-    >>> stacked_alssm = lm.AlssmStackedSO((alssm_poly, alssm_line))
+    >>> stacked_alssm = lm.AlssmSum((alssm_poly, alssm_line))
     >>> print(stacked_alssm)
     A =
     [[1. 1. 1. 1. 0. 0.]
@@ -1024,6 +1024,9 @@ class AlssmStackedSO(ModelBase):
         self.C = C
         self._init_state_var_labels()
         self._broadcast_C_to_multichannel()
+
+
+AlssmStackedSO = DeprecationHelper(AlssmSum, "AlssmStackedSO() is deprecated. Use AlssmSum()!")
 
 
 class AlssmProd(ModelBase):
