@@ -729,7 +729,7 @@ class CostBase(ABC):
 
         """
 
-        N = AlssmStackedSO(self.alssms).N
+        N = AlssmSum(self.alssms).N
         input_type = ''
 
         if c0s is None:
