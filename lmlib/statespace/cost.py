@@ -5,6 +5,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import warnings
+import copy
 
 from lmlib.statespace.model import ModelBase, AlssmStackedSO
 from lmlib.statespace.recursion import *
@@ -679,7 +680,7 @@ class CostBase(ABC):
                                                     segment.delta)
         return W
 
-    def eval_alssm_output(self, xs, alssm_weights):
+    def eval_alssm_output(self, xs, alssm_weights=None, c0s=None):
         """
         Evaluation of the ALSSM for multiple state vectors `xs`.
 
@@ -689,8 +690,16 @@ class CostBase(ABC):
         ----------
         xs : array_like of shape=(XS, N [,S]) of floats
             List of state vectors :math:`x`
-        alssm_selection : array_like, shape=(M,) of bool
-            Each element enables (:code:`True`, 1) or disables (:code:`False`, 0) the m-th ALSSM in :attr:`CompositeCost.alssms`.
+        alssm_weights : None, scalar, array_like, shape=(M,) of floats, optional
+            Each element sets the weight of the output of the m-th ALSSM in :attr:`CompositeCost.alssms`.
+            If alssm_weights is a scalar it set for each alssms the same weight.
+            If None no weights are set.
+        c0s : None, scalar, array_like, tuple, optional
+            - None type is default and doesn't change the model output matrix
+            - Scalar type will result in a 1 dimensional output matrix filled with the scalar value.
+            - Array_like type expects c0s shape of ([L,] N,) and replaces the composite output matrix.
+            - Tuple type c0s have an entry for each sub ALSSM in the composite model. Possible tuple entries are `None`, `scalar`, `array_like`, which are behaving like to composite c0s entries above. See Notes for more detail.
+
 
         Returns
         -------
@@ -704,13 +713,55 @@ class CostBase(ABC):
         |def_S|
         |def_XS|
 
+        Notes
+        -----
+        C0s of type tuple can have different element types `None`, `scalar`, `array_like`.
+
+        - Entries are array_like and for each ALSSM resp. i.e. :code:`c0s = ([1, 2], [1, 0])` will result in the first :code:`alssms[0].C = [1, 2]` and in the second :code:`alssms[1].C = [1, 0]`.
+
+        - Entries are scalars or `None` and for each ALSSM resp. i.e. :code:`c0s = ([1, 2], 3)`  will result in the first :code:`alssms[0].C = [1, 2]` and in the second :code:`alssms[1].C = [3, 3]`.
+
+        - A None element won't change the ALSSM Output Matrix C. i.e. :code:`c0s = (None, 3)`  will leave alone first ALSSM.C and the second changes to :code:`alssms[1].C = [3, 3]`.
+
         Examples
         --------
         .. minigallery:: lmlib.CostBase.eval_alssm_output
 
         """
 
-        return AlssmStackedSO(self.alssms, alssm_weights).eval_states(xs)
+        N = AlssmStackedSO(self.alssms).N
+        input_type = ''
+
+        if c0s is None:
+            input_type = 'none'
+        if np.isscalar(c0s):
+            input_type = 'scalar'
+        if is_array_like(c0s):
+            input_type = 'output_matrix'
+        if isinstance(c0s, tuple):
+            input_type = 'mixed'
+
+        assert input_type != '', "c0s input unknown type"
+
+        alssm_sum = AlssmStackedSO(self.alssms, alssm_weights)
+
+        if input_type == 'scalar':
+            alssm_sum.C = np.full(N, c0s)
+        if input_type == 'output_matrix':
+            alssm_sum.C = c0s
+        if input_type == 'mixed':
+            alssms = []
+            for alssm, c0 in zip(self.alssms, c0s):
+                alssm_ = copy.deepcopy(alssm)
+                if c0 is None:
+                    c0 = alssm_.C
+                if np.isscalar(c0):
+                    c0 = np.full_like(alssm_.C, c0)
+                alssm_.C_init = c0
+                alssms.append(alssm_)
+            alssm_sum = AlssmStackedSO(alssms, alssm_weights)
+
+        return alssm_sum.eval_states(xs)
 
     def get_state_var_indices(self, label):
         """
@@ -772,7 +823,9 @@ class CompositeCost(CostBase):
         1 or any other scalar factor for active grid node).
 
 
-    This figure shows a graphical representation of a composite cost, depicting the internal relationships between Segments, ALSSMs, and the mapping matrix F. F[m,p] is implemented as a scalar factor multiplied on the alssm's output signal.
+    This figure shows a graphical representation of a composite cost, depicting the internal relationships between
+    Segments, ALSSMs, and the mapping matrix F. F[m,p] is implemented as a scalar factor multiplied on the alssm's
+    output signal.
 
 
     For more details, seen Chapter 9 in [Wildhaber2019]_.
@@ -951,14 +1004,38 @@ class CostSegment(CostBase):
 
         return super().trajectories(xs, [[alssm_weight]], thd)
 
-    def eval_alssm_output(self, xs, alssm_weight=1.0):
+    def eval_alssm_output(self, xs, alssm_weight=1.0, c0=None):
         """
         Evaluation of the :class:`CostSegment`'s ALSSM output for multiple state vectors
 
-        **For parameter details see:** :meth:`lmlib.statespace.models.Alssm.eval`
+        Parameters
+        ----------
+        xs : array_like of shape=(XS, N [,S]) of floats
+            List of state vectors :math:`x`
+        alssm_weight : scalar, optional
+            Sets the weight of the output of the ALSSM
+        c0 : None, array_like, optional
+            Alternative State-Space Output Matrices
+            Alternative entries are scalars or `None` for an ALSSM resp.
+            A scalar element will result in a ALSSM Output Matrix C filled with the element value.
+            i.e. `c0 = 3`  will result in ALSSM.C = [3, 3].
+            A None element won't change the ALSSM Output Matrix C.
+            i.e. `c0s = None` no change (Default).
+
+        Returns
+        -------
+        s : :class:`~numpy.ndarray` of shape=(XS,[J,]L[,S]) of floats
+            ALSSM outputs
+
+
+        |def_N|
+        |def_L|
+        |def_M|
+        |def_S|
+        |def_XS|
 
         """
-        return super().eval_alssm_output(xs, [alssm_weight])
+        return super().eval_alssm_output(xs, (alssm_weight,), c0s=(c0, ))
 
 
 class RLSAlssmBase(ABC):
@@ -984,13 +1061,14 @@ class RLSAlssmBase(ABC):
 
     @property
     def cost_model(self):
-        """CostSegment, CompositeCost :  Cost Model"""
+        """CostBase : Cost Model"""
         return self._cost_model
 
     @cost_model.setter
     def cost_model(self, cost_model):
         assert isinstance(cost_model, CostBase), 'cost_model is not a subclass of CostBase'
         self._cost_model = cost_model
+        self._cost_model.__class__ = CostBase
 
     @property
     def betas(self):
@@ -1112,36 +1190,79 @@ class RLSAlssmBase(ABC):
                 ValueError('segment.direction has wrong value.')
 
     @abstractmethod
-    def eval_errors(self, xs, ks=None):
-        """Abstract method"""
+    def minimize_x(self, *args, **kwargs):
         pass
 
-    def eval_model_energies(self, xs, ks=None):
-        """Abstract Method"""
+    @abstractmethod
+    def minimize_v(self, *args, **kwargs):
+        pass
 
-    def eval_observation_energies(self, ks=None):
+    def filter_minimize_x(self, y, v=None, H=None, h=None):
         """
-        Evaluates the observation energies :math:`kappa_k`
+        Combination of :meth:`RLSAlssmBase.filter` and :meth:`RLSAlssmBase.minimize_x`.
 
-        Parameters
-        ----------
-        ks : None, array_like of int of shape=(XS,)
-            List of indices where to evaluate the observation energy
+        This method has the same output as calling the methods
 
-        Returns
-        -------
-        out : :class:`np.ndarray`
-            Observation energy for each state vector. Return shape is (K,)
-            If `ks` is not None return shape is (XS,)
-            
+        .. code::
+
+            rls.filter(y)
+            xs = rls.minimize_x()
+
+
+        See Also
+        --------
+        :meth:`RLSAlssmBase.filter`, :meth:`RLSAlssmBase.minimize_x`
+
         """
-        return self.kappa if ks is None else self.kappa[ks]
 
+        self.filter(y, v)
+        return self.minimize_x(H, h)
+
+    def filter_minimize_v(self, y, v=None, H=None, h=None, **kwargs):
+        """
+        Combination of :meth:`RLSAlssmBase.filter` and :meth:`RLSAlssmBase.minimize_v`.
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            rls.filter(y)
+            xs = rls.minimize_v()
+
+
+        See Also
+        --------
+        :meth:`RLSAlssmBase.filter`, :meth:`RLSAlssmBase.minimize_v`
+
+        """
+
+        self.filter(y, v)
+        return self.minimize_v(H, h, **kwargs)
+
+    def filter_minimize_yhat(self,y, v=None, H=None, h=None, alssm_weights=None, c0s=None):
+        """
+        Combination of :meth:`RLSAlssmBase.filter` and :meth:`RLSAlssmBase.minimize_x` and
+        :meth:'CostBase.eval_alssm_output`
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            xs = rls.filter_minimize_x()
+            y_hat = rls.cost_model.eval_alssm_output(xs)
+
+        See Also
+        --------
+        :meth:`RLSAlssmBase.filter`, :meth:`RLSAlssmBase.minimize_x`
+
+        """
+        xs = self.filter_minimize_x(y, v=v, H=H, h=h)
+        return self.cost_model.eval_alssm_output(xs, alssm_weights=alssm_weights, c0s=c0s)
 
 
 class RLSAlssm(RLSAlssmBase):
     """
-    Filter and Data container for Recursive Least Square Alssm Filters
+    Filter and Data container for Recursive Least Sqaure Alssm Filters
 
     :class:`RLSAlssm` computes and stores intermediate values such as covariances,
     as required to efficiently solve recursive least squares problems
@@ -1313,50 +1434,6 @@ class RLSAlssm(RLSAlssmBase):
 
         return x
 
-    def filter_minimize_x(self, y, v=None, H=None, h=None):
-        """
-        Combination of :meth:`RLSAlssm.filter` and :meth:`RLSAlssm.minimize_x`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_x()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssm.filter`, :meth:`RLSAlssm.minimize_x`
-
-        """
-
-        self.filter(y, v)
-        return self.minimize_x(H, h)
-
-
-    def filter_minimize_v(self, y, v=None, H=None, h=None):
-        """
-        Combination of :meth:`RLSAlssm.filter` and :meth:`RLSAlssm.minimize_v`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_v()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssm.filter`, :meth:`RLSAlssm.minimize_v`
-
-        """
-
-        self.filter(y, v)
-        return self.minimize_v(H, h)
-
-
     def eval_errors(self, xs, ks=None):
         r"""
         Evaluation of the squared error for multiple state vectors `xs`.
@@ -1378,9 +1455,8 @@ class RLSAlssm(RLSAlssmBase):
 
         Returns
         -------
-        J : :class:`np.ndarray`
-            Squared Error for each state vector. Return shape is (K,)
-            If `ks` is not None return shape is (XS,)
+        J : :class:`np.ndarray` of shape=(XS,)
+            Squared Error for each state vector
 
 
         |def_K|
@@ -1397,33 +1473,6 @@ class RLSAlssm(RLSAlssmBase):
                     - 2 * np.einsum('kn, kn->k', self.xi[ks], xs[ks])
                     + self.kappa[ks])
 
-
-    def eval_model_energies(self, xs, ks=None):
-        r"""
-        Evaluates the model energies :math:`x_k^{\mathsf{T}}W_k x_k`
-
-        Parameters
-        ----------
-        xs : array_like of shape=(K, N, [S])
-            List of state vectors :math:`x`
-        ks : None, array_like of int of shape=(XS,)
-            List of indices where to evaluate the model energy
-
-        Returns
-        -------
-        out : :class:`np.ndarray`
-            Model energy for each state vector. Return shape is (K,[S])
-            If `ks` is not None return shape is (XS,)
-
-        |def_K|
-        |def_XS|
-        |def_N|
-
-        """
-        if ks is None:
-            return np.einsum('kn, kn->k', xs, np.einsum('knm, km->kn', self.W, xs))
-        else:
-            return np.einsum('kn, kn->k', xs[ks], np.einsum('knm, km->kn', self.W[ks], xs[ks]))
 
 class RLSAlssmSet(RLSAlssmBase):
     """
@@ -1613,47 +1662,6 @@ class RLSAlssmSet(RLSAlssmBase):
 
         return x
 
-    def filter_minimize_x(self, y, v=None, H=None, h=None, **kwargs):
-        """
-        Combination of :meth:`RLSAlssmSet.filter` and :meth:`RLSAlssmSet.minimize_x`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_x()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssmSet.filter`, :meth:`RLSAlssmSet.minimize_x`
-
-        """
-        self.filter(y, v)
-        return self.minimize_x(H, h, **kwargs)
-
-    def filter_minimize_v(self, y, v=None, H=None, h=None, **kwargs):
-        """
-        Combination of :meth:`RLSAlssmSet.filter` and :meth:`RLSAlssmSet.minimize_v`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_v()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssmSet.filter`, :meth:`RLSAlssmSet.minimize_v`
-
-        """
-
-        self.filter(y, v)
-        return self.minimize_v(H, h, **kwargs)
-
     def eval_errors(self, xs, ks=None):
         r"""
         Evaluation of the squared error for multiple state vectors `xs`.
@@ -1703,39 +1711,6 @@ class RLSAlssmSet(RLSAlssmBase):
                         - 2 * np.einsum('kns, knt->kst', self.xi[ks], xs[ks])
                         + self.kappa[ks])
 
-
-    def eval_model_energies(self, xs, ks=None):
-        r"""
-        Evaluates the model energies :math:`x_k^{\mathsf{T}}W_k x_k`
-
-        Parameters
-        ----------
-        xs : array_like of shape=(K, N, [S])
-            List of state vectors :math:`x`
-        ks : None, array_like of int of shape=(XS,)
-            List of indices where to evaluate the model energy
-
-        Returns
-        -------
-        out : :class:`np.ndarray`
-            Model energy for each state vector. Return shape is (K,[S])
-            If `ks` is not None return shape is (XS,)
-
-        |def_K|
-        |def_XS|
-        |def_N|
-
-        """
-        if ks is None:
-            if self._kappa_diag:
-                return np.einsum('kns, kns->ks', xs, np.einsum('knm, kmt->knt', self.W, xs))
-            else:
-                return np.einsum('kns, knt->kst', xs, np.einsum('knm, kmt->knt', self.W, xs))
-        else:
-            if self._kappa_diag:
-                return np.einsum('kns, kns->ks', xs[ks], np.einsum('knm, kmt->knt', self.W[ks], xs[ks]))
-            else:
-                return np.einsum('kns, knt->kst', xs[ks], np.einsum('knm, kmt->knt', self.W[ks], xs[ks]))
 
 class RLSAlssmSteadyState(RLSAlssmBase):
     """
@@ -1834,39 +1809,6 @@ class RLSAlssmSteadyState(RLSAlssmBase):
 
         return x
 
-    def filter_minimize_x(self, y, v=None, H=None, h=None):
-        """
-        Combination of :meth:`RLSAlssmSteadyState.filter` and :meth:`RLSAlssmSteadyState.minimize_x`.
-
-        See Also
-        --------
-        :meth:`RLSAlssmSteadyState.filter`, :meth:`RLSAlssmSteadyState.minimize_x`
-
-        """
-        self.filter(y, v)
-        return self.minimize_x(H, h)
-
-    def filter_minimize_v(self, y, v=None, H=None, h=None):
-        """
-        Combination of :meth:`RLSAlssmSteadyState.filter` and :meth:`RLSAlssmSteadyState.minimize_v`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_v()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssmSteadyState.filter`, :meth:`RLSAlssmSteadyState.minimize_v`
-
-        """
-
-        self.filter(y, v)
-        return self.minimize_v(H, h)
-
     def eval_errors(self, xs, ks=None):
         r"""
         Evaluation of the squared error for multiple state vectors `xs`.
@@ -1885,32 +1827,6 @@ class RLSAlssmSteadyState(RLSAlssmBase):
                     - 2 * np.einsum('kn, kn->k', self.xi[ks], xs[ks])
                     + self.kappa[ks])
 
-    def eval_model_energies(self, xs, ks=None):
-        r"""
-        Evaluates the model energies :math:`x_k^{\mathsf{T}}W_k x_k`
-
-        Parameters
-        ----------
-        xs : array_like of shape=(K, N, [S])
-            List of state vectors :math:`x`
-        ks : None, array_like of int of shape=(XS,)
-            List of indices where to evaluate the model energy
-
-        Returns
-        -------
-        out : :class:`np.ndarray`
-            Model energy for each state vector. Return shape is (K,[S])
-            If `ks` is not None return shape is (XS,)
-
-        |def_K|
-        |def_XS|
-        |def_N|
-
-        """
-        if ks is None:
-            return np.einsum('kn, kn->k', xs, np.einsum('nm, km->kn', self.W, xs))
-        else:
-            return np.einsum('kn, kn->k', xs[ks], np.einsum('nm, km->kn', self.W, xs[ks]))
 
 class RLSAlssmSetSteadyState(RLSAlssmBase):
     """
@@ -2026,39 +1942,6 @@ class RLSAlssmSetSteadyState(RLSAlssmBase):
 
         return x
 
-    def filter_minimize_x(self, y, v=None, H=None, h=None, **kwargs):
-        """
-        Combination of :meth:`RLSAlssmSetSteadyState.filter` and :meth:`RLSAlssmSetSteadyState.minimize_x`.
-
-        See Also
-        --------
-        :meth:`RLSAlssmSetSteadyState.filter`, :meth:`RLSAlssmSetSteadyState.minimize_x`
-
-        """
-        self.filter(y, v)
-        return self.minimize_x(H, h, **kwargs)
-
-    def filter_minimize_v(self, y, v=None, H=None, h=None, **kwargs):
-        """
-        Combination of :meth:`RLSAlssmSetSteadyState.filter` and :meth:`RLSAlssmSetSteadyState.minimize_v`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_v()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssmSetSteadyState.filter`, :meth:`RLSAlssmSetSteadyState.minimize_v`
-
-        """
-
-        self.filter(y, v)
-        return self.minimize_v(H, h, **kwargs)
-
     def eval_errors(self, xs, ks=None):
         r"""
         Evaluation of the squared error for multiple state vectors `xs`.
@@ -2087,39 +1970,6 @@ class RLSAlssmSetSteadyState(RLSAlssmBase):
                         - 2 * np.einsum('kns, knt->kst', self.xi[ks], xs[ks])
                         + self.kappa[ks])
 
-
-    def eval_model_energies(self, xs, ks=None):
-        r"""
-        Evaluates the model energies :math:`x_k^{\mathsf{T}}W_k x_k`
-
-        Parameters
-        ----------
-        xs : array_like of shape=(K, N, [S])
-            List of state vectors :math:`x`
-        ks : None, array_like of int of shape=(XS,)
-            List of indices where to evaluate the model energy
-
-        Returns
-        -------
-        out : :class:`np.ndarray`
-            Model energy for each state vector. Return shape is (K,[S])
-            If `ks` is not None return shape is (XS,)
-
-        |def_K|
-        |def_XS|
-        |def_N|
-
-        """
-        if ks is None:
-            if self._kappa_diag:
-                return np.einsum('kns, kns->ks', xs, np.einsum('nm, kmt->knt', self.W, xs))
-            else:
-                return np.einsum('kns, knt->kst', xs, np.einsum('nm, kmt->knt', self.W, xs))
-        else:
-            if self._kappa_diag:
-                return np.einsum('kns, kns->ks', xs[ks], np.einsum('nm, kmt->knt', self.W, xs[ks]))
-            else:
-                return np.einsum('kns, knt->kst', xs[ks], np.einsum('nm, kmt->knt', self.W, xs[ks]))
 
 class ConstrainMatrix:
     """

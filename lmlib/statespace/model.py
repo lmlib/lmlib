@@ -118,7 +118,11 @@ class ModelBase(ABC):
     @deltas.setter
     def deltas(self, deltas):
         _n = len(self.alssms)
-        deltas = [1] * _n if deltas is None else deltas
+        if deltas is None:
+            deltas = [1] * _n
+        elif np.isscalar(deltas):
+            deltas = [deltas] * _n
+
         assert isinstance(deltas, Iterable), 'deltas is not iterable'
         assert np.size(deltas) == _n, f'Output scaling factors deltas are not of length {_n}, ' \
                                       f'{info_str_found_shape(deltas)}'
@@ -171,7 +175,7 @@ class ModelBase(ABC):
         [ 0.1  0.  -0.8  1. ]
 
         """
-        return np.tensordot(self.C, xs, axes=(-1, 1))
+        return np.asarray([self.C@x for x in xs])
 
     def eval_state(self, x):
         r"""
