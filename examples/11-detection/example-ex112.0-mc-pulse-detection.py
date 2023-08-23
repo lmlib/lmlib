@@ -24,7 +24,7 @@ spike_decay = 0.88
 spike_locations = [100, 240, 370]
 spike = gen_sine(spike_length, spike_length) * gen_exp(spike_length, spike_decay)
 y_sp = gen_conv(gen_pulse(K, spike_locations), spike)
-y = np.column_stack([0.8*y_sp + gen_wgn(K, sigma=0.2, seed=10000-l) for l in range(L)]).reshape(K, 1, L)
+y = np.column_stack([0.8*y_sp + gen_wgn(K, sigma=0.2, seed=10000-l) for l in range(L)]).reshape(K, L)
 
 # Model
 alssm_sp = lm.AlssmSin(k_period_to_omega(spike_length), spike_decay)
@@ -87,7 +87,8 @@ axs[1].legend(('true spikes',), loc=1)
 # Signals
 OFFSETS = [0, 2, 4]
 axs[2].set(ylabel='$y_k$')
-axs[2].plot(range(K), y[:, 0] + OFFSETS, c='tab:gray', lw=1)
+print(y.shape)
+axs[2].plot(range(K), y + OFFSETS, c='tab:gray', lw=1)
 axs[2].plot(range(K), trajs_pulse + OFFSETS, color='b', lw=1.5, linestyle="-")
 axs[2].plot(range(K), trajs_baseline + OFFSETS , color='k', lw=1.5, linestyle="-")
 axs[2].legend(('$y$','_','_','"pulses"','_','_','"baseline"','_','_',), loc=1)
