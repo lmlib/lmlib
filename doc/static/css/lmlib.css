@@ -1,5 +1,5 @@
 
-@media (min-width: 720px) {
+@media (min-width: 960px) {
     .col-xl-8 {
         flex: 0 0 83.33332%;
         max-width: 83.33332%;
@@ -124,21 +124,26 @@ span.std.std-ref  {
 h2 + div.toctree-wrapper.compound  {
    background-color: #EEEEEE;
    border: 1px solid #CCCCCC;
+    padding-left: 10px;
 }
 
 
 /* Subtitles in Gallery */
 #examples  h2, #coding  h2 {
-	color: black;
-	font-size: 120%;
+    color: black;
+    font-size: 120%;
     border-bottom: 1px solid grey;
-	font-weight: bold;
+    font-weight: bold;
+}
+.sphx-glr-thumbnails
+{
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
 }
 
-
-/* Gallery Thumbnails https://sphinx-gallery.github.io/stable/configuration.html#setting-gallery-thumbnail-size */
+/*!* Gallery Thumbnails https://sphinx-gallery.github.io/stable/configuration.html#setting-gallery-thumbnail-size *!*/
 .sphx-glr-thumbcontainer {
     min-height: 320px !important;
+    min-width: 400px !important;
     margin: 10px !important;
 }
 .sphx-glr-thumbcontainer figure {
