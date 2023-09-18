@@ -1,5 +1,5 @@
 """
-Kalman Smoother with Scalar NUV Input [ex601.2]
+Kalman Smoother with Scalar NUV Input [ex601.3]
 =============================================
 
 
@@ -30,7 +30,6 @@ from lmlib.irrls import *
 
 # --------------- generate test signal ---------------
 K = 800  # number of samples (length of test signal)
-#y_ref = np.cumsum(gen_steps(K, [200, 250, 450, 590, 690], [1, .4, -1.1, -.4, -.5]))
 y_ref = np.cumsum(gen_steps(K, [200, 250, 450, 590, 690], [.02, -.02, .03, -.04, -.03]))
 y = y_ref + gen_wgn(K, sigma=0.2, seed=1000)
 
@@ -62,17 +61,17 @@ y = y_ref + gen_wgn(K, sigma=0.2, seed=1000)
 # ---------------------------------------------------------------------------
 
 
-# Configuration iterations and initial values
+# Initial values
 N = 2 # signal model order to use
 I_MAX = 100  # 200 # Number of iterations
-sigmaZ2 = 0.12 # initial value for Sigma Z^2
+sigmaZ2 = 0.12 # initial value for scalar Sigma Z^2
 sigmaU2 = [0.001,] # initial value for Sigma U^2 (diagonal Elements of covariance matrix)
 
 DISPPLAY_U_THERSHOLD = 0.001 # threshold value to sparcify input (for visualization only)
 
 
 
-# --- Defining Blocks & Messages ---
+# --- Defining Blocks  ---
 
 # Block:   AX := A@X[k-1]
 A = lm.AlssmPoly( poly_degree=N-1 ).A
@@ -88,10 +87,10 @@ block_output_Y = MBF.Block_Output_Y( K, C, y, sigmaZ2 )
 block_marginals = MBF.Block_Marginals( K, N )
 
 section = Section( K, N )
-section.add_block(block_A, 'block_A')
-section.add_block(block_input_NUV, 'block_input_NUV')
-section.add_block(block_output_Y, 'block_Output_Y')
-section.add_block(block_marginals, 'block_marginal')
+section.append_block(block_A, 'block_A')
+section.append_block(block_input_NUV, 'block_input_NUV')
+section.append_block(block_output_Y, 'block_Output_Y')
+section.append_block(block_marginals, 'block_marginal')
 
 section.optimize(max_itr=I_MAX)
 

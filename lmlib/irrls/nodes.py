@@ -18,7 +18,7 @@ class Section():
        self._block_entries = [] # list of tuples of sequential blocks with (block object, block label)
        pass
 
-    def add_block(self, block, label = None):
+    def append_block(self, block, label = None):
        """ Addes a new block to the end of the previous blocks """
        self._block_entries.append( (label, block) )
 
@@ -551,6 +551,8 @@ class MBF():
                       input variance(s) initial values (for M>1, the diagonal elements of the covariance matrices are expected)
                       if dimension is (M,) array is extended to shape (M, K) by repetition over dimension K-times.
                       (not fully implented yet)
+
+                      @todo: K sollte erste Dimension sein.
 
             border_suppression:  Boolean
                       If `True`, variance at k=0 and k=K-1 are set to zero (avoids border artefacts), optional, default: False

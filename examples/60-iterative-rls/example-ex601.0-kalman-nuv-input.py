@@ -13,6 +13,10 @@ Kalman Smoother with Scalar NUV Input [ex601.0]
 
     .. container:: col-text
 
+       **Education Examples (Edu):** This is a full implementation of recursive least squares filter with Gaussian input according to Loeliger2016]_.
+       For ease of comprehension and for teaching purposes, the use of library functions is omitted here.
+       However, for any practical applications, we highly recommend to use the more flexible, ready made module :ref:`lmlib.irrls` instead, as demonstrated in [Example ex601.3] and others.  
+
        Implementation of Kalman Smoother with NUV Prior on input *U*.
        All given equation references refer to:
        *"H.-A. Loeliger, L. Bruderer, H. Malmberg, F. Wadehn, and N. Zalmai: On sparsity by NUV-EM, Gaussian message passing, and Kalman smoothing"*, 2016   Information Theory & Applications Workshop (ITA), La Jolla, CA, Jan. 31 - Feb. 5, 2016

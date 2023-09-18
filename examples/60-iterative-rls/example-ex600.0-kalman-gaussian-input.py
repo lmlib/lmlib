@@ -1,5 +1,5 @@
 """
-Kalman Smoother with Gaussian Input [ex600.0]
+(Edu) Kalman Smoother with Gaussian Input [ex600.0]
 =============================================
 
 
@@ -10,8 +10,11 @@ Kalman Smoother with Gaussian Input [ex600.0]
        .. image:: ./do-not-remove/../../../../../_static/gallery/example-ex600.0-kalman-gaussian-input.png   
           :width: 400
 
-
     .. container:: col-text
+
+       **Education Examples (Edu):** This is a full implementation of recursive least squares filter with Gaussian input according to Loeliger2016]_.
+       For ease of comprehension and for teaching purposes, the use of library functions is omitted here.
+       However, for any practical applications, we highly recommend to use the more flexible, ready made module :ref:`lmlib.irrls` instead, as demonstrated in [Example ex601.3] and others.  
 
        Implementation of Kalman Smoother with Gaussian input *U*.
        All given equation references refer to:
