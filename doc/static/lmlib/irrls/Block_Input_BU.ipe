@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE ipe SYSTEM "ipe.dtd">
 <ipe version="70218" creator="Ipe 7.2.24">
-<info created="D:20220715071431" modified="D:20220716141601"/>
+<info created="D:20220715071431" modified="D:20230618165542"/>
 <ipestyle name="basic">
 <symbol name="arrow/arc(spx)">
 <path stroke="sym-stroke" fill="sym-stroke" pen="sym-pen">
@@ -314,14 +314,7 @@ h
 <page>
 <layer name="alpha"/>
 <view layers="alpha" active="alpha"/>
-<path layer="alpha" stroke="black">
-128 688 m
-128 672 l
-144 672 l
-144 688 l
-h
-</path>
-<path stroke="black" arrow="normal/normal">
+<path layer="alpha" matrix="0.625 0 0 1 66 0" stroke="black" arrow="normal/normal">
 144 680 m
 176 680 l
 </path>
@@ -330,20 +323,6 @@ h
 176 672 l
 192 672 l
 192 688 l
-h
-</path>
-<path stroke="black">
-224 688 m
-224 672 l
-240 672 l
-240 688 l
-h
-</path>
-<path matrix="1 0 0 1 0 8" stroke="black">
-224 640 m
-224 624 l
-240 624 l
-240 640 l
 h
 </path>
 <path matrix="1 0 0 1 0 -8" stroke="black">
@@ -360,35 +339,9 @@ h
 192 784 l
 h
 </path>
-<path matrix="1 0 0 1 0 16" stroke="black">
-224 592 m
-224 576 l
-240 576 l
-240 592 l
-h
-</path>
-<path matrix="1 0 0 1 0 16" stroke="black">
-176 592 m
-176 576 l
-192 576 l
-192 592 l
-h
-</path>
-<path stroke="black" arrow="normal/normal">
+<path matrix="0.5 0 0 1 96 0" stroke="black" arrow="normal/normal">
 192 680 m
 224 680 l
-</path>
-<path matrix="1 0 0 0.75 0 168" stroke="black" arrow="normal/normal">
-232 672 m
-232 640 l
-</path>
-<path matrix="1 0 0 0.75 0 164" stroke="black" arrow="normal/normal">
-232 624 m
-232 592 l
-</path>
-<path matrix="1 0 0 1 0 16" stroke="black" arrow="normal/normal">
-192 584 m
-224 584 l
 </path>
 <path matrix="1 0 0 0.75 0 172" stroke="black" arrow="normal/normal">
 184 720 m
@@ -398,58 +351,25 @@ h
 184 768 m
 184 736 l
 </path>
-<path stroke="black">
-240 680 m
-256 680 l
-</path>
-<path stroke="black" arrow="normal/normal">
-112 680 m
-128 680 l
-</path>
-<path stroke="black" dash="dotted">
-256 680 m
-272 680 l
-</path>
-<path stroke="black" dash="dotted">
-96 680 m
-112 680 l
-</path>
-<path matrix="1 0 0 1 0 16" stroke="black" arrow="normal/normal">
-232 576 m
-232 560 l
-</path>
-<text matrix="1 0 0 1 -8 -4" transformations="translations" pos="104 688" stroke="black" type="label" width="23.353" height="6.812" depth="2.32" valign="baseline" style="math">X_{k-1}</text>
-<text matrix="1 0 0 1 -8 -4" transformations="translations" pos="256 688" stroke="black" type="label" width="16.476" height="6.812" depth="1.49" valign="baseline">$X_k$
-</text>
 <text matrix="1 0 0 1 -24 -16" transformations="translations" pos="192 760" stroke="black" type="label" width="11.704" height="6.812" depth="1.49" valign="center" style="math">U_k</text>
-<text matrix="1 0 0 1 -14 8" transformations="translations" pos="240 616" stroke="black" type="label" width="10.686" height="9.176" depth="1.49" halign="right" valign="center" style="math">\tilde Y_k</text>
-<text matrix="1 0 0 1 0 16" transformations="translations" pos="200 576" stroke="black" type="label" width="11.703" height="6.812" depth="1.49" valign="center" style="math">Z_k</text>
-<text matrix="1 0 0 1 -24 4" transformations="translations" pos="240 560" stroke="black" type="label" width="33.755" height="6.815" depth="1.93" valign="center" style="math">Y_k = y_k</text>
-<text transformations="translations" pos="228 636" stroke="black" type="label" width="7.833" height="6.808" depth="0" valign="baseline" style="math">C</text>
-<text matrix="1 0 0 1 4 20" transformations="translations" pos="228 580" stroke="black" type="label" width="7.749" height="5.812" depth="0.83" halign="center" valign="center" style="math">+</text>
-<text matrix="1 0 0 1 4 100" transformations="translations" pos="228 580" stroke="black" type="label" width="7.749" height="3.655" depth="0" halign="center" valign="center" style="math">$=$</text>
 <text matrix="1 0 0 1 -44 100" transformations="translations" pos="228 580" stroke="black" type="label" width="7.749" height="5.812" depth="0.83" halign="center" valign="center" style="math">$+$</text>
-<text matrix="1 0 0 1 -92 100" transformations="translations" pos="228 580" stroke="black" type="label" width="7.472" height="6.808" depth="0" halign="center" valign="center" style="math">$A$</text>
 <text matrix="1 0 0 1 -44 140" transformations="translations" pos="228 580" stroke="black" type="label" width="7.057" height="6.808" depth="0" halign="center" valign="center" style="math">$B$</text>
 <text matrix="1 0 0 1 -44 180" transformations="translations" pos="228 580" stroke="black" type="label" width="9.642" height="6.808" depth="0" halign="center" valign="center" style="math">\mathcal{N}</text>
-<text matrix="1 0 0 1 -44 36" transformations="translations" pos="228 580" stroke="black" type="label" width="42.481" height="8.11" depth="2.49" halign="center" valign="center" style="math">\mathcal{N}(0, \sigma^2 I)</text>
-<path matrix="1 0 0 1 0 16" stroke="black" fill="black">
-230 560 m
-230 556 l
-234 556 l
-234 560 l
-h
-</path>
-<text matrix="1 0 0 1 12 0" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="28.244" height="6.234" depth="0.74" halign="center" valign="center" size="small">\texttt{X[k-1]}</text>
-<text matrix="1 0 0 1 62.432 -0.246434" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="23.536" height="6.234" depth="0.74" halign="center" valign="center" size="small">\texttt{AX[k]}</text>
-<text matrix="1 0 0 1 158.392 -0.292215" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="18.829" height="6.234" depth="0.74" halign="center" valign="center" size="small">\texttt{X[k]}</text>
-<text matrix="1 0 0 1 110.1 -0.326157" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="26.926" height="6.234" depth="0.74" halign="center" valign="center" size="small">\texttt{AX\_[k]}</text>
-<text matrix="1 0 0 1 140.432 -48.2464" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="22.218" height="6.234" depth="0.74" valign="center" size="small">\texttt{Y\_[k]}</text>
+<text matrix="1 0 0 1 58.432 -0.246434" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="4.707" height="5.479" depth="0" halign="center" valign="center" size="small">\texttt{X}</text>
+<text matrix="1 0 0 1 118.1 -0.326157" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="4.707" height="5.479" depth="0" halign="center" valign="center" size="small">\texttt{Z}</text>
 <text matrix="1 0 0 1 90.1 31.6738" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="23.536" height="6.234" depth="0.74" valign="center" size="small">\texttt{BU[k]}</text>
 <text matrix="1 0 0 1 90.1 71.6738" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="18.829" height="6.234" depth="0.74" valign="center" size="small">\texttt{U[k]}</text>
-<text matrix="1 0 0 1 80.432 -88.2464" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="32.951" height="5.482" depth="1.99" halign="center" valign="center" size="small">\texttt{sigmaZ2}</text>
-<text matrix="1 0 0 1 140.432 -98.2464" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="18.829" height="6.229" depth="1.99" valign="center" size="small">\texttt{y[k]}</text>
 <text matrix="1 0 0 1 -44 196" transformations="translations" pos="228 580" stroke="black" type="label" width="39.166" height="8.114" depth="2.74" halign="center" valign="center" style="math">\mathcal{N}(0, \sigma_U^2)</text>
 <text matrix="1 0 0 1 116.432 87.7536" transformations="translations" pos="98 672" stroke="darkgray" type="label" width="32.951" height="5.482" depth="1.99" halign="center" valign="center" size="small">\texttt{sigmaU2}</text>
+<text matrix="1 0 0 1 -40 -68" transformations="translations" pos="192 760" stroke="black" type="label" width="9.036" height="6.808" depth="0" valign="center" style="math">X</text>
+<text matrix="1 0 0 1 20 -68" transformations="translations" pos="192 760" stroke="black" type="label" width="7.513" height="6.808" depth="0" valign="center" style="math">Z</text>
+<path stroke="black" dash="dotted">
+208 680 m
+224 680 l
+</path>
+<path matrix="1 0 0 1 -68 0" stroke="black" dash="dotted">
+208 680 m
+224 680 l
+</path>
 </page>
 </ipe>
