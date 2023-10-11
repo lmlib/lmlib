@@ -10,10 +10,10 @@ __all__ = ['forward_recursion_py', 'backward_recursion_py',
 
 
 def forward_recursion_py(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma_inv, A_inv, gamma_a, Aac, AaccAa, gamma_b, Abc, AbccAb):
-    W0 = np.zeros_like(W[0])
-    xi0 = np.zeros_like(xi[0])
-    kappa0 = np.zeros_like(kappa[0])
-    nu0 = np.zeros_like(nu[0])
+    W0 = np.copy(W[0])
+    xi0 = np.copy(xi[0])
+    kappa0 = np.copy(kappa[0])
+    nu0 = np.copy(nu[0])
 
     K = len(y)
     for k in range(min(0, -b), K):
@@ -49,10 +49,10 @@ def forward_recursion_py(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma_inv, A
 
 
 def backward_recursion_py(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma, A, gamma_a, Aac, AaccAa, gamma_b, Abc, AbccAb):
-    W0 = np.zeros_like(W[0])
-    xi0 = np.zeros_like(xi[0])
-    kappa0 = np.zeros_like(kappa[0])
-    nu0 = np.zeros_like(nu[0])
+    W0 = np.copy(W[-1])
+    xi0 = np.copy(xi[-1])
+    kappa0 = np.copy(kappa[-1])
+    nu0 = np.copy(nu[-1])
 
     K = len(y)
 
@@ -89,9 +89,9 @@ def backward_recursion_py(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma, A, g
 
 
 def forward_recursion_xi_kappa_nu_py(xi, kappa, nu, a, b, delta, y, v, beta, gamma_inv, A_inv, gamma_a, Aac, AaccAa, gamma_b, Abc, AbccAb):
-    xi0 = np.zeros_like(xi[0])
-    kappa0 = np.zeros_like(kappa[0])
-    nu0 = np.zeros_like(nu[0])
+    xi0 = np.copy(xi[0])
+    kappa0 = np.copy(kappa[0])
+    nu0 = np.copy(nu[0])
 
     K = len(y)
     for k in range(min(0, -b), K):
@@ -122,9 +122,9 @@ def forward_recursion_xi_kappa_nu_py(xi, kappa, nu, a, b, delta, y, v, beta, gam
 
 
 def backward_recursion_xi_kappa_nu_py(xi, kappa, nu, a, b, delta, y, v, beta, gamma, A, gamma_a, Aac, AaccAa, gamma_b, Abc, AbccAb):
-    xi0 = np.zeros_like(xi[0])
-    kappa0 = np.zeros_like(kappa[0])
-    nu0 = np.zeros_like(nu[0])
+    xi0 = np.copy(xi[-1])
+    kappa0 = np.copy(kappa[-1])
+    nu0 = np.copy(nu[-1])
 
     K = len(y)
 
@@ -156,10 +156,10 @@ def backward_recursion_xi_kappa_nu_py(xi, kappa, nu, a, b, delta, y, v, beta, ga
 
 
 def forward_recursion_set_py(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma_inv, A_inv, gamma_a, Aac, AaccAa, gamma_b, Abc, AbccAb, kappa_diag=True):
-    W0 = np.zeros_like(W[0])
-    xi0 = np.zeros_like(xi[0])
-    kappa0 = np.zeros_like(kappa[0])
-    nu0 = np.zeros_like(nu[0])
+    W0 = np.copy(W[0])
+    xi0 = np.copy(xi[0])
+    kappa0 = np.copy(kappa[0])
+    nu0 = np.copy(nu[0])
 
     K = len(y)
 
@@ -202,10 +202,10 @@ def forward_recursion_set_py(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma_in
 
 
 def backward_recursion_set_py(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma, A, gamma_a, Aac, AaccAa, gamma_b, Abc, AbccAb, kappa_diag=True):
-    W0 = np.zeros_like(W[0])
-    xi0 = np.zeros_like(xi[0])
-    kappa0 = np.zeros_like(kappa[0])
-    nu0 = np.zeros_like(nu[0])
+    W0 = np.copy(W[-1])
+    xi0 = np.copy(xi[-1])
+    kappa0 = np.copy(kappa[-1])
+    nu0 = np.copy(nu[-1])
 
     K = len(y)
     for k in range(max(K - a, K) + 1, 1, -1):
@@ -248,9 +248,9 @@ def backward_recursion_set_py(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma, 
 
 
 def forward_recursion_set_xi_kappa_nu_py(xi, kappa, nu, a, b, delta, y, v, beta, gamma_inv, A_inv, gamma_a, Aac, AaccAa, gamma_b, Abc, AbccAb, kappa_diag=True):
-    xi0 = np.zeros_like(xi[0])
-    kappa0 = np.zeros_like(kappa[0])
-    nu0 = np.zeros_like(nu[0])
+    xi0 = np.copy(xi[0])
+    kappa0 = np.copy(kappa[0])
+    nu0 = np.copy(nu[0])
 
     K = len(y)
 
@@ -288,9 +288,9 @@ def forward_recursion_set_xi_kappa_nu_py(xi, kappa, nu, a, b, delta, y, v, beta,
 
 
 def backward_recursion_set_xi_kappa_nu_py(xi, kappa, nu, a, b, delta, y, v, beta, gamma, A, gamma_a, Aac, AaccAa, gamma_b, Abc, AbccAb, kappa_diag=True):
-    xi0 = np.zeros_like(xi[0])
-    kappa0 = np.zeros_like(kappa[0])
-    nu0 = np.zeros_like(nu[0])
+    xi0 = np.copy(xi[-1])
+    kappa0 = np.copy(kappa[-1])
+    nu0 = np.copy(nu[-1])
 
     K = len(y)
     for k in range(max(K - a, K) + 1, 1, -1):

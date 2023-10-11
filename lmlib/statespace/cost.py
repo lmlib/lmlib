@@ -1048,9 +1048,13 @@ class RLSAlssmBase(ABC):
     betas : array_like of shape=(P,) of floats, None, optional
         Segment Scalars. Factors weighting each of the `P` cost segments.
         If `betas` is not set, the weight is for each cost segment 1.
+    circular : bool, optional
+        Enables the use of the RLSAlssm* memory in a circular manner.
+        This allows online processing without reallocation of memory.
+
     """
 
-    def __init__(self, betas=None):
+    def __init__(self, betas=None, circular=False):
         self._cost_model = None
         self._W = None
         self._xi = None
@@ -1058,6 +1062,8 @@ class RLSAlssmBase(ABC):
         self._nu = None
         self.betas = betas
         self._backend = get_backend()
+        self.circular = circular
+        self._circular_init_storage = None
 
     @property
     def cost_model(self):
@@ -1105,6 +1111,16 @@ class RLSAlssmBase(ABC):
         """:class:`~numpy.ndarray`  : Filter Parameter :math:`\\nu`"""
         return self._nu
 
+    @property
+    def circular(self):
+        """bool : circular enables the reuse of a fixed memory for W, xi, kappa"""
+        return self._circular
+
+    @circular.setter
+    def circular(self, circular):
+        assert isinstance(circular, bool), "circular is not boolean"
+        self._circular = circular
+
     def _check_output_dimensions(self, y):
         C = AlssmSum(self.cost_model.alssms).C
 
@@ -1137,6 +1153,18 @@ class RLSAlssmBase(ABC):
     @abstractmethod
     def _allocate_parameter_storage(self, input_shape):
         pass
+
+    def setup_buffer(self, shape):
+        """
+        Allocates and initializes a fixed buffer in the memory with zeros
+
+        Parameters
+        ----------
+        shape : tuple of shape (K, [L, S])
+            buffer shape commonly save as input signal block
+
+        """
+        self._allocate_parameter_storage(shape)
 
     def set_backend(self, backend):
         """
@@ -1192,7 +1220,24 @@ class RLSAlssmBase(ABC):
         """
 
         self._check_output_dimensions(y)
-        self._allocate_parameter_storage(np.shape(y))
+        # added for circular start
+        if self.circular:
+            assert len(self.cost_model.segments) == 1, 'circular processing allows only a single segment in forward configuration'
+            assert self.cost_model.segments[0].direction == 'fw', 'circular processing allows only a single segment in forward configuration'
+
+            if all([self._W is None, self._xi is None, self._kappa is None, self._nu is None]):
+                self.setup_buffer(np.shape(y))
+
+            if self._circular_init_storage is not None:
+                self._W[0] = self._circular_init_storage[0]
+                self._xi[0] = self._circular_init_storage[1]
+                self._kappa[0] = self._circular_init_storage[2]
+                self._nu[0] = self._circular_init_storage[3]
+
+        else:
+            # added for circular end
+
+            self._allocate_parameter_storage(np.shape(y))
 
         segments = self.cost_model.segments
         alssms = self.cost_model.alssms
@@ -1218,6 +1263,14 @@ class RLSAlssmBase(ABC):
                 self._backward_recursion(A, C, segment, y, v, beta)
             else:
                 ValueError('segment.direction has wrong value.')
+
+        if self.circular:
+            k_end_a = -1#+self.cost_model.segments[0].a
+            self._circular_init_storage = \
+                [self._W[-1],# - self._W[-2],
+                 self._xi[-1],# - self._xi[-2],
+                 self._kappa[-1],# - self._kappa[-2],
+                 self._nu[-1]]# - self._nu[-2]]
 
     @abstractmethod
     def minimize_x(self, *args, **kwargs):
@@ -1523,8 +1576,8 @@ class RLSAlssmSet(RLSAlssmBase):
 
     """
 
-    def __init__(self, cost_model, kappa_diag=True):
-        super().__init__()
+    def __init__(self, cost_model, kappa_diag=True, **kwargs):
+        super().__init__(**kwargs)
         self._kappa_diag = None
         self.cost_model = cost_model
         self.set_kappa_diag(kappa_diag)
