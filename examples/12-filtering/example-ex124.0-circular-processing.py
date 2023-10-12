@@ -21,7 +21,7 @@ import lmlib as lm
 from lmlib.utils.generator import gen_rect, gen_wgn
 
 # using JIT for fast processing
-lm.set_backend('jit')
+lm.set_backend('py')
 
 
 # --- Generating test signal ---
@@ -36,7 +36,7 @@ y = np.column_stack([gen_rect(K, 200, 100, k0=s) for s in range(S)])
 buffer_len = 50
 
 # setup simple model
-segment_left = lm.Segment(a=-30, b=-0, direction='fw', g=20)
+segment_left = lm.Segment(a=-np.inf, b=-0, direction='fw', g=10)
 alssm = lm.AlssmPoly(1)
 cost = lm.CostSegment(alssm, segment_left)
 
@@ -62,24 +62,35 @@ for k_buffer in range(0, K, buffer_len):
 
 
 # test signal estimation
-rls_test = lm.RLSAlssm(cost)
-y_test_hat = rls_test.filter_minimize_yhat(y[:, S_mark])
+rls_test = lm.RLSAlssmSet(cost)
+y_test_hat = rls_test.filter_minimize_yhat(y)
 
 
 frames = [] # for storing the generated images
-fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
-ax3.plot(range(K), y[:, S_mark], c='k', lw=0.8, label=r'$y$')
-ax3.plot(range(K), y_hat[:, S_mark], c='b', lw=1, label=r'$\hat{y}$')
-ax3.plot(range(K), y_test_hat, 'g-s', lw=0.5, markersize=1, label=r'$\tilde{y}$')
+fig = plt.figure()
+gs = fig.add_gridspec(2,3)
+ax11 = fig.add_subplot(gs[0, 0])
+ax12 = fig.add_subplot(gs[0, 1])
+ax13 = fig.add_subplot(gs[0, 2])
+ax3 = fig.add_subplot(gs[1, :])
+
+
+ax3.plot(range(K), y[:, S_mark], c='k', lw=0.8, label=r'$y$ raw')
+ax3.plot(range(K), y_hat[:, S_mark], c='b', lw=1, label=r'$\hat{y}$ circular')
+ax3.plot(range(K), y_test_hat[:, S_mark], 'g-s', lw=0.5, markersize=1, label=r'$\tilde{y}$ normal')
 ax3.set_xlabel('k')
 ax3.legend()
-
+ax11.set_title('Raw Video')
+ax12.set_title('Circular Processed Video')
+ax13.set_title('Normal Processed Video')
 for k in range(K):
     img_ax1 = y[k].reshape((Xp, Yp))
     img_ax2 = y_hat[k].reshape((Xp, Yp))
+    img_ax3 = y_test_hat[k].reshape((Xp, Yp))
 
-    frames.append([ax1.imshow(img_ax1, cmap=plt.get_cmap('Greys_r'), animated=True),
-                   ax2.imshow(img_ax2, cmap=plt.get_cmap('Blues_r'), animated=True)])
+    frames.append([ax11.imshow(img_ax1, cmap=plt.get_cmap('Greys_r'), animated=True),
+                   ax12.imshow(img_ax2, cmap=plt.get_cmap('Blues_r'), animated=True),
+                   ax13.imshow(img_ax3, cmap=plt.get_cmap('Greens_r'), animated=True)])
 
 ani = animation.ArtistAnimation(fig, frames, interval=50, blit=True,
                                 repeat_delay=1000)
