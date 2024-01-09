@@ -1,10 +1,7 @@
-
-
-
 .. _lmlib.utils:
 
 lmlib.utils
-================
+===========
 
 
 **Package Abstract ::** This package is a collection of utility functions accelerate algorithm development and/or for educative purposes:
@@ -17,7 +14,7 @@ lmlib.utils
 
 
 Modules
---------------------
+-------
 
 .. autosummary::
    :toctree: _autosummary
@@ -26,13 +23,6 @@ Modules
    lmlib.utils.generator
    lmlib.utils.beta 
 
-
-
-
-Introductory Example
---------------------
-
-(TODO)
 
 
 

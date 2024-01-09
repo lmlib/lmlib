@@ -19,7 +19,7 @@ with extensions from [Zalmai2017]_ and [Wildhaber2019]_.
 
 
 Modules
---------------------
+-------
 
 .. autosummary::
    :toctree: _autosummary
@@ -29,32 +29,4 @@ Modules
    lmlib.statespace.cost
    lmlib.statespace.backend   
    lmlib.statespace.applications
-
-
-
-
-Introductory Example
---------------------
-
-
-.. plot:: _autoexamples/11-detection/example-ex110.0-edge-detection.py
-   :include-source:
-
-
-
-
-
-
-
-   
-
-
-
-
-
-
-
-
-
-
 

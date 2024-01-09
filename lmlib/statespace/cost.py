@@ -1,6 +1,8 @@
-"""Definition of recursively computed squared error cost functions (such as *Cost Segments* and *Composite Costs*), all based on ALSSMs"""
+"""
+Definition of recursively computed squared error cost functions (such as *Cost Segments* and *Composite Costs*),
+all based on ALSSMs
+"""
 
-import warnings
 import numpy as np
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
@@ -77,16 +79,16 @@ def create_rls(cost, multi_channel_set=False, steady_state=False, kappa_diag=Tru
     multi_channel_set : bool
         Set to True if a RLSAlssmSet* is desired
     steady_state : bool
-        Set to True if a Steaey State scheme is desired
+        Set to True if a Steady State scheme is desired
     kappa_diag : bool
-        If True a RLSAlssmSet* will performe a diagnoal kappa matrix. Only if multi_channel_set = True
+        If True a RLSAlssmSet* will perform a diagnoal kappa matrix. Only if multi_channel_set = True
     steady_state_method : str
         Type of Steady State method. Available: ('closed_form'). Only if steady_state == True
 
     Returns
     -------
     out : RLSAlssm, RLSAlssmSet, RLSAlssmSteadyState or RLSAlssmSetSteadyState
-        Returns Recursive Least Square Obeject
+        Returns Recursive Least Square Object
     """
     if isinstance(cost, CostBase):
         if not multi_channel_set and not steady_state:
@@ -110,7 +112,8 @@ def create_rls(cost, multi_channel_set=False, steady_state=False, kappa_diag=Tru
 
 def map_windows(windows, ks, K, merge_ks=False, merge_seg=False, fill_value=0):
     """
-    Maps the window amplitudes of one or multiple :class:`Segment` to indices `ks` into a common target output vector of length `K`.
+    Maps the window amplitudes of one or multiple :class:`Segment` to indices `ks` into a common target output vector of
+     length `K`.
 
     The parameter :attr:`windows` is commonly directly the output of one of the following methods:
 
@@ -147,11 +150,6 @@ def map_windows(windows, ks, K, merge_ks=False, merge_seg=False, fill_value=0):
     |def_KS|
     |def_P|
     |def_K|
-
-    Examples
-    --------
-
-    .. minigallery:: lmlib.map_windows
 
     """
 
@@ -206,7 +204,7 @@ def map_trajectories(trajectories, ks, K, merge_ks=False, merge_seg=False, fill_
 
         * Dimension `XS` only exists, if :attr:`merge_ks`:code:`=False`.
         * Dimension `P` only exists, if :attr:`merge_seg`:code:`=False`
-        * Dimension `S` only exists, if the parmeter :attr:`xs` of :meth:`CompositeCost.trajectories` or
+        * Dimension `S` only exists, if the parameter :attr:`xs` of :meth:`CompositeCost.trajectories` or
           :meth:`CompositeCost.trajectories` also provides dimension `S` (i.e., provides multiple signal set processing).
 
 
@@ -215,12 +213,6 @@ def map_trajectories(trajectories, ks, K, merge_ks=False, merge_seg=False, fill_
     |def_K|
     |def_L|
     |def_S|
-
-
-    Examples
-    --------
-    .. minigallery:: lmlib.map_trajectories
-
 
     """
 
@@ -231,9 +223,9 @@ def map_trajectories(trajectories, ks, K, merge_ks=False, merge_seg=False, fill_
     t_ = trajectories[0][0][1]
     P = len(trajectories[0])
     XS = len(trajectories)
-    assert XS == len(ks), "number of trajecotries and ks does not match up"
+    assert XS == len(ks), "number of trajectories and ks does not match up"
 
-    if t_.ndim == 2:  # check if trajecotry is from a RLSAlssmSet
+    if t_.ndim == 2:  # check if trajectory is from a RLSAlssmSet
         S = t_.shape[1]
         t = np.full((XS, P, K, S), fill_value)
     else:
@@ -282,7 +274,7 @@ class Segment:
     g : int, float, None
         :math:`g > 0`. Effective number of samples under the window. This is used as a (more readable) surrogate for the
         window decay of exponential windows, see [Wildhaber2018]_. |br|
-        :math:`g` is counted to the left or right of :math:`k+ \delta`, for for forward or backward computation
+        :math:`g` is counted to the left or right of :math:`k+ \delta`, for forward or backward computation
         direction, respectively.
     direction : str
         Computation direction of recursive computations (also selects a left- or right-side decaying window) |br|
@@ -312,9 +304,6 @@ class Segment:
     >>> segment = lm.Segment(a=-0, b=100, direction=lm.BACKWARD, g=15, delta=30, label="right-sided window with shift")
     >>> print(segment)
     Segment : a:0, b:100, bw, g:15, delta:30, label: right-sided window with shift
-
-    .. minigallery:: lmlib.Segment
-        :add-heading:
 
     """
 
@@ -465,26 +454,20 @@ class Segment:
 
         |def_JR|
 
-
-        Examples
-        --------
-        .. plot:: pyplots/Segment_window_plot.py
-                :include-source:
-
         """
 
         if self.direction == FW:
             if self.gamma > 1:
                 a_lim = max(np.log(thd) / np.log(self.gamma) - 1 + self.delta, self.a)
             else:
-                a_lim = max(np.log(thd) / np.log(1/self.gamma) - 1 + self.delta, self.a)
+                a_lim = max(np.log(thd) / np.log(1 / self.gamma) - 1 + self.delta, self.a)
             b_lim = self.b
         else:  # self.direction == BW:
             a_lim = self.a
             if self.gamma < 1:
                 b_lim = min(np.log(thd) / np.log(self.gamma) + 1 + self.delta, self.b)
             else:
-                b_lim = min(np.log(thd) / np.log(1/self.gamma) + 1 + self.delta, self.b)
+                b_lim = min(np.log(thd) / np.log(1 / self.gamma) + 1 + self.delta, self.b)
         ab_range = range(int(a_lim), int(b_lim) + 1)
         return ab_range, self.gamma ** (np.array(ab_range) - self.delta)
 
@@ -496,7 +479,7 @@ class CostBase(ABC):
     Parameters
     ----------
     label : str, optional
-        Label of Alssm, default: 'n/a'
+        Label of ALSSM, default: 'n/a'
 
     """
 
@@ -573,10 +556,11 @@ class CostBase(ABC):
         xs : array_like of shape=(XS, N [,S]) of floats
             List of initial state vectors :math:`x`
         F : array_like, shape(M, P) of int, shape(M,) of int
-            Mapping matrix. If not set to :code:`None`, the given matrix overloads the CompositeCost's internal mapping matrix as provided by the class constructor for :class:`CompositeCost`.
-            If :attr:`F` is only of :code:`shape(M,)`, the vector gets enlarged to size :code:`shape(M, P)` by repeating the vector `P`-times.
-            (This is a shortcut to select a single ALSSM over all segments.)
-        thds : list of shape(P) of floats, scalar, None, optional
+            Mapping matrix. If not set to :code:`None`, the given matrix overloads the CompositeCost's internal mapping
+            matrix as provided by the class constructor for :class:`CompositeCost`.
+            If :attr:`F` is only of :code:`shape(M,)`, the vector gets enlarged to size :code:`shape(M, P)` by repeating
+            the vector `P`-times. (This is a shortcut to select a single ALSSM over all segments.)
+        thd : list of shape(P) of floats, scalar, None, optional
             Per segment threshold limiting the evaluation boundaries by setting a minimum window height of the
             associated :attr:`~CompositeCost.segments`
             Scalar to use the same threshold for all available segments.
@@ -586,7 +570,7 @@ class CostBase(ABC):
         trajectories : list of shape=(XS) of tuples of shape=(P) of tuples :code:`(range, array)`
             Each element in `trajectories` is a tuple with
 
-            * :code:`range` `of length JR`: relative index range of trajectory with respect to semgent's boundaries
+            * :code:`range` `of length JR`: relative index range of trajectory with respect to segment's boundaries
             * :code:`array` `of shape(JR, L, [S])`: trajectory values over reported range.
 
             Dimension `S` is only present in the output, if dimension `S` is also present in :attr:`xs` (i.e., if multiple signal sets are used)
@@ -626,7 +610,7 @@ class CostBase(ABC):
         segment_indices : array_like, shape=(P,) of Boolean
             Enables (:code:`True`, 1) or disables (:code:`False`, 0) the evaluation of the
             p-th Segment in :attr:`CompositeCost.segments` using :meth:`CostSegment.window`
-        thds : list of shape=(P,) of floats, scalar, optional
+        thd : list of shape=(P,) of floats, scalar, optional
             List of per-segment threshold values or scalar to use the same threshold for all segments
             Evaluation is stopped for window weights below the given threshold.
             Set list element to :code:`None` to disable the threshold for a segment.
@@ -722,10 +706,6 @@ class CostBase(ABC):
         - Entries are scalars or `None` and for each ALSSM resp. i.e. :code:`c0s = ([1, 2], 3)`  will result in the first :code:`alssms[0].C = [1, 2]` and in the second :code:`alssms[1].C = [3, 3]`.
 
         - A None element won't change the ALSSM Output Matrix C. i.e. :code:`c0s = (None, 3)`  will leave alone first ALSSM.C and the second changes to :code:`alssms[1].C = [3, 3]`.
-
-        Examples
-        --------
-        .. minigallery:: lmlib.CostBase.eval_alssm_output
 
         """
 
@@ -934,7 +914,7 @@ class CostSegment(CostBase):
 
     Examples
     --------
-    Setup a cost segment with finite boundaries and a line ALSSM.
+    Set up a cost segment with finite boundaries and a line ALSSM.
 
     >>> alssm = lm.AlssmPoly(poly_degree=1, label="slope with offset")
     >>> segment = lm.Segment(a=-30, b=0, direction=lm.FORWARD, g=20, label="finite left")
@@ -980,6 +960,8 @@ class CostSegment(CostBase):
         ----------
         xs : array_like of shape=(XS, N [,S]) of float
             List of length `XS` with initial state vectors :math:`x`
+        alssm_weight : scalar, optional
+            Sets the weight of the output of the ALSSM
         thd : float or None, optional
             Threshold setting the evaluation boundaries by setting a minimum window height
 
@@ -988,7 +970,7 @@ class CostSegment(CostBase):
         trajectories : list of shape=(XS) of tuples :code:`(range, array)`
             Each element in `trajectories` is a tuple with
 
-            * :code:`range` of length `JR`: relative index range of trajectory with respect to semgent's boundaries.
+            * :code:`range` of length `JR`: relative index range of trajectory with respect to segment's boundaries.
             * :code:`array` of shape=(JR, L, [S]): trajectory values over reported range.
 
             Dimension `S` is only present in the output, if dimension `S` is present in `xs` (i.e., if multiple signal sets are used)
@@ -1035,7 +1017,7 @@ class CostSegment(CostBase):
         |def_XS|
 
         """
-        return super().eval_alssm_output(xs, (alssm_weight,), c0s=(c0, ))
+        return super().eval_alssm_output(xs, (alssm_weight,), c0s=(c0,))
 
 
 class RLSAlssmBase(ABC):
@@ -1162,7 +1144,7 @@ class RLSAlssmBase(ABC):
 
     def filter(self, y, v=None):
         """
-        Computes the intermediate parameters for subsequent squared error computations and minimizations.
+        Computes the intermediate parameters for subsequent squared error computations and minimization's.
 
         Computes the intermediate parameters using efficient forward- and backward recursions.
         The results are stored internally, ready to solve the least squares problem using e.g., :meth:`minimize_x`
@@ -1174,12 +1156,12 @@ class RLSAlssmBase(ABC):
         y : array_like
             Input signal |br|
             :class:`RLSAlssm` or :class:`RLSAlssmSteadyState`
-                Single-channel signal is of `shape =(K,)` for |br|
-                Multi-channel signal is of `shape =(K,L)` |br|
+            - Single-channel signal is of `shape =(K,)` for |br|
+            - Multi-channel signal is of `shape =(K,L)` |br|
             :class:`RLSAlssmSet` or :class:`RLSAlssmSetSteadyState`
-                Single-channel set signals is of `shape =(K,S)` for |br|
-                Multi-channel set signals is of `shape =(K,L,S)` |br|
-            Multi-channel-sets signal is of `shape =(K,L,S)`
+            - Single-channel set signals is of `shape =(K,S)` for |br|
+            - Multi-channel set signals is of `shape =(K,L,S)` |br|
+            - Multi-channel-sets signal is of `shape =(K,L,S)`
         v : array_like, shape=(K,), optional
             Sample weights. Weights the parameters for a time step `k` and is the same for all multi-channels.
             By default the sample weights are initialized to 1.
@@ -1269,10 +1251,10 @@ class RLSAlssmBase(ABC):
         self.filter(y, v)
         return self.minimize_v(H, h, **kwargs)
 
-    def filter_minimize_yhat(self,y, v=None, H=None, h=None, alssm_weights=None, c0s=None):
+    def filter_minimize_yhat(self, y, v=None, H=None, h=None, alssm_weights=None, c0s=None):
         """
         Combination of :meth:`RLSAlssmBase.filter` and :meth:`RLSAlssmBase.minimize_x` and
-        :meth:'CostBase.eval_alssm_output`
+        :meth:`CostBase.eval_alssm_output`
 
         This method has the same output as calling the methods
 
@@ -1311,11 +1293,6 @@ class RLSAlssm(RLSAlssmBase):
         Cost Model
     **kwargs
             Forwarded to :class:`.RLSAlssmBase`
-
-
-    Examples
-    --------
-    .. minigallery:: lmlib.RLSAlssm
 
     """
 
@@ -1385,7 +1362,7 @@ class RLSAlssm(RLSAlssmBase):
 
         Returns
         -------
-        v : :class:`~numpy.ndarray`, shape = (K, M),
+        v : :class:`~numpy.ndarray`, shape = (K, M)
             Least square state vector estimate for each time index.
             The shape of one state vector `x[k]` is `(N, [S])`, where k is the time index of `K` samples,
             `N` the ALSSM order.
@@ -1399,7 +1376,8 @@ class RLSAlssm(RLSAlssmBase):
 
         # check and init H
         H = np.eye(N) if H is None else np.asarray(H)
-        assert H.shape[0] == N, f"first dimension of constrain matrix H needs to be of size {N} (model order), found size {H.shape[0]}"
+        assert H.shape[
+                   0] == N, f"first dimension of constrain matrix H needs to be of size {N} (model order), found size {H.shape[0]}"
         M = H.shape[1]
 
         # check and init h
@@ -1506,7 +1484,7 @@ class RLSAlssm(RLSAlssmBase):
 
 class RLSAlssmSet(RLSAlssmBase):
     """
-    Filter and Data container for Recursive Least Sqaure Alssm Filters using Sets (multichannel parallel processing)
+    Filter and Data container for Recursive Least Square Alssm Filters using Sets (multichannel parallel processing)
 
     This class is the same as :class:`RLSAlssm` except that the signal `y` has an additional last dimension.
     The signals in these dimensions are processed simultaneously, as in a normal :class:`RLSAlssm` called multiple times.
@@ -1517,14 +1495,14 @@ class RLSAlssmSet(RLSAlssmBase):
         Cost Model
     kappa_diag : bool
         If set to False, kappa will be computed as a matrix (outer product of each signal energy) else
-        its diagonal will saved
+        its diagonal will be saved
     **kwargs
         Forwarded to :class:`.RLSAlssmBase`
 
     """
 
-    def __init__(self, cost_model, kappa_diag=True):
-        super().__init__()
+    def __init__(self, cost_model, kappa_diag=True, **kwargs):
+        super().__init__(**kwargs)
         self._kappa_diag = None
         self.cost_model = cost_model
         self.set_kappa_diag(kappa_diag)
@@ -1618,7 +1596,8 @@ class RLSAlssmSet(RLSAlssmBase):
 
         # check and init H
         H = np.eye(N) if H is None else np.asarray(H)
-        assert H.shape[0] == N, f"first dimension of constrain matrix H needs to be of size {N} (model order), found size {H.shape[0]}"
+        assert H.shape[
+                   0] == N, f"first dimension of constrain matrix H needs to be of size {N} (model order), found size {H.shape[0]}"
         M = H.shape[1]
 
         # check and init h
@@ -1629,8 +1608,8 @@ class RLSAlssmSet(RLSAlssmBase):
                 h = np.repeat(h, S, axis=1)
             else:
                 h = np.asarray(h)
-        assert h.shape == (N, S), f"offset vector h needs to be of shape ({N}, {S}) (model order,  multi-channel set size), {info_str_found_shape(h)}"
-
+        assert h.shape == (N,
+                           S), f"offset vector h needs to be of shape ({N}, {S}) (model order,  multi-channel set size), {info_str_found_shape(h)}"
 
         # allocate v and minimize
         v = np.full((len(self.W), M, S), np.nan)
@@ -1860,7 +1839,7 @@ class RLSAlssmSteadyState(RLSAlssmBase):
 
 class RLSAlssmSetSteadyState(RLSAlssmBase):
     """
-    Filter and Data container for Recursive Least Sqaure Alssm Filters using Sets in Steady State Mode
+    Filter and Data container for Recursive Least Square Alssm Filters using Sets in Steady State Mode
 
     With :class:`RLSAlssmSteadyState` a common :math:`W_k = W_{steady}` is used for all samples (faster computation).
     Note that using a common :math:`W_k` potentially leads to border missmatch effects and to completely invalid results
@@ -2071,6 +2050,7 @@ class ConstrainMatrix:
             label of second state variable index to apply a dependency
         value: int, float
             dependency value
+
         Returns
         -------
         s : ConstrainMatrix
@@ -2085,7 +2065,7 @@ class ConstrainMatrix:
 
     def digest(self):
         """
-        Reruns a "snapshot" of the constraint matrix with the applied constrains
+        Reruns a "snapshot" of the constraint matrix with the applied constraints
 
         Returns
         -------
@@ -2105,15 +2085,15 @@ class ConstrainMatrix:
         # append zero columns to del_cols
         del_cols.extend(np.where(~H.any(axis=0))[0])
 
-        # check if all combination of columuns in H are a mulitple of eachother when yes add last one to del_cols
+        # check if all combination of columns in H are a mulitple of each-other when yes add last one to del_cols
         for j, c1 in enumerate(H.T):
             c1_norm = np.linalg.norm(c1)
             if c1_norm != 0.0:
                 for i, c2 in enumerate(H.T):
                     c2_norm = np.linalg.norm(c2)
                     if c2_norm != 0.0:
-                        is_multiple = np.all(c1 / c1_norm - c2 / c2_norm == 0.0)
-                        is_multiple = is_multiple or np.all(-c1 / np.linalg.norm(-c1) - c2 / c2_norm == 0.0)
+                        is_multiple = np.all(np.divide(c1, c1_norm) - np.divide(c2, c2_norm) == 0.0)
+                        is_multiple = is_multiple or np.all(np.divide(-1*c1, np.linalg.norm(-1*c1)) - np.divide(c2, c2_norm) == 0.0)
                         if is_multiple and i > j:
                             del_cols.append(i)
 

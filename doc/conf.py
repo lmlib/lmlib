@@ -12,17 +12,33 @@
 #
 import os
 import sys
+import subprocess
 
 sys.path.insert(0, os.path.abspath('..'))
 
+# # -- Run additional python scripts forehand ---------------------------------
+# folders_pr = ['static/']
+#
+# for folder in folders_pr:
+#     py_files = [f for f in os.listdir(folder) if (os.isfile(os.join(folder, f)) and f.endswith('.py'))]
+#     for py_file in py_files:
+#         try:
+#             print(f"running: {py_file}")
+#             subprocess.call([py_file])
+#         except:
+#             print("An exception occurred while running the script")
+
+
+
+
 # -- Project information -----------------------------------------------------
 
-project = 'lmlib Doc'
-copyright = '2022, lmlib'
+project = ('lmlib')
+copyright = '2024, lmlib'
 author = 'Reto Wildhaber, Frédéric Waldmann'
 
 # The full version, including alpha/beta/rc tags
-release = '2.0 CFR 1'
+release = '2.1.2'
 
 # -- General configuration ---------------------------------------------------
 
@@ -60,43 +76,42 @@ templates_path = ['templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-
 # -- Sphinx Gallery Configuration -----------------------------------------------
 from sphinx_gallery.sorting import ExplicitOrder, FileNameSortKey
+
 sphinx_gallery_conf = {
-    'examples_dirs': ['../examples', '../coding'],   # path to your example scripts
+    'examples_dirs': ['../examples', '../coding'],  # path to your example scripts
     'gallery_dirs': ['_gallery_examples', '_gallery_coding'],  # path to where to save gallery generated output
-    'subsection_order': ExplicitOrder([
-                                        '../examples/12-filtering',
-                                        '../examples/40-app-changepoint-detection',
-                                        '../examples/11-detection',
-                                        # '../examples/13-lssm-costs-others',
-                                        '../examples/20-polynomials-basics',
-                                        '../examples/50-convolution',
-                                        '../examples/21-polynomials-calculus',
-                                        '../examples/70-localized-polynomials',
-                                        '../examples/60-iterative-rls',
-                                        # '../examples/30-utils',
-                                        '../coding/10-windowed-state-space-filters-basic',
-                                        '../coding/13-backend',
-                                        '../coding/20-polynomials-basics',                                      
-    ]),
+    # 'subsection_order': ExplicitOrder([
+    #     '../examples/12-filtering',
+    #     '../examples/40-app-changepoint-detection',
+    #     '../examples/11-detection',
+    #     # '../examples/13-lssm-costs-others',
+    #     '../examples/20-polynomials-basics',
+    #     '../examples/50-convolution',
+    #     '../examples/21-polynomials-calculus',
+    #     '../examples/70-localized-polynomials',
+    #     # '../examples/60-iterative-rls',
+    #     # '../examples/30-utils',
+    #     '../coding/10-windowed-state-space-filters-basic',
+    #     '../coding/13-backend',
+    #     '../coding/20-polynomials-basics',
+    # ]),
     'within_subsection_order': FileNameSortKey,
     'filename_pattern': '(/example-|/fig-)',
     'ignore_pattern': r'L',
-    # directory where function/class granular galleries are stored
-    'backreferences_dir'  : '_gallery_api/',
+    # # directory where function/class granular galleries are stored
+    # 'backreferences_dir': '_gallery_api/',
     # Modules for which function/class level galleries are created. In
     # this case sphinx_gallery and numpy in a tuple of strings.
-    'doc_module'          : ('lmlib',),
+    'doc_module': ('lmlib',),
     'reference_url': {
-         # The module you locally document uses None
+        # The module you locally document uses None
         'lmlib': None,
     },
     'thumbnail_size': (500, 400),
-    'default_thumb_file': 'static/gallery/default-thumbnail.png',    
+    'default_thumb_file': 'static/gallery/default-thumbnail.png',
 }
-
 
 # -- Options for interphinx reference third-party libs -----------------------
 
@@ -108,7 +123,7 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
 
 # -- Options for Pygments (syntax highlighting) ------------------------------
 
-highlight_language = 'python3' # The name of the Pygments (syntax highlighting) style to use.
+highlight_language = 'python3'  # The name of the Pygments (syntax highlighting) style to use.
 
 # -- Global reference list ---------------------------------------------------
 
@@ -129,7 +144,7 @@ rst_prolog = """
 .. |def_XS| replace:: `XS` : number of state vectors in a list |br|
 .. |def_KS| replace:: `KS` : number of (time) indices in the list |br|
 .. |def_JR| replace:: `JR` : index range length |br|
-
+.. |def_Q| replace:: `Q` : Polynomial Order |br|
 """
 
 # -- Options for HTML output -------------------------------------------------
@@ -138,24 +153,27 @@ rst_prolog = """
 # a list of builtin themes.
 #
 html_theme = 'pydata_sphinx_theme'
-
-
 html_sidebars = {
-  "**": []
+    "**": ["sidebar-nav-bs", "sidebar-ethical-ads"]
 }
+
 html_theme_options = {
-    "navbar_end": ["navbar-icon-links.html", "search-field.html"],
+    "navbar_start": ["navbar-logo"],
+    "navbar_center": ["navbar-nav"],
+    "navbar_end": ["navbar-icon-links"],
+    "navbar_persistent": ["search-button-field"],
+    "header_links_before_dropdown":  8,
     "icon_links": [
         {"name": "GitHub",
          "url": "https://github.com/lmlib/lmlib",
-         "icon": "fab fa-github-square",
+         "icon": "fa-brands fa-square-github",
          "type": "fontawesome"
          },
-        {"name" : "Install",
-         "url" : ""}
-    ]
+    ],
+    "secondary_sidebar_items": [],
+    "search_bar_text": "Search...",
+    "show_prev_next": False
 }
-
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
@@ -163,4 +181,5 @@ html_static_path = ['static']
 
 html_css_files = [
     'css/lmlib.css',
+    'css/lmlib-gallery.css',
 ]

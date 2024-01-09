@@ -3,3 +3,6 @@
 Examples
 ========
 
+.. contents::
+    :local:
+    :depth: 3

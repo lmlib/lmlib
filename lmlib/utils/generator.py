@@ -7,17 +7,18 @@ import numpy as np
 from .check import *
 
 __all__ = ['gen_sine', 'gen_rect', 'gen_tri', 'gen_saw', 'gen_pulse', 'gen_exp',
-           'gen_steps', 'gen_slopes' ,'gen_wgn',
+           'gen_steps', 'gen_slopes', 'gen_wgn',
            'gen_rand_walk', 'gen_rand_pulse',
            'gen_conv',
-           'load_data','load_data_mc',
-           'load_lib_csv','load_lib_csv_mc',
-           'load_csv','load_csv_mc',
+           'load_data', 'load_data_mc',
+           'load_lib_csv', 'load_lib_csv_mc',
+           'load_csv', 'load_csv_mc',
            'k_period_to_omega']
 
 # Get data_path
 this_dir, _ = os.path.split(__file__)
 data_path = os.path.join(this_dir, "data/")
+
 
 def gen_sine(K, k_periods, amplitudes=None, k0s=None):
     """
@@ -28,9 +29,9 @@ def gen_sine(K, k_periods, amplitudes=None, k0s=None):
     K : int
         Signal length
     k_periods : int or array_like of int
-        signal periodicities in number of samples per period.
+        signal periodicity in number of samples per period.
     amplitudes : scalar, array_like of scalars, optional
-        amplitude(s) of a signal, if set to None all amlitudes are set to 1.0
+        amplitude(s) of a signal, if set to None all amplitudes are set to 1.0
     k0s : int or array_like of int, optional
         time index(es) of first zero-crossing of sinusoidal signal, if set to None all k0s are set to 1.0
 
@@ -41,10 +42,9 @@ def gen_sine(K, k_periods, amplitudes=None, k0s=None):
 
     Example
     -------
-    .. plot:: pyplots/gen_sinusoidal_plot.py
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_sinusoidal_plot.py
         :include-source:
     """
-
 
     if np.isscalar(k_periods):
         amplitudes = 1.0 if amplitudes is None else amplitudes
@@ -54,7 +54,7 @@ def gen_sine(K, k_periods, amplitudes=None, k0s=None):
 
         return amplitudes * np.sin(2 * np.pi * (np.linspace(0, K / k_periods, K) + k0s / k_periods))
     elif is_array_like(k_periods):
-        mplitudes = np.ones_like(k_periods) if amplitudes is None else amplitudes
+        amplitudes = np.ones_like(k_periods) if amplitudes is None else amplitudes
         k0s = np.zeros_like(k_periods) if k0s is None else k0s
         assert len(k_periods) == len(amplitudes), 'amplitudes length does not match'
         assert len(k_periods) == len(k0s), 'k0s length does not match'
@@ -89,7 +89,7 @@ def gen_exp(K, decay, k0=0):
 
     Example
     -------
-    .. plot:: pyplots/gen_exponential_plot.py
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_exponential_plot.py
         :include-source:
     """
     return np.power(decay, np.arange(0 - k0, K - k0))
@@ -117,17 +117,21 @@ def gen_rect(K, k_period, k_on=None, duty_cycle=None, k0=0):
     out : :class:`~numpy.ndarray`, shape=(K,)
         Returns a rectangular wave signal of length `K`.
 
+    Example
+    -------
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_rectangle_plot.py
+        :include-source:
     """
 
     assert k_on is None or duty_cycle is None, "Set only k_on or duty_cycle. These cannot be used at the same time."
     if k_on is None:
-        k_on = k_period //2 if duty_cycle is None else int(k_period*duty_cycle)
+        k_on = k_period // 2 if duty_cycle is None else int(k_period * duty_cycle)
         assert k_on <= k_period, "duty_cycle not in range from 0 to 1"
 
     assert k_on <= k_period, "k_on must be smaller equal than k_period."
 
     out = np.zeros(K, )
-    for p in np.arange(-(k0%k_period), K, k_period):
+    for p in np.arange(-(k0 % k_period), K, k_period):
         p_range = np.arange(p, min(p + k_on, K))
         out[p_range] = np.ones((p_range.size,))
     return out
@@ -149,10 +153,6 @@ def gen_saw(K, k_period):
     out : :class:`~numpy.ndarray`, shape=(K,)
         Returns a repetitive slope signal of length **K**. Amplitudes are normalize from 0 to 1.
 
-    Example
-    -------
-    .. plot:: pyplots/gen_slope_plot.py
-        :include-source:
     """
     return np.remainder(range(K), k_period) / k_period - 0.5
 
@@ -175,10 +175,10 @@ def gen_tri(K, k_period):
 
     Example
     -------
-    .. plot:: pyplots/gen_triangle_plot.py
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_triangle_plot.py
         :include-source:
     """
-    return 1 - abs(np.remainder(range(K), k_period) - 0.5 * k_period) / (0.5 * k_period) -0.5
+    return 1 - abs(np.remainder(range(K), k_period) - 0.5 * k_period) / (0.5 * k_period) - 0.5
 
 
 def gen_pulse(K, ks):
@@ -199,7 +199,7 @@ def gen_pulse(K, ks):
 
     Example
     -------
-    .. plot:: pyplots/gen_pulse_plot.py
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_pulse_plot.py
         :include-source:
     """
     out = np.zeros((K,))
@@ -217,18 +217,18 @@ def gen_steps(K, ks, deltas):
     K : int
         Signal length
     ks : list
-        Amplitude step locations (indeces)
+        Amplitude step locations (indexes)
     deltas : list
-        Relative step amplitudes at indeces **ks**
+        Relative step amplitudes at indexes **ks**
 
     Returns
     -------
     out : :class:`~numpy.ndarray`, shape=(K,)
-        Returns a step signal of length **K** with steps of relative amplitudes **deltas** at indeces **ks**.
+        Returns a step signal of length **K** with steps of relative amplitudes **deltas** at indexes **ks**.
 
     Example
     -------
-    .. plot:: pyplots/gen_steps_plot.py
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_steps_plot.py
         :include-source:
     """
     out = np.zeros((K,))
@@ -256,7 +256,7 @@ def gen_slopes(K, ks, deltas):
 
     Example
     -------
-    .. plot:: pyplots/gen_slopes_plot.py
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_slopes_plot.py
         :include-source:
     """
     return np.interp(np.arange(K), ks, np.cumsum(deltas))
@@ -282,7 +282,7 @@ def gen_wgn(size, sigma, seed=None):
 
     Example
     -------
-    .. plot:: pyplots/gen_wgn_plot.py
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_wgn_plot.py
         :include-source:
     """
     np.random.seed(seed)
@@ -306,7 +306,7 @@ def gen_rand_walk(size, seed=None):
 
     Example
     -------
-    .. plot:: pyplots/gen_rand_walk_plot.py
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_rand_walk_plot.py
         :include-source:
     """
     np.random.seed(seed)
@@ -337,19 +337,19 @@ def gen_rand_pulse(size, n_pulses, length=1, seed=None):
 
     Example
     -------
-    .. plot:: pyplots/gen_rand_pulse_plot.py
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_rand_pulse_plot.py
         :include-source:
     """
     np.random.seed(seed)
     K = size[0] if isinstance(size, tuple) else size
 
     rui = np.zeros(K)
-    ks = np.random.randint(0, K-1, size=n_pulses)
+    ks = np.random.randint(0, K - 1, size=n_pulses)
     rui[ks] = np.ones(n_pulses)
 
     out = np.convolve(rui, np.ones((length,)), 'same')
     if isinstance(size, tuple):
-        return np.tile(np.reshape(out, (K, ) + (1, )*(len(size)-1)), (1,) + size[1:])
+        return np.tile(np.reshape(out, (K,) + (1,) * (len(size) - 1)), (1,) + size[1:])
     return out
 
 
@@ -367,14 +367,14 @@ def gen_conv(base, template):
     Returns
     -------
     out : :class:`~numpy.ndarray`, shape=(K,)
-        If `template` is a sigle-channel signal,
+        If `template` is a single-channel signal,
         the convolution is applied to each channel of `base`, otherwise the convolution between `base` and `template`  is applied per-channel.
         The output signal is of the same dimension as `base` signal, cf. ``numpy.convolve(..., mode='same')``.
 
 
     Example
     -------
-    .. plot:: pyplots/gen_convolve_plot.py
+    .. plot:: static/plot_generation/generator_func_plots_src/gen_convolve_plot.py
         :include-source:
     """
     y1 = np.asarray(base)
@@ -386,6 +386,7 @@ def gen_conv(base, template):
     if y1.ndim == 2:
         return np.stack(*[np.convolve(ych, y2, 'same') for ych in y1], axis=-1)
     return np.convolve(y1, y2, 'same')
+
 
 @deprecated
 def load_data(name, K=-1, kstart=0, chIdx=0):
@@ -403,7 +404,7 @@ def load_data(name, K=-1, kstart=0, chIdx=0):
         Signal load start index. Default=0
         If `k` is larger than the maximal signal length, an assertion is raised.
     chIdx : int, optional
-        If the signal has multiple channels, chIdx selelcts the `chId`th channel in the signal
+        If the signal has multiple channels, chIdx selects the `chId`th channel in the signal
         Default: chIdx = 0
 
     Returns
@@ -434,25 +435,25 @@ def load_data_mc(name, K=-1, kstart=0, chIdxs=None):
         Signal load start index. Default=0
         If `k` is larger than the maximal signal length, an assertion is raised.
     chIdxs : None, array_like, optional
-        List of channle index to load.
-        If is None then all channles will be loaded.
+        List of channels index to load.
+        If is None then all channels will be loaded.
 
 
     Returns
     -------
     out : :class:`~numpy.ndarray`, shape=(K, M)
-        else shape=(K, M) for multichannel signals or uf `channels` is a array_like of length `M`
+        else shape=(K, M) for multichannel signals or uf `channels` is an array_like of length `M`
 
     Note
     ----
-    If a the files contains only one signal it will be loaded in a shape of a multi-channel signal (K, 1)
+    If a file contains only one signal it will be loaded in a shape of a multi-channel signal (K, 1)
 
     """
     warn('load_data_mc will be deprecated, use load_lib_csv_mc instead.', DeprecationWarning, stacklevel=2)
 
     assert isinstance(name, str), "Filename is not a string."
 
-    y = np.loadtxt(data_path+name, delimiter=",")
+    y = np.loadtxt(data_path + name, delimiter=",")
     if y.ndim == 2:
         K_file, M_file = y.shape
         K = K_file if K == -1 else K
@@ -463,6 +464,7 @@ def load_data_mc(name, K=-1, kstart=0, chIdxs=None):
         K = K_file if K == -1 else K
         y_out = y[kstart:K][:, None]
     return y_out
+
 
 def k_period_to_omega(k_period):
     """
@@ -486,7 +488,7 @@ def load_csv(file, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
     """
     loads csv data as a single-channel data shape
 
-    `load_csv` calls numpy.genfromtxt with a different interface.
+    `load_csv` calls `numpy.genfromtxt` with a different interface.
 
     Parameters
     ----------
@@ -497,7 +499,7 @@ def load_csv(file, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
     k_start : int, optional
         start of signal, default starts at k_start=0
     channel : int, optional
-        load column of csv with the index specified by `channel
+        load column of csv with the index specified by `channel`
         default is 0 and loads the first column
     ds_rate : int
         down-sample rate (ds_rate >= 1)
@@ -512,11 +514,12 @@ def load_csv(file, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
     """
     return load_csv_mc(file, K, k_start, (channel,), ds_rate, **kwargs)
 
+
 def load_csv_mc(file, K=-1, k_start=0, channels=None, ds_rate=1, **kwargs):
     """
     loads csv data as a multi-channel data shape
 
-    `load_csv_mc` calls numpy.genfromtxt with a different interface.
+    `load_csv_mc` calls `numpy.genfromtxt` with a different interface.
 
     Parameters
     ----------
@@ -538,19 +541,20 @@ def load_csv_mc(file, K=-1, k_start=0, channels=None, ds_rate=1, **kwargs):
     Returns
     -------
     y : np.ndarray
-        2 dimensional array, first is time dimensions, second, channels dimension
+        2-dimensional array, first is time dimensions, second, channels dimension
     """
     assert ds_rate >= 1, "ds_rate : down-sample rate has to larger equal 1"
-    max_rows = None if K==-1 else K+k_start
+    max_rows = None if K == -1 else K + k_start
     y = np.genfromtxt(fname=file, delimiter=',', usecols=channels, max_rows=max_rows, **kwargs)[k_start::ds_rate]
     return y
+
 
 def load_lib_csv(filename, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
     """
     loads a library-internal csv data file from the signal catalog as a single-channel data shape
 
     See filenames as :ref:`lmlib_signal_catalog`
-    `load_lib_csv` calls numpy.genfromtxt with a different interface.
+    `load_lib_csv` calls :class:`numpy.genfromtxt` with a different interface.
 
     Parameters
     ----------
@@ -561,12 +565,12 @@ def load_lib_csv(filename, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
     k_start : int, optional
         start of signal, default starts at k_start=0
     channel : int, optional
-        load column of csv with the index specified by `channel
+        load column of csv with the index specified by `channel`
         default is 0 and loads the first column
     ds_rate : int
         down-sample rate (ds_rate >= 1)
     kwargs : optional
-        keyword arguments passed to `numpy.genfromtxt`
+        keyword arguments passed to :class:`numpy.genfromtxt`
         to exclude header add `skip_header=numbers_of_header_lines`
 
     Returns
@@ -574,7 +578,8 @@ def load_lib_csv(filename, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
     y : np.ndarray
         1 dimensional array of containing signal values over time
     """
-    return load_csv(data_path+filename, K, k_start, channel, ds_rate, **kwargs)
+    return load_csv(data_path + filename, K, k_start, channel, ds_rate, **kwargs)
+
 
 def load_lib_csv_mc(filename, K=-1, k_start=0, channels=None, ds_rate=1, **kwargs):
     """
@@ -603,6 +608,6 @@ def load_lib_csv_mc(filename, K=-1, k_start=0, channels=None, ds_rate=1, **kwarg
     Returns
     -------
     y : np.ndarray
-        2 dimensional array, first is time dimensions, second, channels dimension
+        2-dimensional array, first is time dimensions, second, channels dimension
     """
-    return load_csv_mc(data_path+filename, K, k_start, channels, ds_rate, **kwargs)
+    return load_csv_mc(data_path + filename, K, k_start, channels, ds_rate, **kwargs)

@@ -1,11 +1,4 @@
-.. lmlib documentation master file, created by
-   sphinx-quickstart on Wed May 11 16:58:33 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 .. title:: lmlib: Model-Based Signal Processing
-
-
 
 =======================
 **lmlib** Documentation
@@ -22,10 +15,9 @@
 
    |
 
-   This library implements Recurisve Least Squares (RLS) algorithms with 
+   This library implements Recursive Least Squares (RLS) algorithms with
    
    * **Windowed Linear State-Space Models**  (Package :ref:`lmlib.statespace`)
-   * **Interatively Reweighted Least Squares** (Package :ref:`lmlib.irrls`) 
    * **Continuous-Time Polynomial Signal Models** (Package :ref:`lmlib.polynomial`) 
  
    |
@@ -49,54 +41,38 @@
    This library is the result of many years of :ref:`research <about>` documented in various publications (see :ref:`bibliography`).
 
 
-.. comment::
-	.. image:: _static/images/banner.png
-	   :width: 800
-	   :class: img-banner
+..
+   .. image:: _static/images/banner.png
+      :width: 800
+      :class: img-banner
 
-	.. rst-class:: slogan
-
-	   "A Library for Advanced Signal :ref:`Filtering <filtering>`, :ref:`Detection <detection>`, and other Routine :ref:`Tasks <onset>`."
-
+   .. rst-class:: slogan
+      "A Library for Advanced Signal :ref:`Filtering <filtering>`, :ref:`Detection <detection>`, and other Routine :ref:`Tasks <onset>`."
 
 
+   To ensure either maximum portability or maximum processing speed, lmlib offers multiple backends:
 
-.. comment::
-	To ensure either maximum portability or maximum processing speed, lmlib offers multiple backends:
+   - Plain Python backend *(highly portable)*
+   - Python with JIT--Just In Time backend *(fairly portable, fairly fast)*
+   - Python with C/OpenBLAS backend *(maximum processing speed)*
 
-	- Plain Python backend *(highly portable)*
-	- Python with JIT--Just In Time backend *(fairly protable, fairly fast)*
-	- Python with C/OpenBLAS backend *(maximum processing speed)*
+   ..
+      *(close-sourced, free for academic use)*
 
-	..
-	   *(close-sourced, free for academic use)*
-
-
-
-
-
-
-lmlib Doc Content
------------------
+..
+    lmlib Doc Content
+    -----------------
 
 .. toctree::
-   :maxdepth: 2
+   :hidden:
    
    api
-   _gallery_coding/index.rst
-   _gallery_examples/index.rst
+   _gallery_coding/index
+   _gallery_examples/index
    catalog.rst
    install
    about
    bibliography
 
-
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-The library is provided by ETH, FHNW, and BFH, see :ref:`about`.
+..
+    The library is provided by ETH, FHNW, and BFH, see :ref:`about`.

@@ -55,4 +55,3 @@ ys_hat_c0 = cost.eval_alssm_output(xs, c0s=None)
 
 # output by RLSAlssm*
 ys_hat_c0 = rls.filter_minimize_yhat(ys, c0s=([0, 1], None))
-

@@ -1,0 +1,30 @@
+/* Subtitles in Gallery */
+#examples  h2, #coding  h2 {
+    color: black;
+    font-size: 120%;
+    border-bottom: 1px solid grey;
+    font-weight: bold;
+}
+.sphx-glr-thumbnails
+{
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+}
+
+/*!* Gallery Thumbnails https://sphinx-gallery.github.io/stable/configuration.html#setting-gallery-thumbnail-size *!*/
+.sphx-glr-thumbcontainer {
+    min-height: 320px !important;
+    min-width: 400px !important;
+    margin: 10px !important;
+}
+.sphx-glr-thumbcontainer figure {
+    width: 400px !important;
+}
+.sphx-glr-thumbcontainer img {
+    max-height: 300px !important;
+    max-width: 400px !important;
+    width: 400px !important;
+    /*height: 300px;*/
+}
+.sphx-glr-thumbcontainer a.internal {
+    padding: 320px 0px 0 !important;
+}

@@ -1,5 +1,5 @@
 """
-Approximating a Polynomial by a Polynomial of Lower Degree [ex601.0]
+Approximating a Polynomial by a Polynomial of Lower Degree [ex701.0]
 ====================================================================
 
 Fits a polynomial of lower order to a polynomial of higher order by minimizing the squared error over the given window.

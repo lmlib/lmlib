@@ -1,6 +1,6 @@
 """
-Multi Segment
-=============
+Multi Segment [ex124.0]
+=======================
 
 Pyramid style model stacks with multiple segments
 
@@ -15,12 +15,6 @@ from lmlib.utils import load_lib_csv
 y = load_lib_csv('EECG_BASELINE_1CH_10S_FS2400HZ.csv')
 K = len(y)
 ks = [3780]
-
-
-bounds_l = [-200, -80, -50, -20, 0]
-bounds_r = [0, 20,  50, 80, 200]
-
-
 
 bounds_r = np.arange(0, 100, 10)
 bounds_l = -np.flip(bounds_r)
@@ -52,8 +46,7 @@ F_r = np.tril(np.ones((n_segs_r, n_segs_r)))
 F = np.concatenate([F_l, F_r], axis=-1)
 F = block_diag(F_l, F_r)
 
-# F = F_l
-# segs = segs_l
+
 cost = lm.CompositeCost(alssms, segs, F)
 print('F= \n', F)
 
@@ -65,7 +58,7 @@ traj = lm.map_trajectories(cost.trajectories(xs[ks], F=F), ks, K, merge_ks=True,
 
 trajs = []
 for m, f in enumerate(F):
-    F_  = np.zeros_like(F)
+    F_ = np.zeros_like(F)
     F_[m] = f
     t_ = lm.map_trajectories(cost.trajectories(xs[ks], F=F_), ks, K, merge_ks=True, merge_seg=True)
     trajs.append(t_)
@@ -75,8 +68,8 @@ fig, (ax1, ax2) = plt.subplots(2, sharex='all')
 ax1.plot(y, c='k', lw=0.8)
 # ax1.plot(y_hat)
 for t_ in trajs:
-    ax1.plot(t_, lw='0.5')
+    ax1.plot(t_, lw='0.8')
 ax1.plot(traj, c='b')
 ax2.plot(error)
-
+ax1.set_xlim(left=3600, right=4000)
 plt.show()

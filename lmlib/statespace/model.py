@@ -690,13 +690,13 @@ class AlssmSin(ModelBase):
     Parameters
     ----------
     omega : float, int
-        Frequency :math:`\omega = 2\pi f_s
+        Frequency :math:`\omega = 2\pi f_s`
     rho : float, int, optional
         Decay factor, default: rho = 1.0
     C : array_like, shape=(L, N), optional
         Output Matrix.
         If no output matrix is given, C gets initialize automatically to `[1, 0]`, such that the shape
-        is `(N,)`. In addition with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)`(default: C=None)
+        is `(N,)`. In addition with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)` (default: C=None)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
@@ -891,7 +891,7 @@ class AlssmStacked(ModelBase):
     where :math:`A_m` and :math:`C_m` are the transition matrices and the output vectors of the joined models, respectively, and
     :math:`\lambda_1 ... \lambda_M  \in \mathcal{R}` are additional factors to weight each output individually.
 
-   For more details see [Wildhaber2019]_ :download:`PDF Sec: Linear Combination of M Systems <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
+    For more details see [Wildhaber2019]_ :download:`PDF Sec: Linear Combination of M Systems <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
 
 
     Parameters
@@ -906,6 +906,7 @@ class AlssmStacked(ModelBase):
 
 
     |def_M|
+
 
     Examples
     --------

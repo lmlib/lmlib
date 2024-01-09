@@ -1,12 +1,8 @@
 """
 Basic ALSSM Coding [ex101.0]
-=====================
+============================
 
-This example demonstrates how to set up a autonomous linear state space model ALSSM.
-
-See also:
-:ref:`Module statespace <module_statespace>`,
-:ref:`ALSSM Classes <classes_alssms>`
+This example demonstrates how to set up an autonomous linear state space model ALSSM.
 
 """
 import lmlib as lm

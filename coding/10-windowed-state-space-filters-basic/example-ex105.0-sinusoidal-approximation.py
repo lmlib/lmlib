@@ -15,9 +15,9 @@ y = gen_rect(K, 570, 200) + gen_wgn(K, 0.01)
 cost = lm.CostSegment(lm.AlssmPoly(poly_degree=4),
                       lm.Segment(0, 220, lm.BW, 300))
 cost_wide = lm.CostSegment(lm.AlssmPoly(poly_degree=4),
-                      lm.Segment(0-20, 220+20, lm.BW, 300))
+                           lm.Segment(0 - 20, 220 + 20, lm.BW, 300))
 
-rls = lm.RLSAlssmSteadyState(cost) # Using steady state leads to faster computation and increased nummerical stability
+rls = lm.RLSAlssmSteadyState(cost)  # Using steady state leads to faster computation and increased numerical stability
 xs = rls.filter_minimize_x(y)
 
 K_refs = [500, 1130, 1800]

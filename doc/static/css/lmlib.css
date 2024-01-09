@@ -122,9 +122,18 @@ span.std.std-ref  {
 
 /* Background of toctrees */
 h2 + div.toctree-wrapper.compound  {
-   background-color: #EEEEEE;
-   border: 1px solid #CCCCCC;
-    padding-left: 10px;
+   /*background-color: #EEEEEE;*/
+   /*border: 1px solid #CCCCCC;*/
+   /* padding-left: 10px;*/
+    background-color: var(--pst-color-surface);
+    border-color: var(--pst-color-border);
+    border-radius: .25rem;
+    box-shadow: 0 .2rem .5rem var(--pst-color-shadow),0 0 .0625rem var(--pst-color-shadow)!important;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.25rem;
+    border: 1px solid #ccc;
+    margin: 10px 0 10px 0;
 }
 
 

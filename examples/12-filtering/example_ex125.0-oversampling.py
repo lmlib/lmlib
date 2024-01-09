@@ -3,7 +3,7 @@ Oversampling [ex125.0]
 ======================
 
 Oversampling Signals
-ß
+
 """
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,12 +11,11 @@ from scipy.linalg import block_diag
 import lmlib as lm
 from lmlib.utils import load_lib_csv
 
-
 K = 800
 y = load_lib_csv('EECG_BASELINE_1CH_10S_FS2400HZ.csv', K, k_start=1200)
 
-os_rate = 20 # oversampling rate
-K_os = K*os_rate
+os_rate = 20  # oversampling rate
+K_os = K * os_rate
 k_os = np.arange(0, K_os)
 k_sparse = np.arange(0, K_os, os_rate)
 

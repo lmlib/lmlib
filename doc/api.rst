@@ -1,31 +1,13 @@
 API Reference
 =============
 
-Packages & Modules 
+Modules
 -------
-
 
 .. toctree::
    :maxdepth: 3
-   :glob:
 
    api/lmlib.statespace 
    api/lmlib.polynomial
-   api/lmlib.irrls 
-   api/lmlib.utils 
-  
-
-
-Modules Attributes
--------
-
-.. toctree::
-   :maxdepth: 4
-   :glob:
-
-   api/lmlib.statespace 
-   api/lmlib.polynomial
-   api/lmlib.irrls    
-   api/lmlib.utils 
-
+   api/lmlib.utils
 

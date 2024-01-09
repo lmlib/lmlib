@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='lmlib',
-    version='2.1.1',
+    version='2.1.2',
     description='A Model-Based Signal Processing Library Working With Windowed Linear State-Space and Polynomial Signal Models.',
     author='Reto Wildhaber, Frédéric Waldmann, Luca Fleischmann, Christof Baeriswyl',
     author_email='reto.wildhaber@fhnw.ch, frederic.waldmann@fhnw.ch',
