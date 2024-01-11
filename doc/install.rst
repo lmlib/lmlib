@@ -5,10 +5,6 @@
 Install
 -------
 
-.. contents::
-    :local:
-    :depth: 3
-
 pip
 ^^^
 

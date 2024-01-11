@@ -1,8 +1,11 @@
 .. _examples:
 
+
 Examples
 ========
 
-.. contents::
-    :local:
-    :depth: 3
+
+.. toctree::
+    :maxdepth: 1
+
+    self

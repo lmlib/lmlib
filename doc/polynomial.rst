@@ -1,7 +1,7 @@
-.. _lmlib.polynomial:
+.. _lmlib_api_polynomial:
 
-lmlib.polynomial
-================
+Polynomial
+==========
 
 
 .. |info_return_blue| replace:: Return parameters are highlighted in :math:`\color{blue}{blue}`.

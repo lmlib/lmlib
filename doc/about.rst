@@ -4,10 +4,6 @@
 About Us
 ========
 
-.. contents::
-    :local:
-    :depth: 3
-
 Institutes
 ----------
 

@@ -404,7 +404,7 @@ def load_data(name, K=-1, kstart=0, chIdx=0):
         Signal load start index. Default=0
         If `k` is larger than the maximal signal length, an assertion is raised.
     chIdx : int, optional
-        If the signal has multiple channels, chIdx selects the `chId`th channel in the signal
+        If the signal has multiple channels, chIdx selects the `chId` th channel in the signal
         Default: chIdx = 0
 
     Returns

@@ -6,7 +6,7 @@ Defines a cost segment which consists of an ALSSM and a left-sided,
 exponentially decaying window.
 
 See also:
-:ref:`Cost Function Classes <lmlib.statespace>`,
+Cost Function Classes in :ref:`lmlib_api_statespace`,
 :class:`~lmlib.statespace.cost.CostSegment`,
 :class:`~lmlib.statespace.cost.Segment`
 """

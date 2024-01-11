@@ -5,10 +5,6 @@
 Signal Catalog
 ==============
 
-.. contents::
-    :local:
-    :depth: 3
-
 Functions
 ^^^^^^^^^
 

@@ -13,6 +13,7 @@
 import os
 import sys
 import subprocess
+import warnings
 
 sys.path.insert(0, os.path.abspath('..'))
 
@@ -33,7 +34,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = ('lmlib')
+project = 'lmlib'
 copyright = '2024, lmlib'
 author = 'Reto Wildhaber, Frédéric Waldmann'
 
@@ -53,6 +54,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest',
               'matplotlib.sphinxext.plot_directive',
               'sphinx_gallery.gen_gallery',
+              'sphinx_design',
               # 'nbsphinx',
               ]
 
@@ -76,42 +78,6 @@ templates_path = ['templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-# -- Sphinx Gallery Configuration -----------------------------------------------
-from sphinx_gallery.sorting import ExplicitOrder, FileNameSortKey
-
-sphinx_gallery_conf = {
-    'examples_dirs': ['../examples', '../coding'],  # path to your example scripts
-    'gallery_dirs': ['_gallery_examples', '_gallery_coding'],  # path to where to save gallery generated output
-    # 'subsection_order': ExplicitOrder([
-    #     '../examples/12-filtering',
-    #     '../examples/40-app-changepoint-detection',
-    #     '../examples/11-detection',
-    #     # '../examples/13-lssm-costs-others',
-    #     '../examples/20-polynomials-basics',
-    #     '../examples/50-convolution',
-    #     '../examples/21-polynomials-calculus',
-    #     '../examples/70-localized-polynomials',
-    #     # '../examples/60-iterative-rls',
-    #     # '../examples/30-utils',
-    #     '../coding/10-windowed-state-space-filters-basic',
-    #     '../coding/13-backend',
-    #     '../coding/20-polynomials-basics',
-    # ]),
-    'within_subsection_order': FileNameSortKey,
-    'filename_pattern': '(/example-|/fig-)',
-    'ignore_pattern': r'L',
-    # # directory where function/class granular galleries are stored
-    # 'backreferences_dir': '_gallery_api/',
-    # Modules for which function/class level galleries are created. In
-    # this case sphinx_gallery and numpy in a tuple of strings.
-    'doc_module': ('lmlib',),
-    'reference_url': {
-        # The module you locally document uses None
-        'lmlib': None,
-    },
-    'thumbnail_size': (500, 400),
-    'default_thumb_file': 'static/gallery/default-thumbnail.png',
-}
 
 # -- Options for interphinx reference third-party libs -----------------------
 
@@ -153,16 +119,11 @@ rst_prolog = """
 # a list of builtin themes.
 #
 html_theme = 'pydata_sphinx_theme'
-html_sidebars = {
-    "**": ["sidebar-nav-bs", "sidebar-ethical-ads"]
-}
-
 html_theme_options = {
     "navbar_start": ["navbar-logo"],
     "navbar_center": ["navbar-nav"],
     "navbar_end": ["navbar-icon-links"],
-    "navbar_persistent": ["search-button-field"],
-    "header_links_before_dropdown":  8,
+    "navbar_persistent": ["search-button"],
     "icon_links": [
         {"name": "GitHub",
          "url": "https://github.com/lmlib/lmlib",
@@ -170,16 +131,37 @@ html_theme_options = {
          "type": "fontawesome"
          },
     ],
-    "secondary_sidebar_items": [],
     "search_bar_text": "Search...",
     "show_prev_next": False
 }
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['static']
 
-html_css_files = [
-    'css/lmlib.css',
-    'css/lmlib-gallery.css',
-]
+html_static_path = ['static']
+html_css_files = ['css/lmlib.css']
+
+
+
+
+# -- Sphinx Gallery Configuration ---
+from sphinx_gallery.sorting import ExplicitOrder, FileNameSortKey
+
+html_css_files.append('css/lmlib-gallery.css')
+sphinx_gallery_conf = {
+    'examples_dirs': ['../examples', '../coding'],
+    'gallery_dirs': ['_gallery_examples', '_gallery_coding'],
+    'within_subsection_order': FileNameSortKey,
+    'filename_pattern': '(/example-|/fig-)',
+    'ignore_pattern': r'L',
+    'doc_module': ('lmlib',),
+    'reference_url': {
+        'lmlib': None,
+    },
+    'thumbnail_size': (400, 300),
+    'default_thumb_file': 'static/gallery/default-thumbnail.png',
+    'show_memory': False,
+
+}
+
+warnings.filterwarnings("ignore", category=UserWarning,
+                        message='Matplotlib is currently using agg, which is a'
+                                ' non-GUI backend, so cannot show the figure.'
+                                '|(\n|.)*is non-interactive, and thus cannot be shown')

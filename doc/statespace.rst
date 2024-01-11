@@ -1,8 +1,7 @@
-.. _lmlib.statespace:
+.. _lmlib_api_statespace:
 
-lmlib.statespace
-================
-
+State Space
+===========
 
 **Package Abstract ::** This module provides methods to define autonomous linear state space models (ALSSMs)
 and to define squared error cost functions based on such ALSSMs.
@@ -18,15 +17,14 @@ with extensions from [Zalmai2017]_ and [Wildhaber2019]_.
 
 
 
-Modules
--------
+.. currentmodule:: lmlib.statespace
 
 .. autosummary::
-   :toctree: _autosummary
-   :template: module
-   
-   lmlib.statespace.model
-   lmlib.statespace.cost
-   lmlib.statespace.backend   
-   lmlib.statespace.applications
+    :toctree: _autosummary
+    :template: module
+
+    model
+    cost
+    backend
+    applications
 

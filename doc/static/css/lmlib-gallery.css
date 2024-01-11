@@ -7,24 +7,24 @@
 }
 .sphx-glr-thumbnails
 {
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 }
 
 /*!* Gallery Thumbnails https://sphinx-gallery.github.io/stable/configuration.html#setting-gallery-thumbnail-size *!*/
 .sphx-glr-thumbcontainer {
-    min-height: 320px !important;
-    min-width: 400px !important;
+    min-height: 220px !important;
+    min-width: 300px !important;
     margin: 10px !important;
 }
 .sphx-glr-thumbcontainer figure {
-    width: 400px !important;
+    width: 300px !important;
 }
 .sphx-glr-thumbcontainer img {
-    max-height: 300px !important;
-    max-width: 400px !important;
-    width: 400px !important;
+    max-height: 200px !important;
+    max-width: 300px !important;
+    width: 300px !important;
     /*height: 300px;*/
 }
 .sphx-glr-thumbcontainer a.internal {
-    padding: 320px 0px 0 !important;
+    padding: 220px 0px 0 !important;
 }
