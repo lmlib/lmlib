@@ -10,10 +10,6 @@ Utils
 - a collection of recorded biological signals, see :ref:`lmlib_signal_catalog`
 - experimental functions (beta)
 
-.. toctree::
-
-   catalog
-
 
 .. autosummary::
    :toctree: _autosummary
