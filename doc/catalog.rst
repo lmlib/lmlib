@@ -1,5 +1,7 @@
 .. _lmlib_signal_catalog:
 
+
+
 Signal Catalog
 ==============
 
@@ -28,9 +30,6 @@ Just import the submodule and load one of the signals as show down below.
     # load signal
     y = load_lib_csv('EECG_BASELINE_1CH_10S_FS2400HZ.csv')
 
-
-.. contents::
-   :local:
 
 
 EECG_BASELINE_1CH_10S_FS2400HZ.csv

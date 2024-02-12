@@ -1,12 +1,15 @@
-"""Definition of recursively computed squared error cost functions (such as *Cost Segments* and *Composite Costs*), all based on ALSSMs"""
+"""
+Definition of recursively computed squared error cost functions (such as *Cost Segments* and *Composite Costs*),
+all based on ALSSMs
+"""
 
-import warnings
 import numpy as np
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import warnings
+import copy
 
-from lmlib.statespace.model import ModelBase, AlssmStackedSO
+from lmlib.statespace.model import ModelBase, AlssmSum
 from lmlib.statespace.recursion import *
 from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backends
 from lmlib.utils.check import *
@@ -76,16 +79,16 @@ def create_rls(cost, multi_channel_set=False, steady_state=False, kappa_diag=Tru
     multi_channel_set : bool
         Set to True if a RLSAlssmSet* is desired
     steady_state : bool
-        Set to True if a Steaey State scheme is desired
+        Set to True if a Steady State scheme is desired
     kappa_diag : bool
-        If True a RLSAlssmSet* will performe a diagnoal kappa matrix. Only if multi_channel_set = True
+        If True a RLSAlssmSet* will perform a diagnoal kappa matrix. Only if multi_channel_set = True
     steady_state_method : str
         Type of Steady State method. Available: ('closed_form'). Only if steady_state == True
 
     Returns
     -------
     out : RLSAlssm, RLSAlssmSet, RLSAlssmSteadyState or RLSAlssmSetSteadyState
-        Returns Recursive Least Square Obeject
+        Returns Recursive Least Square Object
     """
     if isinstance(cost, CostBase):
         if not multi_channel_set and not steady_state:
@@ -109,7 +112,8 @@ def create_rls(cost, multi_channel_set=False, steady_state=False, kappa_diag=Tru
 
 def map_windows(windows, ks, K, merge_ks=False, merge_seg=False, fill_value=0):
     """
-    Maps the window amplitudes of one or multiple :class:`Segment` to indices `ks` into a common target output vector of length `K`.
+    Maps the window amplitudes of one or multiple :class:`Segment` to indices `ks` into a common target output vector of
+     length `K`.
 
     The parameter :attr:`windows` is commonly directly the output of one of the following methods:
 
@@ -146,11 +150,6 @@ def map_windows(windows, ks, K, merge_ks=False, merge_seg=False, fill_value=0):
     |def_KS|
     |def_P|
     |def_K|
-
-    Examples
-    --------
-
-    .. minigallery:: lmlib.map_windows
 
     """
 
@@ -205,7 +204,7 @@ def map_trajectories(trajectories, ks, K, merge_ks=False, merge_seg=False, fill_
 
         * Dimension `XS` only exists, if :attr:`merge_ks`:code:`=False`.
         * Dimension `P` only exists, if :attr:`merge_seg`:code:`=False`
-        * Dimension `S` only exists, if the parmeter :attr:`xs` of :meth:`CompositeCost.trajectories` or
+        * Dimension `S` only exists, if the parameter :attr:`xs` of :meth:`CompositeCost.trajectories` or
           :meth:`CompositeCost.trajectories` also provides dimension `S` (i.e., provides multiple signal set processing).
 
 
@@ -214,12 +213,6 @@ def map_trajectories(trajectories, ks, K, merge_ks=False, merge_seg=False, fill_
     |def_K|
     |def_L|
     |def_S|
-
-
-    Examples
-    --------
-    .. minigallery:: lmlib.map_trajectories
-
 
     """
 
@@ -230,9 +223,9 @@ def map_trajectories(trajectories, ks, K, merge_ks=False, merge_seg=False, fill_
     t_ = trajectories[0][0][1]
     P = len(trajectories[0])
     XS = len(trajectories)
-    assert XS == len(ks), "number of trajecotries and ks does not match up"
+    assert XS == len(ks), "number of trajectories and ks does not match up"
 
-    if t_.ndim == 2:  # check if trajecotry is from a RLSAlssmSet
+    if t_.ndim == 2:  # check if trajectory is from a RLSAlssmSet
         S = t_.shape[1]
         t = np.full((XS, P, K, S), fill_value)
     else:
@@ -281,7 +274,7 @@ class Segment:
     g : int, float, None
         :math:`g > 0`. Effective number of samples under the window. This is used as a (more readable) surrogate for the
         window decay of exponential windows, see [Wildhaber2018]_. |br|
-        :math:`g` is counted to the left or right of :math:`k+ \delta`, for for forward or backward computation
+        :math:`g` is counted to the left or right of :math:`k+ \delta`, for forward or backward computation
         direction, respectively.
     direction : str
         Computation direction of recursive computations (also selects a left- or right-side decaying window) |br|
@@ -311,9 +304,6 @@ class Segment:
     >>> segment = lm.Segment(a=-0, b=100, direction=lm.BACKWARD, g=15, delta=30, label="right-sided window with shift")
     >>> print(segment)
     Segment : a:0, b:100, bw, g:15, delta:30, label: right-sided window with shift
-
-    .. minigallery:: lmlib.Segment
-        :add-heading:
 
     """
 
@@ -464,26 +454,20 @@ class Segment:
 
         |def_JR|
 
-
-        Examples
-        --------
-        .. plot:: pyplots/Segment_window_plot.py
-                :include-source:
-
         """
 
         if self.direction == FW:
             if self.gamma > 1:
                 a_lim = max(np.log(thd) / np.log(self.gamma) - 1 + self.delta, self.a)
             else:
-                a_lim = max(np.log(thd) / np.log(1/self.gamma) - 1 + self.delta, self.a)
+                a_lim = max(np.log(thd) / np.log(1 / self.gamma) - 1 + self.delta, self.a)
             b_lim = self.b
         else:  # self.direction == BW:
             a_lim = self.a
             if self.gamma < 1:
                 b_lim = min(np.log(thd) / np.log(self.gamma) + 1 + self.delta, self.b)
             else:
-                b_lim = min(np.log(thd) / np.log(1/self.gamma) + 1 + self.delta, self.b)
+                b_lim = min(np.log(thd) / np.log(1 / self.gamma) + 1 + self.delta, self.b)
         ab_range = range(int(a_lim), int(b_lim) + 1)
         return ab_range, self.gamma ** (np.array(ab_range) - self.delta)
 
@@ -495,7 +479,7 @@ class CostBase(ABC):
     Parameters
     ----------
     label : str, optional
-        Label of Alssm, default: 'n/a'
+        Label of ALSSM, default: 'n/a'
 
     """
 
@@ -554,7 +538,7 @@ class CostBase(ABC):
 
     def get_model_order(self):
         """int : Order of the (stacked) Alssm Model"""
-        return AlssmStackedSO(self.alssms).N
+        return AlssmSum(self.alssms).N
 
     def trajectories(self, xs, F=None, thd=1e-6):
         """
@@ -572,10 +556,11 @@ class CostBase(ABC):
         xs : array_like of shape=(XS, N [,S]) of floats
             List of initial state vectors :math:`x`
         F : array_like, shape(M, P) of int, shape(M,) of int
-            Mapping matrix. If not set to :code:`None`, the given matrix overloads the CompositeCost's internal mapping matrix as provided by the class constructor for :class:`CompositeCost`.
-            If :attr:`F` is only of :code:`shape(M,)`, the vector gets enlarged to size :code:`shape(M, P)` by repeating the vector `P`-times.
-            (This is a shortcut to select a single ALSSM over all segments.)
-        thds : list of shape(P) of floats, scalar, None, optional
+            Mapping matrix. If not set to :code:`None`, the given matrix overloads the CompositeCost's internal mapping
+            matrix as provided by the class constructor for :class:`CompositeCost`.
+            If :attr:`F` is only of :code:`shape(M,)`, the vector gets enlarged to size :code:`shape(M, P)` by repeating
+            the vector `P`-times. (This is a shortcut to select a single ALSSM over all segments.)
+        thd : list of shape(P) of floats, scalar, None, optional
             Per segment threshold limiting the evaluation boundaries by setting a minimum window height of the
             associated :attr:`~CompositeCost.segments`
             Scalar to use the same threshold for all available segments.
@@ -585,7 +570,7 @@ class CostBase(ABC):
         trajectories : list of shape=(XS) of tuples of shape=(P) of tuples :code:`(range, array)`
             Each element in `trajectories` is a tuple with
 
-            * :code:`range` `of length JR`: relative index range of trajectory with respect to semgent's boundaries
+            * :code:`range` `of length JR`: relative index range of trajectory with respect to segment's boundaries
             * :code:`array` `of shape(JR, L, [S])`: trajectory values over reported range.
 
             Dimension `S` is only present in the output, if dimension `S` is also present in :attr:`xs` (i.e., if multiple signal sets are used)
@@ -608,7 +593,7 @@ class CostBase(ABC):
         for x in xs:
             trajectories_per_segment = []
             for alssm_weights, (ab_range, _) in zip(np.transpose(F), windows):
-                y = AlssmStackedSO(self.alssms, deltas=alssm_weights).trajectory(x, ab_range)
+                y = AlssmSum(self.alssms, deltas=alssm_weights).trajectory(x, ab_range)
                 trajectories_per_segment.append([ab_range, y])
             trajectories.append(trajectories_per_segment)
         return trajectories
@@ -625,7 +610,7 @@ class CostBase(ABC):
         segment_indices : array_like, shape=(P,) of Boolean
             Enables (:code:`True`, 1) or disables (:code:`False`, 0) the evaluation of the
             p-th Segment in :attr:`CompositeCost.segments` using :meth:`CostSegment.window`
-        thds : list of shape=(P,) of floats, scalar, optional
+        thd : list of shape=(P,) of floats, scalar, optional
             List of per-segment threshold values or scalar to use the same threshold for all segments
             Evaluation is stopped for window weights below the given threshold.
             Set list element to :code:`None` to disable the threshold for a segment.
@@ -673,13 +658,13 @@ class CostBase(ABC):
         N = self.get_model_order()
         W = np.zeros((N, N))
         for i, segment in enumerate(self.segments):
-            alssm = AlssmStackedSO(self.alssms, self.F[:, i])
+            alssm = AlssmSum(self.alssms, self.F[:, i])
             if method == 'closed_form':
                 W += _covariance_matrix_closed_form(alssm.A, alssm.C, segment.gamma, segment.a, segment.b,
                                                     segment.delta)
         return W
 
-    def eval_alssm_output(self, xs, alssm_weights):
+    def eval_alssm_output(self, xs, alssm_weights=None, c0s=None):
         """
         Evaluation of the ALSSM for multiple state vectors `xs`.
 
@@ -689,8 +674,16 @@ class CostBase(ABC):
         ----------
         xs : array_like of shape=(XS, N [,S]) of floats
             List of state vectors :math:`x`
-        alssm_selection : array_like, shape=(M,) of bool
-            Each element enables (:code:`True`, 1) or disables (:code:`False`, 0) the m-th ALSSM in :attr:`CompositeCost.alssms`.
+        alssm_weights : None, scalar, array_like, shape=(M,) of floats, optional
+            Each element sets the weight of the output of the m-th ALSSM in :attr:`CompositeCost.alssms`.
+            If alssm_weights is a scalar it set for each alssms the same weight.
+            If None no weights are set.
+        c0s : None, scalar, array_like, tuple, optional
+            - None type is default and doesn't change the model output matrix
+            - Scalar type will result in a 1 dimensional output matrix filled with the scalar value.
+            - Array_like type expects c0s shape of ([L,] N,) and replaces the composite output matrix.
+            - Tuple type c0s have an entry for each sub ALSSM in the composite model. Possible tuple entries are `None`, `scalar`, `array_like`, which are behaving like to composite c0s entries above. See Notes for more detail.
+
 
         Returns
         -------
@@ -704,13 +697,51 @@ class CostBase(ABC):
         |def_S|
         |def_XS|
 
-        Examples
-        --------
-        .. minigallery:: lmlib.CostBase.eval_alssm_output
+        Notes
+        -----
+        C0s of type tuple can have different element types `None`, `scalar`, `array_like`.
+
+        - Entries are array_like and for each ALSSM resp. i.e. :code:`c0s = ([1, 2], [1, 0])` will result in the first :code:`alssms[0].C = [1, 2]` and in the second :code:`alssms[1].C = [1, 0]`.
+
+        - Entries are scalars or `None` and for each ALSSM resp. i.e. :code:`c0s = ([1, 2], 3)`  will result in the first :code:`alssms[0].C = [1, 2]` and in the second :code:`alssms[1].C = [3, 3]`.
+
+        - A None element won't change the ALSSM Output Matrix C. i.e. :code:`c0s = (None, 3)`  will leave alone first ALSSM.C and the second changes to :code:`alssms[1].C = [3, 3]`.
 
         """
 
-        return AlssmStackedSO(self.alssms, alssm_weights).eval_states(xs)
+        N = AlssmSum(self.alssms).N
+        input_type = ''
+
+        if c0s is None:
+            input_type = 'none'
+        if np.isscalar(c0s):
+            input_type = 'scalar'
+        if is_array_like(c0s):
+            input_type = 'output_matrix'
+        if isinstance(c0s, tuple):
+            input_type = 'mixed'
+
+        assert input_type != '', "c0s input unknown type"
+
+        alssm_sum = AlssmSum(self.alssms, alssm_weights)
+
+        if input_type == 'scalar':
+            alssm_sum.C = np.full(N, c0s)
+        if input_type == 'output_matrix':
+            alssm_sum.C = c0s
+        if input_type == 'mixed':
+            alssms = []
+            for alssm, c0 in zip(self.alssms, c0s):
+                alssm_ = copy.deepcopy(alssm)
+                if c0 is None:
+                    c0 = alssm_.C
+                if np.isscalar(c0):
+                    c0 = np.full_like(alssm_.C, c0)
+                alssm_.C_init = c0
+                alssms.append(alssm_)
+            alssm_sum = AlssmSum(alssms, alssm_weights)
+
+        return alssm_sum.eval_states(xs)
 
     def get_state_var_indices(self, label):
         """
@@ -726,7 +757,7 @@ class CostBase(ABC):
         out : list of int
             state indices of the label
         """
-        return AlssmStackedSO(self.alssms, label='cost').get_state_var_indices('cost.' + label)
+        return AlssmSum(self.alssms, label='cost').get_state_var_indices('cost.' + label)
 
 
 class CompositeCost(CostBase):
@@ -772,7 +803,9 @@ class CompositeCost(CostBase):
         1 or any other scalar factor for active grid node).
 
 
-    This figure shows a graphical representation of a composite cost, depicting the internal relationships between Segments, ALSSMs, and the mapping matrix F. F[m,p] is implemented as a scalar factor multiplied on the alssm's output signal.
+    This figure shows a graphical representation of a composite cost, depicting the internal relationships between
+    Segments, ALSSMs, and the mapping matrix F. F[m,p] is implemented as a scalar factor multiplied on the alssm's
+    output signal.
 
 
     For more details, seen Chapter 9 in [Wildhaber2019]_.
@@ -881,7 +914,7 @@ class CostSegment(CostBase):
 
     Examples
     --------
-    Setup a cost segment with finite boundaries and a line ALSSM.
+    Set up a cost segment with finite boundaries and a line ALSSM.
 
     >>> alssm = lm.AlssmPoly(poly_degree=1, label="slope with offset")
     >>> segment = lm.Segment(a=-30, b=0, direction=lm.FORWARD, g=20, label="finite left")
@@ -927,6 +960,8 @@ class CostSegment(CostBase):
         ----------
         xs : array_like of shape=(XS, N [,S]) of float
             List of length `XS` with initial state vectors :math:`x`
+        alssm_weight : scalar, optional
+            Sets the weight of the output of the ALSSM
         thd : float or None, optional
             Threshold setting the evaluation boundaries by setting a minimum window height
 
@@ -935,7 +970,7 @@ class CostSegment(CostBase):
         trajectories : list of shape=(XS) of tuples :code:`(range, array)`
             Each element in `trajectories` is a tuple with
 
-            * :code:`range` of length `JR`: relative index range of trajectory with respect to semgent's boundaries.
+            * :code:`range` of length `JR`: relative index range of trajectory with respect to segment's boundaries.
             * :code:`array` of shape=(JR, L, [S]): trajectory values over reported range.
 
             Dimension `S` is only present in the output, if dimension `S` is present in `xs` (i.e., if multiple signal sets are used)
@@ -951,14 +986,38 @@ class CostSegment(CostBase):
 
         return super().trajectories(xs, [[alssm_weight]], thd)
 
-    def eval_alssm_output(self, xs, alssm_weight=1.0):
+    def eval_alssm_output(self, xs, alssm_weight=1.0, c0=None):
         """
         Evaluation of the :class:`CostSegment`'s ALSSM output for multiple state vectors
 
-        **For parameter details see:** :meth:`lmlib.statespace.models.Alssm.eval`
+        Parameters
+        ----------
+        xs : array_like of shape=(XS, N [,S]) of floats
+            List of state vectors :math:`x`
+        alssm_weight : scalar, optional
+            Sets the weight of the output of the ALSSM
+        c0 : None, array_like, optional
+            Alternative State-Space Output Matrices
+            Alternative entries are scalars or `None` for an ALSSM resp.
+            A scalar element will result in a ALSSM Output Matrix C filled with the element value.
+            i.e. `c0 = 3`  will result in ALSSM.C = [3, 3].
+            A None element won't change the ALSSM Output Matrix C.
+            i.e. `c0s = None` no change (Default).
+
+        Returns
+        -------
+        s : :class:`~numpy.ndarray` of shape=(XS,[J,]L[,S]) of floats
+            ALSSM outputs
+
+
+        |def_N|
+        |def_L|
+        |def_M|
+        |def_S|
+        |def_XS|
 
         """
-        return super().eval_alssm_output(xs, [alssm_weight])
+        return super().eval_alssm_output(xs, (alssm_weight,), c0s=(c0,))
 
 
 class RLSAlssmBase(ABC):
@@ -984,13 +1043,14 @@ class RLSAlssmBase(ABC):
 
     @property
     def cost_model(self):
-        """CostSegment, CompositeCost :  Cost Model"""
+        """CostBase : Cost Model"""
         return self._cost_model
 
     @cost_model.setter
     def cost_model(self, cost_model):
         assert isinstance(cost_model, CostBase), 'cost_model is not a subclass of CostBase'
         self._cost_model = cost_model
+        self._cost_model.__class__ = CostBase
 
     @property
     def betas(self):
@@ -1027,6 +1087,35 @@ class RLSAlssmBase(ABC):
         """:class:`~numpy.ndarray`  : Filter Parameter :math:`\\nu`"""
         return self._nu
 
+    def _check_output_dimensions(self, y):
+        C = AlssmSum(self.cost_model.alssms).C
+
+        is_multichannel = np.ndim(C) == 2
+        is_multiset = isinstance(self, (RLSAlssmSet, RLSAlssmSetSteadyState))
+
+        if is_multichannel:
+            if is_multiset:
+                assert np.ndim(y) == 3 and np.shape(C)[0] == np.shape(y)[1], \
+                    'Model output and observation shape does not match. ' \
+                    'Multi-channel and -set systems expect shapes: ' \
+                    'C shape (L, N) and y shape (K, L, S)'
+            else:
+                assert np.ndim(y) == 2 and np.shape(C)[0] == np.shape(y)[1], \
+                    'Model output and observation shape does not match. ' \
+                    'Multi-channel system expect shapes: ' \
+                    'C shape (L, N) and y shape (K, L)'
+        else:
+            if is_multiset:
+                assert np.ndim(y) == 2, \
+                    'Model output and observation shape does not match. ' \
+                    'Multi-set systems expect shapes: ' \
+                    'C shape (N,) and y shape (K, S)'
+            else:
+                assert np.ndim(y) == 1, \
+                    'Model output and observation shape does not match. ' \
+                    'Scalar systems (non multi-channel/set) expect shapes:' \
+                    'C shape (N,) and y shape (K,)'
+
     @abstractmethod
     def _allocate_parameter_storage(self, input_shape):
         pass
@@ -1055,7 +1144,7 @@ class RLSAlssmBase(ABC):
 
     def filter(self, y, v=None):
         """
-        Computes the intermediate parameters for subsequent squared error computations and minimizations.
+        Computes the intermediate parameters for subsequent squared error computations and minimization's.
 
         Computes the intermediate parameters using efficient forward- and backward recursions.
         The results are stored internally, ready to solve the least squares problem using e.g., :meth:`minimize_x`
@@ -1067,12 +1156,12 @@ class RLSAlssmBase(ABC):
         y : array_like
             Input signal |br|
             :class:`RLSAlssm` or :class:`RLSAlssmSteadyState`
-                Single-channel signal is of `shape =(K,)` for |br|
-                Multi-channel signal is of `shape =(K,L)` |br|
+            - Single-channel signal is of `shape =(K,)` for |br|
+            - Multi-channel signal is of `shape =(K,L)` |br|
             :class:`RLSAlssmSet` or :class:`RLSAlssmSetSteadyState`
-                Single-channel set signals is of `shape =(K,S)` for |br|
-                Multi-channel set signals is of `shape =(K,L,S)` |br|
-            Multi-channel-sets signal is of `shape =(K,L,S)`
+            - Single-channel set signals is of `shape =(K,S)` for |br|
+            - Multi-channel set signals is of `shape =(K,L,S)` |br|
+            - Multi-channel-sets signal is of `shape =(K,L,S)`
         v : array_like, shape=(K,), optional
             Sample weights. Weights the parameters for a time step `k` and is the same for all multi-channels.
             By default the sample weights are initialized to 1.
@@ -1084,12 +1173,13 @@ class RLSAlssmBase(ABC):
 
         """
 
+        self._check_output_dimensions(y)
         self._allocate_parameter_storage(np.shape(y))
 
         segments = self.cost_model.segments
         alssms = self.cost_model.alssms
 
-        A = AlssmStackedSO(alssms).A
+        A = AlssmSum(alssms).A
 
         if v is None:
             v = np.ones(np.shape(y)[0])
@@ -1110,6 +1200,76 @@ class RLSAlssmBase(ABC):
                 self._backward_recursion(A, C, segment, y, v, beta)
             else:
                 ValueError('segment.direction has wrong value.')
+
+    @abstractmethod
+    def minimize_x(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def minimize_v(self, *args, **kwargs):
+        pass
+
+    def filter_minimize_x(self, y, v=None, H=None, h=None):
+        """
+        Combination of :meth:`RLSAlssmBase.filter` and :meth:`RLSAlssmBase.minimize_x`.
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            rls.filter(y)
+            xs = rls.minimize_x()
+
+
+        See Also
+        --------
+        :meth:`RLSAlssmBase.filter`, :meth:`RLSAlssmBase.minimize_x`
+
+        """
+
+        self.filter(y, v)
+        return self.minimize_x(H, h)
+
+    def filter_minimize_v(self, y, v=None, H=None, h=None, **kwargs):
+        """
+        Combination of :meth:`RLSAlssmBase.filter` and :meth:`RLSAlssmBase.minimize_v`.
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            rls.filter(y)
+            xs = rls.minimize_v()
+
+
+        See Also
+        --------
+        :meth:`RLSAlssmBase.filter`, :meth:`RLSAlssmBase.minimize_v`
+
+        """
+
+        self.filter(y, v)
+        return self.minimize_v(H, h, **kwargs)
+
+    def filter_minimize_yhat(self, y, v=None, H=None, h=None, alssm_weights=None, c0s=None):
+        """
+        Combination of :meth:`RLSAlssmBase.filter` and :meth:`RLSAlssmBase.minimize_x` and
+        :meth:`CostBase.eval_alssm_output`
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            xs = rls.filter_minimize_x()
+            y_hat = rls.cost_model.eval_alssm_output(xs)
+
+        See Also
+        --------
+        :meth:`RLSAlssmBase.filter`, :meth:`RLSAlssmBase.minimize_x`
+
+        """
+        xs = self.filter_minimize_x(y, v=v, H=H, h=h)
+        return self.cost_model.eval_alssm_output(xs, alssm_weights=alssm_weights, c0s=c0s)
 
 
 class RLSAlssm(RLSAlssmBase):
@@ -1133,11 +1293,6 @@ class RLSAlssm(RLSAlssmBase):
         Cost Model
     **kwargs
             Forwarded to :class:`.RLSAlssmBase`
-
-
-    Examples
-    --------
-    .. minigallery:: lmlib.RLSAlssm
 
     """
 
@@ -1207,7 +1362,7 @@ class RLSAlssm(RLSAlssmBase):
 
         Returns
         -------
-        v : :class:`~numpy.ndarray`, shape = (K, M),
+        v : :class:`~numpy.ndarray`, shape = (K, M)
             Least square state vector estimate for each time index.
             The shape of one state vector `x[k]` is `(N, [S])`, where k is the time index of `K` samples,
             `N` the ALSSM order.
@@ -1221,7 +1376,8 @@ class RLSAlssm(RLSAlssmBase):
 
         # check and init H
         H = np.eye(N) if H is None else np.asarray(H)
-        assert H.shape[0] == N, f"first dimension of constrain matrix H needs to be of size {N} (model order), found size {H.shape[0]}"
+        assert H.shape[
+                   0] == N, f"first dimension of constrain matrix H needs to be of size {N} (model order), found size {H.shape[0]}"
         M = H.shape[1]
 
         # check and init h
@@ -1286,50 +1442,6 @@ class RLSAlssm(RLSAlssmBase):
 
         return x
 
-    def filter_minimize_x(self, y, v=None, H=None, h=None):
-        """
-        Combination of :meth:`RLSAlssm.filter` and :meth:`RLSAlssm.minimize_x`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_x()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssm.filter`, :meth:`RLSAlssm.minimize_x`
-
-        """
-
-        self.filter(y, v)
-        return self.minimize_x(H, h)
-
-
-    def filter_minimize_v(self, y, v=None, H=None, h=None):
-        """
-        Combination of :meth:`RLSAlssm.filter` and :meth:`RLSAlssm.minimize_v`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_v()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssm.filter`, :meth:`RLSAlssm.minimize_v`
-
-        """
-
-        self.filter(y, v)
-        return self.minimize_v(H, h)
-
-
     def eval_errors(self, xs, ks=None):
         r"""
         Evaluation of the squared error for multiple state vectors `xs`.
@@ -1372,7 +1484,7 @@ class RLSAlssm(RLSAlssmBase):
 
 class RLSAlssmSet(RLSAlssmBase):
     """
-    Filter and Data container for Recursive Least Sqaure Alssm Filters using Sets (multichannel parallel processing)
+    Filter and Data container for Recursive Least Square Alssm Filters using Sets (multichannel parallel processing)
 
     This class is the same as :class:`RLSAlssm` except that the signal `y` has an additional last dimension.
     The signals in these dimensions are processed simultaneously, as in a normal :class:`RLSAlssm` called multiple times.
@@ -1383,14 +1495,14 @@ class RLSAlssmSet(RLSAlssmBase):
         Cost Model
     kappa_diag : bool
         If set to False, kappa will be computed as a matrix (outer product of each signal energy) else
-        its diagonal will saved
+        its diagonal will be saved
     **kwargs
         Forwarded to :class:`.RLSAlssmBase`
 
     """
 
-    def __init__(self, cost_model, kappa_diag=True):
-        super().__init__()
+    def __init__(self, cost_model, kappa_diag=True, **kwargs):
+        super().__init__(**kwargs)
         self._kappa_diag = None
         self.cost_model = cost_model
         self.set_kappa_diag(kappa_diag)
@@ -1484,7 +1596,8 @@ class RLSAlssmSet(RLSAlssmBase):
 
         # check and init H
         H = np.eye(N) if H is None else np.asarray(H)
-        assert H.shape[0] == N, f"first dimension of constrain matrix H needs to be of size {N} (model order), found size {H.shape[0]}"
+        assert H.shape[
+                   0] == N, f"first dimension of constrain matrix H needs to be of size {N} (model order), found size {H.shape[0]}"
         M = H.shape[1]
 
         # check and init h
@@ -1495,8 +1608,8 @@ class RLSAlssmSet(RLSAlssmBase):
                 h = np.repeat(h, S, axis=1)
             else:
                 h = np.asarray(h)
-        assert h.shape == (N, S), f"offset vector h needs to be of shape ({N}, {S}) (model order,  multi-channel set size), {info_str_found_shape(h)}"
-
+        assert h.shape == (N,
+                           S), f"offset vector h needs to be of shape ({N}, {S}) (model order,  multi-channel set size), {info_str_found_shape(h)}"
 
         # allocate v and minimize
         v = np.full((len(self.W), M, S), np.nan)
@@ -1557,47 +1670,6 @@ class RLSAlssmSet(RLSAlssmBase):
             x = np.einsum('nm, kms->kns', H, v) + h
 
         return x
-
-    def filter_minimize_x(self, y, v=None, H=None, h=None, **kwargs):
-        """
-        Combination of :meth:`RLSAlssmSet.filter` and :meth:`RLSAlssmSet.minimize_x`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_x()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssmSet.filter`, :meth:`RLSAlssmSet.minimize_x`
-
-        """
-        self.filter(y, v)
-        return self.minimize_x(H, h, **kwargs)
-
-    def filter_minimize_v(self, y, v=None, H=None, h=None, **kwargs):
-        """
-        Combination of :meth:`RLSAlssmSet.filter` and :meth:`RLSAlssmSet.minimize_v`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_v()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssmSet.filter`, :meth:`RLSAlssmSet.minimize_v`
-
-        """
-
-        self.filter(y, v)
-        return self.minimize_v(H, h, **kwargs)
 
     def eval_errors(self, xs, ks=None):
         r"""
@@ -1746,39 +1818,6 @@ class RLSAlssmSteadyState(RLSAlssmBase):
 
         return x
 
-    def filter_minimize_x(self, y, v=None, H=None, h=None):
-        """
-        Combination of :meth:`RLSAlssmSteadyState.filter` and :meth:`RLSAlssmSteadyState.minimize_x`.
-
-        See Also
-        --------
-        :meth:`RLSAlssmSteadyState.filter`, :meth:`RLSAlssmSteadyState.minimize_x`
-
-        """
-        self.filter(y, v)
-        return self.minimize_x(H, h)
-
-    def filter_minimize_v(self, y, v=None, H=None, h=None):
-        """
-        Combination of :meth:`RLSAlssmSteadyState.filter` and :meth:`RLSAlssmSteadyState.minimize_v`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_v()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssmSteadyState.filter`, :meth:`RLSAlssmSteadyState.minimize_v`
-
-        """
-
-        self.filter(y, v)
-        return self.minimize_v(H, h)
-
     def eval_errors(self, xs, ks=None):
         r"""
         Evaluation of the squared error for multiple state vectors `xs`.
@@ -1800,7 +1839,7 @@ class RLSAlssmSteadyState(RLSAlssmBase):
 
 class RLSAlssmSetSteadyState(RLSAlssmBase):
     """
-    Filter and Data container for Recursive Least Sqaure Alssm Filters using Sets in Steady State Mode
+    Filter and Data container for Recursive Least Square Alssm Filters using Sets in Steady State Mode
 
     With :class:`RLSAlssmSteadyState` a common :math:`W_k = W_{steady}` is used for all samples (faster computation).
     Note that using a common :math:`W_k` potentially leads to border missmatch effects and to completely invalid results
@@ -1912,39 +1951,6 @@ class RLSAlssmSetSteadyState(RLSAlssmBase):
 
         return x
 
-    def filter_minimize_x(self, y, v=None, H=None, h=None, **kwargs):
-        """
-        Combination of :meth:`RLSAlssmSetSteadyState.filter` and :meth:`RLSAlssmSetSteadyState.minimize_x`.
-
-        See Also
-        --------
-        :meth:`RLSAlssmSetSteadyState.filter`, :meth:`RLSAlssmSetSteadyState.minimize_x`
-
-        """
-        self.filter(y, v)
-        return self.minimize_x(H, h, **kwargs)
-
-    def filter_minimize_v(self, y, v=None, H=None, h=None, **kwargs):
-        """
-        Combination of :meth:`RLSAlssmSetSteadyState.filter` and :meth:`RLSAlssmSetSteadyState.minimize_v`.
-
-        This method has the same output as calling the methods
-
-        .. code::
-
-            rls.filter(y)
-            xs = rls.minimize_v()
-
-
-        See Also
-        --------
-        :meth:`RLSAlssmSetSteadyState.filter`, :meth:`RLSAlssmSetSteadyState.minimize_v`
-
-        """
-
-        self.filter(y, v)
-        return self.minimize_v(H, h, **kwargs)
-
     def eval_errors(self, xs, ks=None):
         r"""
         Evaluation of the squared error for multiple state vectors `xs`.
@@ -2044,6 +2050,7 @@ class ConstrainMatrix:
             label of second state variable index to apply a dependency
         value: int, float
             dependency value
+
         Returns
         -------
         s : ConstrainMatrix
@@ -2058,7 +2065,7 @@ class ConstrainMatrix:
 
     def digest(self):
         """
-        Reruns a "snapshot" of the constraint matrix with the applied constrains
+        Reruns a "snapshot" of the constraint matrix with the applied constraints
 
         Returns
         -------
@@ -2078,15 +2085,15 @@ class ConstrainMatrix:
         # append zero columns to del_cols
         del_cols.extend(np.where(~H.any(axis=0))[0])
 
-        # check if all combination of columuns in H are a mulitple of eachother when yes add last one to del_cols
+        # check if all combination of columns in H are a mulitple of each-other when yes add last one to del_cols
         for j, c1 in enumerate(H.T):
             c1_norm = np.linalg.norm(c1)
             if c1_norm != 0.0:
                 for i, c2 in enumerate(H.T):
                     c2_norm = np.linalg.norm(c2)
                     if c2_norm != 0.0:
-                        is_multiple = np.all(c1 / c1_norm - c2 / c2_norm == 0.0)
-                        is_multiple = is_multiple or np.all(-c1 / np.linalg.norm(-c1) - c2 / c2_norm == 0.0)
+                        is_multiple = np.all(np.divide(c1, c1_norm) - np.divide(c2, c2_norm) == 0.0)
+                        is_multiple = is_multiple or np.all(np.divide(-1*c1, np.linalg.norm(-1*c1)) - np.divide(c2, c2_norm) == 0.0)
                         if is_multiple and i > j:
                             del_cols.append(i)
 

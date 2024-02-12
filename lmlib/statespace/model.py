@@ -9,7 +9,7 @@ from scipy.linalg import block_diag, pascal
 from lmlib.utils import *
 
 __all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmSin', 'AlssmExp',
-           'AlssmStacked', 'AlssmStackedSO', 'AlssmProd', 'ModelBase']
+           'AlssmStacked', 'AlssmSum', 'AlssmSum', 'AlssmProd', 'ModelBase']
 
 
 class ModelBase(ABC):
@@ -22,9 +22,11 @@ class ModelBase(ABC):
         Label of Alssm, default: 'n/a'
     C_init : array_like, None, optional
         Initialized Output Matrix, default: 'None'
+    force_MC : bool, optional
+        Broadcasts an 1-dimensional `C`-vector to a 2-dimensional array of shape (1, N)
     """
 
-    def __init__(self, label='n/a', C_init=None):
+    def __init__(self, label='n/a', C_init=None, force_MC=False):
         self._alssms = list()
         self._deltas = list()
         self._A = None
@@ -32,6 +34,7 @@ class ModelBase(ABC):
         self.label = label
         self.C_init = C_init
         self._state_var_labels = dict()
+        self.force_MC = force_MC
 
     def __str__(self):
         A_str = re.sub('\s+', ',', np.array_str(self.A).replace('\n', '')).replace('[,', '[')
@@ -118,7 +121,11 @@ class ModelBase(ABC):
     @deltas.setter
     def deltas(self, deltas):
         _n = len(self.alssms)
-        deltas = [1] * _n if deltas is None else deltas
+        if deltas is None:
+            deltas = [1] * _n
+        elif np.isscalar(deltas):
+            deltas = [deltas] * _n
+
         assert isinstance(deltas, Iterable), 'deltas is not iterable'
         assert np.size(deltas) == _n, f'Output scaling factors deltas are not of length {_n}, ' \
                                       f'{info_str_found_shape(deltas)}'
@@ -130,6 +137,16 @@ class ModelBase(ABC):
     def state_var_labels(self):
         """dict : Dictionary containing state variable labels and index"""
         return self._state_var_labels
+
+    @property
+    def force_MC(self):
+        """bool : Flag to broadcast to a 2-dimensional `C` state space variable"""
+        return self._force_MC
+
+    @force_MC.setter
+    def force_MC(self, force_MC):
+        assert isinstance(force_MC, bool), 'force_MC is not of type boolean'
+        self._force_MC = force_MC
 
     def eval_states(self, xs):
         r"""
@@ -171,7 +188,7 @@ class ModelBase(ABC):
         [ 0.1  0.  -0.8  1. ]
 
         """
-        return np.tensordot(self.C, xs, axes=(-1, 1))
+        return np.asarray([self.C@x for x in xs])
 
     def eval_state(self, x):
         r"""
@@ -357,6 +374,8 @@ class ModelBase(ABC):
     def _init_state_var_labels(self):
         for n in range(self.N):
             self._state_var_labels['x' + str(n)] = (n,)
+        for n in range(self.N, 0, -1):
+            self._state_var_labels['x-' + str(n)] = (-n,)
         self._state_var_labels['x'] = list(range(self.N))
 
     def _rec_tree(self, level):
@@ -370,7 +389,7 @@ class ModelBase(ABC):
 
     def get_state_var_labels(self):
         """
-        Retruns a list of state variable labels
+        Returns a list of state variable labels
 
         Returns
         -------
@@ -384,7 +403,7 @@ class ModelBase(ABC):
         N = 0
         for alssm in self.alssms:
             for var_label, indices in alssm.get_state_var_labels():
-                state_list.extend([(self.label + '.' + var_label, tuple(i+N for i in indices))])
+                state_list.extend([(self.label + '.' + var_label, tuple(i + N for i in indices))])
             N += alssm.N
         return state_list
 
@@ -406,6 +425,9 @@ class ModelBase(ABC):
             if label == l:
                 return indices
 
+    def _broadcast_C_to_multichannel(self):
+        if self.force_MC:
+            self.C = np.atleast_2d(self.C)
 
 class Alssm(ModelBase):
     r"""
@@ -469,7 +491,7 @@ class Alssm(ModelBase):
     def update(self):
         self.C = self.C_init
         self._init_state_var_labels()
-
+        self._broadcast_C_to_multichannel()
 
 class AlssmPoly(ModelBase):
     r"""
@@ -559,6 +581,7 @@ class AlssmPoly(ModelBase):
             self.C = self.C_init
         self.A = pascal(self.poly_degree + 1, kind='upper')
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
     @property
     def poly_degree(self):
@@ -635,6 +658,7 @@ class AlssmPolyJordan(ModelBase):
             self.C = self.C_init
         self.A = np.eye(self.poly_degree + 1) + np.diagflat(np.ones(self.poly_degree), 1)
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
     @property
     def poly_degree(self):
@@ -666,13 +690,13 @@ class AlssmSin(ModelBase):
     Parameters
     ----------
     omega : float, int
-        Frequency :math:`\omega = 2\pi f_s
+        Frequency :math:`\omega = 2\pi f_s`
     rho : float, int, optional
         Decay factor, default: rho = 1.0
     C : array_like, shape=(L, N), optional
         Output Matrix.
         If no output matrix is given, C gets initialize automatically to `[1, 0]`, such that the shape
-        is `(N,)`. In addition with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)`(default: C=None)
+        is `(N,)`. In addition with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)` (default: C=None)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
@@ -722,6 +746,7 @@ class AlssmSin(ModelBase):
         c, s = np.cos(self.omega), np.sin(self.omega)
         self.A = self.rho * np.array([[c, -s], [s, c]])
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
     @property
     def omega(self):
@@ -795,6 +820,7 @@ class AlssmExp(ModelBase):
             self.C = self.C_init
         self.A = np.array([[self.gamma]])
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
     @property
     def gamma(self):
@@ -865,7 +891,7 @@ class AlssmStacked(ModelBase):
     where :math:`A_m` and :math:`C_m` are the transition matrices and the output vectors of the joined models, respectively, and
     :math:`\lambda_1 ... \lambda_M  \in \mathcal{R}` are additional factors to weight each output individually.
 
-   For more details see [Wildhaber2019]_ :download:`PDF Sec: Linear Combination of M Systems <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
+    For more details see [Wildhaber2019]_ :download:`PDF Sec: Linear Combination of M Systems <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
 
 
     Parameters
@@ -880,6 +906,7 @@ class AlssmStacked(ModelBase):
 
 
     |def_M|
+
 
     Examples
     --------
@@ -917,9 +944,10 @@ class AlssmStacked(ModelBase):
         self.A = A
         self.C = C
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
 
 
-class AlssmStackedSO(ModelBase):
+class AlssmSum(ModelBase):
     r"""
     Stacking multiple ALSSMs, generating summed output vector of ALSSMs.
 
@@ -967,7 +995,7 @@ class AlssmStackedSO(ModelBase):
     >>> A = [[1, 1], [0, 1]]
     >>> C = [[1, 0]]
     >>> alssm_line = lm.Alssm(A, C)
-    >>> stacked_alssm = lm.AlssmStackedSO((alssm_poly, alssm_line))
+    >>> stacked_alssm = lm.AlssmSum((alssm_poly, alssm_line))
     >>> print(stacked_alssm)
     A =
     [[1. 1. 1. 1. 0. 0.]
@@ -996,6 +1024,10 @@ class AlssmStackedSO(ModelBase):
         self.A = A
         self.C = C
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
+
+
+AlssmStackedSO = DeprecationHelper(AlssmSum, "AlssmStackedSO() is deprecated. Use AlssmSum()!")
 
 
 class AlssmProd(ModelBase):
@@ -1066,3 +1098,4 @@ class AlssmProd(ModelBase):
         self.A = A
         self.C = C
         self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()

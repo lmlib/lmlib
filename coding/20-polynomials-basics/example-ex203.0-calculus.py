@@ -16,7 +16,7 @@ This example demonstrates the use of arithmetic manipulations on polynomials.
 """
 import lmlib as lm
 
-print("Defining univariate polynomials")
+print("Defining uni-variate polynomials")
 p1 = lm.Poly([1, 3, 5], [0, 1, 2])
 p2 = lm.Poly([2, -1], [0, 1])
 

@@ -28,6 +28,10 @@ alssm = lm.AlssmPoly(poly_degree=3, label='3nd degree')
 x0_d3 = [-1, 2, .1, -.01]  # initial state vector
 sx0_d3 = alssm.trajectory(x0_d3, js)
 
+# Printing Model to Console
+print("--DUMP--\n", alssm.dump_tree())
+print("--PRINT--\n", alssm)
+
 # plot
 plt.plot(js, sx0_d1, '.-', lw=.5, label=r'$x_0 = ' + str(x0_d1) + '^\mathrm{T}$')
 plt.plot(js, sx0_d2, '.-', lw=.5, label=r'$x_0 = ' + str(x0_d2) + '^\mathrm{T}$')

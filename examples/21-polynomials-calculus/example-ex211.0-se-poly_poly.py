@@ -1,6 +1,6 @@
 """
 Squared error between two polynomials [ex211.0]
-=====================================
+===============================================
 
 Closed form computation of the squared error between two time-continuous polynomials.
 """

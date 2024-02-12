@@ -125,7 +125,7 @@ axs[4].set_ylim(0.0, 0.4)
 axs[4].legend(loc='upper right')
 
 axs[5].plot(k, amp, lw=1.0, color='gray', label=r'$\hat{\lambda}_{k}$')
-_, stemlines, _ = axs[5].stem(peaks, amp[peaks], markerfmt="bo", basefmt=" ", use_line_collection=True)
+_, stemlines, _ = axs[5].stem(peaks, amp[peaks], markerfmt="bo", basefmt=" ")
 plt.setp(stemlines, 'linewidth', 2, 'color', 'blue')
 axs[5].axhline(1.0, color="black", linestyle="--", lw=1.0)
 axs[5].axhline(0, color="black", lw=0.5)

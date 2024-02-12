@@ -25,7 +25,7 @@ alssm_poly = lm.AlssmPoly(poly_degree=3)
 segment_left = lm.Segment(a=-np.inf, b=0, direction=lm.FW, g=20)
 segment_right = lm.Segment(a=1, b=np.inf, direction=lm.BW, g=20)
 
-# CompsiteCost
+# Composite Cost
 costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])
 
 # filter signal and take the approximation

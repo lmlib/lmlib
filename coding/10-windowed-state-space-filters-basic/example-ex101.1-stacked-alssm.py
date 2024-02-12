@@ -8,7 +8,7 @@ generating a two-channel stacked output.
 Note that :py:meth:`~lmlib.statespace.model.Alssm.dump_tree()` returns the internal structure of the stacked LSSM and helps debugging.
 
 Note: replacing :py:class:`~lmlib.statespace.model.AlssmStacked()` by
-:py:class:`~lmlib.statespace.model.AlssmStackedSO()` generates a summed (instead of a stacked) output.
+:py:class:`~lmlib.statespace.model.AlssmSum()` generates a summed (instead of a stacked) output.
 
 """
 import lmlib as lm

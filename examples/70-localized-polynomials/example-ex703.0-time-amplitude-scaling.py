@@ -1,5 +1,5 @@
 """
-Time and Amplitude Scaling [ex603.0]
+Time and Amplitude Scaling [ex703.0]
 ====================================
 
 This example is published in [Wildhaber2020]_ .
@@ -42,7 +42,7 @@ y = np.column_stack([np.convolve(y0, 1 / 50 * np.ones(50), 'same') for y0 in y.T
 
 fs = 2000
 K = len(y)
-t = np.arange(K)/fs
+t = np.arange(K) / fs
 M = 3
 Q = 5
 ENERGY_THD = 60
@@ -93,18 +93,15 @@ for k in range(K):
             J[k] = J_
             time_scaling_hat[k] = eta
             amplitude_hat[k] = ((B @ alpha_beta).T @ np.power(eta, q)) / ((C @ alpha_alpha).T @ np.power(eta, Mq))
-            cost_ratio[k] = J_/a1
+            cost_ratio[k] = J_ / a1
             model_energy_obs[k] = a1
-
 
 mask = ENERGY_THD < model_energy_obs
 k_range_mask = np.flatnonzero(mask)
 k_min = k_range_mask[np.argmin(cost_ratio[mask])]
 
-
-
 L_dilate = lm.poly_dilation_coef_L(np.arange(Q), time_scaling_hat[k_min])
-alphas_hat = amplitude_hat[k_min]*np.einsum('jn, knm->kjm', L_dilate, alphas)
+alphas_hat = amplitude_hat[k_min] * np.einsum('jn, knm->kjm', L_dilate, alphas)
 
 offset_channels = np.arange(M) + 1
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, gridspec_kw={'width_ratios': [1, 2, 2]})
@@ -138,7 +135,6 @@ for ax in fig.axes:
     ax.set_yticks([1, 2, 3])
 
 plt.show()
-
 
 # show cost and estimate over time
 if True:

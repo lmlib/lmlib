@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lmlib"
+version = "2.1.2"
+dependencies = [
+  'numpy',
+  'matplotlib',
+  'scipy'
+]
+requires-python = ">=3.8"
+authors = [
+  {name = "Reto Wildhaber", email = "reto.wildhaber@fhnw.ch"},
+  {name = "Frédéric Waldmann", email = "frederic.waldmann@fhnw.ch"},
+  {name = "Luca Fleischmann"},
+  {name = "Christof Baeriswyl'"}
+]
+maintainers = [
+  {name = "Frédéric Waldmann", email = "frederic.waldmann@fhnw.ch"},
+  {name = "Reto Wildhaber", email = "reto.wildhaber@fhnw.ch"}
+]
+description = "A Model-Based Signal Processing Library Working With Windowed Linear State-Space and Polynomial Signal Models."
+readme = "README.md"
+license = {file = "LICENSE.md"}
+keywords = ["lmlib", "model", "based", "signal", "processing", "ALSSM"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python",
+  "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+backend = ["numba"]
+
+[project.urls]
+Homepage = "https://lmlib.ch/"
+Documentation = "https://lmlib.ch/stable/html/"
+Repository = "https://github.com/lmlib/lmlib/"

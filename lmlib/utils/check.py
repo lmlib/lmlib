@@ -4,7 +4,7 @@ import numpy as np
 
 __all__ = ['is_square', 'is_2dim', 'is_1dim', 'is_array_like', 'is_string',
            'info_str_found_shape', 'info_str_found_type', 'common_C_dim',
-           'deprecated']
+           'deprecated', 'DeprecationHelper']
 
 
 def is_2dim(arr): return True if np.ndim(arr) == 2 else False
@@ -56,3 +56,21 @@ def deprecated(func):
         return func(*args, **kwargs)
 
     return new_func
+
+
+
+class DeprecationHelper(object):
+    def __init__(self, new_target, warn_msg='this class is deprecated'):
+        self._warn_msg = warn_msg
+        self.new_target = new_target
+
+    def _warn(self):
+        warnings.warn(self._warn_msg)
+
+    def __call__(self, *args, **kwargs):
+        self._warn()
+        return self.new_target(*args, **kwargs)
+
+    def __getattr__(self, attr):
+        self._warn()
+        return getattr(self.new_target, attr)

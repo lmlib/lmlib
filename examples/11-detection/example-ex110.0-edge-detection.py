@@ -28,9 +28,10 @@ alssm_right = lm.AlssmPoly(poly_degree=1, label='alssm_right')
 segment_left = lm.Segment(a=-21, b=-1, direction=lm.FORWARD, g=7)
 segment_right = lm.Segment(a=0, b=20, direction=lm.BACKWARD, g=7)
 F = [[1, 0], [0, 1]]
-ccost = lm.CompositeCost((alssm_left, alssm_right), (segment_left, segment_right), F)
+cost = lm.CompositeCost((alssm_left, alssm_right), (segment_left, segment_right), F)
+
 print('---- MODEL ----')
-print(ccost)
+print(cost)
 
 H_line = H_Straight = np.array(
                   [[1, 0],  # x_A,left : offset of left line
@@ -45,17 +46,17 @@ H_edge = H_Continuous = np.array(
 
 
 # Filter
-separam = lm.RLSAlssm(ccost)
-separam.filter(y)
-x_hat_edge = separam.minimize_x(H_edge)
-x_hat_line = separam.minimize_x(H_line)
+rls = lm.RLSAlssm(cost)
+rls.filter(y)
+xs_hat_edge = rls.minimize_x(H_edge)
+xs_hat_line = rls.minimize_x(H_line)
 
 # Signal Approximation
-y_hat = ccost.eval_alssm_output(x_hat_edge, alssm_weights=[0, 1])
+y_hat = cost.eval_alssm_output(xs_hat_edge, alssm_weights=[0, 1])
 
 # Square Error and lcr
-error_edge = separam.eval_errors(x_hat_edge)
-error_line = separam.eval_errors(x_hat_line)
+error_edge = rls.eval_errors(xs_hat_edge)
+error_line = rls.eval_errors(xs_hat_line)
 lcr = -1 / 2 * np.log(np.divide(error_edge, error_line))
 
 # Find best matches
@@ -65,11 +66,11 @@ print('Indices of slope changes (reference): ', ks)
 print('Indices of slope changes (estimates): ', peaks)
 
 # Trajectories
-trajs_edge = lm.map_trajectories(ccost.trajectories(x_hat_edge[peaks], thd=0.01), peaks, K, merge_ks=True, merge_seg=False)
-trajs_line = lm.map_trajectories(ccost.trajectories(x_hat_line[peaks], thd=0.01), peaks, K, merge_ks=True)
+trajs_edge = lm.map_trajectories(cost.trajectories(xs_hat_edge[peaks], thd=0.01), peaks, K, merge_ks=True, merge_seg=False)
+trajs_line = lm.map_trajectories(cost.trajectories(xs_hat_line[peaks], thd=0.01), peaks, K, merge_ks=True)
 
 # Windows
-wins = lm.map_windows(ccost.windows(segment_indices=[0, 1]), peaks, K, merge_ks=True, fill_value=0)
+wins = lm.map_windows(cost.windows(segment_indices=[0, 1]), peaks, K, merge_ks=True, fill_value=0)
 
 # Plot
 _, axs = plt.subplots(4, 1, sharex='all', figsize=(9, 8))
@@ -82,7 +83,7 @@ axs[0].legend(loc=1)
 axs[1].plot(k, y, lw=0.5, c='k', label='observation')
 axs[1].plot(k, trajs_edge[0], lw=1.5, c='k', label='left-sided ALSSM')
 axs[1].plot(k, trajs_edge[1], lw=1.5, c='b', label='right-sided ALSSM')
-axs[1].plot(k, trajs_line[0], '--',  lw=1, c='tab:gray', label='Null Hypthesis')
+axs[1].plot(k, trajs_line[0], '--',  lw=1, c='tab:gray', label='Null Hypothesis')
 axs[1].plot(k, trajs_line[1], '--', lw=1, c='tab:gray')
 axs[1].set(xlabel='k', ylabel=r'$y$')
 axs[1].legend(loc=1)

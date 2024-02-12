@@ -33,27 +33,27 @@ g_bl = 50  # baseline window weight, effective sample number under the window (l
 alssm_pulse = lm.AlssmPoly(poly_degree=0, label="line-model-pulse")
 alssm_baseline = lm.AlssmPoly(poly_degree=2, label="offset-model-baseline")
 
-# Defining segments with a left- resp. right-sided decaying window and a center segment with nearly rectangular window
+# Defining segments with a left-resp. right-sided decaying window and a center segment with nearly rectangular window
 segmentL = lm.Segment(a=-np.inf, b=-1, direction=lm.FORWARD, g=g_bl)
 segmentC = lm.Segment(a=0, b=len_pulse, direction=lm.FORWARD, g=g_sp)
 segmentR = lm.Segment(a=len_pulse+1, b=np.inf, direction=lm.BACKWARD, g=g_bl, delta=len_pulse)
 
-# Defining the final cost function (a so called composite cost = CCost)
+# Defining the final cost function (a so-called composite cost = CCost)
 # mapping matrix between models and segments (rows = models, columns = segments)
 F = [[0, 1, 0],
      [1, 1, 1]]
 costs = lm.CompositeCost((alssm_pulse, alssm_baseline), (segmentL, segmentC, segmentR), F)
 
 # filter signal
-se_param = lm.RLSAlssm(costs)
-xs_1 = se_param.filter_minimize_x(y)
+rls = lm.RLSAlssm(costs)
+xs_1 = rls.filter_minimize_x(y)
 y_hat = costs.eval_alssm_output(xs_1, alssm_weights=[1, 0])
 
 xs_0 = np.copy(xs_1)
 xs_0[:, costs.get_state_var_indices('line-model-pulse.x')] = 0
 
-J1 = se_param.eval_errors(xs_1)  # get SE (squared error) for hypothesis 1 (baseline + pulse)
-J0 = se_param.eval_errors(xs_0)  # get SE (squared error)  for hypothesis 0 (baseline only)
+J1 = rls.eval_errors(xs_1)  # get SE (squared error) for hypothesis 1 (baseline + pulse)
+J0 = rls.eval_errors(xs_0)  # get SE (squared error)  for hypothesis 0 (baseline only)
 
 lcr = -0.5 * np.log(J1 / J0)
 
