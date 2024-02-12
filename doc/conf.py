@@ -134,7 +134,9 @@ html_theme_options = {
     "search_bar_text": "Search...",
     "show_prev_next": False
 }
-
+html_context = {
+   "default_mode": "light"
+}
 html_static_path = ['static']
 html_css_files = ['css/lmlib.css']
 
