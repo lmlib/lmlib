@@ -37,4 +37,4 @@ backend = ["numba"]
 [project.urls]
 Homepage = "https://lmlib.ch/"
 Documentation = "https://lmlib.ch/stable/html/"
-Repository = "https://github.com/lmlib/lmlib
+Repository = "https://github.com/lmlib/lmlib/"
