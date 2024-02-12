@@ -22,12 +22,12 @@ maintainers = [
   {name = "Reto Wildhaber", email = "reto.wildhaber@fhnw.ch"}
 ]
 description = "A Model-Based Signal Processing Library Working With Windowed Linear State-Space and Polynomial Signal Models."
-readme = "README.rst"
+readme = "README.md"
 license = {file = "LICENSE.md"}
 keywords = ["lmlib", "model", "based", "signal", "processing", "ALSSM"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
-  "Programming Language :: Python 3",
+  "Programming Language :: Python",
   "Operating System :: OS Independent",
 ]
 
