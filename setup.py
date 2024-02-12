@@ -11,10 +11,10 @@ setup(
     license='MIT',
     packages=find_packages(include=['lmlib', 'lmlib.*']),
     install_requires=[
-            'numpy',
-            'matplotlib',
-            'scipy'],
+        'numpy',
+        'matplotlib',
+        'scipy'],
     extras_require={'jit-backend': ['numba']},
-    include_package_data = True,
+    include_package_data=True,
     python_requires='>=3'
 )
