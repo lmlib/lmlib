@@ -15,7 +15,7 @@ a signal processing library to efficiently analyze single- and multi-channel tim
 
 **This library implements Recursive Least Squares (RLS) algorithms with**
 
-.. grid:: 2
+.. grid:: 3
 
     .. grid-item-card:: Windowed Linear State-Space Models
 
@@ -24,6 +24,10 @@ a signal processing library to efficiently analyze single- and multi-channel tim
     .. grid-item-card:: Continuous-Time Polynomial Signal Models
 
         (Package :ref:`lmlib_api_polynomial`)
+
+    .. grid-item-card:: Iterative Reweighed RLS
+
+        (Package :ref:`lmlib_api_irrls`)
    
 *This library provides methods for*
 

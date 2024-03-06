@@ -2,10 +2,17 @@ import warnings
 import functools
 import numpy as np
 
-__all__ = ['is_square', 'is_2dim', 'is_1dim', 'is_array_like', 'is_string',
+__all__ = ['all_equal', 'is_square', 'is_2dim', 'is_1dim', 'is_array_like', 'is_string',
            'info_str_found_shape', 'info_str_found_type', 'common_C_dim',
            'deprecated', 'DeprecationHelper']
 
+def all_equal(iterator):
+    iterator = iter(iterator)
+    try:
+        first = next(iterator)
+    except StopIteration:
+        return True
+    return all(first == x for x in iterator)
 
 def is_2dim(arr): return True if np.ndim(arr) == 2 else False
 

@@ -28,3 +28,6 @@ Bibliography
 .. [Loeliger2016]
    \ H.-A. Loeliger, L. Bruderer, H. Malmberg, F. Wadehn, and N. Zalmai, "On Sparsity by NUV-EM, Gaussian Message Passing, and Kalman Smoothing", CoRR, vol. abs/1602.02673, 2016. arXiv: 1602 . 02673. [Online]. Available: http://arxiv.org/abs/1602.02673.
 
+.. [Wadehn2016]
+   \ F. Wadehn, L. Bruderer, J. Dauwels, V. Sahdeva, H. Yu, and H.-A. Loeliger, "Outlier-insensitive Kalman Smoothing and Marginal Message Passing", 2016 24th European Signal Processing Conference (EUSIPCO) [Online]. Available: http://www.isiweb.ee.ethz.ch/papers/docu/fewa-lubr-jdau-aloe-2016.pdf.
+

@@ -14,6 +14,9 @@ a:hover{
  font-weight: bold;
 }
 
+.bd-footer__inner {
+    padding-left: 5.3rem!important;
+}
 
 body {
     font-family: 'Open Sans', sans-serif;

@@ -2,6 +2,7 @@
 
 API Reference
 =============
+
 Modules
 -------
 
@@ -21,6 +22,12 @@ Modules
 
 .. grid:: 2
 
+    .. grid-item-card:: IRRLS
+        :link-type: ref
+        :link: lmlib_api_irrls
+
+        Message Passing Algorithms based on Iterative Reweighed Recursive Least Square
+
     .. grid-item-card:: Utils
         :link-type: ref
         :link: lmlib_api_statespace
@@ -36,6 +43,7 @@ Reference Content
     self
     statespace
     polynomial
+    irrls
     utils
     Bibliography <bibliography>
 
