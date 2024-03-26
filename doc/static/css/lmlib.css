@@ -3,19 +3,19 @@
         background-image: url("../images/background.png");
         background-repeat: repeat-y;
         }
+    .bd-footer__inner {
+        padding-left: 8rem!important;
+    }
 }
 
 a:hover{
     text-decoration: none!important;
     color: #0a7d91!important;
 }
+
 .title {
  color: #101060;
  font-weight: bold;
-}
-
-.bd-footer__inner {
-    padding-left: 5.3rem!important;
 }
 
 body {

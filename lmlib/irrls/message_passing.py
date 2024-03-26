@@ -534,7 +534,7 @@ class MBF(MessagePassing):
             Returns
             -------
             out : np.ndarray of shape (K, ...)
-                updated input estimate of forward path of the mp_block.
+                updated output estimate of forward path of the mp_block.
                 `Y.m` calls the mean of shape (K, N) and `Y.V` calls the covariance of shape (K, N, N)
             """
 
@@ -547,6 +547,20 @@ class MBF(MessagePassing):
             """
             return self.get_output_estimate()
 
+        def get_Z(self):
+            """
+            Returns the output prior `\tilde{Z}` of the output block
+
+            Returns
+            -------
+            out : np.ndarray of shape (K, ...)
+                updated output estimate of forward path of the mp_block.
+                `Y.m` calls the mean of shape (K, N) and `Y.V` calls the covariance of shape (K, N, N)
+            """
+
+            assert self.block.estimate_input, f"No output estimate saved! Set estimate_output=True on {self.block}"
+            return self.memory['Z']
+
     class BlockOutputOutlier(BlockBaseMBF):
         def __init__(self, block, K):
             super().__init__(block, K)
@@ -556,11 +570,15 @@ class MBF(MessagePassing):
             # malloc
             if self.block.estimate_output:
                 self.memory['Yt'] = allocate_gaussian_random_variable(self.K, self.block.L)
+            if self.block.save_outlier_estimate:
+                self.memory['S'] = allocate_gaussian_random_variable(self.K, self.block.L)
 
             # algorithm memory
             self._X_fw = allocate_gaussian_random_variable(self.K, self.block.N)
             self._initialize_Z()
             self._initialize_S()
+            self._Znew = np.zeros((self.block.L,self.block.L))
+
 
         def _initialize_Z(self):
             self._Z = allocate_gaussian_random_variable(1, self.block.L)[0]
@@ -568,6 +586,8 @@ class MBF(MessagePassing):
             self._check_and_set_sigma2_init(self._Z, self.block.L)
 
         def _initialize_S(self):
+            self.outlier = np.zeros(self.K)
+            self.n_outlier = 0
             self._S = allocate_gaussian_random_variable(self.K, self.block.L)
             self._S.m.fill(0)
             self._check_and_set_sigma2_k_init(self._S, self.K, self.block.L)
@@ -595,8 +615,9 @@ class MBF(MessagePassing):
             X_fw = self._X_fw[k]
             X = self._X[k]
             out_fac = self.block.outlier_threshold_factor
+            # print(k, (Z.V, S.V), self.n_outlier)
 
-            Y_W = np.linalg.inv(Z.V + S.V) # not sure if correct
+            Y_W = np.linalg.inv(Z.V + S.V) #  IV.4   !!! not sure if correct
             F = np.eye(self.block.N) - X_fw.V @ CT @ Y_W @ C  # V.8
 
             msg_bw.xi[:] = F.T @ msg_bw.xi + CT @ Y_W @ (C @ X_fw.m - y)  # V.4
@@ -607,19 +628,26 @@ class MBF(MessagePassing):
             X.V -= X.V @ msg_bw.W @ X.V  # IV.13 (backward update)
 
             # outlier estimation
-            X_mu_II = np.outer(X.m, X.m) @ X.V
-            for i in range(self.block.iterations):
-                _tmp = y**2-2*C.dot(y)@X.m + C@X_mu_II@CT
-                S.V[:] = max(_tmp - Z.V, 0)
+            # ------------------
 
-                ZV_new = 0
-                n_outlier = 0
-                for j in range(self.K):
-                    if self._S[k].V >= out_fac * Z.V:
-                        n_outlier += 1
-                        ZV_new += _tmp
-                Z.V = ZV_new / (self.K - n_outlier)
-            self._Z.V[:] = Z.V
+            # A. Expectation Step
+            X_mu_II = X.V + np.outer(X.m, X.m)
+
+            # B. Maximization Step
+            _tmp = y**2-2*np.dot(y, C@X.m) + C@X_mu_II@CT  # EQ 20
+            S.V[:] = max(_tmp - Z.V, 0)  # EQ 20
+            self._S[k].V = S.V
+
+            # D. Noise Floor Estimation:
+            if S.V <= out_fac * self.block.sigma2_init:
+                self._Znew += _tmp
+                # self.outlier[k] = 0
+            else:
+                # self.outlier[k] = 1
+                self.n_outlier += 1
+            if k == 0:
+                self._Z.V = self._Znew / (self.K - self.n_outlier)
+                self.n_outlier = 0
 
         def propagate_backward_save_states(self, k, msg_bw):
 
@@ -631,6 +659,9 @@ class MBF(MessagePassing):
                 self.memory['Yt'][k].m = C @ X.m  # IV.9 (backward update)
                 self.memory['Yt'][k].V = C @ X.V @ C.T  # IV.13 (backward update)
 
+            if self.block.save_outlier_estimate:
+                self.memory['S'][k] = self._S[k]
+
         def get_output_estimate(self):
             """
             Returns the output_estimate `\tilde{Y}` of the output block
@@ -638,11 +669,11 @@ class MBF(MessagePassing):
             Returns
             -------
             out : np.ndarray of shape (K, ...)
-                updated input estimate of forward path of the mp_block.
+                updated output estimate of forward path of the mp_block.
                 `Y.m` calls the mean of shape (K, N) and `Y.V` calls the covariance of shape (K, N, N)
             """
 
-            assert self.block.estimate_input, f"No output estimate saved! Set estimate_output=True on {self.block}"
+            assert self.block.estimate_output, f"No output estimate saved! Set estimate_output=True on {self.block}"
             return self.memory['Yt']
 
         def get_Yt(self):
@@ -650,6 +681,27 @@ class MBF(MessagePassing):
             See :func:`get_output_estimate`
             """
             return self.get_output_estimate()
+
+        def get_outlier_estimate(self):
+            """
+            Returns the outlier estimate `S` of the output block
+
+            Returns
+            -------
+            out : np.ndarray of shape (K, ...)
+                updated outlier estimate of forward path of the mp_block.
+                `Y.m` calls the mean of shape (K, N) and `Y.V` calls the covariance of shape (K, N, N)
+            """
+
+            assert self.block.save_outlier_estimate, f"No outlier estimate saved! Set save_outlier_estimate=True on {self.block}"
+            return self.memory['S']
+
+        def get_S(self):
+            """
+            See :func:`get_outlier_estimate`
+            """
+            return self.get_outlier_estimate()
+
     class BlockContainer(BlockBaseMBF):
         """
         MBF Block Container

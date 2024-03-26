@@ -304,15 +304,16 @@ class BlockOutput(BlockBase):
 
 
 class BlockOutputOutlier(BlockOutput):
-    def __init__(self, C, sigma2_init, y, outlier_threshold_factor=10, iterations=10, **kwargs):
+    def __init__(self, C, sigma2_init, y, save_outlier_estimate=False, outlier_threshold_factor=10, **kwargs):
         super().__init__(C, sigma2_init, y, **kwargs)
         self._outlier_threshold_factor = outlier_threshold_factor
-        self._iterations = iterations
+        self._save_outlier_estimate = save_outlier_estimate
 
     @property
     def outlier_threshold_factor(self):
         return self._outlier_threshold_factor
 
     @property
-    def iterations(self):
-        return self._iterations
+    def save_outlier_estimate(self):
+        """bool : save_outlier_estimate status"""
+        return self._save_outlier_estimate
