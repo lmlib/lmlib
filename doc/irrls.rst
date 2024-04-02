@@ -27,9 +27,9 @@ Implementation of IRRLS Algorithms
    More fully working, ready-to-use examples are found here: **[LINK TO EXAMPLES]**.)
 
 
-**Step 1.** Definition of the Algorithm by setting up a :class:`.FactorGraph` with its repetitive part packed in a :class:`.BlockContainer`.
+**Step 1.** Definition of the Algorithm by setting up a :class:`.FactorGraph` with its repetitive part packed in a :class:`.SectionContainer`.
 
-.. image:: /_static/doc/irrls-notation.svg
+.. image:: /_static/doc/irrls-messagepassing-layer1.svg
     :width: 800
     :align: center
 
@@ -37,43 +37,43 @@ Implementation of IRRLS Algorithms
 .. code-block:: python
 
    # Defining factor graph structure and comprising sections
-   block_1 = lm.BlockInput( ..., label="Block 1")
+   block_1 = lm.SectionInput( B = [[1]], label="Section 1")
    ...
-   block_M = lm.BlockOutput( ..., y, label="Block M") # block with observations y
-   fg = lm.FactorGraph(lm.BlockContainer(blocks=[block_1, ..., block_M], label="Block Container"),
+   block_M = lm.SectionOutput( C = [[1]], y, label="Section M") # block with observations y
+   fg = lm.FactorGraph(lm.SectionContainer(blocks=[block_1, ..., block_M], label="Section Container"),
                        left_side_prior=(mu_0, sigma_0), # left-side prior (optional)
                        right_side_prior(mu_K, sigma_K) ) # right-side prior (optional)
 
-Note that the :code:`Block`s can be of any number, sequence, and type listed below (List: **Block Classes**)  
+Note that the :code:`Section`s can be of any number, sequence, and type listed below (List: **Section Classes**)  
 
 **Step 2.** Initialization of associated :class:`.message_passing.MessagePassing` with its necessary memory structures to store transient messages and final parameter estimates:
 
-.. image:: /_static/doc/irrls-messagepassing.svg
+.. image:: /_static/doc/irrls-messagepassing-layer12.svg
     :width: 800
     :align: center	
 
 .. role:: raw-html(raw)
    :format: html
 
-The :raw-html:`<font color="blue">blue bars</font>` in the figure above indicate the accessible and stored parameters in each :class:`.MP_Block`
+The :raw-html:`<font color="blue">blue bars with labels</font>` in the figure above indicate the accessible and stored parameters in each :class:`.MP_Section`
 
 .. code-block:: python
 
    fg.initialize_mp(message_passing=lm.MBF, K=K) 
    fg.optimize(iterations=100) # run iterative message passing on graph (optimization) 
 
-**Step 3.** Access to parameter estimates after optimization in Step 2. Note that the parameter estimates of a :class:`.MP_Block` get accessed via the corresponding :class:`.Block` of the :class:`.FactorGraph`:
+**Step 3.** Access to parameter estimates after optimization in Step 2. Note that the parameter estimates of a :class:`.MP_Section` get accessed via the corresponding :class:`.Section` of the :class:`.FactorGraph`:
 
 .. code-block:: python
 
    # Option 1: access to generic state marginals x_k 
-   X = fg.get_mp_block(bc).get_marginals() 
+   X = fg.get_mp_section_container().get_marginals() 
    
    # Option 2: access to block-class dependent parameters (here: U of input block)
-   U = fg.get_mp_block(blk_input).get_U() 
+   U = fg.get_mp_section(blk_input).get_U() 
    
    # Option 3: access to block-class dependent memory (here: Memory for Yt of output block)
-   Yt = fg.get_mp_block(block_M).memory['Yt'] 
+   Yt = fg.get_mp_section(block_M).memory['Yt'] 
 
 
 .. note::
@@ -95,7 +95,7 @@ Factor Graph Class
 
     FactorGraph
 
-Block Classes
+Section Classes
 -------------
 .. _classes_block:
 
