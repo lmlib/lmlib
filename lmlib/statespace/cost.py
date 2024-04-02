@@ -8,8 +8,9 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import warnings
 import copy
+from scipy.linalg import block_diag
 
-from lmlib.statespace.model import ModelBase, AlssmSum
+from lmlib.statespace.model import ModelBase, AlssmSum, AlssmStacked
 from lmlib.statespace.recursion import *
 from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backends
 from lmlib.utils.check import *
@@ -533,7 +534,7 @@ class CostBase(ABC):
     def F(self, F):
         assert is_array_like(F), 'F is not array_like'
         F = np.atleast_2d(F)
-        assert np.shape(F) == (len(self.alssms), len(self.segments)), f'F has wrong shape, {info_str_found_shape(F)}'
+        assert np.shape(F)[:2] == (len(self.alssms), len(self.segments)), f'F has wrong shape, {info_str_found_shape(F)}'
         self._F = F
 
     def get_model_order(self):
@@ -662,7 +663,29 @@ class CostBase(ABC):
             if method == 'closed_form':
                 W += _covariance_matrix_closed_form(alssm.A, alssm.C, segment.gamma, segment.a, segment.b,
                                                     segment.delta)
+            if method == 'limited_sum':
+                K = 10000
+                rls = RLSAlssm(cost_model=self)
+                rls.filter(y=np.zeros(K))
+                W = rls._W[K//2]
         return W
+
+    def get_steady_state_W_sqrt(self, method='closed_form'):
+        """
+        Compute the steady state square root using Cholesky Algorithm
+
+        Parameters
+        ----------
+        method : str, optional
+            see :class:`lmlib.statespace.cost.CostBase.get_steady_state_W`
+
+        Returns
+        -------
+        out : :class:`numpy.ndarray`
+            Square Root of Steady State Matrix W
+
+        """
+        return np.linalg.cholesky(self.get_steady_state_W(method)).T
 
     def eval_alssm_output(self, xs, alssm_weights=None, c0s=None):
         """
@@ -758,6 +781,24 @@ class CostBase(ABC):
             state indices of the label
         """
         return AlssmSum(self.alssms, label='cost').get_state_var_indices('cost.' + label)
+
+    def get_transform(self, P):
+        alssms_t = []
+        F = None
+
+        # single P
+        if not isinstance(P, tuple):
+            alssms_t.append(AlssmSum(self.alssms).get_transform(P))
+            F = []
+            for f_ in self.F.T:
+                F_ = block_diag(*[np.eye(alssm.N)*f_[i] for i, alssm in enumerate(self.alssms)])
+                Ft = P@F_@np.linalg.inv(P)
+                F.append(Ft)
+            F = [F] # model dimension
+
+        return CompositeCost(alssms_t, self.segments, F)
+
+        # list of P
 
 
 class CompositeCost(CostBase):
@@ -1191,7 +1232,7 @@ class RLSAlssmBase(ABC):
             # calculate output matrix C for the segment
             tmp_c = []
             for j, alssm in enumerate(alssms):
-                tmp_c.append(self.cost_model.F[j, i] * alssm.C)
+                tmp_c.append(alssm.C.dot(self.cost_model.F[j, i]))
             C = np.hstack(tmp_c)
 
             if segment.direction == FW:

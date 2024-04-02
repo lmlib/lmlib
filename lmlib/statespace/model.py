@@ -1,5 +1,5 @@
 """This module provides methods to define linear state space models and methods to use them as signal models in recursive least squares problems."""
-
+import copy
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import re
@@ -428,6 +428,26 @@ class ModelBase(ABC):
     def _broadcast_C_to_multichannel(self):
         if self.force_MC:
             self.C = np.atleast_2d(self.C)
+
+    def get_transform(self, P):
+        """
+        Returns the transformed ALSSM
+
+        Parameters
+        ----------
+        P : array_like of size (N, N)
+            State Space Transformation matrix
+
+        Returns
+        -------
+        out : :class:`Alssm`
+            Transformed ALSSM
+        """
+        P = np.asarray(P)
+        P_inv = np.linalg.inv(P)
+        At = P@self.A@P_inv
+        Ct = self.C@P_inv
+        return Alssm(A=At, C=Ct)
 
 class Alssm(ModelBase):
     r"""
