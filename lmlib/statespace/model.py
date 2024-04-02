@@ -429,7 +429,7 @@ class ModelBase(ABC):
         if self.force_MC:
             self.C = np.atleast_2d(self.C)
 
-    def get_transform(self, P):
+    def transform(self, P):
         """
         Returns the transformed ALSSM
 

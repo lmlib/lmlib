@@ -13,7 +13,7 @@ ks = [K//2]
 
 a = -250
 b = 250
-g = 10000
+g = 100
 
 segment_left = lm.Segment(a=a, b=-1, direction=lm.FW, g=g)
 segment_right = lm.Segment(a=0, b=b-1, direction=lm.BW, g=g)
@@ -30,7 +30,7 @@ for i, N in enumerate(polynomial_orders):
     win = lm.map_windows(cost.windows([0, 1]), ks , K, True, True)
 
     P = lm.poly_dilation_coef_L(expo=np.arange(alssm.N), eta=float(b-a))
-    cost_t = cost.get_transform(P)
+    cost_t = cost.transform(P)
 
     # filter signal with transformation
     rlst = lm.RLSAlssm(cost_t)

@@ -24,7 +24,7 @@ cost = lm.CompositeCost([alssm], [segment_left, segment_right], F=[[1, 1]])
 P = cost.get_steady_state_W_sqrt(method='limited_sum')
 # P = cost.get_steady_state_W_sqrt(method='closed_form') #  todo : not invertible
 
-cost_t = cost.get_transform(P)
+cost_t = cost.transform(P)
 
 # filter signal without transformation
 rls = lm.RLSAlssm(cost)

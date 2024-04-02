@@ -782,13 +782,13 @@ class CostBase(ABC):
         """
         return AlssmSum(self.alssms, label='cost').get_state_var_indices('cost.' + label)
 
-    def get_transform(self, P):
+    def transform(self, P):
         alssms_t = []
         F = None
 
         # single P
         if not isinstance(P, tuple):
-            alssms_t.append(AlssmSum(self.alssms).get_transform(P))
+            alssms_t.append(AlssmSum(self.alssms).transform(P))
             F = []
             for f_ in self.F.T:
                 F_ = block_diag(*[np.eye(alssm.N)*f_[i] for i, alssm in enumerate(self.alssms)])
