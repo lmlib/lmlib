@@ -4,7 +4,7 @@ from functools import partial
 import numpy as np
 from lmlib.utils.check import is_square, is_string, is_2dim, all_equal
 
-__all__ = ['BlockContainer', 'BlockSystem',
+__all__ = ['BlockBase', 'BlockContainer', 'BlockSystem',
            'BlockInput', 'BlockInput_k', 'BlockInputNUV',
            'BlockOutput', 'BlockOutputOutlier']
 
@@ -15,7 +15,7 @@ def allocate_gaussian_random_variable(K, N, str_mean='m', str_covariance='V'):
 
 class BlockBase(ABC):
     """
-    Abstract base class for different Blocks
+    Abstract base class of all blocks
 
     label : string, optional
         Label of the block instance
@@ -52,7 +52,7 @@ class BlockBase(ABC):
 
 class BlockContainer(BlockBase):
     """
-    Block Container
+    Parents block containing a list of other blocks
 
     Inherits from the BlockBase class, but offers the option of collecting several blocks into a superblock.
 

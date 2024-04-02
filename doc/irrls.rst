@@ -1,37 +1,87 @@
 .. _lmlib_api_irrls:
 
-Iterative Reweighed Recursive Least Square
+Iteratively Reweighed Recursive Least Squares (IRRLS) Algorithms
 ==========================================
 
-**Package Abstract ::** This module provides a framework for Message Passing Algorithms
+**Package Abstract ::** This package provides a framework for Gaussian Message Passing Algorithms
 
-The message passing algorithms, i.e. Modified Bryson-Frazier (MBF) or Backward Recursion with Time-Reversed Information
-Filter, Forward Recursion with Marginals (BIFM) use Guassian distributiuons and are parameterized by means and covariances.
-The algorithms process a signal series forward and backward and estimate the messages (states)
-and can be extended by using NUV priors to process sparsity.
-Such algorithms are sequential in their operations as they process the signal in a stepwise manner.
-Therefore, they are described by a recursive represented factor graph,
-where the nodes or boxes represent the factors, while the edges denote the variables
+This package implements multivariate Gaussian message passing on general linear state-space models and using Forney factor graphs as primary design method.
+This leads to algorithms such as the the family of Kalman filters,
+filters for sparse signal learning when normal priors with unknown variance (NUV),
+an others.
+
+Supported message passing methods:
+   - Modified Bryson-Frazier (MBF) 
+   - Forward Recursion with Marginals (BIFM)
+
+Supported maximization methods:
+   - Expectation Maximization (EM)
+   - Alternate Maximization (AM)
+
+The implementation of these methods is according to public research papers such as [Loeliger2016]_ , [Wadehn2016]_, and the Literature **TODO: insert link**.
+
+Implementation of IRRLS Algorithms
+-----------------------------------------
+
+.. note::
+   More fully working, ready-to-use examples are found here: **[LINK TO EXAMPLES]**.)
 
 
-The module implements Multivariate Message Passing for linear state space models, similar to Kalman Smoothing.
-It's applied to tasks like estimating impulsive signals, detecting localized events, and removing outliers.
-The approach of Normal priors with unknown variance (NUV) effectively promotes sparsity and
-integrates well with parameter learning via expectation maximization (EM).
+**Step 1.** Definition of the Algorithm by setting up a :class:`.FactorGraph` with its repetitive part packed in a :class:`.BlockContainer`.
 
-We use factor graphs, both for reasoning and for describing algorithms.
-These graphs consist of nodes or boxes representing factors, while edges signify variables.
-A factor graph consists of at least one block containing boxes and edges.
-Blocks represent operational stages along the (time) axis :math:`k ={0, 1, 2, \dots, K-1}` and are present redundantly at every (time) step.
-
-This framework allows for the concatenation of various blocks to represent processing at each time step.
-For instance, a Kalman Smoother comprises three distinct blocks: BlockSystem, BlockInput, and BlockOutput, illustrated below.
-
-.. image:: /static/lmlib/irrls/kalman_smoother.svg
-    :width: 300
+.. image:: /_static/doc/irrls-notation.svg
+    :width: 800
     :align: center
 
-You will find detailed information in the papers [Loeliger2016]_ , [Wadehn2016]_ .
+
+.. code-block:: python
+
+   # Defining factor graph structure and comprising sections
+   block_1 = lm.BlockInput( ..., label="Block 1")
+   ...
+   block_M = lm.BlockOutput( ..., y, label="Block M") # block with observations y
+   fg = lm.FactorGraph(lm.BlockContainer(blocks=[block_1, ..., block_M], label="Block Container"),
+                       left_side_prior=(mu_0, sigma_0), # left-side prior (optional)
+                       right_side_prior(mu_K, sigma_K) ) # right-side prior (optional)
+
+Note that the :code:`Block`s can be of any number, sequence, and type listed below (List: **Block Classes**)  
+
+**Step 2.** Initialization of associated :class:`.message_passing.MessagePassing` with its necessary memory structures to store transient messages and final parameter estimates:
+
+.. image:: /_static/doc/irrls-messagepassing.svg
+    :width: 800
+    :align: center	
+
+.. role:: raw-html(raw)
+   :format: html
+
+The :raw-html:`<font color="blue">blue bars</font>` in the figure above indicate the accessible and stored parameters in each :class:`.MP_Block`
+
+.. code-block:: python
+
+   fg.initialize_mp(message_passing=lm.MBF, K=K) 
+   fg.optimize(iterations=100) # run iterative message passing on graph (optimization) 
+
+**Step 3.** Access to parameter estimates after optimization in Step 2. Note that the parameter estimates of a :class:`.MP_Block` get accessed via the corresponding :class:`.Block` of the :class:`.FactorGraph`:
+
+.. code-block:: python
+
+   # Option 1: access to generic state marginals x_k 
+   X = fg.get_mp_block(bc).get_marginals() 
+   
+   # Option 2: access to block-class dependent parameters (here: U of input block)
+   U = fg.get_mp_block(blk_input).get_U() 
+   
+   # Option 3: access to block-class dependent memory (here: Memory for Yt of output block)
+   Yt = fg.get_mp_block(block_M).memory['Yt'] 
+
+
+.. note::
+   The available parameters are specific to a block class.  
+   For a detailed list of block-specific parameters, please refer to corresponding class documentation. 
+
+
+
 
 Factor Graph Class
 ------------------
@@ -55,6 +105,7 @@ Block Classes
     :toctree: _autosummary
     :recursive:
 
+    BlockBase
     BlockContainer
     BlockSystem
     BlockInput
@@ -63,7 +114,7 @@ Block Classes
     BlockOutput
     BlockOutputOutlier
 
-Message Passing Algorithms
+Message Passing Methods
 --------------------------
 .. _classes_message_passing:
 

@@ -8,7 +8,35 @@ __all__ = ['FactorGraph']
 
 class FactorGraph(object):
     """
-    Factor Graph for Message Passing
+    (Forney) factor graph to define a recursively computable cost function. 
+    A :class:`.FactorGraph` object requires two additional objects to function: 
+    - A block (of type :class:`.Block`, or mostly of type :class:`.BlockContainer` containing of multiple :class:`.Block`s) that defines the state transition from `x_k` to `x_{k+1}`
+    - A message passing method such as :class:`.message_passing` propagating Gaussian messages forward and backward along the graph. 
+    
+    The :code:`optimize(iterations=100)` runs 100 times the forward and backward message passing and calls the internal update routines of each block to update internal states (if needed).
+    After optimization, the optimized internal states might be accessed via generic and block-specific access methods.
+    
+    For the example factor graph
+
+    .. code-block:: python
+    
+       blk_system = lm.BlockSystem(A, label="system")
+       blk_input = lm.BlockInputNUV(B, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
+       blk_output = lm.BlockOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
+       blk = lm.BlockContainer(blocks=[blk_system, blk_input, blk_output], save_marginals=True)
+
+       # message passing
+       fg = lm.FactorGraph(blk, lm.MBF, K)
+       fg.optimize(iterations=100)
+    
+    the following generic and block-specific properties are accessible:
+    
+    .. code-block:: python
+    
+       X = fg.get_mp_block(blk).get_marginals() # access to marginals after each block
+    
+    
+    
 
     Parameters
     ----------
