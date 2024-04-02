@@ -1,7 +1,7 @@
 .. _lmlib_api_irrls:
 
 Iteratively Reweighed Recursive Least Squares (IRRLS) Algorithms
-==========================================
+================================================================
 
 **Package Abstract ::** This package provides a framework for Gaussian Message Passing Algorithms
 
@@ -21,7 +21,7 @@ Supported maximization methods:
 The implementation of these methods is according to public research papers such as [Loeliger2016]_ , [Wadehn2016]_, and the Literature **TODO: insert link**.
 
 Implementation of IRRLS Algorithms
------------------------------------------
+----------------------------------
 
 .. note::
    More fully working, ready-to-use examples are found here: **[LINK TO EXAMPLES]**.)
@@ -29,7 +29,7 @@ Implementation of IRRLS Algorithms
 
 **Step 1.** Definition of the Algorithm by setting up a :class:`.FactorGraph` with its repetitive part packed in a :class:`.SectionContainer`.
 
-.. image:: /_static/doc/irrls-messagepassing-layer1.svg
+.. image:: /static/lmlib/irrls/irrls-messagepassing-layer1.svg
     :width: 800
     :align: center
 
@@ -44,13 +44,13 @@ Implementation of IRRLS Algorithms
                        left_side_prior=(mu_0, sigma_0), # left-side prior (optional)
                        right_side_prior(mu_K, sigma_K) ) # right-side prior (optional)
 
-Note that the :code:`Section`s can be of any number, sequence, and type listed below (List: **Section Classes**)  
+Note that the :code:`Section` s can be of any number, sequence, and type listed below (List: **Section Classes**)
 
 **Step 2.** Initialization of associated :class:`.message_passing.MessagePassing` with its necessary memory structures to store transient messages and final parameter estimates:
 
-.. image:: /_static/doc/irrls-messagepassing-layer12.svg
+.. image:: /static/lmlib/irrls/irrls-messagepassing-layer12.svg
     :width: 800
-    :align: center	
+    :align: center
 
 .. role:: raw-html(raw)
    :format: html
@@ -81,8 +81,6 @@ The :raw-html:`<font color="blue">blue bars with labels</font>` in the figure ab
    For a detailed list of block-specific parameters, please refer to corresponding class documentation. 
 
 
-
-
 Factor Graph Class
 ------------------
 .. _classes_factorgraph:
@@ -96,8 +94,8 @@ Factor Graph Class
     FactorGraph
 
 Section Classes
--------------
-.. _classes_block:
+---------------
+.. _classes_section:
 
 .. currentmodule:: lmlib.irrls.block
 
@@ -115,7 +113,8 @@ Section Classes
     BlockOutputOutlier
 
 Message Passing Methods
---------------------------
+-----------------------
+
 .. _classes_message_passing:
 
 .. currentmodule:: lmlib.irrls.message_passing

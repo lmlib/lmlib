@@ -41,3 +41,6 @@ Contact
 -------
 
 Reto Wildhaber, FHNW Muttenz / ETH Zürich, Switzerland, reto.wildhaber@fhnw.ch
+
+
+.. include:: bibliography.rst

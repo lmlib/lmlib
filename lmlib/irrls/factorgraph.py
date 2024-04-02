@@ -7,11 +7,13 @@ __all__ = ['FactorGraph']
 
 
 class FactorGraph(object):
-    """
+    r"""
     (Forney) factor graph to define a recursively computable cost function. 
-    A :class:`.FactorGraph` object requires two additional objects to function: 
-    - A block (of type :class:`.Block`, or mostly of type :class:`.BlockContainer` containing of multiple :class:`.Block`s) that defines the state transition from `x_k` to `x_{k+1}`
-    - A message passing method such as :class:`.message_passing` propagating Gaussian messages forward and backward along the graph. 
+    A :class:`.FactorGraph` object requires two additional objects to function:
+
+    - A block (of type :class:`.Block`, or mostly of type :class:`.BlockContainer` containing of multiple :class:`.Block` instances) that defines the state transition from :math:`x_k` to :math:`x_{k+1}`
+
+    - A message passing method such as :class:`.message_passing` propagating Gaussian messages forward and backward along the graph.
     
     The :code:`optimize(iterations=100)` runs 100 times the forward and backward message passing and calls the internal update routines of each block to update internal states (if needed).
     After optimization, the optimized internal states might be accessed via generic and block-specific access methods.

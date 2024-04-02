@@ -34,6 +34,19 @@ Modules
 
         Miscellaneous, Signal and Function Generators
 
+
+Resources
+---------
+
+.. grid:: 1
+
+    .. grid-item-card:: Bibliography
+        :link-type: ref
+        :link: bibliography
+
+        Reference to Papers and Other Resources
+
+
 Reference Content
 -----------------
 
@@ -45,5 +58,5 @@ Reference Content
     polynomial
     irrls
     utils
-    Bibliography <bibliography>
+
 
