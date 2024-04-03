@@ -4,23 +4,23 @@ from functools import partial
 import numpy as np
 from lmlib.utils.check import is_square, is_string, is_2dim, all_equal
 
-__all__ = ['BlockBase', 'BlockContainer', 'BlockSystem',
-           'BlockInput', 'BlockInput_k', 'BlockInputNUV',
-           'BlockOutput', 'BlockOutputOutlier']
+__all__ = ['SectionBase', 'SectionContainer', 'SectionSystem',
+           'SectionInput', 'SectionInput_k', 'SectionInputNUV',
+           'SectionOutput', 'SectionOutputOutlier']
 
 
 def allocate_gaussian_random_variable(K, N, str_mean='m', str_covariance='V'):
     return np.recarray((K,), dtype=[(str_mean, 'f8', (N,)), (str_covariance, 'f8', (N, N))])
 
 
-class BlockBase(ABC):
+class SectionBase(ABC):
     """
-    Abstract base class of all blocks
+    Abstract base class of all sections
 
     label : string, optional
-        Label of the block instance
+        Label of the section instance
     save_marginals : boolean, optional
-        Marginals of the block are saved when True, else no memory will be allocated
+        Marginals of the section are saved when True, else no memory will be allocated
 
     """
 
@@ -31,7 +31,7 @@ class BlockBase(ABC):
 
     @property
     def label(self):
-        """str : label of the block"""
+        """str : label of the section"""
         return self._label
 
     @label.setter
@@ -46,57 +46,57 @@ class BlockBase(ABC):
 
     @property
     def save_marginals(self):
-        """bool : whether to save marginals of the block"""
+        """bool : whether to save marginals of the section"""
         return self._save_marginals
 
 
-class BlockContainer(BlockBase):
+class SectionContainer(SectionBase):
     """
-    Parents block containing a list of other blocks
+    Parents section containing a list of other sections
 
-    Inherits from the BlockBase class, but offers the option of collecting several blocks into a superblock.
+    Inherits from the SectionBase class, but offers the option of collecting several sections into a superSection.
 
     Parameters
     ----------
-    blocks : array_like of BlockBase
-        List of Blocks
+    sections : array_like of SectionBase
+        List of sections
     """
 
-    def __init__(self, blocks, **kwargs):
+    def __init__(self, sections, **kwargs):
         super().__init__(**kwargs)
 
-        self._blocks = []
-        for block in blocks:
-            self.append_block(block)
+        self._subsections = []
+        for section in sections:
+            self.append_section(section)
 
         # check model dimensions integrity
-        assert all_equal([block.N for block in self.blocks]), "model dimension doesnt match between blocks"
-        self._N = self.blocks[0].N
+        assert all_equal([section.N for section in self.subsections]), "model dimension doesnt match between sections"
+        self._N = self.subsections[0].N
 
     @property
-    def blocks(self):
-        """list : sub-blocks of the block"""
-        return self._blocks
+    def subsections(self):
+        """list : sub-sections of the section"""
+        return self._subsections
 
-    def append_block(self, block):
+    def append_section(self, section):
         """
-        Appends a block to the internal block list
+        Appends a section to the internal section list
 
         Parameters
         ----------
-        block : BlockBase
-            block to append
+        section : SectionBase
+            section to append
 
         """
-        assert isinstance(block, BlockBase), 'block must be a BlockBase object'
-        self._blocks.append(block)
+        assert isinstance(section, SectionBase), 'Section must be a SectionBase object'
+        self._subsections.append(section)
 
 
-class BlockSystem(BlockBase):
+class SectionSystem(SectionBase):
     """
-    Block System A (multiplier node)
+    Section System A (multiplier node)
 
-    .. image:: /static/lmlib/irrls/BlockSystem.svg
+    .. image:: /static/lmlib/irrls/SectionSystem.svg
         :width: 300
         :align: center
 
@@ -105,7 +105,7 @@ class BlockSystem(BlockBase):
     A : array_like of shape (N, N)
         System Matrix
     **kwargs
-        Forwarded to :class:`.Block`
+        Forwarded to :class:`.Section`
     """
 
     def __init__(self, A, **kwargs):
@@ -124,11 +124,11 @@ class BlockSystem(BlockBase):
         self._N = self._A.shape[0]
 
 
-class BlockInput(BlockBase):
+class SectionInput(SectionBase):
     """
-    Block Input Normal Prior
+    Section Input Normal Prior
 
-    .. image:: /static/lmlib/irrls/BlockInput.svg
+    .. image:: /static/lmlib/irrls/SectionInput.svg
         :height: 400
         :align: center
 
@@ -141,7 +141,7 @@ class BlockInput(BlockBase):
     estimate_input : bool, optional
         Enables input estimation :math:`U`, default=False
     **kwargs
-        Forwarded to :class:`.Block`
+        Forwarded to :class:`.Section`
     """
 
     def __init__(self, B, sigma2_init=1.0, estimate_input=False, **kwargs):
@@ -178,11 +178,11 @@ class BlockInput(BlockBase):
         return self._sigma2_init
 
 
-class BlockInput_k(BlockInput):
+class SectionInput_k(SectionInput):
     """
-    Block input with time variable :math:`\sigma^2` (co-variance)
+    Section input with time variable :math:`\sigma^2` (co-variance)
 
-    .. image:: /static/lmlib/irrls/BlockInput_k.svg
+    .. image:: /static/lmlib/irrls/SectionInput_k.svg
         :height: 400
         :align: center
 
@@ -193,20 +193,20 @@ class BlockInput_k(BlockInput):
     sigma2_init : array_like of shape ([K,], M, M)
         Co-/Variance of zero-mean Gaussian
     **kwargs
-        Forwarded to :class:`.InputBlock`
+        Forwarded to :class:`.InputSection`
     """
     def __init__(self, B, sigma2_init, **kwargs):
         super().__init__(B, sigma2_init, **kwargs)
 
 
-class BlockInputNUV(BlockInput_k):
+class SectionInputNUV(SectionInput_k):
     """
-    Block input with NUV Prior
+    Section input with NUV Prior
 
-    Input block with a normal distribution with unknown variance (NUV).
+    Input section with a normal distribution with unknown variance (NUV).
     The EM algorithm method searches recursively for the least square solution and such estimate the prior variance.
 
-    .. image:: /static/lmlib/irrls/BlockInputNUV.svg
+    .. image:: /static/lmlib/irrls/SectionInputNUV.svg
         :height: 400
         :align: center
 
@@ -220,7 +220,7 @@ class BlockInputNUV(BlockInput_k):
     save_deployed_sigma2 : bool, optional
         Whether to save the deployed (not updated) variance before update. Necessary to calculate the cost.
     **kwargs
-        Forwarded to :class:`.InputBlock_k`
+        Forwarded to :class:`.InputSection_k`
 
     """
     
@@ -234,11 +234,11 @@ class BlockInputNUV(BlockInput_k):
         return self._save_deployed_sigma2
 
 
-class BlockOutput(BlockBase):
+class SectionOutput(SectionBase):
     """
-    Block Output with additive noise
+    Section Output with additive noise
 
-    .. image:: /static/lmlib/irrls/BlockOutput.svg
+    .. image:: /static/lmlib/irrls/SectionOutput.svg
         :height: 400
         :align: center
 
@@ -253,7 +253,7 @@ class BlockOutput(BlockBase):
     estimate_output : bool, optional
         Enables output estimation :math:`\tilde{Y}`, default=False
     **kwargs
-        Forwarded to :class:`.Block`
+        Forwarded to :class:`.Section`
     """
 
     def __init__(self, C, sigma2_init, y, estimate_output=False, **kwargs):
@@ -303,7 +303,7 @@ class BlockOutput(BlockBase):
         self._y = np.asarray(y)
 
 
-class BlockOutputOutlier(BlockOutput):
+class SectionOutputOutlier(SectionOutput):
     def __init__(self, C, sigma2_init, y, save_outlier_estimate=False, outlier_threshold_factor=10, **kwargs):
         super().__init__(C, sigma2_init, y, **kwargs)
         self._outlier_threshold_factor = outlier_threshold_factor

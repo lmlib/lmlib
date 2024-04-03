@@ -30,7 +30,7 @@ Modules
 
     .. grid-item-card:: Utils
         :link-type: ref
-        :link: lmlib_api_statespace
+        :link: lmlib_api_utils
 
         Miscellaneous, Signal and Function Generators
 

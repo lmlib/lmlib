@@ -36,13 +36,13 @@ A = lm.AlssmSum(
 B1 = [[1], [0], [0], [0]]
 C = [[1, 0, 0, 0]]
 
-blk_system = lm.BlockSystem(A)
-blk_input = lm.BlockInput(B1, sigma2_init=0.1, estimate_input=True)
-blk_output = lm.BlockOutputOutlier(C, sigma2_init=0.1, y=y, estimate_output=True, save_outlier_estimate=True)
-blk = lm.BlockContainer(blocks=[blk_system, blk_input, blk_output], save_marginals=True)
+sc_system = lm.SectionSystem(A)
+sc_input = lm.SectionInput(B1, sigma2_init=0.1, estimate_input=True)
+sc_output = lm.SectionOutputOutlier(C, sigma2_init=0.1, y=y, estimate_output=True, save_outlier_estimate=True)
+sc = lm.SectionContainer(sections=[sc_system, sc_input, sc_output], save_marginals=True)
 
 # message passing
-fg = lm.FactorGraph(blk, lm.MBF, K)
+fg = lm.FactorGraph(sc, lm.MBF, K)
 
 # set initial states & optimize
 init_msg_bw = lm.MBF.get_backward_initial_state(fg.N, xi=0, W=1e-3)
@@ -50,9 +50,9 @@ init_msg_fw = lm.MBF.get_forward_initial_state(fg.N, m=0, V=1000)
 fg.optimize(iterations=10, init_msg_fw=init_msg_fw, init_msg_bw=init_msg_bw)
 
 # get variables of fg
-Yt = fg.get_mp_block(blk_output).memory['Yt']
-X = fg.get_mp_block(blk).get_marginals()
-S = fg.get_mp_block(blk_output).get_S()
+Yt = fg.get_mp_section(sc_output).memory['Yt']
+X = fg.get_mp_section(sc).get_marginal()
+S = fg.get_mp_section(sc_output).get_S()
 
 # plot
 fig, axs = plt.subplots(3, 1, sharex='all')

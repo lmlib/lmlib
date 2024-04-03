@@ -1,4 +1,4 @@
-.. _irrls:
+.. _irrls_examples:
 
 Iterative Reweighed Recursive Least Square Algorithms
 -----------------------------------------------------

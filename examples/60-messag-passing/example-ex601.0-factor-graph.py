@@ -27,21 +27,24 @@ A = [[1]]
 B = [[1]]
 C = [[1]]
 
-blk_system = lm.BlockSystem(A, label="system")
-blk_input = lm.BlockInputNUV(B, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
-blk_output = lm.BlockOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
-blk = lm.BlockContainer(blocks=[blk_system, blk_input, blk_output], save_marginals=True)
+sc_system = lm.SectionSystem(A, label="system")
+sc_input = lm.SectionInputNUV(B, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
+sc_output = lm.SectionOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
+sc = lm.SectionContainer(sections=[sc_system, sc_input, sc_output], save_marginals=True)
 
 # message passing
-fg = lm.FactorGraph(blk, lm.MBF, K)
+fg = lm.FactorGraph(sc)
+fg.initialize_mp(lm.MBF, K)
 fg.optimize(iterations=100)
 
 
 # get variables of fg
-Yt = fg.get_mp_block(blk_output).memory['Yt']
-X = fg.get_mp_block(blk).get_marginals()
-U = fg.get_mp_block(blk_input).get_U()
-U_fw = fg.get_mp_block(blk_input).get_deployed_sigma2()
+mp_sc = fg.get_mp_section()
+X = mp_sc.get_marginal()
+
+Yt = mp_sc.get_mp_subsection(sc_output).get_Y_tilde()
+U = mp_sc.get_mp_subsection(sc_input).get_U()
+U_fw = mp_sc.get_mp_subsection(sc_input).get_deployed_sigma2()
 
 
 # plot

@@ -3,9 +3,10 @@
 Bibliography
 ============
 
-.. [Baeriswyl2022]  
-   \ C. Baeriswyl, A. Bertrand, and R. A. Wildhaber, "Windowed State Space Filters for Peak Interference Suppression in Neural Spike Sorting", 30th European Signal Processing Conference (EUSIPCO 2022), Belgrad, Spain. (accepted) 
-   
+
+.. [Baeriswyl2022]
+   \ C. Baeriswyl, A. Bertrand, and R. A. Wildhaber, "Windowed State Space Filters for Peak Interference Suppression in Neural Spike Sorting", 30th European Signal Processing Conference (EUSIPCO 2022), Belgrad, Spain. (accepted)
+
 
 .. [Waldmann2022]
    \ F. Waldmann, Ch. Baeriswyl, R. Andonie, R. Wildhaber, "Onset Detection of Pulse-Shaped Bioelectrical Signals Using Linear State Space Models", (accepted for BMT2022, Austria)

@@ -3,7 +3,7 @@ Approximation with straight-line segments using NUV Priors [ex603.0]
 ====================================================================
 
 Approximation with straight-line segments, which can be represented by a state space model of order n = 2.
-The input block has two separate sparse scalar input signals [Loeliger2016]_ .
+The input Section has two separate sparse scalar input signals [Loeliger2016]_ .
 
 """
 
@@ -25,25 +25,26 @@ B1 = [[1], [0]]
 B2 = [[0], [1]]
 C = [[1, 0]]
 
-blk_system = lm.BlockSystem(A)
-blk_input_offset = lm.BlockInputNUV(B1, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
-blk_input_slope = lm.BlockInputNUV(B2, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
-blk_output = lm.BlockOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
-blk = lm.BlockContainer(blocks=[blk_system, blk_input_offset, blk_input_slope, blk_output], save_marginals=True)
+sc_system = lm.SectionSystem(A)
+sc_input_offset = lm.SectionInputNUV(B1, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
+sc_input_slope = lm.SectionInputNUV(B2, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
+sc_output = lm.SectionOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
+sc = lm.SectionContainer(sections=[sc_system, sc_input_offset, sc_input_slope, sc_output], save_marginals=True)
 
-# message passing
-fg = lm.FactorGraph(blk, lm.MBF, K)
+# message passing & set initial states
+fg = lm.FactorGraph(sc, left_side_prior=(0, 1e3), right_side_prior=(0, 1e-3))
+fg.initialize_mp(lm.MBF, K)
 
-# set initial states & optimize
-init_msg_bw = lm.MBF.get_backward_initial_state(fg.N, xi=0, W=1e-3)
-init_msg_fw = lm.MBF.get_forward_initial_state(fg.N, m=0, V=1000)
-fg.optimize(iterations=100, init_msg_fw=init_msg_fw, init_msg_bw=init_msg_bw)
+# optimize
+fg.optimize(iterations=100)
 
 # get variables of fg
-Yt = fg.get_mp_block(blk_output).memory['Yt']
-X = fg.get_mp_block(blk).get_marginals()
-U_offset = fg.get_mp_block(blk_input_offset).get_U()
-U_slope = fg.get_mp_block(blk_input_slope).get_U()
+mp_sc = fg.get_mp_section()
+X = mp_sc.get_marginal()
+
+Yt = mp_sc.get_mp_subsection(sc_output).get_Y_tilde()
+U_offset = mp_sc.get_mp_subsection(sc_input_offset).get_U()
+U_slope = mp_sc.get_mp_subsection(sc_input_slope).get_U()
 
 # plot
 fig, axs = plt.subplots(5, 1, sharex='all')

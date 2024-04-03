@@ -1,3 +1,3 @@
 from .factorgraph import *
-from .block import *
+from .section import *
 from .message_passing import *
