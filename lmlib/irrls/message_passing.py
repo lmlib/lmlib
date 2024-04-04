@@ -450,7 +450,7 @@ class MBF(MessagePassing):
 
         def get_deployed_sigma2(self):
             """
-            Returns the Random Variable of deployed_sigma2 `U_fw` of the input NUV section
+            Returns the Random Variable of deployed_sigma2 `U_fw` of the input NUV section (sigma before update)
 
             Returns
             -------
