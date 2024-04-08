@@ -19,14 +19,14 @@ class SectionBase(ABC):
 
     label : string, optional
         Label of the section instance
-    save_marginals : boolean, optional
-        Marginals of the section are saved when True, else no memory will be allocated
+    save_marginal : boolean, optional
+        Marginal of the section are saved when True, else no memory will be allocated
 
     """
 
-    def __init__(self, label='n/a', save_marginals=False):
+    def __init__(self, label='n/a', save_marginal=False):
         self.label = label
-        self._save_marginals = save_marginals
+        self._save_marginal = save_marginal
         self._N = 0
 
     @property
@@ -45,9 +45,9 @@ class SectionBase(ABC):
         return self._N
 
     @property
-    def save_marginals(self):
-        """bool : whether to save marginals of the section"""
-        return self._save_marginals
+    def save_marginal(self):
+        """bool : whether to save marginal of the section"""
+        return self._save_marginal
 
 
 class SectionContainer(SectionBase):
@@ -55,6 +55,10 @@ class SectionContainer(SectionBase):
     Parents section containing a list of other sections
 
     Inherits from the SectionBase class, but offers the option of collecting several sections into a superSection.
+
+    .. image:: /static/lmlib/irrls/irrls-SectionContainer.svg
+        :height: 200
+        :align: center
 
     Parameters
     ----------
@@ -96,8 +100,8 @@ class SectionSystem(SectionBase):
     """
     Section System A (multiplier node)
 
-    .. image:: /static/lmlib/irrls/SectionSystem.svg
-        :width: 300
+    .. image:: /static/lmlib/irrls/irrls-SectionSystem.svg
+        :height: 200
         :align: center
 
     Parameters
@@ -128,9 +132,10 @@ class SectionInput(SectionBase):
     """
     Section Input Normal Prior
 
-    .. image:: /static/lmlib/irrls/SectionInput.svg
-        :height: 400
+    .. image:: /static/lmlib/irrls/irrls-SectionInput.svg
+        :height: 300
         :align: center
+
 
     Parameters
     ----------
@@ -182,8 +187,8 @@ class SectionInput_k(SectionInput):
     """
     Section input with time variable :math:`\sigma^2` (co-variance)
 
-    .. image:: /static/lmlib/irrls/SectionInput_k.svg
-        :height: 400
+    .. image:: /static/lmlib/irrls/irrls-SectionInput_k.svg
+        :height: 300
         :align: center
 
     Parameters
@@ -206,8 +211,8 @@ class SectionInputNUV(SectionInput_k):
     Input section with a normal distribution with unknown variance (NUV).
     The EM algorithm method searches recursively for the least square solution and such estimate the prior variance.
 
-    .. image:: /static/lmlib/irrls/SectionInputNUV.svg
-        :height: 400
+    .. image:: /static/lmlib/irrls/irrls-SectionInputNUV.svg
+        :height: 300
         :align: center
 
 
@@ -238,8 +243,8 @@ class SectionOutput(SectionBase):
     """
     Section Output with additive noise
 
-    .. image:: /static/lmlib/irrls/SectionOutput.svg
-        :height: 400
+    .. image:: /static/lmlib/irrls/irrls-SectionOutput.svg
+        :height: 300
         :align: center
 
     Parameters
@@ -262,7 +267,7 @@ class SectionOutput(SectionBase):
         self._sigma2_init = sigma2_init
         self.y = y
         self._estimate_output = estimate_output
-        self._save_marginals |= estimate_output
+        self._save_marginal |= estimate_output
 
     @property
     def C(self):

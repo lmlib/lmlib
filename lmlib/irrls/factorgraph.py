@@ -25,7 +25,7 @@ class FactorGraph(object):
        blk_system = lm.SectionSystem(A, label="system")
        blk_input = lm.SectionInputNUV(B, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
        blk_output = lm.SectionOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
-       blk = lm.SectionContainer(Sections=[blk_system, blk_input, blk_output], save_marginals=True)
+       blk = lm.SectionContainer(Sections=[blk_system, blk_input, blk_output], save_marginal=True)
 
        # message passing
        fg = lm.FactorGraph(blk, lm.MBF, K)

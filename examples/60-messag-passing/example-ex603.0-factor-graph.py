@@ -5,6 +5,12 @@ Approximation with straight-line segments using NUV Priors [ex603.0]
 Approximation with straight-line segments, which can be represented by a state space model of order n = 2.
 The input Section has two separate sparse scalar input signals [Loeliger2016]_ .
 
+
+.. image:: /static/examples/irrls-ex603.0.svg
+    :width: 800
+    :align: center
+
+
 """
 
 from matplotlib import pyplot as plt
@@ -29,7 +35,7 @@ sc_system = lm.SectionSystem(A)
 sc_input_offset = lm.SectionInputNUV(B1, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
 sc_input_slope = lm.SectionInputNUV(B2, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
 sc_output = lm.SectionOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
-sc = lm.SectionContainer(sections=[sc_system, sc_input_offset, sc_input_slope, sc_output], save_marginals=True)
+sc = lm.SectionContainer(sections=[sc_system, sc_input_offset, sc_input_slope, sc_output], save_marginal=True)
 
 # message passing & set initial states
 fg = lm.FactorGraph(sc, left_side_prior=(0, 1e3), right_side_prior=(0, 1e-3))

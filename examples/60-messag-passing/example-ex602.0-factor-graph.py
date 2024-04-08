@@ -5,6 +5,12 @@ Estimation a Random Walk with Occasional Jumps using NUV Priors [ex602.0]
 Approximation with a state space model of order n = 1 with a primary white-noise
 input with a secondary sparse input [Loeliger2016]_ .
 
+
+.. image:: /static/examples/irrls-ex602.0.svg
+    :width: 800
+    :align: center
+
+
 """
 
 from matplotlib import pyplot as plt
@@ -30,7 +36,7 @@ sc_system = lm.SectionSystem(A)
 sc_input_noise = lm.SectionInput(B,sigma2_init=0.05, estimate_input=True)
 sc_input_jump = lm.SectionInputNUV(B, sigma2_init=10.0, estimate_input=True, save_deployed_sigma2=True)
 sc_output = lm.SectionOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
-sc = lm.SectionContainer(sections=[sc_system, sc_input_noise, sc_input_jump, sc_output], save_marginals=True)
+sc = lm.SectionContainer(sections=[sc_system, sc_input_noise, sc_input_jump, sc_output], save_marginal=True)
 
 # message passing
 fg = lm.FactorGraph(sc)

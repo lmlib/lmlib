@@ -60,7 +60,7 @@ class MassagePassingSection(ABC):
         self.memory = dict()
 
         # malloc
-        if self.section.save_marginals:
+        if self.section.save_marginal:
             self.memory['X'] = allocate_gaussian_random_variable(self.K, self.section.N)
 
     @abstractmethod
@@ -89,7 +89,7 @@ class MassagePassingSection(ABC):
 
     def get_marginal(self):
         """
-        Returns the marginals `X` of the section
+        Returns the marginal `X` of the section
 
         Returns
         -------
@@ -98,7 +98,7 @@ class MassagePassingSection(ABC):
             `X.m` calls the mean of shape (K, N) and `X.V` calls the covariance of shape (K, N, N)
         """
 
-        assert self.section.save_marginals, f"No marginals saved! Set save_marginals=True on {self.section}"
+        assert self.section.save_marginal, f"No marginals saved! Set save_marginal=True on {self.section}"
         return self.memory['X']
 
     def get_X(self):
@@ -189,13 +189,13 @@ class MBF(MessagePassing):
         def propagate_forward_save_states(self, k, msg_fw):
             self.propagate_forward(k, msg_fw)
 
-            if self.section.save_marginals:
+            if self.section.save_marginal:
                 self.memory['X'][k] = msg_fw  # IV.9 & IV.13 (forward update with temporary result)
 
         def propagate_backward_save_states(self, k, msg_bw):
             self.propagate_backward(k, msg_bw)
 
-            if self.section.save_marginals:
+            if self.section.save_marginal:
                 VF_X = self.memory['X'][k].V
 
                 # (backward update based on temporary result from forward-path)
@@ -249,6 +249,18 @@ class MBF(MessagePassing):
         """
         MBF System section
 
+        .. image:: /static/lmlib/irrls/irrls-MP_SectionSystem.svg
+            :height: 200
+            :align: center
+
+        Parameters
+        ----------
+        section : :class:`~lmlib.SectionSystem`
+            section
+        K : int
+            Message Passing Length
+
+
         Details in [Loeliger2016]_
         --------------------------
         - TABLE III, GAUSSIAN MESSAGE PASSING THROUGH A MATRIX MULTIPLIER NODE WITH ARBITRARY REAL MATRIX A.
@@ -271,6 +283,18 @@ class MBF(MessagePassing):
     class MP_SectionInput(MP_SectionBaseMBF):
         """
         MBF Input section with fix variance over k
+
+        .. image:: /static/lmlib/irrls/irrls-MP_SectionInput.svg
+            :height: 300
+            :align: center
+
+        Parameters
+        ----------
+        section : :class:`~lmlib.SectionInput`
+            section
+        K : int
+            Message Passing Length
+
 
         Details in [Loeliger2016]_
         --------------------------
@@ -342,6 +366,18 @@ class MBF(MessagePassing):
         """
         MBF Input section with variable variance over k
 
+        .. image:: /static/lmlib/irrls/irrls-MP_SectionInput_k.svg
+            :height: 300
+            :align: center
+
+        Parameters
+        ----------
+        section : :class:`~lmlib.SectionInput_k`
+            section
+        K : int
+            Message Passing Length
+
+
         Details in [Loeliger2016]_
         --------------------------
         - TABLE II, GAUSSIAN MESSAGE PASSING THROUGH AN ADDER NODE.
@@ -412,6 +448,19 @@ class MBF(MessagePassing):
         """
         MBF NUV Input section fix variance over k
 
+        .. image:: /static/lmlib/irrls/irrls-MP_SectionInputNUV.svg
+            :height: 300
+            :align: center
+
+        Parameters
+        ----------
+        section : :class:`~lmlib.SectionInputNUV`
+            section
+        K : int
+            Message Passing Length
+
+
+
         Details in [Loeliger2016]_
         --------------------------
         - TABLE II, GAUSSIAN MESSAGE PASSING THROUGH AN ADDER NODE.
@@ -472,6 +521,18 @@ class MBF(MessagePassing):
         """
         MBF Output section fix variance over k
 
+        .. image:: /static/lmlib/irrls/irrls-MP_SectionOutput.svg
+            :height: 300
+            :align: center
+
+        Parameters
+        ----------
+        section : :class:`~lmlib.SectionOutput`
+            section
+        K : int
+            Message Passing Length
+
+
 
         Details in [Loeliger2016]_
         --------------------------
@@ -480,16 +541,7 @@ class MBF(MessagePassing):
 
         """
         def __init__(self, section, K):
-            """
 
-            Parameters
-            ----------
-            section : :class:`~lmlib.SectionOutput`
-                section
-            K : int
-                Message Passing Length
-
-            """
             super().__init__(section, K)
             assert isinstance(section, SectionOutput), "section must be an instance of SectionOutput"
 
@@ -576,6 +628,7 @@ class MBF(MessagePassing):
             return self.memory['Z']
 
     class MP_SectionOutputOutlier(MP_SectionBaseMBF):
+
         def __init__(self, section, K):
             super().__init__(section, K)
 
@@ -720,9 +773,14 @@ class MBF(MessagePassing):
         """
         MBF section Container
 
+        .. image:: /static/lmlib/irrls/irrls-MP_SectionContainer.svg
+            :height: 200
+            :align: center
+
+
         Details in [Loeliger2016]_
         --------------------------
-        - TABLE IV GAUSSIAN SINGLE-EDGE MARGINALS (m, V ) AND THEIR DUALS (ξ ̃, W ̃ ). (marginal and input/output estimation)
+        - TABLE IV GAUSSIAN SINGLE-EDGE MARGINALS (m, V ) AND THEIR DUALS (ξ̃, W̃ ). (marginal and input/output estimation)
         """
         def __init__(self, section, K):
             assert isinstance(section, SectionContainer), "section must be an instance of SectionContainer"
@@ -744,12 +802,12 @@ class MBF(MessagePassing):
             for mp_section in self.mp_sections:
                 mp_section.propagate_forward_save_states(k, msg_fw)
 
-            if self.section.save_marginals:
+            if self.section.save_marginal:
                 self.memory['X'][k] = msg_fw  # IV.9 & IV.13 (forward update)
 
         def propagate_backward_save_states(self, k, msg_bw):
 
-            if self.section.save_marginals:
+            if self.section.save_marginal:
                 VF_X = self.memory['X'][k].V
                 self.memory['X'][k].m -= VF_X @ msg_bw.xi  # IV.9 (backward update)
                 self.memory['X'][k].V -= VF_X @ msg_bw.W @ VF_X  # IV.13 (backward update)

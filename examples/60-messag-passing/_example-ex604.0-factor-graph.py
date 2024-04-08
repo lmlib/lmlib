@@ -39,7 +39,7 @@ C = [[1, 0, 0, 0]]
 sc_system = lm.SectionSystem(A)
 sc_input = lm.SectionInput(B1, sigma2_init=0.1, estimate_input=True)
 sc_output = lm.SectionOutputOutlier(C, sigma2_init=0.1, y=y, estimate_output=True, save_outlier_estimate=True)
-sc = lm.SectionContainer(sections=[sc_system, sc_input, sc_output], save_marginals=True)
+sc = lm.SectionContainer(sections=[sc_system, sc_input, sc_output], save_marginal=True)
 
 # message passing
 fg = lm.FactorGraph(sc, lm.MBF, K)

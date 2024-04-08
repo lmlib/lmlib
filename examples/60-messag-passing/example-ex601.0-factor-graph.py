@@ -6,6 +6,11 @@ Constant segments can be represented by the simplest possible state space model
 with n = 1, A = C = (1), and no input. For the occasional jumps between the constant segments,
 a sparse input signal with a NUV prior is used. [Loeliger2016]_ .
 
+
+.. image:: /static/examples/irrls-ex601.0.svg
+    :width: 800
+    :align: center
+
 """
 
 
@@ -30,7 +35,7 @@ C = [[1]]
 sc_system = lm.SectionSystem(A, label="system")
 sc_input = lm.SectionInputNUV(B, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
 sc_output = lm.SectionOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
-sc = lm.SectionContainer(sections=[sc_system, sc_input, sc_output], save_marginals=True)
+sc = lm.SectionContainer(sections=[sc_system, sc_input, sc_output], save_marginal=True)
 
 # message passing
 fg = lm.FactorGraph(sc)
