@@ -30,8 +30,6 @@ sys.path.insert(0, os.path.abspath('..'))
 #             print("An exception occurred while running the script")
 
 
-
-
 # -- Project information -----------------------------------------------------
 
 project = 'lmlib'
@@ -77,7 +75,6 @@ templates_path = ['templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
 
 # -- Options for interphinx reference third-party libs -----------------------
 
@@ -135,13 +132,10 @@ html_theme_options = {
     "show_prev_next": False
 }
 html_context = {
-   "default_mode": "light"
+    "default_mode": "light"
 }
 html_static_path = ['static']
 html_css_files = ['css/lmlib.css']
-
-
-
 
 # -- Sphinx Gallery Configuration ---
 from sphinx_gallery.sorting import ExplicitOrder, FileNameSortKey
@@ -167,3 +161,47 @@ warnings.filterwarnings("ignore", category=UserWarning,
                         message='Matplotlib is currently using agg, which is a'
                                 ' non-GUI backend, so cannot show the figure.'
                                 '|(\n|.)*is non-interactive, and thus cannot be shown')
+
+# Directive to run python code
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+from docutils.parsers.rst import Directive
+from docutils import nodes, statemachine
+from os.path import basename
+
+
+class ExecDirective(Directive):
+    """Execute the specified python code and insert the output into the document
+
+    .. exec::
+       print("Python code!")
+       print("This text will show up in the document")
+
+    """
+    has_content = True
+
+    def run(self):
+        oldStdout, sys.stdout = sys.stdout, StringIO()
+
+        tab_width = self.options.get('tab-width', self.state.document.settings.tab_width)
+        source = self.state_machine.input_lines.source(self.lineno - self.state_machine.input_offset - 1)
+
+        try:
+            exec('\n'.join(self.content))
+            text = sys.stdout.getvalue()
+            lines = statemachine.string2lines(text, tab_width, convert_whitespace=True)
+            self.state_machine.insert_input(lines, source)
+            return []
+        except Exception:
+            return [nodes.error(None, nodes.paragraph(
+                text="Unable to execute python code at %s:%d:" % (basename(source), self.lineno)),
+                                nodes.paragraph(text=str(sys.exc_info()[1])))]
+        finally:
+            sys.stdout = oldStdout
+
+
+def setup(app):
+    app.add_directive('exec', ExecDirective)

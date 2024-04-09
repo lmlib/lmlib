@@ -16,8 +16,6 @@ User Guide Content
     :maxdepth: 2
 
     self
+    Getting Started <getting_started>
     Coding <_gallery_coding/index>
     Signal Catalog <catalog>
-
-..
-    Getting Started <getting_started>
