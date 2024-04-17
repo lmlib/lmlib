@@ -5,7 +5,8 @@ import numpy as np
 from lmlib.utils.check import is_square, is_string, is_2dim, all_equal
 
 __all__ = ['SectionBase', 'SectionContainer', 'SectionSystem',
-           'SectionInput', 'SectionInput_k', 'SectionInputNUV',
+           'SectionInput', 'SectionInput_k',
+           'SectionInputNUV',
            'SectionOutput', 'SectionOutputOutlier']
 
 
@@ -229,15 +230,39 @@ class SectionInputNUV(SectionInput_k):
 
     """
     
-    def __init__(self, B, sigma2_init, save_deployed_sigma2=False, **kwargs):
+    def __init__(self, B, sigma2_init, prior_type='trivial', constraint=None, update_algo='EM', save_deployed_sigma2=False, **kwargs):
         super().__init__(B, sigma2_init, **kwargs)
         self._save_deployed_sigma2 = save_deployed_sigma2
+        self.update_algo = update_algo
+        self.prior_type = prior_type
+        self._constraint = constraint
 
     @property
     def save_deployed_sigma2(self):
         """bool : whether to save the deployed (not updated) variance"""
         return self._save_deployed_sigma2
 
+    @property
+    def update_algo(self):
+        return self._update_algo
+
+    @update_algo.setter
+    def update_algo(self, update_algo):
+        assert update_algo in ('EM', 'AM'), 'Update algorithm must be either EM or AM'
+        self._update_algo = update_algo
+
+    @property
+    def prior_type(self):
+        return self._prior_type
+
+    @prior_type.setter
+    def prior_type(self, prior_type):
+        assert prior_type in ('trivial', 'binary', 'discrete-phase', 'box', 'half-space'), 'Prior type must be either trivial, binary, discrete-phase, box or half-space'
+        self._prior_type = prior_type
+
+    @property
+    def constraint(self):
+        return self._constraint
 
 class SectionOutput(SectionBase):
     """

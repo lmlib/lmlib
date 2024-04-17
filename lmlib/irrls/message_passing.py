@@ -490,12 +490,67 @@ class MBF(MessagePassing):
             fw_U = self._fw_U[k]
             U_m = fw_U.m - fw_U.V @ B.T @ msg_bw.xi  # III.7 & IV.9 (backward update)
 
-            # 1)  vanilla NUV prior using EM
-            U_V = fw_U.V - fw_U.V @ B.T @ msg_bw.W @ B @ fw_U.V  # III.8 & IV.13 (backward update)
-            self._fw_U[k].V = np.outer(U_m, U_m) + U_V  # Update sigmaU_k according to Eq. (13)
+            if self.section.update_algo == 'EM':
+                U_V = fw_U.V - fw_U.V @ B.T @ msg_bw.W @ B @ fw_U.V  # III.8 & IV.13 (backward update)
 
-            # 2)  vanilla NUV prior using AM
-            # self._fw_U[k].V = np.inner(U_m, U_m)  # Update sigmaU_k according to Eq. (13) TODO check EQ BUG?
+                if self.section.prior_type == 'trivial':
+                    self._fw_U[k].V = np.outer(U_m, U_m) + U_V  # Update sigmaU_k according to Eq. (13)
+
+                if self.section.prior_type == 'binary':
+                    a, b = self.section.constraint
+
+                    # Update sigmaU_k according to Keusch Table 7.1
+                    p1 = np.linalg.inv(U_V+np.outer((U_m-a), (U_m-a)))
+                    p2 = np.linalg.inv(U_V + np.outer((U_m -b), (U_m - b)))
+                    self._fw_U[k].V = np.linalg.inv(p1+p2)
+                    self._fw_U[k].m = self._fw_U[k].V@(a*p1+b*p2)
+
+                if self.section.prior_type == 'discrete-phase':
+                    raise NotImplemented
+
+                if self.section.prior_type == 'box':
+                    raise AssertionError('EM update with box prior is not supported')
+
+
+                if self.section.prior_type == 'half-space':
+                    raise AssertionError('EM update with half-space prior is not supported')
+
+
+
+            else: # AM algo
+
+
+                if self.section.prior_type == 'trivial':
+                    self._fw_U[k].V = np.outer(U_m, U_m)  # Update sigmaU_k according to Eq. (13)
+
+                if self.section.prior_type == 'binary':
+                    a, b = self.section.constraint
+
+                    # Update sigmaU_k according to Keusch Table 7.1
+                    p1 = np.linalg.inv(np.outer((U_m-a), (U_m-a)))
+                    p2 = np.linalg.inv(np.outer((U_m -b), (U_m - b)))
+                    self._fw_U[k].V = np.linalg.inv(p1+p2)
+                    self._fw_U[k].m = self._fw_U[k].V@(a*p1+b*p2)
+
+                if self.section.prior_type == 'discrete-phase':
+                    raise NotImplemented
+
+                if self.section.prior_type == 'box':
+                    a, b, gamma = self.section.constraint
+
+                    # Update sigmaU_k according to Keusch Table 7.1
+                    p1 = 1/np.abs(U_m-a)
+                    p2 = 1/np.abs(U_m-b)
+                    self._fw_U[k].V = 1/gamma*1/(p1+p2)
+                    self._fw_U[k].m = gamma*self._fw_U[k].V@(a*p1+b*p2)
+
+                if self.section.prior_type == 'half-space':
+                    a, gamma = self.section.constraint
+
+                    # Update sigmaU_k according to Keusch Table 7.1
+                    self._fw_U[k].V = np.abs(U_m-a)/gamma
+                    self._fw_U[k].m = a+np.abs(U_m-a) if a<=U_m else a-np.abs(U_m-a)
+
 
         def get_deployed_sigma2(self):
             """
