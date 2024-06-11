@@ -39,7 +39,7 @@ copyright = '2024, lmlib'
 author = 'Reto Wildhaber, Frédéric Waldmann'
 
 # The full version, including alpha/beta/rc tags
-release = '2.1.2'
+release = '2.1.2 documentation'
 
 # -- General configuration ---------------------------------------------------
 
@@ -48,10 +48,10 @@ release = '2.1.2'
 # ones.
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
-              'sphinx.ext.napoleon',
-              'sphinx.ext.intersphinx',
+              "sphinx.ext.intersphinx",
               'sphinx.ext.mathjax',
               'sphinx.ext.doctest',
+              'numpydoc',  # Needs to be loaded *after* autodoc.
               'matplotlib.sphinxext.plot_directive',
               'sphinx_gallery.gen_gallery',
               'sphinx_design',
@@ -59,17 +59,13 @@ extensions = ['sphinx.ext.autodoc',
               ]
 
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
-# autoclass_content = 'class'
 # autoclass_content = 'both' # to show constructors
 # add_module_names = False  # hides the module path to the class in the class title
-# napoleon_use_rtype = False  # includes the return type into the return variable description
-# napoleon_use_admonition_for_examples = False
-napoleon_use_ivar = False  # attribute display type
-napoleon_include_init_with_doc = False  # if false hides __init__() doc at top
-# napoleon_use_param = False
-# napoleon_use_keyword = False
-# napoleon_preprocess_types = True
+autodoc_member_order = 'groupwise'
+autodoc_typehints = "none"
+numpydoc_show_class_members = False
 numpydoc_show_inherited_class_members = False
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['templates']
 

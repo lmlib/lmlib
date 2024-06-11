@@ -1,34 +1,64 @@
-from abc import ABC
-from functools import partial
+import warnings
+from abc import ABC, abstractmethod
 
 import numpy as np
-from lmlib.utils.check import is_square, is_string, is_2dim, all_equal
+from lmlib.utils.check import is_square, is_2dim, all_equal
+from lmlib.irrls.message_passing import *
 
 __all__ = ['SectionBase', 'SectionContainer', 'SectionSystem',
-           'SectionInput', 'SectionInput_k',
-           'SectionInputNUV',
-           'SectionOutput', 'SectionOutputOutlier']
+           'SectionInput',
+           'SectionInput_NUV', 'SectionInput_sNUV',
+           'SectionInput_L1', 'SectionInput_sL1',
+           'SectionInput_Binary',
+           'SectionOutput']
 
 
-def allocate_gaussian_random_variable(K, N, str_mean='m', str_covariance='V'):
-    return np.recarray((K,), dtype=[(str_mean, 'f8', (N,)), (str_covariance, 'f8', (N, N))])
+def validate_mp_type(f):
+    def wrapper(section, mp_type, K):
+        if mp_type not in ("MBF", "BIFM"):
+            raise ValueError("mp_type known. \"MBF\" or \"BIFM\" available")
+        return f(section, mp_type, K)
+
+    return wrapper
 
 
 class SectionBase(ABC):
     """
     Abstract base class of all sections
 
+    Parameters
+    ----------
     label : string, optional
         Label of the section instance
-    save_marginal : boolean, optional
-        Marginal of the section are saved when True, else no memory will be allocated
-
+    save_state_marginal : boolean, optional
+        Saves marginals when True, else no memory will be allocated
     """
 
-    def __init__(self, label='n/a', save_marginal=False):
+    def __init__(self, label='n/a', save_state_marginal=False):
         self.label = label
-        self._save_marginal = save_marginal
+        self._save_state_marginal = save_state_marginal
         self._N = 0
+        self.mp = None
+
+    @abstractmethod
+    @validate_mp_type
+    def _setup_mp(self, mp_type, K):
+        pass
+
+    def get_state_marginal(self):
+        r"""
+        Returns the state marginal :math:`X` of the section
+
+        Returns
+        -------
+        X : :class:`np.recarray` of length K
+            state marginals X
+                - :code:`X.m` (mean)
+                - :code:`X.V` (co-variance)
+
+        """
+        assert self.save_state_marginal, f"No state marginal saved! Set save_state_marginal=True on {self}"
+        return self.mp.memory['X']
 
     @property
     def label(self):
@@ -37,7 +67,8 @@ class SectionBase(ABC):
 
     @label.setter
     def label(self, label):
-        assert is_string(label)
+        if not isinstance(label, str):
+            raise TypeError("Label is not type string.")
         self._label = label
 
     @property
@@ -46,16 +77,16 @@ class SectionBase(ABC):
         return self._N
 
     @property
-    def save_marginal(self):
-        """bool : whether to save marginal of the section"""
-        return self._save_marginal
+    def save_state_marginal(self):
+        """bool : whether to save state marginal of the section"""
+        return self._save_state_marginal
 
 
 class SectionContainer(SectionBase):
     """
-    Parents section containing a list of other sections
+    Superior section containing a list of other sections
 
-    Inherits from the SectionBase class, but offers the option of collecting several sections into a superSection.
+    Inherits from the SectionBase class, but offers the option of collecting several sections into a super section.
 
     .. image:: /static/lmlib/irrls/irrls-SectionContainer.svg
         :height: 200
@@ -63,8 +94,10 @@ class SectionContainer(SectionBase):
 
     Parameters
     ----------
-    sections : array_like of SectionBase
+    sections : array_like of :class:`.SectionBase`
         List of sections
+    **kwargs : optional
+        See :class:`.SectionBase`
     """
 
     def __init__(self, sections, **kwargs):
@@ -75,12 +108,13 @@ class SectionContainer(SectionBase):
             self.append_section(section)
 
         # check model dimensions integrity
-        assert all_equal([section.N for section in self.subsections]), "model dimension doesnt match between sections"
+        assert all_equal([s.N for s in self.subsections]), \
+            "model dimension doesnt match between sections"
         self._N = self.subsections[0].N
 
     @property
     def subsections(self):
-        """list : sub-sections of the section"""
+        """list : subsections of the section"""
         return self._subsections
 
     def append_section(self, section):
@@ -93,8 +127,20 @@ class SectionContainer(SectionBase):
             section to append
 
         """
-        assert isinstance(section, SectionBase), 'Section must be a SectionBase object'
+
+        if not isinstance(section, SectionBase):
+            raise TypeError('Section must be a SectionBase object')
         self._subsections.append(section)
+
+    @validate_mp_type
+    def _setup_mp(self, mp_type, K):
+        if mp_type == "MBF":
+            self.mp = MBF_SectionContainer(self, K)
+        if mp_type == "BIFM":
+            self.mp = BIFM_SectionContainer(self, K)
+
+        for s in self._subsections:
+            s._setup_mp(mp_type, K)
 
 
 class SectionSystem(SectionBase):
@@ -110,16 +156,17 @@ class SectionSystem(SectionBase):
     A : array_like of shape (N, N)
         System Matrix
     **kwargs
-        Forwarded to :class:`.Section`
+        Forwarded to :class:`.SectionBase`
     """
 
     def __init__(self, A, **kwargs):
+        """Constructor for SectionSystem"""
         super().__init__(**kwargs)
         self.A = A
 
     @property
     def A(self):
-        """np.ndarray : State Transition Matrix"""
+        """:class:`~numpy.ndarray` : State Transition Matrix"""
         return self._A
 
     @A.setter
@@ -128,37 +175,36 @@ class SectionSystem(SectionBase):
         self._A = np.asarray(A)
         self._N = self._A.shape[0]
 
+    @validate_mp_type
+    def _setup_mp(self, mp_type, K):
+        if mp_type == "MBF":
+            self.mp = MBF_SectionSystem(self, K)
+        if mp_type == "BIFM":
+            self.mp = BIFM_SectionSystem(self, K)
 
-class SectionInput(SectionBase):
+
+class SectionInputBase(SectionBase, ABC):
     """
-    Section Input Normal Prior
-
-    .. image:: /static/lmlib/irrls/irrls-SectionInput.svg
-        :height: 300
-        :align: center
-
+    Section Input Base Class
 
     Parameters
     ----------
     B : array_like of shape (N, M)
         Input Matrix
-    sigma2_init : scalar or array_like of shape (M, M), optional
-        Variance of zero-mean Gaussian, default=1.0
-    estimate_input : bool, optional
-        Enables input estimation :math:`U`, default=False
+    save_input_marginal : bool, optional
+        Saves the input marginal U, default=False
     **kwargs
-        Forwarded to :class:`.Section`
+        Forwarded to :class:`.SectionBase`
     """
 
-    def __init__(self, B, sigma2_init=1.0, estimate_input=False, **kwargs):
+    def __init__(self, B, save_input_marginal=False, **kwargs):
         super().__init__(**kwargs)
         self.B = B
-        self._estimate_input = estimate_input
-        self._sigma2_init = sigma2_init
+        self.save_input_marginal = save_input_marginal
 
     @property
     def B(self):
-        """np.ndarray : Input Matrix"""
+        """:class:`~numpy.ndarray` : Input Matrix"""
         return self._B
 
     @B.setter
@@ -170,25 +216,72 @@ class SectionInput(SectionBase):
 
     @property
     def M(self):
-        """int : input order"""
+        """int : Input Order"""
         return self._M
 
     @property
-    def estimate_input(self):
-        """bool : whether to estimate inputs"""
-        return self._estimate_input
+    def save_input_marginal(self):
+        """bool : Whenever to save the input marginal U"""
+        return self._save_input_marginal
+
+    @save_input_marginal.setter
+    def save_input_marginal(self, save_input_marginal):
+        if not isinstance(save_input_marginal, bool):
+            raise ValueError('save_input_marginal is not of type bool')
+        self._save_input_marginal = save_input_marginal
+
+    def get_input_marginal(self):
+        r"""
+        Returns the input marginal :math:`U` of the section
+
+        Returns
+        -------
+        U : :class:`np.recarray` of length K
+            input marginals U
+                - :code:`U.m` (mean)
+                - :code:`U.V` (co-variance)
+
+        """
+        assert self.save_input_marginal, f"No input marginal saved! Set save_input_marginal=True on {self}"
+        return self.mp.memory['U']
+
+
+class SectionInputUpdateBase(SectionInputBase, ABC):
+    def __init__(self, B, update_method='AM', beta=1.0, **kwargs):
+        super().__init__(B, **kwargs)
+        self.update_method = update_method
+        self.beta = beta
 
     @property
-    def sigma2_init(self):
-        """float, array_like : initial variance ot covariance"""
-        return self._sigma2_init
+    def update_method(self):
+        """str : Update method ('AM' or 'EM')"""
+        return self._update_method
+
+    @update_method.setter
+    def update_method(self, update_method):
+        if update_method not in ('AM', 'EM'):
+            raise ValueError("update_method is not 'AM' or 'EM'")
+        self._update_method = update_method
+
+    @property
+    def beta(self):
+        """float : scale factor for AM variance updated (not active when EM-Method is selected)"""
+        return self._beta
+
+    @beta.setter
+    def beta(self, beta):
+        if not np.isscalar(beta):
+            raise ValueError('beta is not scalar')
+        self._beta = float(beta)
+        if self._update_method == 'EM' and self._beta != 1.0:
+            warnings.warn("beta is not active when EM-Method is used!")
 
 
-class SectionInput_k(SectionInput):
+class SectionInput(SectionInputBase):
     """
-    Section input with time variable :math:`\sigma^2` (co-variance)
+    Section Input of Zero Mean White Gaussian Noise (WGN)
 
-    .. image:: /static/lmlib/irrls/irrls-SectionInput_k.svg
+    .. image:: /static/lmlib/irrls/irrls-SectionInput.svg
         :height: 300
         :align: center
 
@@ -196,21 +289,67 @@ class SectionInput_k(SectionInput):
     ----------
     B : array_like of shape (N, M)
         Input Matrix
-    sigma2_init : array_like of shape ([K,], M, M)
-        Co-/Variance of zero-mean Gaussian
+    sigma2 : scalar or array_like of shape (M, M), optional
+        (Co-)Variance of zero-mean white gaussian noise, default=1.0
     **kwargs
-        Forwarded to :class:`.InputSection`
+        Forwarded to :class:`.SectionBase`
     """
-    def __init__(self, B, sigma2_init, **kwargs):
-        super().__init__(B, sigma2_init, **kwargs)
+
+    def __init__(self, B, sigma2=1.0, **kwargs):
+        super().__init__(B, **kwargs)
+        self.sigma2 = sigma2
+
+    @property
+    def sigma2(self):
+        """float, array_like : variance of shape (1,) or shape (K,) or covariance of shape (M, M) or  shape (K, M, M)"""
+        return self._sigma2
+
+    @sigma2.setter
+    def sigma2(self, sigma2):
+
+        if np.ndim(sigma2) == 1:
+            self._sigma2 = np.asarray(sigma2)
+            self._is_sigma2_k = True
+            return
+
+        if np.ndim(sigma2) == 3:
+            if np.shape(sigma2)[-2:] != (self._M, self._M):
+                raise ValueError("sigma2 needs to be array_like of shape (K, M, M)")
+            self._sigma2 = np.asarray(sigma2)
+            self._is_sigma2_k = True
+            return
+
+        if np.isscalar(sigma2):
+            self._sigma2 = sigma2
+            self._is_sigma2_k = False
+            return
+
+        if np.ndim(sigma2) == 2:
+            if np.shape(sigma2) != (self._M, self._M):
+                raise ValueError("sigma2 needs to be array_like of shape (M, M)")
+            self._sigma2 = np.asarray(sigma2)
+            self._is_sigma2_k = False
+            return
+
+        raise ValueError("sigma2 needs to be a scalar or array_like of shape ([K,] M, M) or shape (K,)")
+
+    def _setup_mp(self, mp_type, K):
+        if mp_type == "MBF":
+            if self._is_sigma2_k:
+                self.mp = MBF_SectionInput_k(self, K)
+            else:
+                self.mp = MBF_SectionInput(self, K)
+
+        if mp_type == "BIFM":
+            if self._is_sigma2_k:
+                self.mp = MBF_SectionInput_k(self, K)
+            else:
+                self.mp = BIFM_SectionInput(self, K)
 
 
-class SectionInputNUV(SectionInput_k):
+class SectionInput_NUV(SectionInputUpdateBase):
     """
-    Section input with NUV Prior
-
-    Input section with a normal distribution with unknown variance (NUV).
-    The EM algorithm method searches recursively for the least square solution and such estimate the prior variance.
+    Section Input with NUV Prior
 
     .. image:: /static/lmlib/irrls/irrls-SectionInputNUV.svg
         :height: 300
@@ -221,129 +360,279 @@ class SectionInputNUV(SectionInput_k):
     ----------
     B : array_like of shape (N, M)
         Input Matrix
-    sigma2_init : array_like of shape ([K,], M, M)
-        Co-/Variance of zero-mean Gaussian
-    save_deployed_sigma2 : bool, optional
-        Whether to save the deployed (not updated) variance before update. Necessary to calculate the cost.
+    sigma2_init : scalar or array_like of shape (M, M), optional
+        Initial (Co-)Variance of zero-mean white gaussian noise, default=1.0
+    update_method : string, optional
+        Update method either 'AM' for Alternate Maximization (default) or 'EM' for Exact-Maximization.
+    save_input_marginal : bool, optional
+        Saves the input marginal U, default=False
+    beta : scalar
+        Scaling factor of AM update method, default=1.0
     **kwargs
-        Forwarded to :class:`.InputSection_k`
-
+        Forwarded to :class:`.SectionBase`
     """
-    
-    def __init__(self, B, sigma2_init, prior_type='trivial', constraint=None, update_algo='EM', save_deployed_sigma2=False, **kwargs):
-        super().__init__(B, sigma2_init, **kwargs)
-        self._save_deployed_sigma2 = save_deployed_sigma2
-        self.update_algo = update_algo
-        self.prior_type = prior_type
-        self._constraint = constraint
+
+    def __init__(self, B, sigma2_init=1.0, **kwargs):
+        super().__init__(B, **kwargs)
+        self.sigma2_init = sigma2_init
 
     @property
-    def save_deployed_sigma2(self):
-        """bool : whether to save the deployed (not updated) variance"""
-        return self._save_deployed_sigma2
+    def sigma2_init(self):
+        """float, array_like : variance or covariance of shape (M, M)"""
+        return self._sigma2_init
+
+    @sigma2_init.setter
+    def sigma2_init(self, sigma2_init):
+        if not np.isscalar(sigma2_init) and not (np.shape(sigma2_init) == (self._M, self._M)):
+            raise ValueError("sigma2_init needs to be a scalar or array_like of shape (M, M)")
+        self._sigma2_init = sigma2_init
+
+    def get_sigma2_estimate(self):
+        """
+        Returns the latest input variance estimate
+
+        Returns
+        -------
+        out : :class:`~numpy.ndarray` of shape (K, [M, M])
+            updated sigma2 estimate
+        """
+        return self.mp.memory['sigma2']
+
+    def _setup_mp(self, mp_type, K):
+        if mp_type == "MBF":
+            self.mp = MBF_SectionInput_NUV(self, K)
+        if mp_type == "BIFM":
+            raise NotImplemented("BIFM algorithm is not yet implemented")
+            self.mp = BIFM_SectionInput(self, K)
+
+
+class SectionInput_sNUV(SectionInput_NUV):
+
+    def __init__(self, B, r2, **kwargs):
+        super().__init__(B, **kwargs)
+        if self.M != 1:
+            raise ValueError('Shape of B has to be (N, 1) such that M equals 1')
+        self.r2 = r2
 
     @property
-    def update_algo(self):
-        return self._update_algo
+    def r2(self):
+        """float : factor of the smooth function"""
+        return self._r2
 
-    @update_algo.setter
-    def update_algo(self, update_algo):
-        assert update_algo in ('EM', 'AM'), 'Update algorithm must be either EM or AM'
-        self._update_algo = update_algo
+    @r2.setter
+    def r2(self, r2):
+        if not np.isscalar(r2):
+            raise ValueError('r2 is not scalar')
+        self._r2 = float(r2)
+
+    @validate_mp_type
+    def _setup_mp(self, mp_type, K):
+        if mp_type == "MBF":
+            self.mp = MBF_SectionInput_sNUV(self, K)
+        if mp_type == "BIFM":
+            raise NotImplemented("BIFM algorithm is not yet implemented")
+            self.mp = BIFM_SectionInput_sNUV(self, K)
+
+
+class SectionInput_L1(SectionInput_NUV):
+
+    @validate_mp_type
+    def _setup_mp(self, mp_type, K):
+        if mp_type == "MBF":
+            self.mp = MBF_SectionInput_L1(self, K)
+        if mp_type == "BIFM":
+            raise NotImplemented("BIFM algorithm is not yet implemented")
+            self.mp = BIFM_SectionInput_L1(self, K)
+
+
+class SectionInput_sL1(SectionInput_sNUV):
+
+    @validate_mp_type
+    def _setup_mp(self, mp_type, K):
+        if mp_type == "MBF":
+            self.mp = MBF_SectionInput_sL1(self, K)
+        if mp_type == "BIFM":
+            raise NotImplemented("BIFM algorithm is not yet implemented")
+            self.mp = BIFM_SectionInput_sL1(self, K)
+
+
+class SectionInput_Binary(SectionInputUpdateBase):
+    """
+    Section Input with NUV Prior
+
+    .. image:: /static/lmlib/irrls/irrls-SectionInput.svg
+        :height: 300
+        :align: center
+
+
+    Parameters
+    ----------
+    B : array_like of shape (N, M)
+        Input Matrix
+    sigma2_init : scalar or array_like of shape (M, M), optional
+        (Co-)Variance of zero-mean white gaussian noise, default=1.0
+    save_input_marginal : bool, optional
+        Saves the input marginal U, default=False
+    **kwargs
+        Forwarded to :class:`.SectionBase`
+    """
+
+    def __init__(self, B, a, b, sigma2a_init=1.0, sigma2b_init=1.0, **kwargs):
+        super().__init__(B, **kwargs)
+        self.sigma2a_init = sigma2a_init
+        self.sigma2b_init = sigma2b_init
+        self.a = a
+        self.b = b
 
     @property
-    def prior_type(self):
-        return self._prior_type
+    def sigma2a_init(self):
+        """float, array_like : variance of level a of shape (M, M)"""
+        return self._sigma2a_init
 
-    @prior_type.setter
-    def prior_type(self, prior_type):
-        assert prior_type in ('trivial', 'binary', 'discrete-phase', 'box', 'half-space'), 'Prior type must be either trivial, binary, discrete-phase, box or half-space'
-        self._prior_type = prior_type
+    @sigma2a_init.setter
+    def sigma2a_init(self, sigma2a_init):
+        if not np.isscalar(sigma2a_init) and not (np.shape(sigma2a_init) == (self._M, self._M)):
+            raise ValueError("sigma2a_init needs to be a scalar or array_like of shape (M, M)")
+        self._sigma2a_init = sigma2a_init
 
     @property
-    def constraint(self):
-        return self._constraint
+    def sigma2b_init(self):
+        """float, array_like : variance of level b of shape (M, M)"""
+        return self._sigma2b_init
+
+    @sigma2b_init.setter
+    def sigma2b_init(self, sigma2b_init):
+        if not np.isscalar(sigma2b_init) and not (np.shape(sigma2b_init) == (self._M, self._M)):
+            raise ValueError("sigma2b_init needs to be a scalar or array_like of shape (M, M)")
+        self._sigma2b_init = sigma2b_init
+
+    @property
+    def beta(self):
+        """float : scale factor for AM variance updated (not active when EM-Method is selected)"""
+        return self._beta
+
+    @beta.setter
+    def beta(self, beta):
+        if not np.isscalar(beta):
+            raise ValueError('beta is not scalar')
+        self._beta = float(beta)
+        if self._update_method == 'EM' and self._beta != 1.0:
+            warnings.warn("beta is not active when EM-Method is used!")
+
+    @property
+    def a(self):
+        """float : level a"""
+        return self._a
+
+    @a.setter
+    def a(self, a):
+        if not np.isscalar(a):
+            raise ValueError('a is not scalar')
+        self._a = float(a)
+
+    @property
+    def b(self):
+        """float : level b"""
+        return self._b
+
+    @b.setter
+    def b(self, b):
+        if not np.isscalar(b):
+            raise ValueError('b is not scalar')
+        self._b = float(b)
+
+    def _setup_mp(self, mp_type, K):
+        if mp_type == "MBF":
+            self.mp = MBF_SectionInput_Binary(self, K)
+        if mp_type == "BIFM":
+            raise NotImplemented("BIFM algorithm is not yet implemented")
+            self.mp = BIFM_SectionInput_Binary(self, K)
+
 
 class SectionOutput(SectionBase):
-    """
-    Section Output with additive noise
+    r"""
+    Section Output with Additive White Gaussian Noise (AWGN)
 
     .. image:: /static/lmlib/irrls/irrls-SectionOutput.svg
         :height: 300
         :align: center
 
+
     Parameters
     ----------
-    C : array_like of shape (N, N)
-        Output Matrix
-    sigma2_init : scalar, array_like of shape (L, L)
-        Variance of zero-mean Gaussian
-    y : array_like of shape (K,[L])
-        Observed Signal
-    estimate_output : bool, optional
-        Enables output estimation :math:`\tilde{Y}`, default=False
+    C : array_like of shape (L, N)
+        Input Matrix
+    sigma2 : scalar or array_like of shape (L, L), optional
+        (Co-)Variance of zero-mean white gaussian noise, default=1.0
+    save_output_marginal : bool, optional
+        Saves the output marginal :math:`\tilde{Y}`, default=False
     **kwargs
-        Forwarded to :class:`.Section`
+        Forwarded to :class:`.SectionBase`
     """
 
-    def __init__(self, C, sigma2_init, y, estimate_output=False, **kwargs):
+    def __init__(self, C, y, sigma2=1.0, save_output_marginal=False, **kwargs):
         super().__init__(**kwargs)
         self.C = C
-        self._sigma2_init = sigma2_init
         self.y = y
-        self._estimate_output = estimate_output
-        self._save_marginal |= estimate_output
+        self.sigma2 = sigma2
+        self.save_output_marginal = save_output_marginal
 
     @property
     def C(self):
-        """np.ndarray : Output Matrix of shape (L, N)"""
+        """:class:`~numpy.ndarray` : Output Matrix C"""
         return self._C
 
     @C.setter
     def C(self, C):
         assert is_2dim(C)
         self._C = np.asarray(C)
-        self._N = self._C.shape[1]
         self._L = self._C.shape[0]
+        self._N = self._C.shape[1]
 
     @property
     def L(self):
-        """int : output order"""
+        """int : Output Order"""
         return self._L
 
     @property
-    def estimate_output(self):
-        """bool : output estimation status"""
-        return self._estimate_output
+    def sigma2(self):
+        """float, array_like : variance or covariance of shape (L, L)"""
+        return self._sigma2
+
+    @sigma2.setter
+    def sigma2(self, sigma2):
+        if not np.isscalar(sigma2) and not (np.shape(sigma2) == (self._L, self._L)):
+            raise ValueError("sigma2 needs to be a scalar or array_like of shape (L, L)")
+        self._sigma2 = sigma2
 
     @property
-    def sigma2_init(self):
-        """float, array_like : initial variance ot covariance"""
-        return self._sigma2_init
+    def save_output_marginal(self):
+        """bool : whether to save the output marginal of the section"""
+        return self._save_output_marginal
 
-    @property
-    def y(self):
-        """np.ndarray : Observed Signal of shape (K, [L])"""
-        return self._y
+    @save_output_marginal.setter
+    def save_output_marginal(self, save_output_marginal):
+        if not isinstance(save_output_marginal, bool):
+            raise ValueError('save_output_marginal is not of type bool')
+        self._save_output_marginal = save_output_marginal
 
-    @y.setter
-    def y(self, y):
-        if self.L > 1:
-            assert np.ndim(y) == 2 and np.shape(y)[1] == self.L, "Shape of y must be compatible with C."
-        self._y = np.asarray(y)
+    def get_output_marginal(self):
+        r"""
+        Returns the output marginal :math:`\tilde{Y}` of the section
 
+        Returns
+        -------
+        Y_tilde : :class:`np.recarray` of length K
+            output marginals Y_tilde
+                - :code:`Y_tilde.m` (mean)
+                - :code:`Y_tilde.V` (co-variance)
 
-class SectionOutputOutlier(SectionOutput):
-    def __init__(self, C, sigma2_init, y, save_outlier_estimate=False, outlier_threshold_factor=10, **kwargs):
-        super().__init__(C, sigma2_init, y, **kwargs)
-        self._outlier_threshold_factor = outlier_threshold_factor
-        self._save_outlier_estimate = save_outlier_estimate
+        """
+        assert self.save_output_marginal, f"No output marginal saved! Set save_output_marginal=True on {self}"
+        return self.mp.memory['Y_tilde']
 
-    @property
-    def outlier_threshold_factor(self):
-        return self._outlier_threshold_factor
-
-    @property
-    def save_outlier_estimate(self):
-        """bool : save_outlier_estimate status"""
-        return self._save_outlier_estimate
+    def _setup_mp(self, mp_type, K):
+        if mp_type == "MBF":
+            self.mp = MBF_SectionOutput(self, K)
+        if mp_type == "BIFM":
+            self.mp = BIFM_SectionOutput(self, K)

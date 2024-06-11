@@ -12,7 +12,7 @@ an others.
 
 Supported message passing methods:
    - Modified Bryson-Frazier (MBF) 
-   - Forward Recursion with Marginals (BIFM)
+   - **B**\ackward Recursion with Time-Reversed **I**\nformation Filter, **F**\orward Recursion with **M**\arginals (BIFM)
 
 Supported maximization methods:
    - Expectation Maximization (EM)
@@ -136,6 +136,12 @@ Factor Graph Class
 
     FactorGraph
 
+.. autosummary::
+    :toctree: _autosummary
+    :template: attribute
+
+    MBF
+    BIFM
 
 .. _classes-section:
 
@@ -151,12 +157,10 @@ Section Classes
     SectionBase
     SectionContainer
     SectionSystem
+    SectionInputBase
     SectionInput
-    SectionInput_k
-    SectionInputNUV
+    SectionInput_NUV
     SectionOutput
-    SectionOutputOutlier
-
 
 .. _classes_message_passing:
 
@@ -169,4 +173,13 @@ Message Passing Methods
     :toctree: _autosummary
     :recursive:
 
-    MBF
+    MBF_MessagePassingBase
+    MBF_SectionSystem
+    MBF_SectionContainer
+    MBF_SectionInputBase
+    MBF_SectionInput
+    MBF_SectionInput_k
+    MBF_SectionOutput
+    MBF_SectionInputUpdate
+    MBF_SectionInput_NUV
+

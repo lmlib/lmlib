@@ -7,7 +7,9 @@
    .. rubric:: {{ _('Module Attributes') }}
 
    .. autosummary::
-      :toctree: 
+      :toctree:
+      :template: attribute
+
    {% for item in attributes %}
       {{ item }}
    {%- endfor %}

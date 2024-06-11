@@ -51,7 +51,7 @@ Reference Content
 -----------------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 0
 
     self
     statespace

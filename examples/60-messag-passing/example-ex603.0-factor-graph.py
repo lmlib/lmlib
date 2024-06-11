@@ -32,26 +32,25 @@ B2 = [[0], [1]]
 C = [[1, 0]]
 
 sc_system = lm.SectionSystem(A)
-sc_input_offset = lm.SectionInputNUV(B1, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
-sc_input_slope = lm.SectionInputNUV(B2, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
-sc_output = lm.SectionOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
-sc = lm.SectionContainer(sections=[sc_system, sc_input_offset, sc_input_slope, sc_output], save_marginal=True)
+sc_input_offset = lm.SectionInput_NUV(B1, sigma2_init=1.0, save_input_marginal=True)
+sc_input_slope = lm.SectionInput_NUV(B2, sigma2_init=1.0, save_input_marginal=True)
+sc_output = lm.SectionOutput(C, sigma2=1.0, y=y, save_output_marginal=True)
+sc = lm.SectionContainer(sections=[sc_system, sc_input_offset, sc_input_slope, sc_output], save_state_marginal=True)
 
 # message passing & set initial states
-fg = lm.FactorGraph(sc, left_side_prior=(0, 1e3), right_side_prior=(0, 1e-3))
+fg = lm.FactorGraph(sc, left_side_prior=(0, 1e3), right_side_prior=(0, 0))
 fg.initialize_mp(lm.MBF, K)
 
 # optimize
 fg.optimize(iterations=100)
 
 # get variables of fg
-mp_sc = fg.get_mp_section()
-X = mp_sc.get_marginal()
 
-Yt = mp_sc.get_mp_subsection(sc_output).get_Y_tilde()
-U_offset = mp_sc.get_mp_subsection(sc_input_offset).get_U()
-U_slope = mp_sc.get_mp_subsection(sc_input_slope).get_U()
 
+Yt = sc_output.get_output_marginal()
+U_offset = sc_input_offset.get_input_marginal()
+U_slope = sc_input_slope.get_input_marginal()
+X = sc.get_state_marginal()
 # plot
 fig, axs = plt.subplots(5, 1, sharex='all')
 axs[0].plot(y, lw=.7, c='grey', label='y')

@@ -33,23 +33,18 @@ B = [[1]]
 C = [[1]]
 
 sc_system = lm.SectionSystem(A, label="system")
-sc_input = lm.SectionInputNUV(B, sigma2_init=1.0, estimate_input=True, save_deployed_sigma2=True)
-sc_output = lm.SectionOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
-sc = lm.SectionContainer(sections=[sc_system, sc_input, sc_output], save_marginal=True)
+sc_input = lm.SectionInput(B, save_input_marginal=True, label="input")
+sc_output = lm.SectionOutput(C, y, save_output_marginal=True, label="output")
+sc = lm.SectionContainer([sc_system, sc_input, sc_output])
 
 # message passing
 fg = lm.FactorGraph(sc)
 fg.initialize_mp(lm.MBF, K)
-fg.optimize(iterations=100)
-
+fg.optimize(iterations=1)
 
 # get variables of fg
-mp_sc = fg.get_mp_section()
-X = mp_sc.get_marginal()
-
-Yt = mp_sc.get_mp_subsection(sc_output).get_Y_tilde()
-U = mp_sc.get_mp_subsection(sc_input).get_U()
-U_fw = mp_sc.get_mp_subsection(sc_input).get_deployed_sigma2()
+Yt = sc_output.get_output_marginal()
+U = sc_input.get_input_marginal()
 
 
 # plot
@@ -57,7 +52,6 @@ fig, axs = plt.subplots(2, 1, sharex='all')
 axs[0].plot(y, lw=.7, c='grey', label='y')
 axs[0].plot(Yt.m,  lw=1.0, c='b',label=r'$m_\tilde{y}$')
 axs[1].plot(U.V[:, 0, 0],  lw=1.0, c='k',label=r'$V_U$')
-axs[1].plot(U_fw.V[:, 0, 0], lw=1.0, c='grey', label=r'$\overrightarrow{V}_U$')
 
 axs[-1].set_xlabel(r'$k$')
 for ax in axs:

@@ -33,10 +33,10 @@ B = [[1]]
 C = [[1]]
 
 sc_system = lm.SectionSystem(A)
-sc_input_noise = lm.SectionInput(B,sigma2_init=0.05, estimate_input=True)
-sc_input_jump = lm.SectionInputNUV(B, sigma2_init=10.0, estimate_input=True, save_deployed_sigma2=True)
-sc_output = lm.SectionOutput(C, sigma2_init=1.0, y=y, estimate_output=True)
-sc = lm.SectionContainer(sections=[sc_system, sc_input_noise, sc_input_jump, sc_output], save_marginal=True)
+sc_input_noise = lm.SectionInput(B, sigma2=0.1, save_input_marginal=True)
+sc_input_jump = lm.SectionInput_NUV(B, sigma2_init=1.0, save_input_marginal=True)
+sc_output = lm.SectionOutput(C, y=y, save_output_marginal=True)
+sc = lm.SectionContainer(sections=[sc_system, sc_input_noise, sc_input_jump, sc_output], save_state_marginal=True)
 
 # message passing
 fg = lm.FactorGraph(sc)
@@ -44,12 +44,11 @@ fg.initialize_mp(lm.MBF, K)
 fg.optimize(iterations=40)
 
 # get variables of fg
-mp_sc = fg.get_mp_section()
-X = mp_sc.get_marginal()
+X = sc.get_state_marginal()
 
-Yt = mp_sc.get_mp_subsection(sc_output).get_Y_tilde()
-U_noise = mp_sc.get_mp_subsection(sc_input_noise).get_U()
-U_jump = mp_sc.get_mp_subsection(sc_input_jump).get_deployed_sigma2()
+Yt = sc_output.get_output_marginal()
+U_noise = sc_input_noise.get_input_marginal()
+U_jump = sc_input_jump.get_input_marginal()
 
 # plot
 fig, axs = plt.subplots(3, 1, sharex='all')

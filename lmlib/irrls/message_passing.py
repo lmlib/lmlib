@@ -9,12 +9,28 @@ MassagePassing is the state and FactorGraph the context
 
 from abc import ABC, abstractmethod
 import numpy as np
-from lmlib.irrls.section import SectionBase, SectionContainer, SectionOutput
 
-__all__ = ['MBF']
+__all__ = ['init_fw_msg', 'init_bw_msg',
+           'MBF_MessagePassingBase', 'MBF_SectionSystem', 'MBF_SectionContainer',
+           'MBF_SectionInput', 'MBF_SectionInput_k',
+           'MBF_SectionOutput',
+           'MBF_SectionInput_NUV', 'MBF_SectionInput_sNUV',
+           'MBF_SectionInput_L1', 'MBF_SectionInput_sL1',
+           'MBF_SectionInput_Binary',
+           'BIFM_MessagePassingBase', 'BIFM_SectionContainer',
+           'BIFM_SectionSystem',
+           'BIFM_SectionInput', 'BIFM_SectionInput_k',
+           'BIFM_SectionOutput']
 
 
-def allocate_gaussian_random_variable(K, N, str_mean='m', str_covariance='V'):
+def random_var(mean, covariance, str_mean, str_covariance):
+    msg = array_random_var(1, np.shape(covariance)[0], str_mean, str_covariance)
+    msg[str_mean] = mean
+    msg[str_covariance] = covariance
+    return msg[0]
+
+
+def array_random_var(K, N, str_mean, str_covariance):
     """
     Allocate a Gaussian random variable over `K` with mean vector and covariance matrix
 
@@ -40,873 +56,752 @@ def allocate_gaussian_random_variable(K, N, str_mean='m', str_covariance='V'):
     return np.recarray((K,), dtype=[(str_mean, 'f8', (N,)), (str_covariance, 'f8', (N, N))])
 
 
-class MassagePassingSection(ABC):
+def init_fw_msg(N, prior):
     """
-    Abstract base for Message Passing Sections
+    Returns the initial state at k=0 for the message passing algorithm for the forward recursion
+
+    Parameters
+    ----------
+    N : int
+        dimension of state
+    prior : tuple of length 2
+        m : float, array_like of shape (N,)
+            value of the initial mean vector
+        V float, array_like of shape (N, N)
+            value of the initial covariance matrix. if `V` is scalar the diagnoal will be filled with `V`
+
+    Returns
+    -------
+    out : :class:`~numpy.recarray`
+        Single Message Passing State
+    """
+    mean = np.full((N,), prior[0]) if np.isscalar(prior[0]) else prior[0]
+    covariance = np.eye(N).dot(prior[1])
+    return random_var(mean, covariance, 'm', 'V')
+
+
+def init_bw_msg(N, prior):
+    """
+    Returns the initial state at k=K-1 for the message passing algorithm for the backward recursion
+
+    Parameters
+    ----------
+    N : int
+        dimension of state
+    prior : tuple of length 2
+        xi : float, array_like of shape (N,)
+            value of the initial precision matrix weighted mean vector
+        W : float, array_like of shape (N, N)
+            value of the initial precision matrix. if `W` is scalar the diagnoal will be filled with `W`
+
+    Returns
+    -------
+    out : :class:`~numpy.recarray`
+        Single Message Passing State
+    """
+    mean = np.full((N,), prior[0]) if np.isscalar(prior[0]) else prior[0]
+    covariance = np.eye(N).dot(prior[1])
+    return random_var(mean, covariance, 'xi', 'W')
+
+
+class MBF_MessagePassingBase(ABC):
+    """
+    MBF Message Passing Base Class
+
+    Each Section Types have its own Message Passing Class that implements forward and backward methods.
+    Message Passing Classes owning the memory and will save the marginals into it if needed.
+    Message Passing Classes with prior update inherit from :class:`.MBF_SectionInputUpdate`.
 
 
     Parameters
     ----------
-    section : :class:`~lmlib.SectionBase`
-        section
-    K : int
-        Length of the Factor Graph
+        owner : :class:`~lmlib.irrls.section.SectionBase`
+            Reference to Owner Section
+        K : int
+            Length of the Factor Graph
     """
 
-    def __init__(self, section, K):
-        self.section = section
-        self.section_label = section.label
-        self.K = K
+    def __init__(self, owner, K):
+        self._owner = owner
         self.memory = dict()
+        self.identity_N = np.eye(self._owner.N)
 
-        # malloc
-        if self.section.save_marginal:
-            self.memory['X'] = allocate_gaussian_random_variable(self.K, self.section.N)
+        self._fw_save_state_callbacks = []
+        self._bw_save_state_callbacks = []
 
-    @abstractmethod
-    def propagate_forward(self, k, msg_fw):
-        pass
-
-    @abstractmethod
-    def propagate_backward(self, k, msg_bw):
-        pass
+        if self._owner.save_state_marginal:
+            self.memory['X'] = array_random_var(K, self._owner.N, 'm', 'V')
+            self._fw_save_state_callbacks.append(self._forward_save_state_marginal)
+            self._bw_save_state_callbacks.append(self._backward_save_state_marginal)
 
     @abstractmethod
-    def propagate_forward_save_states(self, k, msg_fw):
-        pass
-
-    @abstractmethod
-    def propagate_backward_save_states(self, k, msg_bw):
-        pass
-
-    @abstractmethod
-    def get_mp_section_by_label(self, label, out_dict):
-        pass
-
-    @abstractmethod
-    def get_mp_section_by_obj(self, obj, out_dict):
-        pass
-
-    def get_marginal(self):
+    def propagate_forward(self, k, fw_msg):
         """
-        Returns the marginal `X` of the section
+        Propagate forward message
 
-        Returns
-        -------
-        out :  :class:`~numpy.recarray`
-            marginals of the mp_section.
-            `X.m` calls the mean of shape (K, N) and `X.V` calls the covariance of shape (K, N, N)
+        Parameters
+        ----------
+        k : int
+            time index
+        fw_msg : :class:`~numpy.recarray`
+            forward message
+                - :code:`fw_msg.m` (mean)
+                - :code:`fw_msg.V` (co-variance)
+        """
+        pass
+
+    @abstractmethod
+    def propagate_backward(self, k, bw_msg):
+        """
+        Propagate backward message
+
+        Parameters
+        ----------
+        k : int
+            time index
+        bw_msg : :class:`~numpy.recarray`
+            backward message
+                - :code:`bw_msg.xi` (inverse co-variance weighted mean)
+                - :code:`fw_msg.W` (inverse co-variance)
+        """
+        pass
+
+    def propagate_forward_save_states(self, k, fw_msg):
+        """
+        Propagate the forward message and then runs backward callback functions to save marginals.
+
+        Parameters
+        ----------
+        k : int
+            time index
+        fw_msg : :class:`~numpy.recarray`
+            forward message
+                - :code:`fw_msg.m` (mean)
+                - :code:`fw_msg.V` (co-variance)
         """
 
-        assert self.section.save_marginal, f"No marginals saved! Set save_marginal=True on {self.section}"
-        return self.memory['X']
+        self.propagate_forward(k, fw_msg)
+        for f in self._fw_save_state_callbacks:
+            f(k, fw_msg)
 
-    def get_X(self):
+    def propagate_backward_save_states(self, k, bw_msg):
         """
-        See :func:`get_marginal`
+        Runs backward callback functions to save marginals and then propagate the backward message.
+
+        Parameters
+        ----------
+        k : int
+            time index
+        bw_msg : :class:`~numpy.recarray`
+            backward message
+                - :code:`bw_msg.xi` (inverse co-variance weighted mean)
+                - :code:`fw_msg.W` (inverse co-variance)
         """
-        return self.get_marginal()
+
+        for f in self._bw_save_state_callbacks:
+            f(k, bw_msg)
+        self.propagate_backward(k, bw_msg)
+
+    def _forward_save_state_marginal(self, k, fw_msg):
+        # (forward update with temporary result)
+        self.memory['X'][k] = fw_msg  # IV.9 & IV.13
+
+    def _backward_save_state_marginal(self, k, bw_msg):
+
+        VF_X = self.memory['X'][k].V
+        # (backward update based on temporary result from forward-path)
+        self.memory['X'][k].m -= VF_X @ bw_msg.xi  # IV.9
+        self.memory['X'][k].V -= VF_X @ bw_msg.W @ VF_X  # IV.13
 
 
-class MessagePassing(ABC):
+class MBF_SectionContainer(MBF_MessagePassingBase):
     """
-    Abstract base for Message Passing Algorithm
+    MBF section Container
+
+    .. image:: /static/lmlib/irrls/irrls-MP_SectionContainer.svg
+        :height: 200
+        :align: center
+
+    Details in [Loeliger2016]_
+    --------------------------
+    - TABLE IV GAUSSIAN SINGLE-EDGE MARGINALS (m, V ) AND THEIR DUALS (ξ̃, W̃ ). (marginal and input/output estimation)
     """
-    @classmethod
-    def get_forward_initial_state(cls, N, m=0, V=0):
-        """
-        Returns the initial state at k=0 for the message passing algorithm for the forward recursion
-
-        Parameters
-        ----------
-        N : int
-            dimension of state
-        m : float, array_like of shape (N,)
-            value of the initial mean vector
-        V : float, array_like of shape (N, N)
-            value of the initial covariance matrix. if `V` is scalar the diagnoal will be filled with `V`
-
-        Returns
-        -------
-        out : :class:`~numpy.recarray`
-            Single Message Passing State
-        """
-        m = np.full((N,), m)
-        V = np.eye(N) * V
-        return np.array((m, V), dtype=[('m', 'f8', (N,)), ('V', 'f8', (N, N))]).view(np.recarray)
-
-    @classmethod
-    def get_backward_initial_state(cls, N, xi=0, W=0):
-        """
-        Returns the initial state at k=K-1 for the message passing algorithm for the backward recursion
-
-        Parameters
-        ----------
-        N : int
-            dimension of state
-        xi : float, array_like of shape (N,)
-            value of the initial mean vector
-        W : float, array_like of shape (N, N)
-            value of the initial covariance matrix. if `W` is scalar the diagnoal will be filled with `W`
-
-        Returns
-        -------
-        out : :class:`~numpy.recarray`
-            Single Message Passing State
-        """
-        xi = np.full((N,), xi)
-        W = np.eye(N) * W
-        return np.array((xi, W), dtype=[('xi', 'f8', (N,)), ('W', 'f8', (N, N))]).view(np.recarray)
-
-    @classmethod
-    def create_mp_section(cls, section, K):
-        """
-        Creates the message passing section structure of the recursion and sets the length `K`,
-
-        This resamples the section in [Loeliger2016]_ .
-
-        Parameters
-        ----------
-        section : :class:`~lmlib.SectionBase`
-            The message passing section to apply the recursions for each step k
-        K : int
-            length of recursion / factor graph
-
-        Returns
-        -------
-        out : :class:`~lmlib.MassagePassingSection`
-            MassagePassingSection
-        """
-        return getattr(cls, "MP_"+section.__class__.__name__)(section, K)
-
-
-class MBF(MessagePassing):
-    class MP_SectionBaseMBF(MassagePassingSection, ABC):
-        """
-        Base class for message passing section MBF
-        """
-
-        def propagate_forward_save_states(self, k, msg_fw):
-            self.propagate_forward(k, msg_fw)
-
-            if self.section.save_marginal:
-                self.memory['X'][k] = msg_fw  # IV.9 & IV.13 (forward update with temporary result)
-
-        def propagate_backward_save_states(self, k, msg_bw):
-            self.propagate_backward(k, msg_bw)
-
-            if self.section.save_marginal:
-                VF_X = self.memory['X'][k].V
-
-                # (backward update based on temporary result from forward-path)
-                self.memory['X'][k].m -= VF_X @ msg_bw.xi  # IV.9 (backward update)
-                self.memory['X'][k].V -= VF_X @ msg_bw.W @ VF_X  # IV.13 (backward update)
-
-        def _check_and_set_sigma2_init(self, variable, n):
-
-            # check sigma2 input type
-            sigma2_init = self.section.sigma2_init
-            if np.isscalar(sigma2_init):
-                variable.V[:] = np.eye(n) * sigma2_init
-            elif np.shape(sigma2_init) == (n, n):
-                variable.V[:] = sigma2_init
-            else:
-                raise TypeError(f'Unexpected sigma2_init type/shape in {self.section}, \n '
-                                f'expected scalar or {(n, n)}, got {np.shape(sigma2_init)}')
-
-        def _check_and_set_sigma2_k_init(self, variable, K, n):
-
-            # check sigma2 input type
-            sigma2_init = self.section.sigma2_init
-            if np.isscalar(sigma2_init):
-                variable.V[:] = np.repeat([np.eye(n) * sigma2_init], K, axis=0)
-            elif np.shape(sigma2_init) == (n, n):
-                variable.V[:] = np.repeat([sigma2_init], K, axis=0)
-            elif np.shape(sigma2_init) == (K,):
-                variable.V[:] = np.einsum('knm, k->knm', [np.eye(n)], sigma2_init)
-            elif np.shape(sigma2_init) == (K, n, n):
-                variable.V[:] = sigma2_init
-            else:
-                raise TypeError(f'Unexpected sigma2_init type/shape in {self.section}, \n '
-                                f'expected scalar or shape {(n, n)}, {(K,)}, {(K, n, n)}, got {np.shape(sigma2_init)}')
-
-        def get_mp_section_by_label(self, label, out_dict):
-            """
-            subroutine: Get a message passing section graph by label
-            """
-            if self.section.label == label:
-                out_dict['mp_section'] = self
-                print(out_dict)
-
-        def get_mp_section_by_obj(self, obj, out_dict):
-            """
-            subroutine: Get a message passing section graph by object
-            """
-            if self.section is obj:
-                out_dict['mp_section'] = self
-
-    class MP_SectionSystem(MP_SectionBaseMBF):
-        """
-        MBF System section
-
-        .. image:: /static/lmlib/irrls/irrls-MP_SectionSystem.svg
-            :height: 200
-            :align: center
-
-        Parameters
-        ----------
-        section : :class:`~lmlib.SectionSystem`
-            section
-        K : int
-            Message Passing Length
-
-
-        Details in [Loeliger2016]_
-        --------------------------
-        - TABLE III, GAUSSIAN MESSAGE PASSING THROUGH A MATRIX MULTIPLIER NODE WITH ARBITRARY REAL MATRIX A.
-
-        """
-        def __init__(self, section, K):
-            super().__init__(section, K)
-
-        def propagate_forward(self, k, msg_fw):
-            A = self.section.A
-            msg_fw.m[:] = A @ msg_fw.m  # III.1
-            msg_fw.V[:] = A @ msg_fw.V @ A.T  # III.2
-
-        def propagate_backward(self, k, msg_bw):
-            A = self.section.A
-            AT = A.T
-            msg_bw.xi[:] = AT @ msg_bw.xi  # II.6, III.7
-            msg_bw.W[:] = AT @ msg_bw.W @ A  # II.7, III.8
-
-    class MP_SectionInput(MP_SectionBaseMBF):
-        """
-        MBF Input section with fix variance over k
-
-        .. image:: /static/lmlib/irrls/irrls-MP_SectionInput.svg
-            :height: 300
-            :align: center
-
-        Parameters
-        ----------
-        section : :class:`~lmlib.SectionInput`
-            section
-        K : int
-            Message Passing Length
-
-
-        Details in [Loeliger2016]_
-        --------------------------
-        - TABLE II, GAUSSIAN MESSAGE PASSING THROUGH AN ADDER NODE.
-        - TABLE III, GAUSSIAN MESSAGE PASSING THROUGH A MATRIX MULTIPLIER NODE WITH ARBITRARY REAL MATRIX A.
-        - TABLE IV GAUSSIAN SINGLE-EDGE MARGINALS (m, V ) AND THEIR DUALS (ξ ̃, W ̃ ). (marginal and input/output estimation)
-        """
-
-        def __init__(self, section, K):
-            super().__init__(section, K)
-
-            # malloc
-            if self.section.estimate_input:
-                self.memory['U'] = allocate_gaussian_random_variable(self.K, self.section.M)
-
-            # algorithm memory
-            self._initialize_fw_U()
-
-        def _initialize_fw_U(self):
-            self._fw_U = allocate_gaussian_random_variable(1, self.section.M)[0]
-            self._fw_U.m.fill(0)
-            self._check_and_set_sigma2_init(self._fw_U, self.section.M)
-
-        def propagate_forward(self, k, msg_fw):
-            B = self.section.B
-            msg_fw.m += B @ self._fw_U.m  # II.1, III.1
-            msg_fw.V += B @ self._fw_U.V @ B.T  # II.2, III.2
-
-        def propagate_backward(self, k, msg_bw):
-            pass  # II.6, II.7  # nothing to do
-
-        def propagate_forward_save_states(self, k, msg_fw):
-            super().propagate_forward_save_states(k, msg_fw)
-
-            if self.section.estimate_input:
-                self.memory['U'][k] = self._fw_U  # IV.9 & IV.13 (forward update)
-
-        def propagate_backward_save_states(self, k, msg_bw):
-            super().propagate_backward_save_states(k, msg_bw)
-
-            # save
-            if self.section.estimate_input:
-                B = self.section.B
-                VF_U = self.memory['U'][k].V
-                self.memory['U'][k].m -= VF_U @ B.T @ msg_bw.xi  # III.7 & IV.9 (backward update)
-                self.memory['U'][k].V -= VF_U @ B.T @ msg_bw.W @ B @ VF_U  # III.8 & IV.13 (backward update)
-
-        def get_input_estimate(self):
-            """
-            Returns the input estimate `U` of the input section
-
-            Returns
-            -------
-            marginals : np.ndarray of shape (K, ...)
-                marginals of the mp_section.
-                `marginals.m` calls the mean of shape (K, N) and `marginals.V` calls the covariance of shape (K, N, N)
-            """
-
-            assert self.section.estimate_input, f"No input estimate saved! Set estimate_input=True on {self.section}"
-            return self.memory['U']
-
-        def get_U(self):
-            """
-            See :func:`get_input_estimate`
-            """
-            return self.get_input_estimate()
-
-    class MP_SectionInput_k(MP_SectionBaseMBF):
-        """
-        MBF Input section with variable variance over k
-
-        .. image:: /static/lmlib/irrls/irrls-MP_SectionInput_k.svg
-            :height: 300
-            :align: center
-
-        Parameters
-        ----------
-        section : :class:`~lmlib.SectionInput_k`
-            section
-        K : int
-            Message Passing Length
-
-
-        Details in [Loeliger2016]_
-        --------------------------
-        - TABLE II, GAUSSIAN MESSAGE PASSING THROUGH AN ADDER NODE.
-        - TABLE III, GAUSSIAN MESSAGE PASSING THROUGH A MATRIX MULTIPLIER NODE WITH ARBITRARY REAL MATRIX A.
-        - TABLE IV GAUSSIAN SINGLE-EDGE MARGINALS (m, V ) AND THEIR DUALS (ξ ̃, W ̃ ). (marginal and input/output estimation)
-        """
-        def __init__(self, section, K):
-            super().__init__(section, K)
-
-            # malloc
-            if self.section.estimate_input:
-                self.memory['U'] = allocate_gaussian_random_variable(self.K, self.section.M)
-
-            # algorithm memory
-            self._initialize_fw_U()
-
-        def _initialize_fw_U(self):
-            self._fw_U = allocate_gaussian_random_variable(self.K, self.section.M)
-            self._fw_U.m.fill(0)
-            self._check_and_set_sigma2_k_init(self._fw_U, self.K, self.section.M)
-
-        def propagate_forward(self, k, msg_fw):
-            B = self.section.B
-            fw_U = self._fw_U[k]
-            msg_fw.m += B @ fw_U.m  # II.1, III.1
-            msg_fw.V += B @ fw_U.V @ B.T  # II.2, III.2
-
-        def propagate_backward(self, k, msg_bw):
-            pass  # II.6, II.7  # nothing to do
-
-        def propagate_forward_save_states(self, k, msg_fw):
-            super().propagate_forward_save_states(k, msg_fw)
-
-            if self.section.estimate_input:
-                self.memory['U'][k] = self._fw_U[k]  # IV.9 & IV.13 (forward update)
-
-        def propagate_backward_save_states(self, k, msg_bw):
-            super().propagate_backward_save_states(k, msg_bw)
-
-            # save
-            if self.section.estimate_input:
-                B = self.section.B
-                VF_U = self.memory['U'][k].V
-                self.memory['U'][k].m -= VF_U @ B.T @ msg_bw.xi  # III.7 & IV.9 (backward update)
-                self.memory['U'][k].V -= VF_U @ B.T @ msg_bw.W @ B @ VF_U  # III.8 & IV.13 (backward update)
-
-        def get_input_estimate(self):
-            """
-            Returns the input estimate `U` of the input section
-
-            Returns
-            -------
-            out : np.ndarray of shape (K, ...)
-                input estimate of the mp_section.
-                `U.m` calls the mean of shape (K, N) and `U.V` calls the covariance of shape (K, N, N)
-            """
-
-            assert self.section.estimate_input, f"No input estimate saved! Set estimate_input=True on {self.section}"
-            return self.memory['U']
-
-        def get_U(self):
-            """
-            See :func:`get_input_estimate`
-            """
-            return self.get_input_estimate()
-
-    class MP_SectionInputNUV(MP_SectionInput_k):
-        """
-        MBF NUV Input section fix variance over k
-
-        .. image:: /static/lmlib/irrls/irrls-MP_SectionInputNUV.svg
-            :height: 300
-            :align: center
-
-        Parameters
-        ----------
-        section : :class:`~lmlib.SectionInputNUV`
-            section
-        K : int
-            Message Passing Length
-
-
-
-        Details in [Loeliger2016]_
-        --------------------------
-        - TABLE II, GAUSSIAN MESSAGE PASSING THROUGH AN ADDER NODE.
-        - TABLE III, GAUSSIAN MESSAGE PASSING THROUGH A MATRIX MULTIPLIER NODE WITH ARBITRARY REAL MATRIX A.
-        - TABLE IV GAUSSIAN SINGLE-EDGE MARGINALS (m, V ) AND THEIR DUALS (ξ ̃, W ̃ ). (marginal and input/output estimation)
-        """
-        def __init__(self, section, K):
-            super().__init__(section, K)
-
-            # malloc
-            if self.section.save_deployed_sigma2:
-                self.memory['U_fw'] = allocate_gaussian_random_variable(self.K, self.section.M)
-
-        def propagate_backward(self, k, msg_bw):
-            super().propagate_backward(k, msg_bw)
-            self.update_NUV(k, msg_bw)
-
-        def propagate_backward_save_states(self, k, msg_bw):
-            if self.section.save_deployed_sigma2:
-                self.memory['U_fw'][k] = self._fw_U[k]
-
-            super().propagate_backward_save_states(k, msg_bw)
-
-        def update_NUV(self, k, msg_bw):
-
-            B = self.section.B
-            fw_U = self._fw_U[k]
-            U_m = fw_U.m - fw_U.V @ B.T @ msg_bw.xi  # III.7 & IV.9 (backward update)
-
-            if self.section.update_algo == 'EM':
-                U_V = fw_U.V - fw_U.V @ B.T @ msg_bw.W @ B @ fw_U.V  # III.8 & IV.13 (backward update)
-
-                if self.section.prior_type == 'trivial':
-                    self._fw_U[k].V = np.outer(U_m, U_m) + U_V  # Update sigmaU_k according to Eq. (13)
-
-                if self.section.prior_type == 'binary':
-                    a, b = self.section.constraint
-
-                    # Update sigmaU_k according to Keusch Table 7.1
-                    p1 = np.linalg.inv(U_V+np.outer((U_m-a), (U_m-a)))
-                    p2 = np.linalg.inv(U_V + np.outer((U_m -b), (U_m - b)))
-                    self._fw_U[k].V = np.linalg.inv(p1+p2)
-                    self._fw_U[k].m = self._fw_U[k].V@(a*p1+b*p2)
-
-                if self.section.prior_type == 'discrete-phase':
-                    raise NotImplemented
-
-                if self.section.prior_type == 'box':
-                    raise AssertionError('EM update with box prior is not supported')
-
-
-                if self.section.prior_type == 'half-space':
-                    raise AssertionError('EM update with half-space prior is not supported')
-
-
-
-            else: # AM algo
-
-
-                if self.section.prior_type == 'trivial':
-                    self._fw_U[k].V = np.outer(U_m, U_m)  # Update sigmaU_k according to Eq. (13)
-
-                if self.section.prior_type == 'binary':
-                    a, b = self.section.constraint
-
-                    # Update sigmaU_k according to Keusch Table 7.1
-                    p1 = np.linalg.inv(np.outer((U_m-a), (U_m-a)))
-                    p2 = np.linalg.inv(np.outer((U_m -b), (U_m - b)))
-                    self._fw_U[k].V = np.linalg.inv(p1+p2)
-                    self._fw_U[k].m = self._fw_U[k].V@(a*p1+b*p2)
-
-                if self.section.prior_type == 'discrete-phase':
-                    raise NotImplemented
-
-                if self.section.prior_type == 'box':
-                    a, b, gamma = self.section.constraint
-
-                    # Update sigmaU_k according to Keusch Table 7.1
-                    p1 = 1/np.abs(U_m-a)
-                    p2 = 1/np.abs(U_m-b)
-                    self._fw_U[k].V = 1/gamma*1/(p1+p2)
-                    self._fw_U[k].m = gamma*self._fw_U[k].V@(a*p1+b*p2)
-
-                if self.section.prior_type == 'half-space':
-                    a, gamma = self.section.constraint
-
-                    # Update sigmaU_k according to Keusch Table 7.1
-                    self._fw_U[k].V = np.abs(U_m-a)/gamma
-                    self._fw_U[k].m = a+np.abs(U_m-a) if a<=U_m else a-np.abs(U_m-a)
-
-
-        def get_deployed_sigma2(self):
-            """
-            Returns the Random Variable of deployed_sigma2 `U_fw` of the input NUV section (sigma before update)
-
-            Returns
-            -------
-            out : np.ndarray of shape (K, ...)
-                updated input estimate of forward path of the mp_section.
-                `U_fw.m` calls the mean of shape (K, N) and `U_fw.V` calls the covariance of shape (K, N, N)
-            """
-
-            assert self.section.estimate_input, f"No updated input estimate saved! Set get_deployed_sigma2=True on {self.section}"
-            return self.memory['U_fw']
-
-        def get_U_fw(self):
-            """
-            See :func:`get_deployed_sigma2`
-            """
-            return self.get_deployed_sigma2()
-
-    class MP_SectionOutput(MP_SectionBaseMBF):
-        """
-        MBF Output section fix variance over k
-
-        .. image:: /static/lmlib/irrls/irrls-MP_SectionOutput.svg
-            :height: 300
-            :align: center
-
-        Parameters
-        ----------
-        section : :class:`~lmlib.SectionOutput`
-            section
-        K : int
-            Message Passing Length
-
-
-
-        Details in [Loeliger2016]_
-        --------------------------
-        - TABLE V GAUSSIAN MESSAGE PASSING THROUGH AN OBSERVATION section.
-        - TABLE IV GAUSSIAN SINGLE-EDGE MARGINALS (m, V ) AND THEIR DUALS (ξ ̃, W ̃ ). (marginal and input/output estimation)
-
-        """
-        def __init__(self, section, K):
-
-            super().__init__(section, K)
-            assert isinstance(section, SectionOutput), "section must be an instance of SectionOutput"
-
-            # malloc
-            if self.section.estimate_output:
-                self.memory['Y_tilde'] = allocate_gaussian_random_variable(self.K, self.section.L)
-
-            # algorithm memory
-            self._X_fw = allocate_gaussian_random_variable(self.K, self.section.N)
-            self._initialize_Z()
-
-        def _initialize_Z(self):
-            self._Z = allocate_gaussian_random_variable(1, self.section.L)[0]
-            self._Z.m.fill(0)
-            self._check_and_set_sigma2_init(self._Z, self.section.L)
-
-        def propagate_forward(self, k, msg_fw):
-            C = self.section.C
-            CT = C.T
-            y = self.section.y[k]
-            Z = self._Z
-
-            G = np.linalg.inv(Z.V + C @ msg_fw.V @ CT)  # V.3
-            msg_fw.m += msg_fw.V @ CT @ G @ (y - C @ msg_fw.m)  # V.1
-            msg_fw.V -= msg_fw.V @ CT @ G @ C @ msg_fw.V  # V.2
-
-            self._X_fw[k] = msg_fw  # for backward propagation
-
-        def propagate_backward(self, k, msg_bw):
-            C = self.section.C
-            CT = C.T
-            y = self.section.y[k]
-            Z = self._Z
-            X_fw = self._X_fw[k]
-
-            W_Y = np.linalg.inv(Z.V)
-            F = np.eye(self.section.N) - X_fw.V @ CT @ W_Y @ C  # V.8
-
-            msg_bw.xi[:] = F.T @ msg_bw.xi + CT @ W_Y @ (C @ X_fw.m - y)  # V.4
-            msg_bw.W[:] = F.T @ msg_bw.W @ F + CT @ W_Y @ C @ F  # V.6
-
-        def propagate_backward_save_states(self, k, msg_bw):
-
-            super().propagate_backward_save_states(k, msg_bw)
-
-            if self.section.estimate_output:
-                C = self.section.C
-                X = self.memory['X'][k]
-                self.memory['Y_tilde'][k].m = C @ X.m  # IV.9 (backward update)
-                self.memory['Y_tilde'][k].V = C @ X.V @ C.T  # IV.13 (backward update)
-
-        def get_output_estimate(self):
-            """
-            Returns the output_estimate `\tilde{Y}` of the output section
-
-            Returns
-            -------
-            out : np.ndarray of shape (K, ...)
-                updated output estimate of forward path of the mp_section.
-                `Y.m` calls the mean of shape (K, N) and `Y.V` calls the covariance of shape (K, N, N)
-            """
-
-            assert self.section.estimate_output, f"No output estimate saved! Set estimate_output=True on {self.section}"
-            return self.memory['Y_tilde']
-
-        def get_Y_tilde(self):
-            """
-            See :func:`get_output_estimate`
-            """
-            return self.get_output_estimate()
-
-        def get_Z(self):
-            """
-            Returns the output prior `\tilde{Z}` of the output section
-
-            Returns
-            -------
-            out : np.ndarray of shape (K, ...)
-                updated output estimate of forward path of the mp_section.
-                `Y.m` calls the mean of shape (K, N) and `Y.V` calls the covariance of shape (K, N, N)
-            """
-
-            assert self.section.estimate_input, f"No output estimate saved! Set estimate_output=True on {self.section}"
-            return self.memory['Z']
-
-    class MP_SectionOutputOutlier(MP_SectionBaseMBF):
-
-        def __init__(self, section, K):
-            super().__init__(section, K)
-
-            self._X = allocate_gaussian_random_variable(self.K, self.section.N)
-
-            # malloc
-            if self.section.estimate_output:
-                self.memory['Y_tilde'] = allocate_gaussian_random_variable(self.K, self.section.L)
-            if self.section.save_outlier_estimate:
-                self.memory['S'] = allocate_gaussian_random_variable(self.K, self.section.L)
-
-            # algorithm memory
-            self._X_fw = allocate_gaussian_random_variable(self.K, self.section.N)
-            self._initialize_Z()
-            self._initialize_S()
-            self._Znew = np.zeros((self.section.L,self.section.L))
-
-
-        def _initialize_Z(self):
-            self._Z = allocate_gaussian_random_variable(1, self.section.L)[0]
-            self._Z.m.fill(0)
-            self._check_and_set_sigma2_init(self._Z, self.section.L)
-
-        def _initialize_S(self):
-            self.outlier = np.zeros(self.K)
-            self.n_outlier = 0
-            self._S = allocate_gaussian_random_variable(self.K, self.section.L)
-            self._S.m.fill(0)
-            self._check_and_set_sigma2_k_init(self._S, self.K, self.section.L)
-
-        def propagate_forward(self, k, msg_fw):
-            C = self.section.C
-            CT = C.T
-            y = self.section.y[k]
-            Z = self._Z
-            S = self._S[k]
-
-            G = np.linalg.inv(Z.V + S.V + C @ msg_fw.V @ CT)  # V.3
-            msg_fw.m += msg_fw.V @ CT @ G @ (y - C @ msg_fw.m)  # V.1
-            msg_fw.V -= msg_fw.V @ CT @ G @ C @ msg_fw.V  # V.2
-
-            self._X_fw[k] = msg_fw  # for backward propagation
-            self._X[k] = msg_fw  # IV.9 & IV.13 (forward update with temporary result)
-
-        def propagate_backward(self, k, msg_bw):
-            C = self.section.C
-            CT = C.T
-            y = self.section.y[k]
-            Z = self._Z
-            S = self._S[k]
-            X_fw = self._X_fw[k]
-            X = self._X[k]
-            out_fac = self.section.outlier_threshold_factor
-            # print(k, (Z.V, S.V), self.n_outlier)
-
-            Y_W = np.linalg.inv(Z.V + S.V) #  IV.4   !!! not sure if correct
-            F = np.eye(self.section.N) - X_fw.V @ CT @ Y_W @ C  # V.8
-
-            msg_bw.xi[:] = F.T @ msg_bw.xi + CT @ Y_W @ (C @ X_fw.m - y)  # V.4
-            msg_bw.W[:] = F.T @ msg_bw.W @ F + CT @ Y_W @ C @ F  # V.6
-
-            # (backward update based on temporary result from forward-path)
-            X.m -= X.V @ msg_bw.xi  # IV.9 (backward update)
-            X.V -= X.V @ msg_bw.W @ X.V  # IV.13 (backward update)
-
-            # outlier estimation
-            # ------------------
-
-            # A. Expectation Step
-            X_mu_II = X.V + np.outer(X.m, X.m)
-
-            # B. Maximization Step
-            _tmp = y**2-2*np.dot(y, C@X.m) + C@X_mu_II@CT  # EQ 20
-            S.V[:] = max(_tmp - Z.V, 0)  # EQ 20
-            self._S[k].V = S.V
-
-            # D. Noise Floor Estimation:
-            if S.V <= out_fac * self.section.sigma2_init:
-                self._Znew += _tmp
-                # self.outlier[k] = 0
-            else:
-                # self.outlier[k] = 1
-                self.n_outlier += 1
-            if k == 0:
-                self._Z.V = self._Znew / (self.K - self.n_outlier)
-                self.n_outlier = 0
-
-        def propagate_backward_save_states(self, k, msg_bw):
-
-            super().propagate_backward_save_states(k, msg_bw)
-
-            if self.section.estimate_output:
-                C = self.section.C
-                X = self.memory['X'][k]
-                self.memory['Y_tilde'][k].m = C @ X.m  # IV.9 (backward update)
-                self.memory['Y_tilde'][k].V = C @ X.V @ C.T  # IV.13 (backward update)
-
-            if self.section.save_outlier_estimate:
-                self.memory['S'][k] = self._S[k]
-
-        def get_output_estimate(self):
-            """
-            Returns the output_estimate `\tilde{Y}` of the output section
-
-            Returns
-            -------
-            out : np.ndarray of shape (K, ...)
-                updated output estimate of forward path of the mp_section.
-                `Y.m` calls the mean of shape (K, N) and `Y.V` calls the covariance of shape (K, N, N)
-            """
-
-            assert self.section.estimate_output, f"No output estimate saved! Set estimate_output=True on {self.section}"
-            return self.memory['Y_tilde']
-
-        def get_Y_tilde(self):
-            """
-            See :func:`get_output_estimate`
-            """
-            return self.get_output_estimate()
-
-        def get_outlier_estimate(self):
-            """
-            Returns the outlier estimate `S` of the output section
-
-            Returns
-            -------
-            out : np.ndarray of shape (K, ...)
-                updated outlier estimate of forward path of the mp_section.
-                `Y.m` calls the mean of shape (K, N) and `Y.V` calls the covariance of shape (K, N, N)
-            """
-
-            assert self.section.save_outlier_estimate, f"No outlier estimate saved! Set save_outlier_estimate=True on {self.section}"
-            return self.memory['S']
-
-        def get_S(self):
-            """
-            See :func:`get_outlier_estimate`
-            """
-            return self.get_outlier_estimate()
-
-    class MP_SectionContainer(MP_SectionBaseMBF):
-        """
-        MBF section Container
-
-        .. image:: /static/lmlib/irrls/irrls-MP_SectionContainer.svg
-            :height: 200
-            :align: center
-
-
-        Details in [Loeliger2016]_
-        --------------------------
-        - TABLE IV GAUSSIAN SINGLE-EDGE MARGINALS (m, V ) AND THEIR DUALS (ξ̃, W̃ ). (marginal and input/output estimation)
-        """
-        def __init__(self, section, K):
-            assert isinstance(section, SectionContainer), "section must be an instance of SectionContainer"
-            super().__init__(section, K)
-
-            self.mp_sections = []
-            for section in section.subsections:
-                self.mp_sections.append(MBF.create_mp_section(section, K))
-
-        def propagate_forward(self, k, msg_fw):
-            for mp_section in self.mp_sections:
-                mp_section.propagate_forward(k, msg_fw)
-
-        def propagate_backward(self, k, msg_bw):
-            for mp_section in reversed(self.mp_sections):
-                mp_section.propagate_backward(k, msg_bw)
-
-        def propagate_forward_save_states(self, k, msg_fw):
-            for mp_section in self.mp_sections:
-                mp_section.propagate_forward_save_states(k, msg_fw)
-
-            if self.section.save_marginal:
-                self.memory['X'][k] = msg_fw  # IV.9 & IV.13 (forward update)
-
-        def propagate_backward_save_states(self, k, msg_bw):
-
-            if self.section.save_marginal:
-                VF_X = self.memory['X'][k].V
-                self.memory['X'][k].m -= VF_X @ msg_bw.xi  # IV.9 (backward update)
-                self.memory['X'][k].V -= VF_X @ msg_bw.W @ VF_X  # IV.13 (backward update)
-
-            for mp_section in reversed(self.mp_sections):
-                mp_section.propagate_backward_save_states(k, msg_bw)
-
-        def get_mp_section_by_label(self, label, out_dict):
-            if self.section.label == label:
-                out_dict['mp_section'] = self
-            else:
-                for mp_section in self.mp_sections:
-                    mp_section.get_mp_section_by_label(label, out_dict)
-
-        def get_mp_section_by_obj(self, obj, out_dict):
-            if self.section is obj:
-                out_dict['mp_section'] = self
-            else:
-                for mp_section in self.mp_sections:
-                    mp_section.get_mp_section_by_obj(obj, out_dict)
-
-        def get_mp_subsection(self, subsection):
-            """
-            Returns the Message Passing section of the corresponding cost describing section by label or instance
-
-            Parameters
-            ----------
-            subsection : str or SectionBase
-                label of the section or the section instance itself
-
-            Returns
-            -------
-            out : MessagePassingSection
-                return the corresponding message passing section
-            """
-            # create a mutable variable to store the mp_section into
-            out_dict = dict(mp_section=None)
-
-            # case if section is an instance of SectionBase
-            if isinstance(subsection, SectionBase):
-                self.get_mp_section_by_obj(subsection, out_dict)
-                return out_dict["mp_section"]
-
-            # case if section is a section label
-            if isinstance(subsection, str):
-                self.get_mp_section_by_label(subsection, out_dict)
-                return out_dict["mp_section"]
+
+    def propagate_forward(self, k, fw_msg):
+        for s in self._owner.subsections:
+            s.mp.propagate_forward(k, fw_msg)
+
+    def propagate_backward(self, k, bw_msg):
+        for s in reversed(self._owner.subsections):
+            s.mp.propagate_backward(k, bw_msg)
+
+    def propagate_forward_save_states(self, k, fw_msg):
+        for f in self._fw_save_state_callbacks:
+            f(k, fw_msg)
+        for s in self._owner.subsections:
+            s.mp.propagate_forward_save_states(k, fw_msg)
+
+    def propagate_backward_save_states(self, k, bw_msg):
+        for f in self._bw_save_state_callbacks:
+            f(k, bw_msg)
+        for s in reversed(self._owner.subsections):
+            s.mp.propagate_backward_save_states(k, bw_msg)
+
+
+class MBF_SectionSystem(MBF_MessagePassingBase):
+    """MBF System Section"""
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.A = owner.A
+        self.AT = self.A.T
+
+    def propagate_forward(self, k, fw_msg):
+        fw_msg.m[:] = self.A @ fw_msg.m  # III.1
+        fw_msg.V[:] = self.A @ fw_msg.V @ self.AT  # III.2
+
+    def propagate_backward(self, k, bw_msg):
+        bw_msg.xi[:] = self.AT @ bw_msg.xi  # II.6, III.7
+        bw_msg.W[:] = self.AT @ bw_msg.W @ self.A  # II.7, III.8
+
+
+class MBF_SectionInputBase(MBF_MessagePassingBase, ABC):
+    """MBF Input Section Base Class"""
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.fw_U = None
+        self.B = self._owner.B
+        self.BT = self.B.T
+        self.identity_M = np.eye(self._owner.M)
+
+        if self._owner.save_input_marginal:
+            self.memory['U'] = array_random_var(K, self._owner.M, 'm', 'V')
+            self._fw_save_state_callbacks.append(self._forward_save_input_marginal)
+            self._bw_save_state_callbacks.append(self._backward_save_input_marginal)
+
+    def _forward_save_input_marginal(self, k, fw_msg):
+        pass
+
+    def _backward_save_input_marginal(self, k, bw_msg):
+        pass
+
+    def propagate_backward(self, k, bw_msg):
+        pass  # II.6, II.7  # nothing to do
+
+
+class MBF_SectionInput(MBF_SectionInputBase):
+    """MBF Input Section"""
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.fw_U_V = self.identity_M.dot(self._owner.sigma2)
+
+    def propagate_forward(self, k, fw_msg):
+        fw_msg.V += self.B @ self.fw_U_V @ self.BT  # II.2, III.2
+
+    def _backward_save_input_marginal(self, k, bw_msg):
+        fw_U_V = self.fw_U_V
+        self.memory['U'][k].m = - fw_U_V @ self.BT @ bw_msg.xi  # III.7 & IV.9
+        self.memory['U'][k].V = fw_U_V - fw_U_V @ self.BT @ bw_msg.W @ self.B @ fw_U_V  # III.8 & IV.13
+
+
+class MBF_SectionInput_k(MBF_SectionInputBase):
+    """MBF Input Section for Variable Co-Variances over Time"""
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.fw_U_V = np.asarray([self.identity_M.dot(s_) for s_ in self._owner.sigma2])
+
+    def propagate_forward(self, k, fw_msg):
+        fw_msg.V += self.B @ self.fw_U_V[k] @ self.BT  # II.2, III.2
+
+    def _backward_save_input_marginal(self, k, bw_msg):
+        fw_U_V = self.fw_U_V[k]
+        self.memory['U'][k].m = - fw_U_V @ self.BT @ bw_msg.xi  # III.7 & IV.9
+        self.memory['U'][k].V = fw_U_V - fw_U_V @ self.BT @ bw_msg.W @ self.B @ fw_U_V  # III.8 & IV.13
+
+
+class MBF_SectionOutput(MBF_MessagePassingBase):
+    """MBF Output Section"""
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+
+        self.C = self._owner.C
+        self.CT = self.C.T
+        self.bw_Y_m = self._owner.y
+        self.fw_X = array_random_var(K, self._owner.N, 'm', 'V')  # buffer
+        self.identity_L = np.eye(self._owner.L)
+        self.fw_Z_V = self.identity_L.dot(self._owner.sigma2)
+        self.bw_Yt_W = np.linalg.inv(self.fw_Z_V)
+
+        if self._owner.save_output_marginal:
+            self.memory['Y_tilde'] = array_random_var(K, self._owner.L, 'm', 'V')
+            self._fw_save_state_callbacks.append(self._forward_save_output_marginal)
+            self._bw_save_state_callbacks.append(self._backward_save_output_marginal)
+
+    def propagate_forward(self, k, fw_msg):
+        # observation block
+        G = np.linalg.inv(self.fw_Z_V + self.C @ fw_msg.V @ self.CT)  # V.3
+        fw_msg.m += fw_msg.V @ self.CT @ G @ (self.bw_Y_m[k] - self.C @ fw_msg.m)  # V.1
+        fw_msg.V -= fw_msg.V @ self.CT @ G @ self.C @ fw_msg.V  # V.2
+
+        # save state for backward recursion
+        self.fw_X[k].m = fw_msg.m
+        self.fw_X[k].V = fw_msg.V
+
+    def propagate_backward(self, k, bw_msg):
+        # recall state from forward recursion
+        fw_X_m = self.fw_X[k].m
+        fw_X_V = self.fw_X[k].V
+
+        # equality constraint
+        F = self.identity_N - fw_X_V @ self.CT @ self.bw_Yt_W @ self.C  # V.8
+        bw_msg.xi = F.T @ bw_msg.xi + self.CT @ self.bw_Yt_W @ (self.C @ fw_X_m - self.bw_Y_m[k])  # V.4
+        bw_msg.W = F.T @ bw_msg.W @ F + self.CT @ self.bw_Yt_W @ self.C @ F  # V.6
+
+    def _forward_save_output_marginal(self, k, fw_msg):
+        pass
+
+    def _backward_save_output_marginal(self, k, bw_msg):
+        # recall state from forward recursion
+        fw_X_m = self.fw_X[k].m
+        fw_X_V = self.fw_X[k].V
+        self.memory['Y_tilde'][k].m = self.C @ (fw_X_m - fw_X_V @ bw_msg.xi)  # IV.9 & III.5
+        self.memory['Y_tilde'][k].V = self.C @ (fw_X_V - fw_X_V @ bw_msg.W @ fw_X_V) @ self.CT  # IV.13 & III.6
+
+
+class MBF_SectionInputUpdate(MBF_SectionInputBase, ABC):
+    """MBF Input Section Update Base Class"""
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+
+        if self._owner.update_method == 'EM':
+            self._forward_update = self._forward_update_EM
+            self._backward_update = self._backward_update_EM
+        if self._owner.update_method == 'AM':
+            self._forward_update = self._forward_update_AM
+            self._backward_update = self._backward_update_AM
+
+    def _forward_update_EM(self, k, fw_msg):
+        """Forward update for EM Algorithm"""
+        pass
+
+    def _backward_update_EM(self, k, bw_msg):
+        """Backward update for EM Algorithm"""
+        pass
+
+    def _forward_update_AM(self, k, fw_msg):
+        """Forward update for AM Algorithm"""
+        pass
+
+    def _backward_update_AM(self, k, bw_msg):
+        """Backward update for AM Algorithm"""
+        pass
+
+
+class MBF_SectionInput_NUV(MBF_SectionInputUpdate):
+    """MBF Input Section with NUV-Prior"""
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.memory['sigma2'] = array_random_var(K, self._owner.M, 'm', 'V')
+        self.fw_U_V = np.zeros((K, self._owner.M, self._owner.M))
+        self.sigma2 = np.zeros((K, self._owner.M, self._owner.M))
+        self.sigma2[:] = self.identity_M * self._owner.sigma2_init
+        self.beta_inv = 1 / self._owner.beta
+
+    def propagate_forward(self, k, fw_msg):
+        self.fw_U_V[k] = self.sigma2[k]
+        fw_msg.V += self.B @ self.fw_U_V[k] @ self.BT  # II.2, III.2
+
+        self._forward_update(k, fw_msg)
+
+    def propagate_backward(self, k, bw_msg):
+        self._backward_update(k, bw_msg)
+
+    def _backward_save_input_marginal(self, k, bw_msg):
+        fw_U_V = self.fw_U_V[k]
+        self.memory['U'][k].m = - fw_U_V @ self.BT @ bw_msg.xi  # III.7 & IV.9
+        self.memory['U'][k].V = fw_U_V - fw_U_V @ self.BT @ bw_msg.W @ self.B @ fw_U_V  # III.8 & IV.13
+
+    def _backward_update_EM(self, k, bw_msg):
+        fw_U_V = self.fw_U_V[k]
+        U_m = - fw_U_V @ self.BT @ bw_msg.xi
+        U_V = fw_U_V - fw_U_V @ self.BT @ bw_msg.W @ self.B @ fw_U_V
+
+        # Update Input Variance
+        self.sigma2[k] = np.outer(U_m, U_m) + U_V
+
+    def _backward_update_AM(self, k, bw_msg):
+        U_m = -  self.fw_U_V[k] @ self.BT @ bw_msg.xi
+
+        # Update Input Variance
+        self.sigma2[k] = np.outer(U_m, U_m) * self.beta_inv
+
+
+class MBF_SectionInput_sNUV(MBF_SectionInput_NUV):
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.r2 = self._owner.r2
+
+    def propagate_forward(self, k, fw_msg):
+        self.fw_U_V[k] = self.sigma2[k]
+        fw_msg.V += self.B @ self.fw_U_V[k] @ self.BT  # II.2, III.2
+
+        self._forward_update(k, fw_msg)
+
+    def propagate_backward(self, k, bw_msg):
+        self._backward_update(k, bw_msg)
+
+    def _backward_save_input_marginal(self, k, bw_msg):
+        fw_U_V = self.fw_U_V[k]
+        self.memory['U'][k].m = - fw_U_V @ self.BT @ bw_msg.xi  # III.7 & IV.9
+        self.memory['U'][k].V = fw_U_V - fw_U_V @ self.BT @ bw_msg.W @ self.B @ fw_U_V  # III.8 & IV.13
+
+    def _backward_update_EM(self, k, bw_msg):
+        fw_U_V = self.fw_U_V[k]
+        U_m = - fw_U_V @ self.BT @ bw_msg.xi
+        U_V = fw_U_V - fw_U_V @ self.BT @ bw_msg.W @ self.B @ fw_U_V
+
+        # Update Input Variance
+        self.sigma2[k] = max(self.r2, np.outer(U_m, U_m) + U_V)
+
+    def _backward_update_AM(self, k, bw_msg):
+        U_m = -  self.fw_U_V[k] @ self.BT @ bw_msg.xi
+
+        # Update Input Variance
+        self.sigma2[k] = max(self.r2, np.outer(U_m, U_m) * self.beta_inv)
+
+
+class MBF_SectionInput_L1(MBF_SectionInput_NUV):
+    def _backward_update_EM(self, k, bw_msg):
+        fw_U_V = self.fw_U_V[k]
+        U_m = - fw_U_V @ self.BT @ bw_msg.xi
+        U_V = fw_U_V - fw_U_V @ self.BT @ bw_msg.W @ self.B @ fw_U_V
+
+        # Update Input Variance
+        self.sigma2[k] = np.sqrt(np.outer(U_m, U_m) + U_V)
+
+    def _backward_update_AM(self, k, bw_msg):
+        U_m = -  self.fw_U_V[k] @ self.BT @ bw_msg.xi
+
+        # Update Input Variance
+        self.sigma2[k] = np.sqrt(np.outer(U_m, U_m)) * self.beta_inv
+
+
+class MBF_SectionInput_sL1(MBF_SectionInput_sNUV):
+
+    def _backward_update_EM(self, k, bw_msg):
+        fw_U_V = self.fw_U_V[k]
+        U_m = - fw_U_V @ self.BT @ bw_msg.xi
+        U_V = fw_U_V - fw_U_V @ self.BT @ bw_msg.W @ self.B @ fw_U_V
+
+        # Update Input Variance
+        self.sigma2[k] = max(self.r2, np.sqrt(np.outer(U_m, U_m) + U_V))
+
+    def _backward_update_AM(self, k, bw_msg):
+        U_m = -  self.fw_U_V[k] @ self.BT @ bw_msg.xi
+
+        # Update Input Variance
+        self.sigma2[k] = max(self.r2, np.sqrt(np.outer(U_m, U_m)) * self.beta_inv)
+
+
+class MBF_SectionInput_Binary(MBF_SectionInputUpdate):
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        # self.memory['sigma2a'] = array_random_var(K, self._owner.M, 'm', 'V')
+        # self.memory['sigma2b'] = array_random_var(K, self._owner.M, 'm', 'V')
+        self.fw_U = array_random_var(K, self._owner.M, 'm', 'V')
+        self.a = self._owner.a
+        self.b = self._owner.b
+        self.sigma2a = np.zeros((K, self._owner.M, self._owner.M))
+        self.sigma2b = np.zeros((K, self._owner.M, self._owner.M))
+        self.sigma2a[:] = self.identity_M * self._owner.sigma2a_init
+        self.sigma2b[:] = self.identity_M * self._owner.sigma2b_init
+        self.beta_inv = 1 / self._owner.beta
+
+    def propagate_forward(self, k, fw_msg):
+        inv_s2a = 1 / self.sigma2a[k]
+        inv_s2b = 1 / self.sigma2b[k]
+        self.fw_U[k].V = 1 / (inv_s2a + inv_s2b)  # (10.11)
+        self.fw_U[k].m = self.fw_U[k].V * (self.a * inv_s2a + self.b * inv_s2b)  # (10.12)
+
+        fw_msg.V += self.B @ self.fw_U[k].V @ self.BT  # II.2, III.2
+        fw_msg.m += self.B @ self.fw_U[k].m  # II.1 & III.1
+
+        self._forward_update(k, fw_msg)
+
+    def propagate_backward(self, k, bw_msg):
+        self._backward_update(k, bw_msg)
+
+    def _backward_save_input_marginal(self, k, bw_msg):
+        fw_U_V = self.fw_U[k].V
+        fw_U_m = self.fw_U[k].m
+        self.memory['U'][k].m = fw_U_m - fw_U_V @ self.BT @ bw_msg.xi  # III.7 & IV.9
+        self.memory['U'][k].V = fw_U_V - fw_U_V @ self.BT @ bw_msg.W @ self.B @ fw_U_V  # III.8 & IV.13
+
+    def _backward_update_EM(self, k, bw_msg):
+        fw_U_V = self.fw_U[k].V
+        fw_U_m = self.fw_U[k].m
+
+        U_m = fw_U_m - fw_U_V @ self.BT @ bw_msg.xi  # III.7 & IV.9
+        U_V = fw_U_V - fw_U_V @ self.BT @ bw_msg.W @ self.B @ fw_U_V  # III.8 & IV.13
+
+        # Update Input Variance
+        self.sigma2a[k] = U_V + (U_m - self.a) ** 2  # (10.19)
+        self.sigma2b[k] = U_V + (U_m - self.b) ** 2  # (10.20)
+
+    def _backward_update_AM(self, k, bw_msg):
+        fw_U_V = self.fw_U[k].V
+        fw_U_m = self.fw_U[k].m
+
+        U_m = fw_U_m - fw_U_V @ self.BT @ bw_msg.xi
+
+        # Update Input Variance
+        self.sigma2a[k] = self.beta_inv * (U_m - self.a) ** 2
+        self.sigma2b[k] = self.beta_inv * (U_m - self.b) ** 2
+
+
+class BIFM_MessagePassingBase(ABC):
+
+    def __init__(self, owner, K):
+        self._owner = owner
+        self.memory = dict()
+        self.identity_N = np.eye(self._owner.N)
+
+        self._fw_save_state_callbacks = []
+        self._bw_save_state_callbacks = []
+
+        if self._owner.save_state_marginal:
+            self.memory['X'] = array_random_var(K, self._owner.N, 'm', 'V')
+            self._fw_save_state_callbacks.append(self._forward_save_state_marginal)
+            self._bw_save_state_callbacks.append(self._backward_save_state_marginal)
+
+    @abstractmethod
+    def propagate_forward(self, k, fw_msg):
+        pass
+
+    @abstractmethod
+    def propagate_backward(self, k, bw_msg):
+        pass
+
+    def propagate_forward_save_states(self, k, fw_msg):
+        self.propagate_forward(k, fw_msg)
+        for f in self._fw_save_state_callbacks:
+            f(k, fw_msg)
+
+    def propagate_backward_save_states(self, k, bw_msg):
+        for f in self._bw_save_state_callbacks:
+            f(k, bw_msg)
+        self.propagate_backward(k, bw_msg)
+
+    def _forward_save_state_marginal(self, k, fw_msg):
+        self.memory['X'][k] = fw_msg  # IV.9 & IV.13
+
+    def _backward_save_state_marginal(self, k, bw_msg):
+        pass
+
+
+class BIFM_SectionContainer(BIFM_MessagePassingBase):
+    """
+    MBF section Container
+
+    .. image:: /static/lmlib/irrls/irrls-MP_SectionContainer.svg
+        :height: 200
+        :align: center
+
+    Details in [Loeliger2016]_
+    --------------------------
+    - TABLE IV GAUSSIAN SINGLE-EDGE MARGINALS (m, V ) AND THEIR DUALS (ξ̃, W̃ ). (marginal and input/output estimation)
+    """
+
+    def propagate_forward(self, k, fw_msg):
+        for s in self._owner.subsections:
+            s.mp.propagate_forward(k, fw_msg)
+
+    def propagate_backward(self, k, bw_msg):
+        for s in reversed(self._owner.subsections):
+            s.mp.propagate_backward(k, bw_msg)
+
+    def propagate_forward_save_states(self, k, fw_msg):
+        for f in self._fw_save_state_callbacks:
+            f(k, fw_msg)
+        for s in self._owner.subsections:
+            s.mp.propagate_forward_save_states(k, fw_msg)
+
+    def propagate_backward_save_states(self, k, bw_msg):
+        for f in self._bw_save_state_callbacks:
+            f(k, bw_msg)
+        for s in reversed(self._owner.subsections):
+            s.mp.propagate_backward_save_states(k, bw_msg)
+
+
+class BIFM_SectionSystem(BIFM_MessagePassingBase):
+    """
+   BIFM System section
+
+   .. image:: /static/lmlib/irrls/irrls-MP_SectionSystem.svg
+       :height: 200
+       :align: center
+
+   Parameters
+   ----------
+   owner : :class:`~lmlib.SectionSystem`
+       Reference to the object owner
+   """
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.A = owner.A
+        self.AT = self.A.T
+
+    def propagate_forward(self, k, fw_msg):
+        fw_msg.m[:] = self.A @ fw_msg.m  # III.5
+        fw_msg.V[:] = self.A @ fw_msg.V @ self.AT  # III.6
+
+    def propagate_backward(self, k, bw_msg):
+        bw_msg.xi[:] = self.AT @ bw_msg.xi  # III.3
+        bw_msg.W[:] = self.AT @ bw_msg.W @ self.A  # III.4
+
+
+class BIFM_SectionInputBase(BIFM_MessagePassingBase, ABC):
+    """
+    Abstract Input Section Class
+
+    """
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.bw_X = array_random_var(K, self._owner.N, 'xi', 'W')  # buffer
+        self.B = self._owner.B
+        self.BT = self.B.T
+        self.identity_M = np.eye(self._owner.M)
+
+        if self._owner.save_input_marginal:
+            self.memory['U'] = array_random_var(K, self._owner.M, 'm', 'V')
+            self._fw_save_state_callbacks.append(self._forward_save_input_marginal)
+            self._bw_save_state_callbacks.append(self._backward_save_input_marginal)
+
+    def _forward_save_input_marginal(self, k, fw_msg):
+        pass
+
+    def _backward_save_input_marginal(self, k, bw_msg):
+        pass
+
+    def propagate_backward(self, k, bw_msg):
+        pass  # II.6, II.7  # nothing to do
+
+
+class BIFM_SectionInput(BIFM_SectionInputBase):
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.fw_U_V = self.identity_M.dot(self._owner.sigma2)
+        self.fw_U_W = self.identity_M.dot(1/self._owner.sigma2)
+
+    def propagate_forward(self, k, fw_msg):
+        # save state for forward recursion
+        bw_X = self.bw_X[k]
+        fw_U_V = self.fw_U_V
+
+        # input block (needs bw_message X left input section)
+        Ft = self.identity_N - bw_X.W @ self.B @ fw_U_V @ self.BT  # VI.8
+        fw_msg.m[:] = Ft.T @ fw_msg.m + self.B @ fw_U_V @ (self.BT @ bw_X.xi)  # VI.4
+        fw_msg.V[:] = Ft.T @ fw_msg.V @ Ft + self.B @ fw_U_V @ self.BT @ Ft  # VI.6
+
+    def propagate_backward(self, k, bw_msg):
+        # input block
+        H = np.linalg.inv(self.fw_U_W + self.BT @ bw_msg.W @ self.B)  # VI.3
+        bw_msg.xi += bw_msg.W @ self.B @ H @ (- self.B @ bw_msg.xi)  # VI.1
+        bw_msg.W -= bw_msg.W @ self.B @ H @ self.BT @ bw_msg.W  # VI.2
+
+        # save state for forward recursion
+        self.bw_X[k].xi = bw_msg.xi
+        self.bw_X[k].W = bw_msg.W
+
+    def _forward_save_input_marginal(self, k, fw_msg):
+        fw_U_V = self.fw_U_V
+        bw_X = self.bw_X[k]
+
+        U_xi_tilde = self.B @ (bw_X.W @ fw_msg.m - bw_X.xi)  # II.6 & III.7 & 23
+        U_W_tilde = self.BT @ (bw_X.W - bw_X.W @ fw_msg.V @ bw_X.W) @ self.B  # II.7 & III.8 & IV.7
+        self.memory['U'][k].m = 0 - fw_U_V @ U_xi_tilde  # IV.9
+        self.memory['U'][k].V = fw_U_V - fw_U_V @ U_W_tilde @ fw_U_V  # IV.13
+
+
+class BIFM_SectionInput_k(BIFM_SectionInputBase):
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.fw_U_V = np.asarray([self.identity_M.dot(s_) for s_ in self._owner.sigma2])
+        self.fw_U_W = np.asarray([self.identity_M.dot(1 / s_) for s_ in self._owner.sigma2])
+
+    def propagate_forward(self, k, fw_msg):
+        # save state for forward recursion
+        bw_X = self.bw_X[k]
+        fw_U_V = self.fw_U_V[k]
+
+        # input block (needs bw_message X left input section)
+        Ft = self.identity_N - bw_X.W @ self.B @ fw_U_V @ self.BT  # VI.8
+        fw_msg.m[:] = Ft.T @ fw_msg.m + self.B @ fw_U_V @ (self.BT @ bw_X.xi)  # VI.4
+        fw_msg.V[:] = Ft.T @ fw_msg.V @ Ft + self.B @ fw_U_V @ self.BT @ Ft  # VI.6
+
+    def propagate_backward(self, k, bw_msg):
+        # input block
+        H = np.linalg.inv(self.fw_U_W[k] + self.BT @ bw_msg.W @ self.B)  # VI.3
+        bw_msg.xi += bw_msg.W @ self.B @ H @ (- self.B @ bw_msg.xi)  # VI.1
+        bw_msg.W -= bw_msg.W @ self.B @ H @ self.BT @ bw_msg.W  # VI.2
+
+        # save state for forward recursion
+        self.bw_X[k].xi = bw_msg.xi
+        self.bw_X[k].W = bw_msg.W
+
+    def _forward_save_input_marginal(self, k, fw_msg):
+        fw_U_V = self.fw_U_V[k]
+        bw_X = self.bw_X[k]
+
+        U_xi_tilde = self.B @ (bw_X.W @ fw_msg.m - bw_X.xi)  # II.6 & III.7 & 23
+        U_W_tilde = self.BT @ (bw_X.W - bw_X.W @ fw_msg.V @ bw_X.W) @ self.B  # II.7 & III.8 & IV.7
+        self.memory['U'][k].m = 0 - fw_U_V @ U_xi_tilde  # IV.9
+        self.memory['U'][k].V = fw_U_V - fw_U_V @ U_W_tilde @ fw_U_V  # IV.13
+
+
+class BIFM_SectionOutput(BIFM_MessagePassingBase):
+    """BIFM Output Section"""
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+
+        self.C = self._owner.C
+        self.CT = self.C.T
+        self.bw_Y_m = np.asarray(self._owner.y)[:, None]
+        self.fw_X = array_random_var(K, self._owner.N, 'm', 'V')  # buffer
+        self.identity_L = np.eye(self._owner.L)
+        self.fw_Z_V = self.identity_L.dot(self._owner.sigma2)
+        self.bw_Yt_W = np.linalg.inv(self.fw_Z_V)  # II.4
+
+        if self._owner.save_output_marginal:
+            self.memory['Y_tilde'] = array_random_var(K, self._owner.L, 'm', 'V')
+            self._fw_save_state_callbacks.append(self._forward_save_output_marginal)
+            self._bw_save_state_callbacks.append(self._backward_save_output_marginal)
+
+
+    def propagate_forward(self, k, fw_msg):
+        # nothing to do
+        pass
+
+    def propagate_backward(self, k, bw_msg):
+        bw_msg.xi += self.CT @ (self.bw_Yt_W @ self.bw_Y_m[k])  # II.3 & III.3 &  EQ. 17 & I.3
+        bw_msg.W += self.CT @ self.bw_Yt_W @ self.C  # III.4 & I.4
+
+    def _forward_save_output_marginal(self, k, fw_msg):
+        self.memory['Y_tilde'][k].m = self.C @ fw_msg.m  # III.5
+        self.memory['Y_tilde'][k].V = self.C @ fw_msg.V @ self.CT  # III.6
+
+    def _backward_save_output_marginal(self, k, fw_msg):
+        pass
