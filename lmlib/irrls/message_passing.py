@@ -20,6 +20,7 @@ __all__ = ['init_fw_msg', 'init_bw_msg',
            'BIFM_MessagePassingBase', 'BIFM_SectionContainer',
            'BIFM_SectionSystem',
            'BIFM_SectionInput', 'BIFM_SectionInput_k',
+           'BIFM_SectionInput_NUV',
            'BIFM_SectionOutput']
 
 
@@ -805,3 +806,103 @@ class BIFM_SectionOutput(BIFM_MessagePassingBase):
 
     def _backward_save_output_marginal(self, k, fw_msg):
         pass
+
+class BIFM_SectionInputUpdate(BIFM_SectionInputBase, ABC):
+
+    """BIFM Input Section Update Base Class"""
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+
+        if self._owner.update_method == 'EM':
+            self._forward_update = self._forward_update_EM
+            self._backward_update = self._backward_update_EM
+        if self._owner.update_method == 'AM':
+            self._forward_update = self._forward_update_AM
+            self._backward_update = self._backward_update_AM
+
+    def _forward_update_EM(self, k, fw_msg):
+        """Forward update for EM Algorithm"""
+        pass
+
+    def _backward_update_EM(self, k, bw_msg):
+        """Backward update for EM Algorithm"""
+        pass
+
+    def _forward_update_AM(self, k, fw_msg):
+        """Forward update for AM Algorithm"""
+        pass
+
+    def _backward_update_AM(self, k, bw_msg):
+        """Backward update for AM Algorithm"""
+        pass
+
+
+class BIFM_SectionInput_NUV(BIFM_SectionInputUpdate):
+    """BIFM Input Section with NUV-Prior"""
+
+    def __init__(self, owner, K):
+        super().__init__(owner, K)
+        self.memory['sigma2'] = array_random_var(K, self._owner.M, 'm', 'V')
+        self.fw_U_V = np.zeros((K, self._owner.M, self._owner.M))
+        self.sigma2 = np.zeros((K, self._owner.M, self._owner.M))
+        self.sigma2[:] = self.identity_M * self._owner.sigma2_init
+        self.beta_inv = 1 / self._owner.beta
+
+
+    def propagate_forward(self, k, fw_msg):
+        # save state for forward recursion
+        bw_X = self.bw_X[k]
+        self.fw_U_V[k] = self.sigma2[k]
+        fw_U_V = self.fw_U_V[k]
+
+        # input block (needs bw_message X left input section)
+        Ft = self.identity_N - bw_X.W @ self.B @ fw_U_V @ self.BT  # VI.8
+        fw_msg.m[:] = Ft.T @ fw_msg.m + self.B @ fw_U_V @ (self.BT @ bw_X.xi)  # VI.4
+        fw_msg.V[:] = Ft.T @ fw_msg.V @ Ft + self.B @ fw_U_V @ self.BT @ Ft  # VI.6
+
+        self._forward_update(k, fw_msg)
+
+    def propagate_backward(self, k, bw_msg):
+        fw_U_W = np.linalg.inv(self.sigma2[k])
+
+        # input block
+        H = np.linalg.inv(fw_U_W + self.BT @ bw_msg.W @ self.B)  # VI.3
+        bw_msg.xi += bw_msg.W @ self.B @ H @ (- self.B @ bw_msg.xi)  # VI.1
+        bw_msg.W -= bw_msg.W @ self.B @ H @ self.BT @ bw_msg.W  # VI.2
+
+        # save state for forward recursion
+        self.bw_X[k].xi = bw_msg.xi
+        self.bw_X[k].W = bw_msg.W
+
+        self._backward_update(k, bw_msg)
+
+    def _forward_save_input_marginal(self, k, fw_msg):
+        fw_U_V = self.fw_U_V[k]
+        bw_X = self.bw_X[k]
+
+        U_xi_tilde = self.B @ (bw_X.W @ fw_msg.m - bw_X.xi)  # II.6 & III.7 & 23
+        U_W_tilde = self.BT @ (bw_X.W - bw_X.W @ fw_msg.V @ bw_X.W) @ self.B  # II.7 & III.8 & IV.7
+        self.memory['U'][k].m = 0 - fw_U_V @ U_xi_tilde  # IV.9
+        self.memory['U'][k].V = fw_U_V - fw_U_V @ U_W_tilde @ fw_U_V  # IV.13
+
+    def _forward_update_EM(self, k, fw_msg):
+        fw_U_V = self.fw_U_V[k]
+        bw_X = self.bw_X[k]
+
+        U_xi_tilde = self.B @ (bw_X.W @ fw_msg.m - bw_X.xi)  # II.6 & III.7 & 23
+        U_W_tilde = self.BT @ (bw_X.W - bw_X.W @ fw_msg.V @ bw_X.W) @ self.B  # II.7 & III.8 & IV.7
+        U_m = - fw_U_V @ U_xi_tilde  # IV.9
+        U_V = fw_U_V - fw_U_V @ U_W_tilde @ fw_U_V  # IV.13
+
+        # Update Input Variance
+        self.sigma2[k] = np.outer(U_m, U_m) + U_V
+
+    def _forward_update_AM(self, k, fw_msg):
+        fw_U_V = self.fw_U_V[k]
+        bw_X = self.bw_X[k]
+        U_xi_tilde = self.B @ (bw_X.W @ fw_msg.m - bw_X.xi)  # II.6 & III.7 & 23
+        U_m = - fw_U_V @ U_xi_tilde # IV.9
+
+        # Update Input Variance
+        self.sigma2[k] = np.outer(U_m, U_m) * self.beta_inv

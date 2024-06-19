@@ -79,7 +79,7 @@ class FactorGraph(object):
 
     def initialize_mp(self, mp_type, K):
         """
-        Message Passing initialization
+        Message Passing initializations
 
         Parameters
         ----------

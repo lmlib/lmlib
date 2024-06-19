@@ -34,14 +34,14 @@ C = [[1]]
 
 sc_system = lm.SectionSystem(A)
 sc_input_noise = lm.SectionInput(B, sigma2=0.1, save_input_marginal=True)
-sc_input_jump = lm.SectionInput_NUV(B, sigma2_init=1.0, save_input_marginal=True)
+sc_input_jump = lm.SectionInput_NUV(B, sigma2_init=1.0, save_input_marginal=True, update_method='EM')
 sc_output = lm.SectionOutput(C, y=y, save_output_marginal=True)
 sc = lm.SectionContainer(sections=[sc_system, sc_input_noise, sc_input_jump, sc_output], save_state_marginal=True)
 
 # message passing
 fg = lm.FactorGraph(sc)
 fg.initialize_mp(lm.MBF, K)
-fg.optimize(iterations=40)
+fg.optimize(iterations=41)
 
 # get variables of fg
 X = sc.get_state_marginal()

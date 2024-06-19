@@ -402,8 +402,7 @@ class SectionInput_NUV(SectionInputUpdateBase):
         if mp_type == "MBF":
             self.mp = MBF_SectionInput_NUV(self, K)
         if mp_type == "BIFM":
-            raise NotImplemented("BIFM algorithm is not yet implemented")
-            self.mp = BIFM_SectionInput(self, K)
+            self.mp = BIFM_SectionInput_NUV(self, K)
 
 
 class SectionInput_sNUV(SectionInput_NUV):
