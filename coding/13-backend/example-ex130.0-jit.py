@@ -26,7 +26,7 @@ cost = lm.CompositeCost([alssm], [seg_l, seg_r], F=[[1, 1]])
 
 # Single channel
 rls_py = lm.RLSAlssm(cost)
-rls_py.set_backend('py')  # set individual RLSAlssm back to python backend
+rls_py.set_backend('py-ss')  # set individual RLSAlssm back to python backend
 
 proc_time_py = timeit.timeit('rls_py.filter_minimize_x(y)', globals=globals(), number=n_exe)
 mspsec_py = K * n_exe * 1e-6 / proc_time_py
@@ -39,7 +39,7 @@ mspsec_jit = K * n_exe * 1e-6 / proc_time_jit
 
 # Single channel Steady State
 rls_pyss = lm.RLSAlssmSteadyState(cost)
-rls_pyss.set_backend('py')  # set individual RLSAlssm back to python backend
+rls_pyss.set_backend('py-ss')  # set individual RLSAlssm back to python backend
 
 proc_time_pyss = timeit.timeit('rls_pyss.filter_minimize_x(y)', globals=globals(), number=n_exe)
 mspsec_pyss = K * n_exe * 1e-6 / proc_time_pyss
@@ -55,7 +55,7 @@ y = load_lib_csv_mc('EECG_FILT_9CH_10S_FS2400HZ.csv')
 K, M = np.shape(y)
 
 rls_py_set = lm.RLSAlssmSet(cost)
-rls_py_set.set_backend('py')
+rls_py_set.set_backend('py-ss')
 
 proc_time_py_set = timeit.timeit('rls_py_set.filter_minimize_x(y)', globals=globals(), number=n_exe)
 mspsec_py_set = K * M * n_exe * 1e-6 / proc_time_py_set
@@ -69,7 +69,7 @@ mspsec_jit_set = K * M * n_exe * 1e-6 / proc_time_jit_set
 # Multi channel Set Steady State
 
 rls_py_set_ss = lm.RLSAlssmSetSteadyState(cost)
-rls_py_set_ss.set_backend('py')
+rls_py_set_ss.set_backend('py-ss')
 
 proc_time_py_set_ss = timeit.timeit('rls_py_set_ss.filter_minimize_x(y)', globals=globals(), number=n_exe)
 mspsec_py_set_ss = K * M * n_exe * 1e-6 / proc_time_py_set_ss

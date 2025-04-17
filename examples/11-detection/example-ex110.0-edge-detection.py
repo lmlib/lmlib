@@ -14,13 +14,14 @@ from scipy.signal import find_peaks
 import lmlib as lm
 from lmlib.utils.generator import gen_slopes, gen_wgn
 
+lm.set_backend('py-tf')
+
 # Signal
 K = 300
 k = range(K)
 ks = [40, 80, 130, 160, 220]
 deltas = [0, 5, -8.5, 3, -2]
 y = gen_slopes(K, ks, deltas) + gen_wgn(K, sigma=0.2, seed=3141)
-
 
 # Model
 alssm_left = lm.AlssmPoly(poly_degree=1, label='alssm_left')
