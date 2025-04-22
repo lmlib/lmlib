@@ -7,94 +7,80 @@ This example demonstrates the usage of transfer-function (tf) backend in RLSAlss
 import timeit
 import numpy as np
 import matplotlib.pyplot as plt
-
-
 import lmlib as lm
 from lmlib.utils import load_lib_csv, load_lib_csv_mc
 
-n_exe = 1  # number of filter executions
 
-# setting all recursions to JIT backend
-lm.set_backend('py-tf')
+n_exe = 3  # number of filter executions
+
+
+# setting all recursions to JIT backend default
+backends = 'py-ss', 'py-tf', 'jit'
+color_codes = 'k', 'b', 'g'
+mspsecs_dict = {k: [] for k in backends}
+
 
 y = load_lib_csv('EECG_BASELINE_1CH_10S_FS2400HZ.csv')
 K = len(y)
+
+
+# setup model
 alssm = lm.AlssmPoly(poly_degree=2)
 seg_l = lm.Segment(a=-50, b=-1, direction=lm.FW, g=100)
 seg_r = lm.Segment(a=0, b=49, direction=lm.BW, g=100)
 cost = lm.CompositeCost([alssm], [seg_l, seg_r], F=[[1, 1]])
 
 # Single channel
-rls_py_ss = lm.RLSAlssm(cost)
-rls_py_ss.set_backend('py-ss')  # set individual RLSAlssm back to python backend
-
-proc_time_py_ss = timeit.timeit('rls_py_ss.filter_minimize_x(y)', globals=globals(), number=n_exe)
-mspsec_py_ss = K * n_exe * 1e-6 / proc_time_py_ss
-
-rls_py_tf = lm.RLSAlssm(cost)
-xs_py_tf = rls_py_tf.filter_minimize_x(y)  # create just in time compilation
-
-proc_time_py_tf = timeit.timeit('rls_py_tf.filter_minimize_x(y)', globals=globals(), number=n_exe)
-mspsec_py_tf = K * n_exe * 1e-6 / proc_time_py_tf
+for backend in backends:
+    rls = lm.RLSAlssm(cost, backend=backend, steady_state=False)
+    rls.filter_minimize_x(y)
+    proc_time = timeit.timeit('rls.filter_minimize_x(y)', globals=globals(), number=n_exe)
+    mspsec = K * n_exe * 1e-6 / proc_time
+    mspsecs_dict[backend].append(mspsec)
 
 # Single channel Steady State
-rls_py_ssss = lm.RLSAlssmSteadyState(cost)
-rls_py_ssss.set_backend('py-ss')  # set individual RLSAlssm back to python backend
-
-proc_time_py_ssss = timeit.timeit('rls_py_ssss.filter_minimize_x(y)', globals=globals(), number=n_exe)
-mspsec_py_ssss = K * n_exe * 1e-6 / proc_time_py_ssss
-
-rls_py_tfss = lm.RLSAlssmSteadyState(cost)
-xs_py_tfss = rls_py_tfss.filter_minimize_x(y)  # create just in time compilation
-
-proc_time_py_tfss = timeit.timeit('rls_py_tfss.filter_minimize_x(y)', globals=globals(), number=n_exe)
-mspsec_py_tfss = K * n_exe * 1e-6 / proc_time_py_tfss
+for backend in backends:
+    rls = lm.RLSAlssm(cost, backend=backend, steady_state=True)
+    rls.filter_minimize_x(y)
+    proc_time = timeit.timeit('rls.filter_minimize_x(y)', globals=globals(), number=n_exe)
+    mspsec = K * n_exe * 1e-6 / proc_time
+    mspsecs_dict[backend].append(mspsec)
 
 # Multi channel Set
 y = load_lib_csv_mc('EECG_FILT_9CH_10S_FS2400HZ.csv')
 K, M = np.shape(y)
 
-rls_py_ss_set = lm.RLSAlssmSet(cost)
-rls_py_ss_set.set_backend('py-ss')
-
-proc_time_py_ss_set = timeit.timeit('rls_py_ss_set.filter_minimize_x(y)', globals=globals(), number=n_exe)
-mspsec_py_ss_set = K * M * n_exe * 1e-6 / proc_time_py_ss_set
-
-rls_py_tf_set = lm.RLSAlssmSet(cost)
-xs_py_tf_set = rls_py_tf_set.filter_minimize_x(y)  # create just in time compilation
-
-proc_time_py_tf_set = timeit.timeit('rls_py_tf_set.filter_minimize_x(y)', globals=globals(), number=n_exe)
-mspsec_py_tf_set = K * M * n_exe * 1e-6 / proc_time_py_tf_set
+for backend in backends:
+    rls = lm.RLSAlssm(cost, backend=backend, steady_state=False)
+    rls.filter_minimize_x(y)
+    proc_time = timeit.timeit('rls.filter_minimize_x(y)', globals=globals(), number=n_exe)
+    mspsec = K * M * n_exe * 1e-6 / proc_time
+    mspsecs_dict[backend].append(mspsec)
 
 # Multi channel Set Steady State
+for backend in backends:
+    rls = lm.RLSAlssm(cost, backend=backend, steady_state=True)
+    rls.filter_minimize_x(y)
+    proc_time = timeit.timeit('rls.filter_minimize_x(y)', globals=globals(), number=n_exe)
+    mspsec = K * M * n_exe * 1e-6 / proc_time
+    mspsecs_dict[backend].append(mspsec)
 
-rls_py_ss_set_ss = lm.RLSAlssmSetSteadyState(cost)
-rls_py_ss_set_ss.set_backend('py-ss')
+mspsecs_dict['jit'][-1] = 0  # not implemented
 
-proc_time_py_ss_set_ss = timeit.timeit('rls_py_ss_set_ss.filter_minimize_x(y)', globals=globals(), number=n_exe)
-mspsec_py_ss_set_ss = K * M * n_exe * 1e-6 / proc_time_py_ss_set_ss
+labels = (r'$W$, $\xi$, $\kappa$, $\nu$'+' \n 1 Channel',
+          r'Steady State, $\xi$, $\kappa$, $\nu$'+' \n 1 Channel',
+          r'$W$, $\xi$, $\kappa$, $\nu$ '+f'\n {M} Channels',
+          r'Steady State, $\xi$, $\kappa$, $\nu$'+f' \n {M} Channels')
 
-# Not Yet Implemented
-# rls_py_tf_set_ss = lm.RLSAlssmSetSteadyState(cost)
-# xs_py_tf_set_ss = rls_py_tf_set_ss.filter_minimize_x(y) # create just in time compilation
-#
-# proc_time_py_tf_set_ss = timeit.timeit('rls_py_tf_set_ss.filter_minimize_x(y)', globals=globals(), number=n_exe)
-proc_time_py_tf_set_ss = np.nan
-mspsec_py_tf_set_ss = K * M * n_exe * 1e-6 / proc_time_py_tf_set_ss
-
-labels = ('RLSAlssm() \n 1 Channel', 'RLSAlssmSteadyState() \n  1 Channel', f'RLSAlssmSet() \n {M} Channels',
-          f'RLSAlssmSetSteadyState() \n {M} Channels')
-mspsecs_py_ss = (mspsec_py_ss, mspsec_py_ssss, mspsec_py_ss_set, mspsec_py_ss_set_ss)
-mspsecs_py_tf = (mspsec_py_tf, mspsec_py_tfss, mspsec_py_tf_set, mspsec_py_tf_set_ss)
 locs = np.arange(len(labels))  # the label locations
-width = 0.35  # the width of the bars
+width = 0.25
 
 fig, ax = plt.subplots(figsize=(6, 5))
 
-rect0 = ax.barh(locs - width / 2, mspsecs_py_ss, width, label='py-ss', color='k')
-rect1 = ax.barh(locs + width / 2, mspsecs_py_tf, width, label='py-tf', color='b')
-ax.bar_label(rect0, fmt="%0.2f", padding=3)
-ax.bar_label(rect1, fmt="%0.2f", padding=3)
+for i, (backend, color) in enumerate(zip(backends, color_codes)):
+    rect_ = ax.barh(locs+width*i, mspsecs_dict[backend], width, label=backend, color=color)
+    ax.bar_label(rect_, fmt="%0.2f", padding=3)
+
 ax.invert_yaxis()  # labels read top-to-bottom
 
 # Add some text for labels, title and custom x-axis tick labels, etc.

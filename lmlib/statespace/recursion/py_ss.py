@@ -146,6 +146,7 @@ def backward_recursion_xi_ss(xi, a, b, delta, gamma, A, C, beta, y, v, einsum_pa
     Ab = matrix_power(A, 0 if np.isinf(b) else b + 1)
     Abc = np.dot(Ab.T, C.T)
 
+    # intermediate vars
     xi0 = np.zeros_like(xi[0])
     K = len(y)
 

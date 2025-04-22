@@ -69,12 +69,12 @@ def forward_recursion_jit_1dim(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma_
 
     K = len(y)
     for k in range(min(0, -b), K):
-        W0 = gamma_inv * (A_inv.T.dot(W0).dot(A_inv))
-        xi0 = gamma_inv * (A_inv.T.dot(xi0))
+        W0[:] = gamma_inv * (A_inv.T.dot(W0).dot(A_inv))
+        xi0[:] = gamma_inv * (A_inv.T.dot(xi0))
         kappa0 *= gamma_inv
         nu0 *= gamma_inv
 
-        if  1-a <= k <= K - a:
+        if 1-a <= k <= K - a:
             gav = gamma_a * v[k + a - 1]
             W0 -= gav * AaccAa
             xi0 -= gav * Aac * y[k + a - 1]
@@ -107,7 +107,7 @@ def forward_recursion_xi_kappa_nu_jit_1dim(xi, kappa, nu, a, b, delta, y, v, bet
 
     K = len(y)
     for k in range(min(0, -b), K):
-        xi0 = gamma_inv * (A_inv.T.dot(xi0))
+        xi0[:] = gamma_inv * (A_inv.T.dot(xi0))
         kappa0 *= gamma_inv
         nu0 *= gamma_inv
 
@@ -142,8 +142,8 @@ def forward_recursion_jit_2dim(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma_
 
     K = len(y)
     for k in range(min(0, -b), K):
-        W0 = gamma_inv * (A_inv.T.dot(W0).dot(A_inv))
-        xi0 = gamma_inv * (A_inv.T.dot(xi0))
+        W0[:] = gamma_inv * (A_inv.T.dot(W0).dot(A_inv))
+        xi0[:] = gamma_inv * (A_inv.T.dot(xi0))
         kappa0 *= gamma_inv
         nu0 *= gamma_inv
 
@@ -180,7 +180,7 @@ def forward_recursion_xi_kappa_nu_jit_2dim(xi, kappa, nu, a, b, delta, y, v, bet
 
     K = len(y)
     for k in range(min(0, -b), K):
-        xi0 = gamma_inv * (A_inv.T.dot(xi0))
+        xi0[:] = gamma_inv * (A_inv.T.dot(xi0))
         kappa0 *= gamma_inv
         nu0 *= gamma_inv
 
@@ -215,8 +215,8 @@ def backward_recursion_jit_1dim(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma
     K = len(y)
 
     for k in range(max(K - a, K) + 1, 1, -1):
-        W0 = gamma * (A.T.dot(W0).dot(A))
-        xi0 = gamma * (A.T.dot(xi0))
+        W0[:] = gamma * (A.T.dot(W0).dot(A))
+        xi0[:] = gamma * (A.T.dot(xi0))
         kappa0 *= gamma
         nu0 *= gamma
 
@@ -254,7 +254,7 @@ def backward_recursion_xi_kappa_nu_jit_1dim(xi, kappa, nu, a, b, delta, y, v, be
     K = len(y)
 
     for k in range(max(K - a, K) + 1, 1, -1):
-        xi0 = gamma * (A.T.dot(xi0))
+        xi0[:] = gamma * (A.T.dot(xi0))
         kappa0 *= gamma
         nu0 *= gamma
 
@@ -289,8 +289,8 @@ def backward_recursion_jit_2dim(W, xi, kappa, nu, a, b, delta, y, v, beta, gamma
     K = len(y)
 
     for k in range(max(K - a, K) + 1, 1, -1):
-        W0 = gamma * (A.T.dot(W0).dot(A))
-        xi0 = gamma * (A.T.dot(xi0))
+        W0[:] = gamma * (A.T.dot(W0).dot(A))
+        xi0[:] = gamma * (A.T.dot(xi0))
         kappa0 *= gamma
         nu0 *= gamma
 
@@ -328,7 +328,7 @@ def backward_recursion_xi_kappa_nu_jit_2dim(xi, kappa, nu, a, b, delta, y, v, be
     K = len(y)
 
     for k in range(max(K - a, K) + 1, 1, -1):
-        xi0 = gamma * (A.T.dot(xi0))
+        xi0[:] = gamma * (A.T.dot(xi0))
         kappa0 *= gamma
         nu0 *= gamma
 
@@ -362,8 +362,8 @@ def forward_recursion_set_jit_1dim_kappa_diag(W, xi, kappa, nu, a, b, delta, y, 
 
     K = len(y)
     for k in range(min(0, -b), K):
-        W0 = gamma_inv * (A_inv.T.dot(W0).dot(A_inv))
-        xi0 = gamma_inv * (A_inv.T.dot(xi0))
+        W0[:] = gamma_inv * (A_inv.T.dot(W0).dot(A_inv))
+        xi0[:] = gamma_inv * (A_inv.T.dot(xi0))
         kappa0 *= gamma_inv
         nu0 *= gamma_inv
 
@@ -400,8 +400,8 @@ def forward_recursion_set_jit_1dim_not_kappa_diag(W, xi, kappa, nu, a, b, delta,
 
     K = len(y)
     for k in range(min(0, -b), K):
-        W0 = gamma_inv * (A_inv.T.dot(W0).dot(A_inv))
-        xi0 = gamma_inv * (A_inv.T.dot(xi0))
+        W0[:] = gamma_inv * (A_inv.T.dot(W0).dot(A_inv))
+        xi0[:] = gamma_inv * (A_inv.T.dot(xi0))
         kappa0 *= gamma_inv
         nu0 *= gamma_inv
 
@@ -439,8 +439,8 @@ def backward_recursion_set_jit_1dim_kappa_diag(W, xi, kappa, nu, a, b, delta, y,
     K = len(y)
 
     for k in range(max(K - a, K) + 1, 1, -1):
-        W0 = gamma * (A.T.dot(W0).dot(A))
-        xi0 = gamma * (A.T.dot(xi0))
+        W0[:] = gamma * (A.T.dot(W0).dot(A))
+        xi0[:] = gamma * (A.T.dot(xi0))
         kappa0 *= gamma
         nu0 *= gamma
 
@@ -479,8 +479,8 @@ def backward_recursion_set_jit_1dim_not_kappa_diag(W, xi, kappa, nu, a, b, delta
     K = len(y)
 
     for k in range(max(K - a, K) + 1, 1, -1):
-        W0 = gamma * (A.T.dot(W0).dot(A))
-        xi0 = gamma * (A.T.dot(xi0))
+        W0[:] = gamma * (A.T.dot(W0).dot(A))
+        xi0[:] = gamma * (A.T.dot(xi0))
         kappa0 *= gamma
         nu0 *= gamma
 

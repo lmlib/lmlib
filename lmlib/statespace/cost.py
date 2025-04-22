@@ -1217,7 +1217,19 @@ class RLSAlssm(ABC):
          return 'nl..., l... ->n...' if self._is_multichannel else 'n..., ... ->n...'
 
     def _get_einsum_path_xi_tf(self):
-         return 'kl..., nl->n...k' if self._is_multichannel else 'k..., n->n...k'
+        if self._is_multiset:
+            if self._is_multichannel:
+                einsum_path = 'kls, nl->kns'
+            else:
+                einsum_path = 'ks, n->kns'
+        else:
+            if self._is_multichannel:
+                einsum_path = 'kl, nl->kn'
+            else:
+                einsum_path = 'k, n->kn'
+        return einsum_path
+
+        return 'kl..., nl->n...k' if self._is_multichannel else 'k..., n->n...k'
 
     def _get_einsum_path_kappa_ss(self):
         if self._is_multiset:
@@ -1249,7 +1261,10 @@ class RLSAlssm(ABC):
                 else:
                     einsum_path = 'km, kn->kmn'
         else:
-            einsum_path = 'k..., k...->k'
+            if self._is_multichannel:
+                einsum_path = 'kl, kl->k'
+            else:
+                einsum_path = 'k, k->k'
 
         return einsum_path
 
@@ -1262,9 +1277,7 @@ class RLSAlssm(ABC):
             if self._steady_state:
                 self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
             if self._calc_xi:
-
                 einsum_path = self._get_einsum_path_xi_ss()
-
                 forward_recursion_xi_ss(self._xi, a, b, delta, gamma, A, C, beta, y, v, einsum_path)
             if self._calc_kappa:
                 einsum_path = self._get_einsum_path_kappa_ss()
@@ -1289,8 +1302,20 @@ class RLSAlssm(ABC):
         if self._backend == 'jit':
             init_vars = forward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 
-            forward_recursion_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
-                                  beta, *init_vars)
+            if self._is_multiset:
+                if self.steady_state:
+                    #forward_recursion_set_xi_kappa_nu_jit(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars,  self._kappa_diag))
+                    self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                else:
+                    forward_recursion_set_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars, self._kappa_diag)
+            else:
+                if self.steady_state:
+                    forward_recursion_xi_kappa_nu_jit(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
+                    self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                else:
+                    forward_recursion_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
+
+
 
     def _backward_recursion(self, A, C, segment, y, v, beta):
         a, b, delta, gamma = segment.a, segment.b, segment.delta, segment.gamma
@@ -1323,8 +1348,20 @@ class RLSAlssm(ABC):
                 backward_recursion_nu_tf(self._nu, segment.a, segment.b, segment.delta, segment.gamma, beta, v)
         if self._backend == 'jit':
             init_vars = backward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
-            backward_recursion_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
-                                   beta, *init_vars)
+            if self._is_multiset:
+                if self.steady_state:
+                    # backward_recursion_set_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars, self._kappa_diag)
+                    self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                else:
+                    backward_recursion_set_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,beta, *init_vars, self._kappa_diag)
+            else:
+                if self.steady_state:
+                    backward_recursion_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
+                    self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                else:
+                    backward_recursion_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,beta, *init_vars)
+
+
 
     def set_backend(self, backend):
         """
@@ -1526,9 +1563,10 @@ class RLSAlssm(ABC):
             mask_is_invertible = cond(self.W) < 1 / sys.float_info.epsilon
             x = np.full_like(self.xi, np.nan)
             if self._steady_state:
-                assert mask_is_invertible, 'Steady State Matrix is not invertible.'
+                assert mask_is_invertible, 'Steady State W Matrix is not invertible.'
                 x[...] = np.einsum('nm, km...-> kn...', inv(self.W), self.xi)
             else:
+                assert np.any(mask_is_invertible), 'All W Matrices are not invertible.'
                 x[mask_is_invertible] = np.einsum('knm, kn... -> km...', inv(self.W[mask_is_invertible]), self.xi[:])
             return x
 

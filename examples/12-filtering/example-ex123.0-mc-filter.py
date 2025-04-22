@@ -21,17 +21,17 @@ y = y[:, None, :]
 
 # --- ALSSM Filtering ---
 # Polynomial ALSSM
-alssm_poly = lm.AlssmPoly(poly_degree=3, force_MC=True)
+alssm_poly = lm.AlssmPoly(poly_degree=5, force_MC=True)
 
 # Segments
-segment_left = lm.Segment(a=-50, b=-1, direction=lm.FW, g=20)
-segment_right = lm.Segment(a=0, b=50, direction=lm.BW, g=20)
+segment_left = lm.Segment(a=-50, b=-1, direction=lm.FW, g=10)
+segment_right = lm.Segment(a=0, b=50, direction=lm.BW, g=10)
 
 # Composite Cost
 costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])
 
 # filter signal and take the approximation
-rls = lm.create_rls(costs, multi_channel_set=True, steady_state=True)
+rls = lm.RLSAlssm(costs, steady_state=False)
 xs = rls.filter_minimize_x(y)
 
 # extracts filtered signals
