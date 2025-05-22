@@ -18,7 +18,7 @@ def forward_recursion_W_ss(W, a, b, delta, gamma, A, C, beta, y, v):
     gamma_a = gamma**(a-1-delta)
     gamma_b = gamma**(b-delta)
     A_inv = inv(A)
-    Aa = matrix_power(A, 0 if np.isnan(a) else a-1)
+    Aa = matrix_power(A, 0 if np.isinf(a) else a-1)
     AaccAa = np.outer(np.dot(Aa.T, C.T), np.dot(C, Aa))
     Ab = matrix_power(A, b)
     AbccAb = np.outer(np.dot(Ab.T, C.T), np.dot(C, Ab))
@@ -79,10 +79,10 @@ def forward_recursion_kappa_ss(kappa, a, b, delta, gamma, beta, y, v, einsum_pat
         kappa0 *= gamma_inv
 
         if 1-a <= k <= K - a:
-            kappa0 -= gamma_a * v[k + a - 1] * np.einsum(einsum_path, y[k + a - 1].T, y[k + a - 1])
+            kappa0 -= gamma_a * v[k + a - 1] * np.einsum(einsum_path, y[k + a - 1], y[k + a - 1])
 
         if -b <= k <= K - b - 1:
-            kappa0 += gamma_b * v[k + b] * np.einsum(einsum_path, y[k + b].T, y[k + b])
+            kappa0 += gamma_b * v[k + b] * np.einsum(einsum_path, y[k + b], y[k + b])
 
         if 0 <= k <= K - 1:
             kappa[k] += kappa0
@@ -176,10 +176,10 @@ def backward_recursion_kappa_ss(kappa, a, b, delta, gamma, beta, y, v, einsum_pa
         kappa0 *= gamma
 
         if -(a - 1) + 1 <= k <= K - (a - 1):
-            kappa0 += gamma_a * v[k + a - 1 + -1] * np.einsum(einsum_path, y[k + a - 1 + -1].T, y[k + a - 1 + -1])
+            kappa0 += gamma_a * v[k + a - 1 + -1] * np.einsum(einsum_path, y[k + a - 1 + -1], y[k + a - 1 + -1])
 
         if -b + 1 <= k <= K - b:
-            kappa0 -= gamma_b * v[k + b + -1] * np.einsum(einsum_path, y[k + b + -1].T, y[k + b + -1])
+            kappa0 -= gamma_b * v[k + b + -1] * np.einsum(einsum_path, y[k + b + -1], y[k + b + -1])
 
         if 2 <= k <= K + 1:
             kappa[k - 2] += kappa0

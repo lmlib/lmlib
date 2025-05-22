@@ -15,7 +15,7 @@ from scipy.linalg import block_diag
 from scipy.signal import find_peaks
 
 from lmlib.utils.generator import gen_conv, gen_sine, gen_exp, gen_pulse, gen_wgn, k_period_to_omega
-lm.set_backend('py-tf')
+
 # signal generation
 K = 550
 L = 3  # number of channels

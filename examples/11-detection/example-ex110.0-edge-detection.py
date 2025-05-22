@@ -14,8 +14,6 @@ from scipy.signal import find_peaks
 import lmlib as lm
 from lmlib.utils.generator import gen_slopes, gen_wgn
 
-lm.set_backend('py-tf')
-
 # Signal
 K = 300
 k = range(K)
@@ -47,7 +45,7 @@ H_edge = H_Continuous = np.array(
 
 
 # Filter
-rls = lm.RLSAlssm(cost)
+rls = lm.RLSAlssm(cost,steady_state=True)
 rls.filter(y)
 xs_hat_edge = rls.minimize_x(H_edge)
 xs_hat_line = rls.minimize_x(H_line)

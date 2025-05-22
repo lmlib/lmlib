@@ -17,7 +17,6 @@ K = 2000
 k = np.arange(K)
 y = gen_rect(K, 500,250)
 
-
 # Polynomial ALSSM
 alssm_poly = lm.AlssmPoly(poly_degree=0)
 
@@ -45,7 +44,7 @@ segment_right = lm.Segment(a=0, b=np.Infinity, direction=lm.BACKWARD, g=20)
 costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])
 
 # filter signal and take the approximation
-rls = lm.create_rls(costs, steady_state=True)
+rls = lm.create_rls(costs, steady_state=False)
 xs = rls.filter_minimize_x(y)
 
 # extracts filtered signal
@@ -67,3 +66,6 @@ ax[1].set_xlabel('k')
 ax[1].set_title('Symmetric, Infinite Support')
 
 plt.show()
+
+
+

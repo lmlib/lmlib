@@ -12,7 +12,7 @@ import numpy as np
 import lmlib as lm
 from lmlib.utils.generator import gen_rand_walk
 
-lm.set_backend('py-tf')
+lm.set_backend('lfilter')
 # --- Generating test signal ---
 K = 1000
 seeds = [130, 150, 200]

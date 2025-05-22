@@ -12,6 +12,17 @@ __all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmSin', 'AlssmExp',
            'AlssmStacked', 'AlssmSum', 'AlssmSum', 'AlssmProd', 'ModelBase']
 
 
+def transform_ALSSM(alssm, P):
+    A = alssm.A
+    C = alssm.C
+    P_inv = np.linalg.inv(P)
+    At = P@A@P_inv
+    Ct = C@P_inv
+    return Alssm(At, Ct)
+
+def transform_x(xs, P):
+    return np.einsum('mn, kn...->km...', P, xs)
+
 class ModelBase(ABC):
     """
     Abstract baseclass for autonomous linear state space models.

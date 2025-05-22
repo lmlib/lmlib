@@ -18,7 +18,8 @@ from lmlib.utils.check import *
 
 __all__ = ['ConstrainMatrix', 'CompositeCost', 'CostSegment', 'Segment', 'RLSAlssm',
            'RLSAlssmSet', 'RLSAlssmSteadyState', 'RLSAlssmSetSteadyState', 'FW', 'FORWARD', 'BW', 'BACKWARD',
-           'map_trajectories', 'map_windows', 'create_rls']
+           'map_trajectories', 'map_windows', 'create_rls',
+           'WARNING_NOT_STEADY_STATE']
 
 BACKWARD = 'bw'
 """str : Sets the recursion direction in a :class:`Segment` to backward, use :const:`BACKWARD` or :const:`BW`"""
@@ -29,6 +30,8 @@ FORWARD = 'fw'
 FW = FORWARD
 """str : Sets the recursion direction in a :class:`Segment` to forward, use :const:`FORWARD` or :const:`FW`"""
 
+WARNING_NOT_STEADY_STATE = True
+"""bool : If True, a warning is issued if the steady state is not used when no sample weights are provided"""
 
 def _merge_ks_seg(arr, merge_ks, merge_seg):
     with warnings.catch_warnings():
@@ -1026,7 +1029,7 @@ class RLSAlssm(ABC):
     cost_model : CostSegment, CompositeCost, CostBase
         Cost Model
     steady_state : bool, optional
-        If true the RLSAlssm uses the steady state matrix of :math:`W` instead the recursion. Default = False
+        If true the RLSAlssm uses the steady state matrix of :math:`W` instead the recursion. Default = True
     calc_W : bool, optional
         If false RLSAlssm prohibits the calculation and memory allocation of :math:`W`. Default = True
     calc_xi : bool, optional
@@ -1040,12 +1043,17 @@ class RLSAlssm(ABC):
     betas : array_like of shape=(P,) of floats, None, optional
         Segment Scalars. Factors weighting each of the `P` cost segments.
         If `betas` is not set, the weight is for each cost segment 1.
+    filter_form : str, optional
+        Set the form of filter to be used. Default is 'auto' and selects based on the model the appropriate form,
+        based on precision and speed.
+        - filter_form='parallel' for parallel block form
+        - filter_form= 'cascade' for cascade block form
     backend : str, None
         Sets an individual backend for the RLSAlssm.
     """
 
-    def __init__(self, cost_model, steady_state=False, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=True,
-                 kappa_diag=True, betas=None, backend=None):
+    def __init__(self, cost_model, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=True,
+                 kappa_diag=True, betas=None, filter_form='auto', backend=None):
         self.cost_model = cost_model
         self.steady_state = steady_state
         self.calc_W = calc_W
@@ -1054,9 +1062,16 @@ class RLSAlssm(ABC):
         self.calc_nu = calc_nu
         self.kappa_diag = kappa_diag
         self.betas = betas
+        self.filter_form = filter_form
         self._is_multichannel = None
         self._is_multiset = None
         self._backend = backend if backend else get_backend()
+        self._N  = self.cost_model.get_model_order()
+        self._K = None
+        self._S = None
+        self._xi0 = None
+        self._xi1 = None
+        self._xi2 = None
 
     @property
     def cost_model(self):
@@ -1084,20 +1099,32 @@ class RLSAlssm(ABC):
                 self._cost_model.segments), f'betas has wrong length, {info_str_found_shape(betas)}'
             self._betas = betas
 
+
+
+    @property
+    def filter_form(self):
+        """str : Set the form of filter to be used. Options:'parallel', 'cascade' 'auto' (Default)"""
+        return self._filter_form
+
+    @filter_form.setter
+    def filter_form(self, filter_form):
+        assert filter_form in ('parallel', 'cascade', 'auto'), 'Unknown filter_form value. Options: parallel, cascade, auto.'
+        self._filter_form = filter_form
+
     @property
     def W(self):
         """:class:`~numpy.ndarray` : Filter Parameter :math:`W`"""
-        return self._W
+        return self._xi2.reshape(self._N, self._N) if self._steady_state else self._xi2.reshape(self._K, self._N, self._N)
 
     @property
     def xi(self):
         """:class:`~numpy.ndarray` :  Filter Parameter :math:`\\xi`"""
-        return self._xi
+        return self._xi1
 
     @property
     def kappa(self):
         """:class:`~numpy.ndarray`  : Filter Parameter :math:`\\kappa`"""
-        return self._kappa
+        return self._xi0
 
     @property
     def nu(self):
@@ -1194,24 +1221,29 @@ class RLSAlssm(ABC):
                     'C shape (N,) and y shape (K,)'
 
     def _allocate_parameter_storage(self, input_shape):
-
-        K = input_shape[0]
-        N = self.cost_model.get_model_order()
-        S = input_shape[-1] if self._is_multiset else None
+        self._K =  input_shape[0]
+        self._S = input_shape[-1] if self._is_multiset else None
 
         if self._calc_W and not self._steady_state:
-            self._W = np.zeros((K, N, N))
+            self._xi2 = np.zeros((self._K, self._N**2))
         if self._steady_state:
-            self._W = np.zeros((N, N))
+            self._xi2 = np.zeros((self._N**2))
         if self._calc_xi:
-            self._xi = np.zeros((K, N, S)) if S else np.zeros((K, N))
+            self._xi1 = np.zeros((self._K, self._N, self._S)) if self._is_multiset else np.zeros((self._K, self._N))
         if self._calc_kappa:
-            if S:
-                self._kappa = np.zeros((K, S)) if self._kappa_diag else np.zeros((K, S, S))
+            if self._is_multiset:
+                self._xi0 = np.zeros((self._K, self._S)) if self._kappa_diag else np.zeros((self._K, self._S, self._S))
             else:
-                self._kappa = np.zeros(K)
+                self._xi0 = np.zeros(self._K)
         if self._calc_nu:
-            self._nu = np.zeros(K)
+            self._nu = np.zeros(self._K)
+
+    def _get_einsum_path_W_tf(self):
+        if self._is_multichannel:
+            einsum_path = 'kl, nl->kn'
+        else:
+            einsum_path = 'k, n->kn'
+        return einsum_path
 
     def _get_einsum_path_xi_ss(self):
          return 'nl..., l... ->n...' if self._is_multichannel else 'n..., ... ->n...'
@@ -1229,8 +1261,6 @@ class RLSAlssm(ABC):
                 einsum_path = 'k, n->kn'
         return einsum_path
 
-        return 'kl..., nl->n...k' if self._is_multichannel else 'k..., n->n...k'
-
     def _get_einsum_path_kappa_ss(self):
         if self._is_multiset:
             if self._is_multichannel:
@@ -1244,11 +1274,37 @@ class RLSAlssm(ABC):
                 else:
                     einsum_path = 'm, n->mn'
         else:
-            einsum_path = '..., ...'
+            if self._is_multichannel:
+                einsum_path = 'm, m->...'
+            else:
+                einsum_path = '..., ...'
 
         return einsum_path
 
     def _get_einsum_path_kappa_tf(self):
+        if self._is_multiset:
+            if self._is_multichannel:
+                if self._kappa_diag:
+                    einsum_path = 'km..., ...->km...'
+                else:
+                    einsum_path = 'kmn..., ... ->kmn'
+            else:
+                if self._kappa_diag:
+                    einsum_path = 'km, ...->km'
+                else:
+                    einsum_path = 'kmn, ...->kmn'
+        else:
+            if self._is_multichannel:
+                einsum_path = 'k, ...->k'
+            else:
+                einsum_path = 'k, ...->k'
+
+        return einsum_path
+
+    def _get_einsum_path_nu_tf(self):
+        return 'k..., ...->k...'
+
+    def _get_einsum_path_y_squared_tf(self):
         if self._is_multiset:
             if self._is_multichannel:
                 if self._kappa_diag:
@@ -1268,98 +1324,104 @@ class RLSAlssm(ABC):
 
         return einsum_path
 
-
     def _forward_recursion(self, A, C, segment, y, v, beta):
         a, b, delta, gamma = segment.a, segment.b, segment.delta, segment.gamma
-        if self._backend == 'py-ss':
+
+        if self._steady_state:
+            self._xi2 += _covariance_matrix_closed_form(A, C, gamma, a, b, delta).reshape(self._N**2)
+
+        if self._backend == 'numpy':
+            v = np.ones(self._K) if v==1 else v
             if self._calc_W and not self._steady_state:
-                forward_recursion_W_ss(self._W, a, b, delta, gamma, A, C, beta, y, v)
-            if self._steady_state:
-                self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                forward_recursion_W_ss(self.W, a, b, delta, gamma, A, C, beta, y, v)
             if self._calc_xi:
-                einsum_path = self._get_einsum_path_xi_ss()
-                forward_recursion_xi_ss(self._xi, a, b, delta, gamma, A, C, beta, y, v, einsum_path)
+                forward_recursion_xi_ss(self._xi1, a, b, delta, gamma, A, C, beta, y, v, self._get_einsum_path_xi_ss())
             if self._calc_kappa:
-                einsum_path = self._get_einsum_path_kappa_ss()
-                forward_recursion_kappa_ss(self._kappa, a, b, delta, gamma, beta, y, v, einsum_path)
+                forward_recursion_kappa_ss(self._xi0, a, b, delta, gamma, beta, y, v, self._get_einsum_path_kappa_ss())
             if self._calc_nu:
                 forward_recursion_nu_ss(self._nu, a, b, delta, gamma, beta, v)
 
-        if self._backend == 'py-tf':
+        if self._backend == 'lfilter' and self._filter_form  == 'parallel':
+            raise NotImplemented('Parallel Block Form not implemented yet')
+
+        if self._backend == 'lfilter' and self._filter_form in ('cascade', 'auto'):
             if self._calc_W and not self._steady_state:
-                forward_recursion_W_ss(self._W, a, b, delta, gamma, A, C, beta, y, v)
-            if self._steady_state:
-                self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                forward_cascade_xi(self._xi2, a, b, delta, gamma, np.kron(A, A), np.kron(C, C), beta, 1, v, einsum_path=self._get_einsum_path_W_tf())
             if self._calc_xi:
-                einsum_path = self._get_einsum_path_xi_tf()
-                forward_recursion_xi_tf(self._xi, a, b, delta, gamma, A, C, beta, y, v, einsum_path)
+                forward_cascade_xi(self._xi1, a, b, delta, gamma, A, C, beta, y, v, self._get_einsum_path_xi_tf())
             if self._calc_kappa:
-                einsum_path = self._get_einsum_path_kappa_tf()
-                forward_recursion_kappa_tf(self._kappa, a, b, delta, gamma, beta, y, v, einsum_path)
+                _C = np.array(1)
+                _A = np.array(1)
+                _y = np.einsum(self._get_einsum_path_y_squared_tf(), y, y)
+                forward_cascade_xi(self._xi0, a, b, delta, gamma,_A, _C, beta, _y, v,  self._get_einsum_path_kappa_tf())
             if self._calc_nu:
-                forward_recursion_nu_tf(self._nu, a, b, delta, gamma, beta, v)
-            
+                _C = np.array(1)
+                _A = np.array(1)
+                forward_cascade_xi(self._nu, a, b, delta, gamma, _A, _C, beta, 1, v, self._get_einsum_path_nu_tf())
+
         if self._backend == 'jit':
+            v = np.ones(self._K) if v==1 else v
             init_vars = forward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 
             if self._is_multiset:
                 if self.steady_state:
-                    #forward_recursion_set_xi_kappa_nu_jit(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars,  self._kappa_diag))
-                    self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                    raise NotImplemented('forward_recursion_set_xi_kappa_nu_jit not implemented yet')
                 else:
-                    forward_recursion_set_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars, self._kappa_diag)
+                    forward_recursion_set_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars, self._kappa_diag)
             else:
                 if self.steady_state:
-                    forward_recursion_xi_kappa_nu_jit(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
-                    self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                    forward_recursion_xi_kappa_nu_jit(self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
                 else:
-                    forward_recursion_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
-
-
+                    forward_recursion_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
 
     def _backward_recursion(self, A, C, segment, y, v, beta):
         a, b, delta, gamma = segment.a, segment.b, segment.delta, segment.gamma
 
-        if self._backend == 'py-ss':
+        if self._steady_state:
+            self._xi2 += _covariance_matrix_closed_form(A, C, gamma, a, b, delta).reshape(self._N**2)
+
+        if self._backend == 'numpy':
+            v = np.ones(self._K) if v==1 else v
             if self._calc_W and not self._steady_state:
-                backward_recursion_W_ss(self._W, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v)
-            if self._steady_state:
-                self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                backward_recursion_W_ss(self.W, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v)
             if self._calc_xi:
-                einsum_path = self._get_einsum_path_xi_ss()
-                backward_recursion_xi_ss(self._xi, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v, einsum_path)
+                backward_recursion_xi_ss(self._xi1, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v,  self._get_einsum_path_xi_ss())
             if self._calc_kappa:
-                einsum_path = self._get_einsum_path_kappa_ss()
-                backward_recursion_kappa_ss(self._kappa, segment.a, segment.b, segment.delta, segment.gamma, beta, y, v, einsum_path)
+                backward_recursion_kappa_ss(self._xi0, segment.a, segment.b, segment.delta, segment.gamma, beta, y, v, self._get_einsum_path_kappa_ss())
             if self._calc_nu:
                 backward_recursion_nu_ss(self._nu, segment.a, segment.b, segment.delta, segment.gamma, beta, v)
-        if self._backend == 'py-tf':
+
+        if self._backend == 'lfilter' and self._filter_form  == 'parallel':
+            raise NotImplemented('Parallel Block Form not implemented yet')
+
+        if self._backend == 'lfilter' and self._filter_form in ('cascade', 'auto'):
             if self._calc_W and not self._steady_state:
-                backward_recursion_W_ss(self._W, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v)
-            if self._steady_state:
-                self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                backward_cascade_xi(self._xi2, a, b, delta, gamma, np.kron(A, A), np.kron(C, C), beta, 1, v, einsum_path=self._get_einsum_path_W_tf())
             if self._calc_xi:
-                einsum_path = self._get_einsum_path_xi_tf()
-                backward_recursion_xi_tf(self._xi, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v, einsum_path)
+                backward_cascade_xi(self._xi1, a, b, delta, gamma, A, C, beta, y, v, self._get_einsum_path_xi_tf())
             if self._calc_kappa:
-                einsum_path = self._get_einsum_path_kappa_tf()
-                backward_recursion_kappa_tf(self._kappa, segment.a, segment.b, segment.delta, segment.gamma, beta, y, v, einsum_path)
+                _C = np.array(1)
+                _A = np.array(1)
+                _y = np.einsum(self._get_einsum_path_y_squared_tf(), y, y)
+                backward_cascade_xi(self._xi0, a, b, delta, gamma,_A, _C, beta, _y, v,  self._get_einsum_path_kappa_tf())
             if self._calc_nu:
-                backward_recursion_nu_tf(self._nu, segment.a, segment.b, segment.delta, segment.gamma, beta, v)
+                _C = np.array(1)
+                _A = np.array(1)
+                backward_cascade_xi(self._nu, a, b, delta, gamma, _A, _C, beta, 1, v, self._get_einsum_path_nu_tf())
+
         if self._backend == 'jit':
+            v = np.ones(self._K) if v==1 else v
             init_vars = backward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
             if self._is_multiset:
                 if self.steady_state:
-                    # backward_recursion_set_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars, self._kappa_diag)
-                    self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                    raise NotImplemented('backward_recursion_set_xi_kappa_nu_jit not implemented yet')
                 else:
-                    backward_recursion_set_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,beta, *init_vars, self._kappa_diag)
+                    backward_recursion_set_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v,beta, *init_vars, self._kappa_diag)
             else:
                 if self.steady_state:
-                    backward_recursion_xi_kappa_nu_py(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
-                    self._W += _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+                    backward_recursion_xi_kappa_nu_jit(self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
                 else:
-                    backward_recursion_jit(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,beta, *init_vars)
+                    backward_recursion_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v,beta, *init_vars)
 
 
 
@@ -1370,8 +1432,8 @@ class RLSAlssm(ABC):
         Parameters
         ----------
         backend : str
-            'py-ss' for State-Space python backend
-            'py-tf' for Transfer Function python backend
+            'numpy' for State-Space python backend
+            'lfilter' for Transfer Function python backend
             'jit' for Just in Time backend
 
         """
@@ -1417,7 +1479,7 @@ class RLSAlssm(ABC):
         A = AlssmSum(alssms).A
 
         if v is None:
-            v = np.ones(np.shape(y)[0])
+            v = 1
 
         betas = np.ones(len(segments)) if self.betas is None else self.betas
 
@@ -1479,41 +1541,36 @@ class RLSAlssm(ABC):
 
         """
 
-        N = self.cost_model.get_model_order()
-
         # check and init H
-        H = np.eye(N) if H is None else np.asarray(H)
-        if H.shape[0] != N:
-            ValueError(f"First dimension of constrain matrix H needs to be of size {N} (model order), "
-                       f"{info_str_found_shape(H)}.")
-
+        if H is None:
+            H = np.eye(self._N)
+            HTWH = self.W
+        else:
+            H = np.asarray(H)
+            if H.shape[0] != self._N:
+                ValueError(f"First dimension of constrain matrix H needs to be of size {self._N} (model order), "
+                           f"{info_str_found_shape(H)}.")
+            HTWH = H.T @ self.W @ H
 
         # check and init h
-        h = np.zeros(self._xi.shape[1:]) if h is None else np.asarray(h)
-        if h.shape[0] != N:
-            ValueError(f"First dimension of offset vector h needs to be of size {N} (model order), "
-                       f"{info_str_found_shape(h)}.")
-
-
-        # allocate v and
-        M = H.shape[1]
-        K = len(self._xi)
-        if self._is_multiset:
-            S = self._xi.shape[-1]
-            v = np.full((K, M, S), np.nan)
+        if h is None:
+            h = np.zeros(self._N)
+            HTxiWh = np.einsum('nm, km...-> kn...', H.T, self._xi1)
         else:
-            v = np.full((K, M), np.nan)
+            if h.shape[0] != self._N:
+                ValueError(f"First dimension of offset vector h needs to be of size {self._N} (model order), "
+                       f"{info_str_found_shape(h)}.")
+            HTxiWh = np.einsum('nm, km...-> kn...', H.T, self._xi1 - self.W @ h)
 
         # constrained minimization
-        HTWH = H.T @ self._W @ H
-        HTxiWh = np.einsum('nm, km...-> kn...', H.T, self._xi - self._W @ h)
-
-        mask_is_invertible = cond(HTWH) < 1 / sys.float_info.epsilon
+        M = H.shape[1]
+        v = np.full((self._K, M, self._S) if self._is_multiset else (self._K, M), np.nan)
+        msk = cond(HTWH) < 1 / sys.float_info.epsilon
         if self._steady_state:
-            assert mask_is_invertible, 'H.T @ W @ H is not invertible.'
-            v[...] = np.einsum('nm, km...-> kn...', inv(self._W), self._xi)
-        v[mask_is_invertible] = np.einsum('knm, kn... -> km...', inv(HTWH[mask_is_invertible]),
-                                          HTxiWh[mask_is_invertible])
+            assert msk, 'H.T @ W @ H is not invertible.'
+            v[...] = np.einsum('nm, km...-> kn...', inv(HTWH), HTxiWh)
+        else:
+            v[msk] = np.einsum('knm, kn... -> km...', inv(HTWH[msk]),  HTxiWh[msk])
 
         if return_constrains:
             return v, H, h
@@ -1560,14 +1617,14 @@ class RLSAlssm(ABC):
         """
 
         if H is None and h is None:
-            mask_is_invertible = cond(self.W) < 1 / sys.float_info.epsilon
+            msk = cond(self.W) < 1 / sys.float_info.epsilon
             x = np.full_like(self.xi, np.nan)
             if self._steady_state:
-                assert mask_is_invertible, 'Steady State W Matrix is not invertible.'
+                assert msk, 'Steady State W Matrix is not invertible.'
                 x[...] = np.einsum('nm, km...-> kn...', inv(self.W), self.xi)
             else:
-                assert np.any(mask_is_invertible), 'All W Matrices are not invertible.'
-                x[mask_is_invertible] = np.einsum('knm, kn... -> km...', inv(self.W[mask_is_invertible]), self.xi[:])
+                assert np.any(msk), 'All W Matrices are not invertible.'
+                x[msk] = np.einsum('knm, kn... -> km...', inv(self.W[msk]), self.xi[msk])
             return x
 
         v, H, h = self.minimize_v(H, h, return_constrains=True)
@@ -1604,14 +1661,19 @@ class RLSAlssm(ABC):
         |def_N|
 
         """
+
+        if self._steady_state:
+            J = np.einsum('kn..., kn...->k...', xs, np.einsum('nm, km...->kn...', self.W, xs))
+
         if ks is None:
-            return (np.einsum('kn..., kn...->k...', xs, np.einsum('knm, km...->kn...', self.W, xs))
-                    - 2 * np.einsum('kn..., kn...->k...', self.xi, xs)
-                    + self.kappa)
+            if not self._steady_state:
+                J = np.einsum('kn..., kn...->k...', xs, np.einsum('knm, km...->kn...', self.W, xs))
+            return J - 2 * np.einsum('kn..., kn...->k...', self.xi, xs) + self.kappa
+
         else:
-            return (np.einsum('kn..., kn...->k...', xs[ks], np.einsum('knm, km...->kn...', self.W[ks], xs[ks]))
-                    - 2 * np.einsum('kn..., kn...->k...', self.xi[ks], xs[ks])
-                    + self.kappa[ks])
+            if not self._steady_state:
+                J = np.einsum('kn..., kn...->k...', xs[ks], np.einsum('knm, km...->kn...', self.W[ks], xs[ks]))
+            return J - 2 * np.einsum('kn..., kn...->k...', self.xi[ks], xs[ks]) + self.kappa[ks]
 
     def filter_minimize_x(self, y, v=None, H=None, h=None):
         """
@@ -1699,6 +1761,7 @@ class RLSAlssmSet(RLSAlssm):
         warnings.warn('RLSAlssmSet is deprecated. Use RLSAlssm instead.', DeprecationWarning, 2)
         super().__init__(cost_model, kappa_diag=kappa_diag, **kwargs)
 
+
 class RLSAlssmSteadyState(RLSAlssm):
     """
     Filter and Data container for Recursive Least Square Alssm Filters in Steady State Mode
@@ -1716,6 +1779,7 @@ class RLSAlssmSteadyState(RLSAlssm):
     def __init__(self, cost_model, steady_state_method='closed_form', **kwargs):
         warnings.warn('RLSAlssmSteadyState is deprecated. Use RLSAlssm(..., steady_state=True) instead.', DeprecationWarning, 2)
         super().__init__(cost_model, steady_state=True, **kwargs)
+
 
 class RLSAlssmSetSteadyState(RLSAlssm):
     """
@@ -1844,8 +1908,8 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #         Parameters
 #         ----------
 #         backend : str
-#             'py-ss' for State-Space python backend
-#             'py-tf' for Transfer Function python backend
+#             'numpy' for State-Space python backend
+#             'lfilter' for Transfer Function python backend
 #             'jit' for Just in Time backend
 #
 #         """
@@ -2031,7 +2095,7 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #     def _forward_recursion(self, A, C, segment, y, v, beta):
 #         init_vars = forward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 #
-#         if self._backend == 'py-ss':
+#         if self._backend == 'numpy':
 #             forward_recursion_W_ss(self._W, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v)
 #             einsum_path = 'n..., ... ->n...' if np.ndim(C) == 1 else 'nl..., l... ->n...'
 #             forward_recursion_xi_ss(self._xi, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v, einsum_path)
@@ -2054,7 +2118,7 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #             #self._allocate_parameter_storage(np.shape(y))
 #             #forward_recursion_py_ss(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
 #
-#         if self._backend == 'py-tf':
+#         if self._backend == 'lfilter':
 #             forward_recursion_py_tf(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
 #                                  beta, *init_vars)
 #         if self._backend == 'jit':
@@ -2064,7 +2128,7 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #     def _backward_recursion(self, A, C, segment, y, v, beta):
 #         init_vars = backward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 #
-#         if self._backend == 'py-ss':
+#         if self._backend == 'numpy':
 #             if True:
 #                 backward_recursion_W_ss(self._W, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v)
 #                 einsum_path = 'n..., ... ->n...' if np.ndim(C) == 1 else 'nl..., l... ->n...'
@@ -2086,7 +2150,7 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #                 backward_recursion_nu_ss(self._nu, segment.a, segment.b, segment.delta, segment.gamma, beta, v)
 #             else:
 #                 backward_recursion_py_ss(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
-#         if self._backend == 'py-tf':
+#         if self._backend == 'lfilter':
 #             backward_recursion_py_tf(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
 #                                   beta, *init_vars)
 #         if self._backend == 'jit':
@@ -2291,7 +2355,7 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #     def _forward_recursion(self, A, C, segment, y, v, beta):
 #         init_vars = forward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 #
-#         if self._backend == 'py-ss':
+#         if self._backend == 'numpy':
 #             forward_recursion_W_ss(self._W, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v)
 #
 #             einsum_path = 'n..., ... ->n...' if np.ndim(C) == 1 else 'nl..., l... ->n...'
@@ -2312,7 +2376,7 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #
 #             forward_recursion_kappa_ss(self._kappa, segment.a, segment.b, segment.delta, segment.gamma, beta, y, v, einsum_path)
 #             forward_recursion_nu_ss(self._nu, segment.a, segment.b, segment.delta, segment.gamma, beta, v)
-#         if self._backend == 'py-tf':
+#         if self._backend == 'lfilter':
 #             forward_recursion_set_py_tf(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
 #                                      v,
 #                                      beta, *init_vars, self._kappa_diag)
@@ -2324,7 +2388,7 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #     def _backward_recursion(self, A, C, segment, y, v, beta):
 #         init_vars = backward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 #
-#         if self._backend == 'py-ss':
+#         if self._backend == 'numpy':
 #             if True:
 #                 backward_recursion_W_ss(self._W, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v)
 #                 einsum_path = 'n..., ... ->n...' if np.ndim(C) == 1 else 'nl..., l... ->n...'
@@ -2346,7 +2410,7 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #                 backward_recursion_nu_ss(self._nu, segment.a, segment.b, segment.delta, segment.gamma, beta, v)
 #             else:
 #                 backward_recursion_set_py_ss(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars, self._kappa_diag)
-#         if self._backend == 'py-tf':
+#         if self._backend == 'lfilter':
 #             backward_recursion_set_py_tf(self._W, self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
 #                                       v, beta, *init_vars, self._kappa_diag)
 #         if self._backend == 'jit':
@@ -2558,10 +2622,10 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #     def _forward_recursion(self, A, C, segment, y, v, beta):
 #         init_vars = forward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 #
-#         if self._backend == 'py-ss':
+#         if self._backend == 'numpy':
 #             forward_recursion_xi_kappa_nu_py_ss(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
 #                                              beta, *init_vars)
-#         if self._backend == 'py-tf':
+#         if self._backend == 'lfilter':
 #             forward_recursion_xi_kappa_nu_py_tf(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y, v,
 #                                              beta, *init_vars)
 #         if self._backend == 'jit':
@@ -2572,11 +2636,11 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #     def _backward_recursion(self, A, C, segment, y, v, beta):
 #         init_vars = backward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 #
-#         if self._backend == 'py-ss':
+#         if self._backend == 'numpy':
 #             backward_recursion_xi_kappa_nu_py_ss(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
 #                                               v,
 #                                               beta, *init_vars)
-#         if self._backend == 'py-tf':
+#         if self._backend == 'lfilter':
 #             backward_recursion_xi_kappa_nu_py_tf(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta, y,
 #                                               v,
 #                                               beta, *init_vars)
@@ -2691,11 +2755,11 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #     def _forward_recursion(self, A, C, segment, y, v, beta):
 #         init_vars = forward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 #
-#         if self._backend == 'py-ss':
+#         if self._backend == 'numpy':
 #             forward_recursion_set_xi_kappa_nu_py_ss(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta,
 #                                                  y, v,
 #                                                  beta, *init_vars, self._kappa_diag)
-#         if self._backend == 'py-tf':
+#         if self._backend == 'lfilter':
 #             forward_recursion_set_xi_kappa_nu_py_tf(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta,
 #                                                  y, v,
 #                                                  beta, *init_vars, self._kappa_diag)
@@ -2707,11 +2771,11 @@ class RLSAlssmSetSteadyState(RLSAlssm):
 #     def _backward_recursion(self, A, C, segment, y, v, beta):
 #         init_vars = backward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 #
-#         if self._backend == 'py-ss':
+#         if self._backend == 'numpy':
 #             backward_recursion_set_xi_kappa_nu_py_ss(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta,
 #                                                   y,
 #                                                   v, beta, *init_vars, self._kappa_diag)
-#         if self._backend == 'py-tf':
+#         if self._backend == 'lfilter':
 #             backward_recursion_set_xi_kappa_nu_py_tf(self._xi, self._kappa, self._nu, segment.a, segment.b, segment.delta,
 #                                                   y,
 #                                                   v, beta, *init_vars, self._kappa_diag)

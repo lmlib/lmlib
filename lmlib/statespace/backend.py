@@ -5,10 +5,10 @@ import sys
 
 __all__ = ['set_backend', 'is_backend_available', 'get_backend', 'BACKEND_TYPES', 'available_backends']
 
-_backend = 'py-ss' # current backend selection (global)
+_backend = 'numpy' # current backend selection (global)
 
-BACKEND_TYPES = ('jit', 'py', 'python', 'py-ss', 'py-tf') # known backends
-available_backends = ('py-ss', 'py-tf', 'py', 'python') # available backends
+BACKEND_TYPES = ('jit', 'py', 'python', 'numpy', 'lfilter') # known backends
+available_backends = ('numpy', 'lfilter', 'py', 'python') # available backends
 
 
 def set_backend(backend):
@@ -17,12 +17,12 @@ def set_backend(backend):
 
     Parameters
     ----------
-    backend : str ("jit", "py", "python", "py-ss", "py-tf")
+    backend : str ("jit", "py", "python", "numpy", "lfilter")
         
-          - "py-ss" : for State Space Backend in Python (default)
-          - "py-tf" : for Transfer Function Backend in Python
+          - "numpy" : for State Space Backend in Python (default)
+          - "lfilter" : for Transfer Function Backend in Python
           - "jit": Just-in-Time compilation (if available)
-          - "python" or "py" : Deprecated. (same as py-ss)
+          - "python" or "py" : Deprecated. (same as numpy)
  
     
     If the selected backend is not available, an assert is risen. 
@@ -35,12 +35,12 @@ def set_backend(backend):
         assert backend in available_backends, "jit backend not available. Check that numba package is installed!"
         _backend = 'jit'
     if backend in ('py', 'python'):
-        DeprecationWarning("backend name 'py' and 'python' is deprecated and will be removed. Use 'py-ss' instead.")
-        _backend = 'py-ss'
-    if backend == 'py-ss':
-        _backend = 'py-ss'
-    if backend == 'py-tf':
-        _backend = 'py-tf'
+        DeprecationWarning("backend name 'py' and 'python' is deprecated and will be removed. Use 'numpy' instead.")
+        _backend = 'numpy'
+    if backend == 'numpy':
+        _backend = 'numpy'
+    if backend == 'lfilter':
+        _backend = 'lfilter'
 
 def is_backend_available(backend):
     """
