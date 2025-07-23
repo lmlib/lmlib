@@ -33,6 +33,7 @@ FW = FORWARD
 WARNING_NOT_STEADY_STATE = True
 """bool : If True, a warning is issued if the steady state is not used when no sample weights are provided"""
 
+
 def _merge_ks_seg(arr, merge_ks, merge_seg):
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -524,10 +525,10 @@ class CostBase(ABC):
         F = np.atleast_2d(F)
         assert np.shape(F) == (len(self.alssms), len(self.segments)), f'F has wrong shape, {info_str_found_shape(F)}'
         self._F = F
-
     def get_model_order(self):
         """int : Order of the (stacked) Alssm Model"""
         return AlssmSum(self.alssms).N
+
 
     def trajectories(self, xs, F=None, thd=1e-6):
         """
@@ -1029,18 +1030,18 @@ class RLSAlssm(ABC):
     cost_model : CostSegment, CompositeCost, CostBase
         Cost Model
     steady_state : bool, optional
-        If true the RLSAlssm uses the steady state matrix of :math:`W` instead the recursion. Default = True
+        If true, the RLSAlssm uses the steady state matrix of :math:`W` instead the recursion. Default = True
     calc_W : bool, optional
-        If false RLSAlssm prohibits the calculation and memory allocation of :math:`W`. Default = True
+        If false, RLSAlssm prohibits the calculation and memory allocation of :math:`W`. Default = True
     calc_xi : bool, optional
-        If false RLSAlssm prohibits the calculation and memory allocation of :math:`\\xi`. Default = True
+        If false, RLSAlssm prohibits the calculation and memory allocation of :math:`\\xi`. Default = True
     calc_kappa : bool, optional
         If false RLSAlssm prohibits the calculation and memory allocation of :math:`\\kappa`. Default = True
     calc_nu : bool, optional
         If false RLSAlssm prohibits the calculation and memory allocation of :math:`\nu`. Default = True
     kappa_diag : bool, optional
         If false RLSAlssm stores the full Outer product in case the Signal y is a multi-set. Default = True
-    betas : array_like of shape=(P,) of floats, None, optional
+    betas : array_like of shape=(P, ) of floats, None, optional
         Segment Scalars. Factors weighting each of the `P` cost segments.
         If `betas` is not set, the weight is for each cost segment 1.
     filter_form : str, optional
@@ -1066,7 +1067,7 @@ class RLSAlssm(ABC):
         self._is_multichannel = None
         self._is_multiset = None
         self._backend = backend if backend else get_backend()
-        self._N  = self.cost_model.get_model_order()
+        self._N = self.cost_model.get_model_order()
         self._K = None
         self._S = None
         self._xi0 = None
@@ -1099,8 +1100,6 @@ class RLSAlssm(ABC):
                 self._cost_model.segments), f'betas has wrong length, {info_str_found_shape(betas)}'
             self._betas = betas
 
-
-
     @property
     def filter_form(self):
         """str : Set the form of filter to be used. Options:'parallel', 'cascade' 'auto' (Default)"""
@@ -1108,13 +1107,15 @@ class RLSAlssm(ABC):
 
     @filter_form.setter
     def filter_form(self, filter_form):
-        assert filter_form in ('parallel', 'cascade', 'auto'), 'Unknown filter_form value. Options: parallel, cascade, auto.'
+        assert filter_form in ('parallel', 'cascade',
+                               'auto'), 'Unknown filter_form value. Options: parallel, cascade, auto.'
         self._filter_form = filter_form
 
     @property
     def W(self):
         """:class:`~numpy.ndarray` : Filter Parameter :math:`W`"""
-        return self._xi2.reshape(self._N, self._N) if self._steady_state else self._xi2.reshape(self._K, self._N, self._N)
+        return self._xi2.reshape(self._N, self._N) if self._steady_state else self._xi2.reshape(self._K, self._N,
+                                                                                                self._N)
 
     @property
     def xi(self):
@@ -1123,19 +1124,19 @@ class RLSAlssm(ABC):
 
     @property
     def kappa(self):
-        """:class:`~numpy.ndarray`  : Filter Parameter :math:`\\kappa`"""
+        """:class:`~numpy.ndarray` : Filter Parameter :math:`\\kappa`"""
         return self._xi0
 
     @property
     def nu(self):
-        """:class:`~numpy.ndarray`  : Filter Parameter :math:`\\nu`"""
+        """:class:`~numpy.ndarray` : Filter Parameter :math:`\\nu`"""
         return self._nu
 
     @property
     def calc_W(self):
         """bool : Do :math:`W` parameter calculation"""
         return self._calc_W
-    
+
     @calc_W.setter
     def calc_W(self, calc_W):
         assert isinstance(calc_W, bool), "calc_W not of type bool"
@@ -1221,13 +1222,13 @@ class RLSAlssm(ABC):
                     'C shape (N,) and y shape (K,)'
 
     def _allocate_parameter_storage(self, input_shape):
-        self._K =  input_shape[0]
+        self._K = input_shape[0]
         self._S = input_shape[-1] if self._is_multiset else None
 
         if self._calc_W and not self._steady_state:
-            self._xi2 = np.zeros((self._K, self._N**2))
+            self._xi2 = np.zeros((self._K, self._N ** 2))
         if self._steady_state:
-            self._xi2 = np.zeros((self._N**2))
+            self._xi2 = np.zeros((self._N ** 2))
         if self._calc_xi:
             self._xi1 = np.zeros((self._K, self._N, self._S)) if self._is_multiset else np.zeros((self._K, self._N))
         if self._calc_kappa:
@@ -1246,7 +1247,7 @@ class RLSAlssm(ABC):
         return einsum_path
 
     def _get_einsum_path_xi_ss(self):
-         return 'nl..., l... ->n...' if self._is_multichannel else 'n..., ... ->n...'
+        return 'nl..., l... ->n...' if self._is_multichannel else 'n..., ... ->n...'
 
     def _get_einsum_path_xi_tf(self):
         if self._is_multiset:
@@ -1328,102 +1329,120 @@ class RLSAlssm(ABC):
         a, b, delta, gamma = segment.a, segment.b, segment.delta, segment.gamma
 
         if self._steady_state:
-            self._xi2 += _covariance_matrix_closed_form(A, C, gamma, a, b, delta).reshape(self._N**2)
+            self._xi2 += _covariance_matrix_closed_form(A, C, gamma, a, b, delta).reshape(self._N ** 2)
 
         if self._backend == 'numpy':
-            v = np.ones(self._K) if v==1 else v
+            v = np.ones(self._K) if v == 1 else v
+
             if self._calc_W and not self._steady_state:
                 forward_recursion_W_ss(self.W, a, b, delta, gamma, A, C, beta, y, v)
+
             if self._calc_xi:
                 forward_recursion_xi_ss(self._xi1, a, b, delta, gamma, A, C, beta, y, v, self._get_einsum_path_xi_ss())
+
             if self._calc_kappa:
                 forward_recursion_kappa_ss(self._xi0, a, b, delta, gamma, beta, y, v, self._get_einsum_path_kappa_ss())
+
             if self._calc_nu:
                 forward_recursion_nu_ss(self._nu, a, b, delta, gamma, beta, v)
 
-        if self._backend == 'lfilter' and self._filter_form  == 'parallel':
+        if self._backend == 'lfilter' and self._filter_form == 'parallel':
             raise NotImplemented('Parallel Block Form not implemented yet')
 
         if self._backend == 'lfilter' and self._filter_form in ('cascade', 'auto'):
+
             if self._calc_W and not self._steady_state:
-                forward_cascade_xi(self._xi2, a, b, delta, gamma, np.kron(A, A), np.kron(C, C), beta, 1, v, einsum_path=self._get_einsum_path_W_tf())
+                _A = np.kron(A, A)
+                _C = np.kron(C, C)
+                forward_cascade_xi(self._xi2, a, b, delta, gamma, _A, _C, beta, 1, v, einsum_path=self._get_einsum_path_W_tf())
+
             if self._calc_xi:
                 forward_cascade_xi(self._xi1, a, b, delta, gamma, A, C, beta, y, v, self._get_einsum_path_xi_tf())
+
             if self._calc_kappa:
                 _C = np.array(1)
                 _A = np.array(1)
                 _y = np.einsum(self._get_einsum_path_y_squared_tf(), y, y)
-                forward_cascade_xi(self._xi0, a, b, delta, gamma,_A, _C, beta, _y, v,  self._get_einsum_path_kappa_tf())
+                forward_cascade_xi(self._xi0, a, b, delta, gamma, _A, _C, beta, _y, v, self._get_einsum_path_kappa_tf())
+
             if self._calc_nu:
                 _C = np.array(1)
                 _A = np.array(1)
                 forward_cascade_xi(self._nu, a, b, delta, gamma, _A, _C, beta, 1, v, self._get_einsum_path_nu_tf())
 
         if self._backend == 'jit':
-            v = np.ones(self._K) if v==1 else v
+            v = np.ones(self._K) if v == 1 else v
             init_vars = forward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
 
             if self._is_multiset:
                 if self.steady_state:
                     raise NotImplemented('forward_recursion_set_xi_kappa_nu_jit not implemented yet')
                 else:
-                    forward_recursion_set_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars, self._kappa_diag)
+                    forward_recursion_set_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b,
+                                              segment.delta, y, v, beta, *init_vars, self._kappa_diag)
             else:
                 if self.steady_state:
-                    forward_recursion_xi_kappa_nu_jit(self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
+                    forward_recursion_xi_kappa_nu_jit(self._xi1, self._xi0, self._nu, segment.a, segment.b,
+                                                      segment.delta, y, v, beta, *init_vars)
                 else:
-                    forward_recursion_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
+                    forward_recursion_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta,
+                                          y, v, beta, *init_vars)
 
     def _backward_recursion(self, A, C, segment, y, v, beta):
         a, b, delta, gamma = segment.a, segment.b, segment.delta, segment.gamma
 
         if self._steady_state:
-            self._xi2 += _covariance_matrix_closed_form(A, C, gamma, a, b, delta).reshape(self._N**2)
+            self._xi2 += _covariance_matrix_closed_form(A, C, gamma, a, b, delta).reshape(self._N ** 2)
 
         if self._backend == 'numpy':
-            v = np.ones(self._K) if v==1 else v
+            v = np.ones(self._K) if v == 1 else v
             if self._calc_W and not self._steady_state:
                 backward_recursion_W_ss(self.W, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v)
             if self._calc_xi:
-                backward_recursion_xi_ss(self._xi1, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y, v,  self._get_einsum_path_xi_ss())
+                backward_recursion_xi_ss(self._xi1, segment.a, segment.b, segment.delta, segment.gamma, A, C, beta, y,
+                                         v, self._get_einsum_path_xi_ss())
             if self._calc_kappa:
-                backward_recursion_kappa_ss(self._xi0, segment.a, segment.b, segment.delta, segment.gamma, beta, y, v, self._get_einsum_path_kappa_ss())
+                backward_recursion_kappa_ss(self._xi0, segment.a, segment.b, segment.delta, segment.gamma, beta, y, v,
+                                            self._get_einsum_path_kappa_ss())
             if self._calc_nu:
                 backward_recursion_nu_ss(self._nu, segment.a, segment.b, segment.delta, segment.gamma, beta, v)
 
-        if self._backend == 'lfilter' and self._filter_form  == 'parallel':
+        if self._backend == 'lfilter' and self._filter_form == 'parallel':
             raise NotImplemented('Parallel Block Form not implemented yet')
 
         if self._backend == 'lfilter' and self._filter_form in ('cascade', 'auto'):
             if self._calc_W and not self._steady_state:
-                backward_cascade_xi(self._xi2, a, b, delta, gamma, np.kron(A, A), np.kron(C, C), beta, 1, v, einsum_path=self._get_einsum_path_W_tf())
+                backward_cascade_xi(self._xi2, a, b, delta, gamma, np.kron(A, A), np.kron(C, C), beta, 1, v,
+                                    einsum_path=self._get_einsum_path_W_tf())
             if self._calc_xi:
                 backward_cascade_xi(self._xi1, a, b, delta, gamma, A, C, beta, y, v, self._get_einsum_path_xi_tf())
             if self._calc_kappa:
                 _C = np.array(1)
                 _A = np.array(1)
                 _y = np.einsum(self._get_einsum_path_y_squared_tf(), y, y)
-                backward_cascade_xi(self._xi0, a, b, delta, gamma,_A, _C, beta, _y, v,  self._get_einsum_path_kappa_tf())
+                backward_cascade_xi(self._xi0, a, b, delta, gamma, _A, _C, beta, _y, v,
+                                    self._get_einsum_path_kappa_tf())
             if self._calc_nu:
                 _C = np.array(1)
                 _A = np.array(1)
                 backward_cascade_xi(self._nu, a, b, delta, gamma, _A, _C, beta, 1, v, self._get_einsum_path_nu_tf())
 
         if self._backend == 'jit':
-            v = np.ones(self._K) if v==1 else v
+            v = np.ones(self._K) if v == 1 else v
             init_vars = backward_initialize(A, C, segment.gamma, segment.a, segment.b, segment.delta)
             if self._is_multiset:
                 if self.steady_state:
                     raise NotImplemented('backward_recursion_set_xi_kappa_nu_jit not implemented yet')
                 else:
-                    backward_recursion_set_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v,beta, *init_vars, self._kappa_diag)
+                    backward_recursion_set_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b,
+                                               segment.delta, y, v, beta, *init_vars, self._kappa_diag)
             else:
                 if self.steady_state:
-                    backward_recursion_xi_kappa_nu_jit(self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v, beta, *init_vars)
+                    backward_recursion_xi_kappa_nu_jit(self._xi1, self._xi0, self._nu, segment.a, segment.b,
+                                                       segment.delta, y, v, beta, *init_vars)
                 else:
-                    backward_recursion_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta, y, v,beta, *init_vars)
-
-
+                    backward_recursion_jit(self.W, self._xi1, self._xi0, self._nu, segment.a, segment.b, segment.delta,
+                                           y, v, beta, *init_vars)
 
     def set_backend(self, backend):
         """
@@ -1559,7 +1578,7 @@ class RLSAlssm(ABC):
         else:
             if h.shape[0] != self._N:
                 ValueError(f"First dimension of offset vector h needs to be of size {self._N} (model order), "
-                       f"{info_str_found_shape(h)}.")
+                           f"{info_str_found_shape(h)}.")
             HTxiWh = np.einsum('nm, km...-> kn...', H.T, self._xi1 - self.W @ h)
 
         # constrained minimization
@@ -1570,7 +1589,7 @@ class RLSAlssm(ABC):
             assert msk, 'H.T @ W @ H is not invertible.'
             v[...] = np.einsum('nm, km...-> kn...', inv(HTWH), HTxiWh)
         else:
-            v[msk] = np.einsum('knm, kn... -> km...', inv(HTWH[msk]),  HTxiWh[msk])
+            v[msk] = np.einsum('knm, kn... -> km...', inv(HTWH[msk]), HTxiWh[msk])
 
         if return_constrains:
             return v, H, h
@@ -1777,7 +1796,8 @@ class RLSAlssmSteadyState(RLSAlssm):
     """
 
     def __init__(self, cost_model, steady_state_method='closed_form', **kwargs):
-        warnings.warn('RLSAlssmSteadyState is deprecated. Use RLSAlssm(..., steady_state=True) instead.', DeprecationWarning, 2)
+        warnings.warn('RLSAlssmSteadyState is deprecated. Use RLSAlssm(..., steady_state=True) instead.',
+                      DeprecationWarning, 2)
         super().__init__(cost_model, steady_state=True, **kwargs)
 
 
@@ -1796,7 +1816,8 @@ class RLSAlssmSetSteadyState(RLSAlssm):
     """
 
     def __init__(self, cost_model, steady_state_method='closed_form', kappa_diag=True, **kwargs):
-        warnings.warn('RLSAlssmSetSteadyState is deprecated. Use RLSAlssm(..., steady_state=True) instead.', DeprecationWarning, 2)
+        warnings.warn('RLSAlssmSetSteadyState is deprecated. Use RLSAlssm(..., steady_state=True) instead.',
+                      DeprecationWarning, 2)
         super().__init__(cost_model, kappa_diag=kappa_diag, steady_state=True, **kwargs)
 
 
@@ -2979,7 +3000,8 @@ class ConstrainMatrix:
                     c2_norm = np.linalg.norm(c2)
                     if c2_norm != 0.0:
                         is_multiple = np.all(np.divide(c1, c1_norm) - np.divide(c2, c2_norm) == 0.0)
-                        is_multiple = is_multiple or np.all(np.divide(-1*c1, np.linalg.norm(-1*c1)) - np.divide(c2, c2_norm) == 0.0)
+                        is_multiple = is_multiple or np.all(
+                            np.divide(-1 * c1, np.linalg.norm(-1 * c1)) - np.divide(c2, c2_norm) == 0.0)
                         if is_multiple and i > j:
                             del_cols.append(i)
 

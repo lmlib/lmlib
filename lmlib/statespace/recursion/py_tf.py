@@ -38,11 +38,11 @@ def forward_cascade_xi(xi, a, b, delta, gamma, A, C, beta, y, v, einsum_path):
     b : int, inf
     delta : int
     gamma : float
-    A : np.ndarray (N, N), scalar
-    C : np.ndarray ([L,] N), scalar
+    A : np.ndarray, (N, N), scalar
+    C : np.ndarray, ([L,] N), scalar
     beta : float, SE Segment weight
-    y : np.ndarray (K, [L], [S]) or 1
-    v : np.ndarray (K,) or 1
+    y : scalar, np.ndarray, (K, [L], [S]) or 1
+    v : scalar, np.ndarray, (K,) or 1
     einsum_path : str (see RLSALssm)
     """
 
