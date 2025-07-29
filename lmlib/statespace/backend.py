@@ -59,7 +59,6 @@ def is_backend_available(backend):
     
     return backend in available_backends
 
-
 def get_backend():
     """
     Returns the name of the currently selected backend.

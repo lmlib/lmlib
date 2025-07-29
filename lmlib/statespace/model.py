@@ -1,27 +1,18 @@
 """This module provides methods to define linear state space models and methods to use them as signal models in recursive least squares problems."""
 
+from typing import Union
+
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import re
 import numpy as np
-from numpy.linalg import matrix_power
 from scipy.linalg import block_diag, pascal
 from lmlib.utils import *
+from lmlib.statespace.backends.statespace_tools import *
 
 __all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmSin', 'AlssmExp',
            'AlssmStacked', 'AlssmSum', 'AlssmSum', 'AlssmProd', 'ModelBase']
 
-
-def transform_ALSSM(alssm, P):
-    A = alssm.A
-    C = alssm.C
-    P_inv = np.linalg.inv(P)
-    At = P@A@P_inv
-    Ct = C@P_inv
-    return Alssm(At, Ct)
-
-def transform_x(xs, P):
-    return np.einsum('mn, kn...->km...', P, xs)
 
 class ModelBase(ABC):
     """
@@ -37,7 +28,7 @@ class ModelBase(ABC):
         Broadcasts an 1-dimensional `C`-vector to a 2-dimensional array of shape (1, N)
     """
 
-    def __init__(self, label='n/a', C_init=None, force_MC=False):
+    def __init__(self, label:str='n/a', C_init=None, force_MC:bool=False):
         self._alssms = list()
         self._deltas = list()
         self._A = None
@@ -189,11 +180,13 @@ class ModelBase(ABC):
 
         Examples
         --------
+        >>> import lmlib as lm
+        >>>
         >>> A = [[1, 1], [0, 1]]
         >>> C = [1, 0]
         >>> alssm = lm.Alssm(A, C, label='line')
         >>>
-        >>> xs = [[0.1, 3], [0, 1], [-0.8, 0.2], [1, -3]]
+        >>> xs = np.array([[0.1, 3], [0, 1], [-0.8, 0.2], [1, -3]])
         >>> s = alssm.eval_states(xs)
         >>> print(s)
         [ 0.1  0.  -0.8  1. ]
@@ -231,6 +224,8 @@ class ModelBase(ABC):
 
         Examples
         --------
+        >>> import lmlib as lm
+        >>>
         >>> A = [[1, 1], [0, 1]]
         >>> C = [1, 0]
         >>> alssm = lm.Alssm(A, C, label='line')
@@ -277,6 +272,8 @@ class ModelBase(ABC):
 
         Examples
         --------
+        >>> import lmlib as lm
+        >>>
         >>> A = [[1, 1], [0, 1]]
         >>> C = [1, 0]
         >>> alssm = lm.Alssm(A, C, label='line')
@@ -286,7 +283,7 @@ class ModelBase(ABC):
         >>> print(s)
 
         """
-        return np.asarray([np.tensordot(self.C @ matrix_power(self.A, j), x, axes=(-1, 0)) for j in js])
+        return _trajectory_output(self.A, self.C, x, js)
 
     def trajectories(self, xs, js):
         r"""
@@ -322,6 +319,8 @@ class ModelBase(ABC):
 
         Examples
         --------
+        >>> import lmlib as lm
+        >>>
         >>> A = [[1, 1], [0, 1]]
         >>> C = [1, 0]
         >>> alssm = lm.Alssm(A, C, label='line')
@@ -331,7 +330,7 @@ class ModelBase(ABC):
         >>> print(s)
 
         """
-        return np.asarray([[np.tensordot(self.C @ matrix_power(self.A, j), x, axes=(-1, 0)) for j in js] for x in xs])
+        return np.asarray([_trajectory_output(self.A, self.C, x, js) for x in xs])
 
     def dump_tree(self):
         """
@@ -358,7 +357,7 @@ class ModelBase(ABC):
         """
         return self._rec_tree(level=0)
 
-    def set_state_var_label(self, label, indices):
+    def set_state_var_label(self, label:str, indices:tuple[int]):
         """
         Adds a label for one or multiple state variabels in the state vector.
         Such labels are used to quickly referece to single states in the state vector by its names.
@@ -372,6 +371,8 @@ class ModelBase(ABC):
 
         Examples
         --------
+        >>> import lmlib as lm
+        >>>
         >>> alssm = lm.AlssmPoly(poly_degree=1, label='slope_with_offset')
         >>> alssm.set_state_var_label('slope', (1,))
         >>> alssm.state_var_labels
@@ -418,7 +419,7 @@ class ModelBase(ABC):
             N += alssm.N
         return state_list
 
-    def get_state_var_indices(self, label):
+    def get_state_var_indices(self, label:str):
         """
         Returns the state indices for a specified label
 
@@ -439,6 +440,7 @@ class ModelBase(ABC):
     def _broadcast_C_to_multichannel(self):
         if self.force_MC:
             self.C = np.atleast_2d(self.C)
+
 
 class Alssm(ModelBase):
     r"""
@@ -479,6 +481,8 @@ class Alssm(ModelBase):
 
     Examples
     --------
+    >>> import lmlib as lm
+    >>>
     >>> A = [[1, 1], [0, 1]]
     >>> C = [1, 0]
     >>> alssm = lm.Alssm(A, C, label='line')
@@ -503,6 +507,7 @@ class Alssm(ModelBase):
         self.C = self.C_init
         self._init_state_var_labels()
         self._broadcast_C_to_multichannel()
+
 
 class AlssmPoly(ModelBase):
     r"""
@@ -538,10 +543,10 @@ class AlssmPoly(ModelBase):
     ----------
     poly_degree : int
         Polynomial degree `Q`. Corresponds to the highest exponent of the polynomial.rst.
-        It follows a ALSSM system of order `N = Q+1`.
+        It follows an ALSSM system of order `N = Q+1`.
     C : array_like, shape=([L,] N), optional
         Output Matrix.
-        If no output matrix is given, C gets initialize automatically to `[1, 0, ...]` such that the shape
+        If no output matrix is given, C gets initialized automatically to `[1, 0, ...]` such that the shape
         is `(N,)`. In addition with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)`. (default: C=None)
     **kwargs
         Forwarded to :class:`.ModelBase`
@@ -554,7 +559,8 @@ class AlssmPoly(ModelBase):
     Examples
     --------
     Setting up a 4. order polynomial.rst, autonomous linear state space model.
-
+    >>> import lmlib as lm
+    >>>
     >>> poly_degree = 3
     >>> alssm = lm.AlssmPoly(poly_degree, label='poly')
     >>> print(alssm)
@@ -566,7 +572,7 @@ class AlssmPoly(ModelBase):
     C =
     [1 0 0 0]
 
-    >>> C = [[1, 0, 0], [0, 1, 0]]
+    >>> C = np.array([[1, 0, 0], [0, 1, 0]])
     >>> alssm = lm.AlssmPoly(poly_degree=2, C=C, label='poly')
     >>> print(alssm)
     A =
@@ -579,7 +585,7 @@ class AlssmPoly(ModelBase):
 
    """
 
-    def __init__(self, poly_degree, C=None, **kwargs):
+    def __init__(self, poly_degree:int, C=None, **kwargs):
         super().__init__(**kwargs)
         self.poly_degree = poly_degree
         self.C_init = C
@@ -608,7 +614,7 @@ class AlssmPoly(ModelBase):
 
 class AlssmPolyJordan(ModelBase):
     r"""
-    ALSSM with discrete-time polynomial output sequence, in Jorandian normal form
+    ALSSM with a discrete-time polynomial output sequence, in Jorandian normal form
 
 
     Discrete-time polynomial with ALSSM with transition matrix in Jordanian normal form, see [Zalmai2017]_
@@ -642,9 +648,10 @@ class AlssmPolyJordan(ModelBase):
     Examples
     --------
     Setting up a 3th degree polynomial ALSSM.
-
-    >>> poly_degree = 3
-    >>> alssm = lm.AlssmPolyJordan(poly_degree, label='poly')
+    >>> import lmlib as lm
+    >>>
+    >>> polynomial_degree = 3
+    >>> alssm = lm.AlssmPolyJordan(polynomial_degree, label='poly')
     >>> print(alssm)
     A =
     [[1. 1. 0. 0.]
@@ -656,7 +663,7 @@ class AlssmPolyJordan(ModelBase):
 
    """
 
-    def __init__(self, poly_degree, C=None, **kwargs):
+    def __init__(self, poly_degree:int, C=None, **kwargs):
         super().__init__(**kwargs)
         self.poly_degree = poly_degree
         self.C_init = C
@@ -685,7 +692,7 @@ class AlssmPolyJordan(ModelBase):
 
 class AlssmSin(ModelBase):
     r"""
-    ALSSM with discrete-time (damped) sinusoidal output sequence.
+    ALSSM with a discrete-time (damped) sinusoidal output sequence.
 
     The class AlssmSin is defined by a decay factor `rho` and discrete-time frequency `omega`.
 
@@ -706,8 +713,8 @@ class AlssmSin(ModelBase):
         Decay factor, default: rho = 1.0
     C : array_like, shape=(L, N), optional
         Output Matrix.
-        If no output matrix is given, C gets initialize automatically to `[1, 0]`, such that the shape
-        is `(N,)`. In addition with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)` (default: C=None)
+        If no output matrix is given, C gets initialized automatically to `[1, 0]`, such that the shape
+        is `(N,)`. In addition, with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)` (default: C=None)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
@@ -719,8 +726,10 @@ class AlssmSin(ModelBase):
     Notes
     -----
     To convert a continuous-time frequency to a normalized frequency, see :func:`~lmlib.utils.generator.k_period_to_omega`, e.g.,
-
+    >>> import lmlib as lm
     >>> from lmlib.utils.generator import k_period_to_omega
+    >>> ...
+    >>> ...
     >>> alssm = lm.AlssmSin(k_period_to_omega(k_period), rho)
 
 
@@ -740,7 +749,7 @@ class AlssmSin(ModelBase):
 
     """
 
-    def __init__(self, omega, rho=1.0, C=None, **kwargs):
+    def __init__(self, omega:float, rho:float=1.0, C=None, **kwargs):
         super().__init__(**kwargs)
         self.omega = omega
         self.rho = rho
@@ -782,9 +791,9 @@ class AlssmSin(ModelBase):
 
 class AlssmExp(ModelBase):
     """
-    ALSSM with discrete-time exponentially decaying/increasing output sequence.
+    ALSSM with a discrete-time exponentially decaying/increasing output sequence.
 
-    Discrete-time linear state space model generating output sequences of exponentially decaying shape with decay
+    Discrete-time linear state space model generating output sequences of exponentially decaying shape with a decay
     factor :math:`\\gamma`.
 
     For more details see [Wildhaber2019]_ :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
@@ -807,7 +816,7 @@ class AlssmExp(ModelBase):
     Examples
     --------
     Parametrizing an exponentially ALSSM:
-
+    >>> import lmlib as lm
     >>> gamma = 0.8
     >>> alssm = lm.AlssmExp(gamma)
     >>> print(alssm)
@@ -818,7 +827,7 @@ class AlssmExp(ModelBase):
 
     """
 
-    def __init__(self, gamma, C=None, **kwargs):
+    def __init__(self, gamma:float, C=None, **kwargs):
         super().__init__(**kwargs)
         self.gamma = gamma
         self.C_init = C
@@ -921,11 +930,14 @@ class AlssmStacked(ModelBase):
 
     Examples
     --------
+    >>> import lmlib as lm
+    >>>
     >>> alssm_poly = lm.AlssmPoly(4, label="high order polynomial")
-    >>> A = [[1, 1], [0, 1]]
-    >>> C = [[1, 0]]
+    >>>
+    >>> A = np.array([[1, 1], [0, 1]])
+    >>> C = np.array([[1, 0]])
     >>> alssm_line = lm.Alssm(A, C, label="line")
-    >>> stacked_alssm = lm.AlssmStacked((alssm_poly, alssm_line), label='stacked model')
+    >>> stacked_alssm = lm.AlssmStacked([alssm_poly, alssm_line], label='stacked model')
     >>> print(stacked_alssm)
     A =
     [[1. 1. 1. 1. 1. 0. 0.]
@@ -1002,9 +1014,12 @@ class AlssmSum(ModelBase):
 
     Examples
     --------
+    >>> import lmlib as lm
+    >>>
     >>> alssm_poly = lm.AlssmPoly(poly_degree=3)
-    >>> A = [[1, 1], [0, 1]]
-    >>> C = [[1, 0]]
+    >>>
+    >>> A = np.array([[1, 1], [0, 1]])
+    >>> C = np.array([[1, 0]])
     >>> alssm_line = lm.Alssm(A, C)
     >>> stacked_alssm = lm.AlssmSum((alssm_poly, alssm_line))
     >>> print(stacked_alssm)
@@ -1075,7 +1090,8 @@ class AlssmProd(ModelBase):
     Examples
     --------
     Multiply two ALSSMs
-
+    >>> import lmlib as lm
+    >>>
     >>> alssm_p = lm.AlssmPoly(poly_degree=2, label='poly')
     >>> alssm_s = lm.AlssmSin(omega=0.5, rho=0.2, label='sin')
     >>> alssm = lm.AlssmProd((alssm_s, alssm_p), label="multi")

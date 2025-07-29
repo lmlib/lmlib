@@ -29,8 +29,9 @@ segment_right = lm.Segment(a=0, b=49, direction=lm.BACKWARD, g=1000)
 costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])
 
 # filter signal and take the approximation
-rls = lm.RLSAlssmSteadyState(costs)
-xs = rls.filter_minimize_x(y)
+rls = lm.RLSAlssm(costs, steady_state=False, backend='jit')
+rls.filter(y)
+xs = rls.minimize_x()
 
 # extracts filtered signal
 y_hat_1 = costs.eval_alssm_output(xs, alssm_weights=[1])
@@ -44,7 +45,7 @@ segment_right = lm.Segment(a=0, b=np.Infinity, direction=lm.BACKWARD, g=20)
 costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])
 
 # filter signal and take the approximation
-rls = lm.RLSAlssmSteadyState(costs)
+rls = lm.RLSAlssm(costs, steady_state=True, backend='lfilter')
 xs = rls.filter_minimize_x(y)
 
 # extracts filtered signal

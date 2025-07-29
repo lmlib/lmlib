@@ -12,7 +12,7 @@ import copy
 import sys
 
 from lmlib.statespace.model import ModelBase, AlssmSum
-from lmlib.statespace.recursion import *
+from lmlib.statespace.backends import *
 from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backends
 from lmlib.utils.check import *
 
