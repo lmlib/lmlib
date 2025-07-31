@@ -1,54 +1,34 @@
 from numba import jit
 import numpy as np
 from numpy.linalg import inv, matrix_power
-
-# helper function for numpy method
-def _jit_einsum_path_xi(is_multichannel):
-    return 'nl..., l... ->n...' if is_multichannel else 'n..., ... ->n...'
-
-def _jit_einsum_path_kappa(is_multichannel, is_multiset, kappa_diag):
-        if is_multiset:
-            if is_multichannel:
-                if kappa_diag:
-                    einsum_path = 'm..., m...->...'
-                else:
-                    einsum_path = 'ml..., ln... ->mn'
-            else:
-                if kappa_diag:
-                    einsum_path = 'm, m->m'
-                else:
-                    einsum_path = 'm, n->mn'
-        else:
-            if is_multichannel:
-                einsum_path = 'm, m->...'
-            else:
-                einsum_path = '..., ...'
-
-        return einsum_path
+from sympy.codegen.ast import uint64
 
 
 # xi2 recursions
 def jit_recursion_xi2(xi2, A, C, a, b, direction, delta, gamma, y, v, beta):
+    _A = A.astype(float)
+    _C = C.astype(float)
     W = xi2.reshape(-1, *A.shape)
     if direction == 'fw':
-        A_inv = inv(A)
-        Aa = matrix_power(A, 0 if np.isnan(a) else a - 1)
-        Ab = matrix_power(A, b)
-        jit_forward_recursion_W(W, A.astype(float), C.astype(float), a, b, delta, gamma, y, v, beta, A_inv, Aa, Ab)
+        gamma_a = gamma ** (a - 1 - delta)
+        _a = -2**31 if np.isinf(a) else a
+        Aa = matrix_power(_A, 0 if np.isnan(a) else _a - 1)
+        jit_forward_recursion_W(W, _A, _C, _a, b, delta, gamma, y, v, beta, Aa, gamma_a)
     elif direction == 'bw':
-        Aa = matrix_power(A, a)
-        Ab = matrix_power(A, 0 if np.isinf(b) else b + 1)
-        AaccAa = np.outer(np.dot(Aa.T, C.T), np.dot(C, Aa))
-        AbccAb = np.outer(np.dot(Ab.T, C.T), np.dot(C, Ab))
-        jit_backward_recursion_W(W, A.astype(float), C.astype(float), a, b, delta, gamma, y, v, beta, AaccAa, AbccAb)
+        Ab = matrix_power(_A, 0 if np.isinf(b) else b + 1)
+        gamma_b = gamma ** (b - delta + 1)
+        _b = 2**31 if np.isinf(b) else b
+        jit_backward_recursion_W(W, _A, _C, a, _b, delta, gamma, y, v, beta, Ab, gamma_b)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 @jit(nopython=True)
-def jit_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, A_inv, Aa, Ab):
+def jit_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, Aa, gamma_a):
     gamma_inv = 1/gamma
-    gamma_a = gamma**(a-1-delta)
     gamma_b = gamma**(b-delta)
+
+    A_inv = inv(A)
+    Ab = matrix_power(A, b)
     AaccAa = np.outer(np.dot(Aa.T, C.T), np.dot(C, Aa))
     AbccAb = np.outer(np.dot(Ab.T, C.T), np.dot(C, Ab))
 
@@ -71,10 +51,13 @@ def jit_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, A_inv, Aa,
         W *= beta
 
 @jit(nopython=True)
-def jit_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, AaccAa, AbccAb):
+def jit_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, Ab, gamma_b):
 
     gamma_a = gamma**(a - delta)
-    gamma_b = gamma**(b - delta + 1)
+    Aa = matrix_power(A, a)
+
+    AaccAa = np.outer(np.dot(Aa.T, C.T), np.dot(C, Aa))
+    AbccAb = np.outer(np.dot(Ab.T, C.T), np.dot(C, Ab))
 
     W0 = np.zeros_like(W[0])
     K = len(y)
@@ -97,24 +80,31 @@ def jit_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, AaccAa, A
 
 # xi1 recursions
 def jit_recursion_xi1(xi1, A, C, a, b, direction, delta, gamma, y, v, beta):
-    einsum_path = _jit_einsum_path_xi(is_multichannel = np.ndim(C) == 2)
+    _A = A.astype(float)
+    _C = C.astype(float)
+    _C = _C if np.ndim(C) == 2 else np.expand_dims(_C, 0)
+    _y = y if np.ndim(C) == 2 else np.expand_dims(y, -1) # numba dot() is different from numpy
     if direction == 'fw':
-        jit_forward_recursion_xi(xi1, A, C, a, b, delta, gamma, y, v, beta, einsum_path)
+        gamma_a = gamma ** (a - 1 - delta)
+        _a = -2**31 if np.isinf(a) else a
+        Aa = matrix_power(_A, 0 if np.isinf(a) else _a - 1)
+        jit_forward_recursion_xi(xi1, _A, _C, _a, b, delta, gamma, _y, v, beta, Aa, gamma_a)
     elif direction == 'bw':
-        jit_backward_recursion_xi(xi1, A, C, a, b, delta, gamma, y, v, beta, einsum_path)
+        gamma_b = gamma ** (b - delta + 1)
+        _b = 2**31 if np.isinf(b) else b
+        Ab = matrix_power(_A, 0 if np.isinf(b) else _b + 1)
+        jit_backward_recursion_xi(xi1, _A, _C, a, _b, delta, gamma, _y, v, beta, Ab, gamma_b)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 @jit(nopython=True)
-def jit_forward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, einsum_path):
+def jit_forward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Aa, gamma_a) :
 
     gamma_inv = 1 / gamma
-    gamma_a = gamma ** (a - 1 - delta)
     gamma_b = gamma ** (b - delta)
     A_inv = inv(A)
-    Aa = matrix_power(A, 0 if np.isinf(a) else a - 1)
-    Aac = np.dot(Aa.T, C.T)
     Ab = matrix_power(A, b)
+    Aac = np.dot(Aa.T, C.T)
     Abc = np.dot(Ab.T, C.T)
 
     xi0 = np.zeros_like(xi[0])
@@ -123,10 +113,10 @@ def jit_forward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, einsum_p
         xi0[:] = gamma_inv * A_inv.T.dot(xi0)
 
         if 1 - a <= k <= K - a:
-            xi0 -= gamma_a * v[k + a - 1] * np.einsum(einsum_path, Aac, y[k + a - 1])
+            xi0 -= gamma_a * v[k + a - 1] * np.dot(Aac, y[k + a - 1])
 
         if -b <= k <= K - b - 1:
-            xi0 += gamma_b * v[k + b] * np.einsum(einsum_path, Abc, y[k + b])
+            xi0 += gamma_b * v[k + b] * np.dot(Abc, y[k + b])
 
         if 0 <= k <= K - 1:
             xi[k] += xi0
@@ -135,13 +125,11 @@ def jit_forward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, einsum_p
         xi *= beta
 
 @jit(nopython=True)
-def jit_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, einsum_path):
+def jit_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Ab, gamma_b):
 
     gamma_a = gamma ** (a - delta)
-    gamma_b = gamma ** (b - delta + 1)
     Aa = matrix_power(A, a)
     Aac = np.dot(Aa.T, C.T)
-    Ab = matrix_power(A, 0 if np.isinf(b) else b + 1)
     Abc = np.dot(Ab.T, C.T)
 
     # intermediate vars
@@ -152,10 +140,10 @@ def jit_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, einsum_
         xi0[:] = gamma * (A.T.dot(xi0))
 
         if -(a - 1) + 1 <= k <= K - (a - 1):
-            xi0 += gamma_a * v[k + a - 1 + -1] * np.einsum(einsum_path, Aac, y[k + a - 1 + -1])
+            xi0 += gamma_a * v[k + a - 1 + -1] * np.dot(Aac, y[k + a - 1 + -1])
 
         if -b + 1 <= k <= K - b:
-            xi0 -= gamma_b * v[k + b + -1] * np.einsum(einsum_path, Abc, y[k + b + -1])
+            xi0 -= gamma_b * v[k + b + -1] * np.dot(Abc, y[k + b + -1])
 
         if 2 <= k <= K + 1:
             xi[k - 2] += xi0
@@ -166,33 +154,34 @@ def jit_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, einsum_
 
 # xi0 recursions
 def jit_recursion_xi0(xi0, A, C, a, b, direction, delta, gamma, y, v, beta, kappa_diag=True):
-    is_multichannel = np.ndim(C) == 2
-    is_multiset = np.ndim(y) == 2 and not is_multichannel or np.ndim(y) > 2
-    einsum_path = _jit_einsum_path_kappa(is_multichannel, is_multiset, kappa_diag)
-
+    _y = y if np.ndim(C) == 2 else np.expand_dims(y, -1) # numba dot() is different from numpy
     if direction == 'fw':
-        jit_forward_recursion_kappa(xi0, a, b, delta, gamma, y, v, beta, einsum_path)
+        gamma_a = gamma ** (a - 1 - delta)
+        _a = -2 ** 31 if np.isinf(a) else a
+        jit_forward_recursion_kappa(xi0, _a, b, delta, gamma, _y, v, beta, gamma_a)
     elif direction == 'bw':
-        jit_backward_recursion_kappa(xi0, a, b, delta, gamma, y, v, beta, einsum_path)
+        gamma_b = gamma ** (b - delta + 1)
+        _b = 2 ** 31 if np.isinf(b) else b
+        jit_backward_recursion_kappa(xi0, a, _b, delta, gamma, _y, v, beta, gamma_b)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 @jit(nopython=True)
-def jit_forward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, einsum_path):
+def jit_forward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, gamma_a):
     gamma_inv = 1 / gamma
-    gamma_a = gamma ** (a - 1 - delta)
     gamma_b = gamma ** (b - delta)
 
-    kappa0 = np.zeros_like(kappa[0])
+    kappa0 = 0.0
     K = len(y)
+
     for k in range(min(0, -b), K):
         kappa0 *= gamma_inv
 
         if 1 - a <= k <= K - a:
-            kappa0 -= gamma_a * v[k + a - 1] * np.einsum(einsum_path, y[k + a - 1], y[k + a - 1])
+            kappa0 -= gamma_a * v[k + a - 1] * np.dot(y[k + a - 1], y[k + a - 1])
 
         if -b <= k <= K - b - 1:
-            kappa0 += gamma_b * v[k + b] * np.einsum(einsum_path, y[k + b], y[k + b])
+            kappa0 += gamma_b * v[k + b] * np.dot(y[k + b], y[k + b])
 
         if 0 <= k <= K - 1:
             kappa[k] += kappa0
@@ -201,22 +190,21 @@ def jit_forward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, einsum_pa
         kappa *= beta
 
 @jit(nopython=True)
-def jit_backward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, einsum_path):
+def jit_backward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, gamma_b):
 
     gamma_a = gamma ** (a - delta)
-    gamma_b = gamma ** (b - delta + 1)
 
-    kappa0 = np.zeros_like(kappa[0])
+    kappa0 = 0.0
     K = len(y)
 
     for k in range(max(K - a, K) + 1, 1, -1):
         kappa0 *= gamma
 
         if -(a - 1) + 1 <= k <= K - (a - 1):
-            kappa0 += gamma_a * v[k + a - 1 + -1] * np.einsum(einsum_path, y[k + a - 1 + -1], y[k + a - 1 + -1])
+            kappa0 += gamma_a * v[k + a - 1 + -1] * np.dot(y[k + a - 1 + -1], y[k + a - 1 + -1])
 
         if -b + 1 <= k <= K - b:
-            kappa0 -= gamma_b * v[k + b + -1] * np.einsum(einsum_path, y[k + b + -1], y[k + b + -1])
+            kappa0 -= gamma_b * v[k + b + -1] * np.dot(y[k + b + -1], y[k + b + -1])
 
         if 2 <= k <= K + 1:
             kappa[k - 2] += kappa0
@@ -227,24 +215,23 @@ def jit_backward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, einsum_p
 
 # nu recursions
 def jit_recursion_nu(nu, A, C, a, b, direction, delta, gamma, y, v, beta, kappa_diag=True):
-    is_multichannel = np.ndim(C) == 2
-    is_multiset = np.ndim(y) == 2 and not is_multichannel or np.ndim(y) > 2
-    einsum_path = _jit_einsum_path_kappa(is_multichannel, is_multiset, kappa_diag)
-
     if direction == 'fw':
-        jit_forward_recursion_nu(nu, a, b, delta, gamma, v, beta)
+        gamma_a = gamma ** (a - 1 - delta)
+        _a = -2 ** 31 if np.isinf(a) else a
+        jit_forward_recursion_nu(nu, _a, b, delta, gamma, v, beta, gamma_a)
     elif direction == 'bw':
-        jit_backward_recursion_nu(nu, a, b, delta, gamma, v, beta)
+        gamma_b = gamma ** (b - delta + 1)
+        _b = 2 ** 31 if np.isinf(b) else b
+        jit_backward_recursion_nu(nu, a, _b, delta, gamma, v, beta, gamma_b)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 @jit(nopython=True)
-def jit_forward_recursion_nu(nu, a, b, delta, gamma, v, beta):
+def jit_forward_recursion_nu(nu, a, b, delta, gamma, v, beta, gamma_a):
     gamma_inv = 1 / gamma
-    gamma_a = gamma ** (a - 1 - delta)
     gamma_b = gamma ** (b - delta)
 
-    nu0 = np.zeros_like(nu[0])
+    nu0 = 0.0
     K = len(v)
     for k in range(min(0, -b), K):
         nu0 *= gamma_inv
@@ -262,12 +249,11 @@ def jit_forward_recursion_nu(nu, a, b, delta, gamma, v, beta):
         nu *= beta
 
 @jit(nopython=True)
-def jit_backward_recursion_nu(nu, a, b, delta, gamma, v, beta):
+def jit_backward_recursion_nu(nu, a, b, delta, gamma, v, beta, gamma_b):
 
     gamma_a = gamma ** (a - delta)
-    gamma_b = gamma ** (b - delta + 1)
 
-    nu0 = np.zeros_like(nu[0])
+    nu0 = 0.0
     K = len(v)
 
     for k in range(max(K - a, K) + 1, 1, -1):

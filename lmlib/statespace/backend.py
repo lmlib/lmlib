@@ -7,8 +7,8 @@ __all__ = ['set_backend', 'is_backend_available', 'get_backend', 'BACKEND_TYPES'
 
 _backend = 'numpy' # current backend selection (global)
 
-BACKEND_TYPES = ('jit', 'py', 'python', 'numpy', 'lfilter') # known backends
-available_backends = ('numpy', 'lfilter', 'py', 'python') # available backends
+BACKEND_TYPES = ('jit', 'numpy', 'lfilter') # known backends
+available_backends = ('numpy', 'lfilter') # available backends
 
 
 def set_backend(backend):
@@ -72,7 +72,6 @@ def get_backend():
         
     global _backend
     return _backend
-
 
 # check if numba is installed, when yes import and add to available_backends.
 if (spec := importlib.util.find_spec('numba')) is not None:

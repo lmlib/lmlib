@@ -18,7 +18,7 @@ k = np.arange(K)
 y = gen_rect(K, 500,250)
 
 # Polynomial ALSSM
-alssm_poly = lm.AlssmPoly(poly_degree=0)
+alssm_poly = lm.AlssmPoly(poly_degree=0, force_MC=False)
 
 # --- Plot I: ALSSM Filtering - Finite Support Moving Average Filter ---
 # Segments
@@ -29,7 +29,7 @@ segment_right = lm.Segment(a=0, b=49, direction=lm.BACKWARD, g=1000)
 costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])
 
 # filter signal and take the approximation
-rls = lm.RLSAlssm(costs, steady_state=False, backend='jit')
+rls = lm.RLSAlssm(costs, steady_state=False, calc_W=True, backend='jit')
 rls.filter(y)
 xs = rls.minimize_x()
 
@@ -45,7 +45,7 @@ segment_right = lm.Segment(a=0, b=np.Infinity, direction=lm.BACKWARD, g=20)
 costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])
 
 # filter signal and take the approximation
-rls = lm.RLSAlssm(costs, steady_state=True, backend='lfilter')
+rls = lm.RLSAlssm(costs, steady_state=False, backend='jit')
 xs = rls.filter_minimize_x(y)
 
 # extracts filtered signal

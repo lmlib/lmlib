@@ -21,13 +21,13 @@ def _trajectory_output(A, C, x, js):
     return np.asarray([np.tensordot(C @ matrix_power(A, j), x, axes=(-1, 0)) for j in js])
 
 def _window_range(a, b, direction, gamma, delta, thd):
-    if direction == 'forward':
+    if direction == 'fw':
         if gamma > 1:
             a_lim = max(np.log(thd) / np.log(gamma) - 1 + delta, a)
         else:
             a_lim = max(np.log(thd) / np.log(1 / gamma) - 1 + delta, a)
         b_lim = b
-    elif direction == 'backward':
+    elif direction == 'bw':
         a_lim = a
         if gamma < 1:
             b_lim = min(np.log(thd) / np.log(gamma) + 1 + delta, b)

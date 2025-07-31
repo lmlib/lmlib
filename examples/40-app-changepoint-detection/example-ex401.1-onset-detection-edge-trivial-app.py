@@ -39,25 +39,25 @@ cost_l = lm.TSLM.create_cost(ab=(a, 0), gs=(gl, gr))
 cost_r = lm.TSLM.create_cost(ab=(-1, b), gs=(gl, gr))
 
 # Applying Filters
-separam = lm.RLSAlssm(ccost)
-separam.filter(y)
+rls = lm.RLSAlssm(ccost, steady_state=False)
+rls.filter(y)
 
-separam_l = lm.RLSAlssmSteadyState(cost_l)
-separam_l.filter(y)
-separam_r = lm.RLSAlssmSteadyState(cost_r)
-separam_r.filter(y)
+rls_l = lm.RLSAlssm(cost_l)
+rls_l.filter(y)
+rls_r = lm.RLSAlssm(cost_r)
+rls_r.filter(y)
 
 # Filter
-x_hat_line = separam.minimize_x(lm.TSLM.H_Straight)
-x_hat_edge_l = separam_l.minimize_x()
-x_hat_edge_r = separam_r.minimize_x()
-x_hat_edge = separam.minimize_x(lm.TSLM.H_Continuous)
+x_hat_line = rls.minimize_x(lm.TSLM.H_Straight)
+x_hat_edge_l = rls_l.minimize_x()
+x_hat_edge_r = rls_r.minimize_x()
+x_hat_edge = rls.minimize_x(lm.TSLM.H_Continuous)
 
 # Square Error and LCR
-error_edge_l = separam_l.eval_errors(x_hat_edge_l)
-error_edge_r = separam_r.eval_errors(x_hat_edge_r)
-error_edge = separam.eval_errors(x_hat_edge)
-error_line = separam.eval_errors(x_hat_line)
+error_edge_l = rls_l.eval_errors(x_hat_edge_l)
+error_edge_r = rls_r.eval_errors(x_hat_edge_r)
+error_edge = rls.eval_errors(x_hat_edge)
+error_line = rls.eval_errors(x_hat_line)
 lcr = -1 / 2 * np.log(np.divide(error_edge, error_line))
 
 # Find LCR peaks with minimal distance and height

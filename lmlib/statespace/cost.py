@@ -32,7 +32,7 @@ FW = FORWARD
 """str : Sets the recursion direction in a :class:`Segment` to forward, use :const:`FORWARD` or :const:`FW`"""
 
 
-def map_windows(windows: ArrayLike, ks: list[int], K: int, merge_ks:bool=False, merge_seg:bool=False, fill_value:Union[int, float]=0):
+def map_windows(windows: ArrayLike, ks, K: int, merge_ks:bool=False, merge_seg:bool=False, fill_value:Union[int, float]=0):
     """
     Maps the window amplitudes of one or multiple :class:`Segment` to indices `ks` into a common target output vector of
      length `K`.
@@ -90,7 +90,7 @@ def map_windows(windows: ArrayLike, ks: list[int], K: int, merge_ks:bool=False, 
     return _merge_ks_seg(w, merge_ks, merge_seg)
 
 
-def map_trajectories(trajectories, ks:list[int], K:int, merge_ks:bool=False, merge_seg:bool=False, fill_value:Union[None, int, float]=None):
+def map_trajectories(trajectories, ks, K:int, merge_ks:bool=False, merge_seg:bool=False, fill_value:Union[None, int, float]=np.nan):
     """Maps trajectories at indices `ks` into a common target output vector of length `K`.
 
     The parameter :attr:`trajectories` is commonly directly the output of one of the following methods:
@@ -157,8 +157,9 @@ def map_trajectories(trajectories, ks:list[int], K:int, merge_ks:bool=False, mer
 
     for i, k in enumerate(ks):
         for p, (j_range, trajectory) in enumerate(trajectories[i]):
-            mask = np.bitwise_and(k + np.array(j_range) >= 0, k + np.array(j_range) < K)
-            t[i, p, k + np.array(j_range)[mask], ...] = trajectory[mask]
+            j_list = np.array(j_range)
+            mask = np.bitwise_and(k + j_list >= 0, k + j_list < K)
+            t[i, p, k + j_list[mask], ...] = trajectory[mask]
 
     return _merge_ks_seg(t, merge_ks, merge_seg)
 
@@ -592,6 +593,7 @@ class CompositeCost:
             M = self.alssms.__len__()
             P = self.segments.__len__()
             assert (M, P) == np.shape(F), f'F is not array_like of shape (M={M}, P={P})'
+            F = np.asarray(F)
 
         trajectories = []
         for x in xs:
@@ -599,7 +601,7 @@ class CompositeCost:
             for p, seg in enumerate(self.segments):
                 alssm = AlssmSum(self.alssms, deltas=F.T[p])
                 ab_range = _window_range(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd)
-                _tmp.append(alssm.trajectory(x, ab_range))
+                _tmp.append((ab_range, alssm.trajectory(x, ab_range)))
             trajectories.append(_tmp)
         return trajectories
 
@@ -639,7 +641,8 @@ class CompositeCost:
         assert 0 <= min(segment_indices) and max(segment_indices) < len(self.segments), 'segment_index out of range'
 
         windows = []
-        for seg in self.segments[segment_indices]:
+        for segment_index in segment_indices:
+            seg = self.segments[segment_index]
             window = _window_output(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd)
             windows.append(window)
         return windows

@@ -17,11 +17,11 @@ lm.set_backend('lfilter')
 K = 1000
 seeds = [130, 150, 200]
 y = np.column_stack([gen_rand_walk(K, seed=s) for s in seeds])
-y = y[:, None, :]
+
 
 # --- ALSSM Filtering ---
 # Polynomial ALSSM
-alssm_poly = lm.AlssmPoly(poly_degree=5, force_MC=True)
+alssm_poly = lm.AlssmPoly(poly_degree=5)
 
 # Segments
 segment_left = lm.Segment(a=-50, b=-1, direction=lm.FW, g=10)
@@ -40,8 +40,8 @@ y_hat = costs.eval_alssm_output(xs, alssm_weights=[1])
 # --- Plotting ----
 fig, axs = plt.subplots(len(seeds), 1, sharex='all')
 for m, ax in enumerate(axs):
-    ax.plot(y[:, 0, m], lw=0.6, c='gray', label=r'$y_{}$'.format(m))
-    ax.plot(y_hat[:,0,  m], lw=1, label=r'$\hat{{y}}_{}$'.format(m))
+    ax.plot(y[:, m], lw=0.6, c='gray', label=r'$y_{}$'.format(m))
+    ax.plot(y_hat[:,  m], lw=1, label=r'$\hat{{y}}_{}$'.format(m))
     ax.legend(loc='upper right')
 
 axs[-1].set_xlabel('k')

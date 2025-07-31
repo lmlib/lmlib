@@ -25,10 +25,10 @@ y_sparse = np.zeros(K_os)
 y_sparse[k_sparse] = y
 
 alssm = lm.AlssmPoly(poly_degree=2)
-segment = lm.Segment(a=-20, b=20, direction=lm.FW, g=1000, delta=20)
-cost = lm.CostSegment(alssm, segment)
+segments = lm.Segment(a=-20, b=-1, direction=lm.FW, g=100), lm.Segment(a=0, b=20, direction=lm.BW, g=100)
+cost = lm.CompositeCost([alssm], segments, F=np.ones((1, 2)))
 
-rls = lm.RLSAlssm(cost)
+rls = lm.RLSAlssm(cost, steady_state=False)
 xs = rls.filter_minimize_x(y_sparse, v)
 
 y_os = cost.eval_alssm_output(xs)
@@ -37,5 +37,5 @@ plt.scatter(k_sparse, y, s=20, edgecolors='k', marker='o', linewidths=0.3, facec
 plt.plot(k_os, y_os, 'b-', label='oversampled signal')
 plt.legend()
 plt.xlabel('k')
-plt.title('Oversampling')
+plt.title('Oversampling (Rate={})'.format(os_rate))
 plt.show()

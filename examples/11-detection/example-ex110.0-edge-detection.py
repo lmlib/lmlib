@@ -20,10 +20,10 @@ k = range(K)
 ks = [40, 80, 130, 160, 220]
 deltas = [0, 5, -8.5, 3, -2]
 y = gen_slopes(K, ks, deltas) + gen_wgn(K, sigma=0.2, seed=3141)
-y = y[:, np.newaxis]
+# y = y[:, np.newaxis]
 # Model
-alssm_left = lm.AlssmPoly(poly_degree=1, label='alssm_left', force_MC=True)
-alssm_right = lm.AlssmPoly(poly_degree=1, label='alssm_right', force_MC=True)
+alssm_left = lm.AlssmPoly(poly_degree=1, label='alssm_left', force_MC=False)
+alssm_right = lm.AlssmPoly(poly_degree=1, label='alssm_right', force_MC=False)
 segment_left = lm.Segment(a=-21, b=-1, direction=lm.FORWARD, g=7)
 segment_right = lm.Segment(a=0, b=20, direction=lm.BACKWARD, g=7)
 F = [[1, 0], [0, 1]]
@@ -45,7 +45,7 @@ H_edge = H_Continuous = np.array(
 
 
 # Filter
-rls = lm.RLSAlssm(cost,steady_state=True)
+rls = lm.RLSAlssm(cost)
 rls.filter(y)
 xs_hat_edge = rls.minimize_x(H_edge)
 xs_hat_line = rls.minimize_x(H_line)

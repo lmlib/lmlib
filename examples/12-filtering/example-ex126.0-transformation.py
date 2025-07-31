@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import lmlib as lm
 from lmlib.utils.generator import gen_rect
-from lmlib.statespace.model import transform_ALSSM, transform_x
+from lmlib.statespace.backends.statespace_tools import _transform_ALSSM_matrices, _transform_x
 
 # --- Generating test signal ---
 K = 2000
@@ -29,7 +29,8 @@ segment_right = lm.Segment(a=0, b=49, direction=lm.BACKWARD, g=1000)
 costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])
 
 P = np.linalg.cholesky(costs.get_steady_state_W()).T
-alssm_trans = transform_ALSSM(alssm_poly, P)
+_A,_C = _transform_ALSSM_matrices(alssm_poly.A, alssm_poly.C, P)
+alssm_trans = lm.Alssm(_A, _C)
 
 costs_trans = lm.CompositeCost((alssm_trans,), (segment_left, segment_right), F=[[1, 1]])
 
