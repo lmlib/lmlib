@@ -17,7 +17,7 @@ from lmlib.utils.check import *
 from lmlib.statespace.backends.statespace_tools import *
 
 
-__all__ = ['ConstrainMatrix', 'CompositeCost', 'CostSegment', 'Segment',
+__all__ = ['ConstrainMatrix', 'CompositeCost', 'CostSegment', 'Segment', 'NDCompositeCost',
            'FW', 'FORWARD', 'BW', 'BACKWARD',
            'map_trajectories', 'map_windows'
            ]
@@ -969,3 +969,28 @@ class ConstrainMatrix:
         print(' ——' * self._N)
         for r, row in enumerate(self._data):
             print(row, ' | ', r)
+
+
+
+# class NDCompositeCost:
+#     def __init__(self, composite_costs, **kwargs):
+#         self.composite_costs = composite_costs
+#
+#     @property
+#     def composite_costs(self):
+#         return self._composite_costs
+#
+#     @composite_costs.setter
+#     def composite_costs(self, composite_costs):
+#         for c in composite_costs:
+#             assert isinstance(c, CompositeCost), '{} is not CompositeCost'.format(c)
+#         self._composite_costs = composite_costs
+#
+#     @property
+#     def ND(self):
+#         return len(self.composite_costs)
+
+
+class NDCompositeCost(list):
+    def __init__(self, composite_costs):
+        super().__init__(composite_costs)

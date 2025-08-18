@@ -6,6 +6,7 @@ from sympy.codegen.ast import uint64
 
 # xi2 recursions
 def jit_recursion_xi2(xi2, A, C, a, b, direction, delta, gamma, y, v, beta):
+    einsum_path = 'in,nj->ij' if np.ndim(C) == 2 else 'i,j->ij'
     _A = A.astype(float)
     _C = C.astype(float)
     W = xi2.reshape(-1, *A.shape)
@@ -13,25 +14,29 @@ def jit_recursion_xi2(xi2, A, C, a, b, direction, delta, gamma, y, v, beta):
         gamma_a = gamma ** (a - 1 - delta)
         _a = -2**31 if np.isinf(a) else a
         Aa = matrix_power(_A, 0 if np.isnan(a) else _a - 1)
-        jit_forward_recursion_W(W, _A, _C, _a, b, delta, gamma, y, v, beta, Aa, gamma_a)
+        Ab = matrix_power(A, b)
+        AaccAa = np.einsum(einsum_path, np.dot(Aa.T, C.T), np.dot(C, Aa))
+        AbccAb = np.einsum(einsum_path, np.dot(Ab.T, C.T), np.dot(C, Ab))
+
+        jit_forward_recursion_W(W, _A, _C, _a, b, delta, gamma, y, v, beta, AaccAa, AbccAb, gamma_a)
     elif direction == 'bw':
         Ab = matrix_power(_A, 0 if np.isinf(b) else b + 1)
         gamma_b = gamma ** (b - delta + 1)
         _b = 2**31 if np.isinf(b) else b
-        jit_backward_recursion_W(W, _A, _C, a, _b, delta, gamma, y, v, beta, Ab, gamma_b)
+        Aa = matrix_power(A, a)
+        AaccAa = np.einsum(einsum_path, np.dot(Aa.T, C.T), np.dot(C, Aa))
+        AbccAb = np.einsum(einsum_path, np.dot(Ab.T, C.T), np.dot(C, Ab))
+
+        jit_backward_recursion_W(W, _A, _C, a, _b, delta, gamma, y, v, beta,  AaccAa, AbccAb, gamma_b)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 @jit(nopython=True)
-def jit_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, Aa, gamma_a):
+def jit_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, AaccAa, AbccAb, gamma_a):
     gamma_inv = 1/gamma
     gamma_b = gamma**(b-delta)
 
     A_inv = inv(A)
-    Ab = matrix_power(A, b)
-    AaccAa = np.outer(np.dot(Aa.T, C.T), np.dot(C, Aa))
-    AbccAb = np.outer(np.dot(Ab.T, C.T), np.dot(C, Ab))
-
     W0 = np.zeros_like(W[0])
     K = len(y)
 
@@ -51,13 +56,10 @@ def jit_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, Aa, gamma_
         W *= beta
 
 @jit(nopython=True)
-def jit_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, Ab, gamma_b):
+def jit_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, AaccAa, AbccAb, gamma_b):
 
     gamma_a = gamma**(a - delta)
-    Aa = matrix_power(A, a)
 
-    AaccAa = np.outer(np.dot(Aa.T, C.T), np.dot(C, Aa))
-    AbccAb = np.outer(np.dot(Ab.T, C.T), np.dot(C, Ab))
 
     W0 = np.zeros_like(W[0])
     K = len(y)
@@ -76,7 +78,6 @@ def jit_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, Ab, gamma
 
     if beta != 1:
         W *= beta
-
 
 # xi1 recursions
 def jit_recursion_xi1(xi1, A, C, a, b, direction, delta, gamma, y, v, beta):

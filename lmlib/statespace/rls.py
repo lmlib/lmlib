@@ -7,21 +7,27 @@ TODOs
 - Create backends for minimization methods, i.E numpy (default) and jit
 
 """
-
+import itertools
 import sys
 from typing import Union
 
+from numpy.core.numeric import moveaxis
+from rfc3986.abnf_regexp import segments
+
+import lmlib
 import numpy as np
 from numpy.linalg import inv, cond
 
 from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backends
-from lmlib.statespace.cost import CompositeCost
-from lmlib.statespace.model import AlssmSum
+from lmlib.statespace.cost import CompositeCost, NDCompositeCost
+from lmlib.statespace.model import AlssmSum, Alssm
 from lmlib.utils.check import *
 from lmlib.statespace.backends.rec_numpy import *
 from lmlib.statespace.backends.rec_lfilter import *
 from lmlib.statespace.backends.rec_jit import *
 
+
+__all__ = ['RLSAlssm', 'NDRLSAlssm']
 #  TODO: Why was this implemented?
 WARNING_NOT_STEADY_STATE = True
 """bool : If True, a warning is issued if the steady state is not used when no sample weights are provided"""
@@ -107,7 +113,7 @@ class RLSAlssm:
     # Properties
     @property
     def cost_model(self) -> CompositeCost:
-        """CostBase : Cost Model"""
+        """CompositeCost : Cost Model"""
         return self._cost_model
 
     @cost_model.setter
@@ -278,10 +284,12 @@ class RLSAlssm:
             v = np.ones(K)
         elif self._backend == 'lfilter':
             v = 1
+
         # get model order
         alssm = AlssmSum(alssms)
         N = alssm.N
         self._N = N
+
         # get signal set dimension
         if np.ndim(alssm.C) == 2:
             if np.ndim(y) == 2:
@@ -303,143 +311,144 @@ class RLSAlssm:
         if S is not None and self._backend == 'jit':
             raise NotImplementedError("Just In Time (jit) backend is not implemented for Multi-Set Signals.")
 
+
+        # allocate necessary memory
         if self.calc_W:
             if self.steady_state:
                 self._xi2 = self.cost_model.get_steady_state_W().flatten()
             else:
                 self._allocate_xi2(K, N)
 
-                for seg, f, beta in zip(segments, F.T, betas):
-                    alssm = AlssmSum(alssms, deltas=f)
-
-                    if self._backend == 'numpy':
-                        numpy_recursion_xi2(self._xi2,
-                                            alssm.A, alssm.C,
-                                            seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                            y, v, beta)
-
-                    elif self._backend == 'jit':
-                        jit_recursion_xi2(self._xi2,
-                                            alssm.A, alssm.C,
-                                            seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                            y, v, beta)
-
-                    elif self._backend == 'lfilter':
-                        if self._filter_form == 'cascade':
-                            lfilter_cascade_xi2(self._xi2,
-                                                alssm.A, alssm.C,
-                                                seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                                y, v, beta)
-
-                        elif self._filter_form == 'parallel':
-                            lfilter_parallel_xi2(self._xi2,
-                                                alssm.A, alssm.C,
-                                                seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                                y, v, beta)
-                        else:
-                            raise ValueError("unknown filter-form: '{}'".format(self._filter_form))
-                    else:
-                        raise ValueError("unknown backend: '{}'".format(self._backend))
-
         if self.calc_xi:
             self._allocate_xi1(K, N, S)
 
-            for seg, f, beta in zip(segments, F.T, betas):
-                alssm = AlssmSum(alssms, deltas=f)
+        if self.calc_kappa:
+            self._allocate_xi0(K, S)
+
+        if self.calc_nu:
+            self._allocate_nu(K)
+
+        # run recursions
+        for segment, f, beta in zip(segments, F.T, betas):
+            alssm = AlssmSum(alssms, deltas=f)
+
+            if self.calc_W:
+                if self._backend == 'numpy':
+                    numpy_recursion_xi2(self._xi2,
+                                        alssm.A, alssm.C,
+                                        segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                        y, v, beta)
+
+                elif self._backend == 'jit':
+                    jit_recursion_xi2(self._xi2,
+                                      alssm.A, alssm.C,
+                                      segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                      y, v, beta)
+
+                elif self._backend == 'lfilter':
+                    if self._filter_form == 'cascade':
+                        lfilter_cascade_xi2(self._xi2,
+                                            alssm.A, alssm.C,
+                                            segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                            y, v, beta)
+
+                    elif self._filter_form == 'parallel':
+                        lfilter_parallel_xi2(self._xi2,
+                                             alssm.A, alssm.C,
+                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                             y, v, beta)
+                    else:
+                        raise ValueError("unknown filter-form: '{}'".format(self._filter_form))
+                else:
+                    raise ValueError("unknown backend: '{}'".format(self._backend))
+
+            if self.calc_xi:
 
                 if self._backend == 'numpy':
                     numpy_recursion_xi1(self._xi1,
                                         alssm.A, alssm.C,
-                                        seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
+                                        segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                         y, v, beta)
 
                 elif self._backend == 'jit':
                     jit_recursion_xi1(self._xi1,
-                                        alssm.A, alssm.C,
-                                        seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                        y, v, beta)
+                                      alssm.A, alssm.C,
+                                      segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                      y, v, beta)
 
                 elif self._backend == 'lfilter':
                     if self._filter_form == 'cascade':
                         lfilter_cascade_xi1(self._xi1,
                                             alssm.A, alssm.C,
-                                            seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
+                                            segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                             y, v, beta)
 
                     elif self._filter_form == 'parallel':
                         lfilter_parallel_xi1(self._xi1,
-                                            alssm.A, alssm.C,
-                                            seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                            y, v, beta)
+                                             alssm.A, alssm.C,
+                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                             y, v, beta)
                     else:
                         raise ValueError("unknown filter-form '{}'".format(self._filter_form))
                 else:
                     raise ValueError("unknown backend: '{}'".format(self._backend))
 
-        if self.calc_kappa:
-            self._allocate_xi0(K, S)
-
-            for seg, f, beta in zip(segments, F.T, betas):
-                alssm = AlssmSum(alssms, deltas=f)
+            if self.calc_kappa:
 
                 if self._backend == 'numpy':
                     numpy_recursion_xi0(self._xi0,
                                         alssm.A, alssm.C,
-                                        seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
+                                        segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                         y, v, beta)
 
                 elif self._backend == 'jit':
                     jit_recursion_xi0(self._xi0,
-                                        alssm.A, alssm.C,
-                                        seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                        y, v, beta)
+                                      alssm.A, alssm.C,
+                                      segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                      y, v, beta)
 
                 elif self._backend == 'lfilter':
                     if self._filter_form == 'cascade':
                         lfilter_cascade_xi0(self._xi0,
                                             alssm.A, alssm.C,
-                                            seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
+                                            segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                             y, v, beta)
                     elif self._filter_form == 'parallel':
                         lfilter_parallel_xi0(self._xi0,
-                                            alssm.A, alssm.C,
-                                            seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                            y, v, beta)
+                                             alssm.A, alssm.C,
+                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                             y, v, beta)
                     else:
                         raise ValueError("unknown filter-form '{}'".format(self._filter_form))
                 else:
                     raise ValueError("unknown backend: '{}'".format(self._backend))
 
-        if self.calc_nu:
-            self._allocate_nu(K)
-
-            for seg, f, beta in zip(segments, F.T, betas):
-                alssm = AlssmSum(alssms, deltas=f)
+            if self.calc_nu:
 
                 if self._backend == 'numpy':
                     numpy_recursion_nu(self._nu,
-                                        alssm.A, alssm.C,
-                                        seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                        y, v, beta)
+                                       alssm.A, alssm.C,
+                                       segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                       y, v, beta)
 
                 elif self._backend == 'jit':
                     jit_recursion_nu(self._nu,
-                                       alssm.A, alssm.C,
-                                       seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                       y, v, beta)
+                                     alssm.A, alssm.C,
+                                     segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                     y, v, beta)
 
                 elif self._backend == 'lfilter':
                     if self._filter_form == 'cascade':
                         lfilter_cascade_nu(self._nu,
-                                            alssm.A, alssm.C,
-                                            seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                            y, v, beta)
+                                           alssm.A, alssm.C,
+                                           segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                           y, v, beta)
 
                     elif self._filter_form == 'parallel':
                         lfilter_parallel_nu(self._nu,
-                                           alssm.A, alssm.C,
-                                           seg.a, seg.b, seg.direction, seg.delta, seg.gamma,
-                                           y, v, beta)
+                                            alssm.A, alssm.C,
+                                            segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                            y, v, beta)
                     else:
                         raise ValueError("unknown filter-form '{}'".format(self._filter_form))
                 else:
@@ -707,3 +716,591 @@ class RLSAlssm:
         assert backend in BACKEND_TYPES, f'Wrong backend name {backend}'
         assert backend in available_backends, f'{backend} not available, check {backend} installation.'
         self._backend = backend
+
+
+
+
+
+
+
+class NDRLSAlssm(RLSAlssm):
+
+    def __init__(self, nd_cost_model, nd_betas=None, *args, **kwargs):
+        super().__init__(nd_cost_model[0], betas=None, *args, **kwargs)
+        self._ND = None
+        # delattr(self, 'cost_model')
+        # delattr(self, 'betas')
+        # delattr(self, '_S')
+        self.nd_cost_model = nd_cost_model
+        self.nd_betas = nd_betas
+        self._calc_nu = False
+        self._steady_state = False
+        self._Ks = ()
+        self._Ns = ()
+
+
+    # Properties
+    @property
+    def nd_cost_model(self) -> NDCompositeCost:
+        """NDCompositeCost : Cost Model"""
+        return self._nd_cost_model
+
+    @nd_cost_model.setter
+    def nd_cost_model(self, nd_cost_model):
+        assert isinstance(nd_cost_model, NDCompositeCost), 'nd_cost_model is not a subclass of NDCompositeCost'
+        self._nd_cost_model = nd_cost_model
+        self._ND = len(self._nd_cost_model)
+
+    @property
+    def nd_betas(self):
+        """~numpy.ndarray : Scalar weight for each dimension and each cost segment"""
+        return self._nd_betas
+
+    @nd_betas.setter
+    def nd_betas(self, nd_betas):
+        self._nd_betas = []
+        if nd_betas is None:
+            for cost_model in self.nd_cost_model:
+                P = len(cost_model.segments)
+                self._nd_betas.append(np.ones(P))
+        else:
+            assert len(nd_betas) == self._ND, f'nd_betas has wrong length, {info_str_found_shape(nd_betas)}'
+            for betas, cost_model in zip(nd_betas, self.nd_cost_model):
+                P = len(cost_model.segments)
+                assert is_array_like(betas), 'betas if not array_like'
+                assert P == len(betas), f'betas has wrong length, {info_str_found_shape(betas)}'
+                self._nd_betas.append(betas)
+
+    @property
+    def W(self):
+        """:class:`~numpy.ndarray` : Filter Parameter :math:`W`"""
+        xi2_shape = self._xi2.shape
+        N = int(np.sqrt(xi2_shape[-1]))
+        return self._xi2.reshape(N, N) if self._steady_state else self._xi2.reshape(*xi2_shape[:-1], N, N)
+
+    def filter(self, y, v=None, dim_order=None):
+
+        # check input parameters
+        assert np.ndim(y) == self._ND, "y has not the same dimension as nd_cost_model"
+        if dim_order is None:
+            dim_order = list(range(self._ND))
+
+        if self.calc_W:
+            self._xi2 = self._xi2_nd_filter(y, v, dim_order)
+
+        if self.calc_xi:
+            self._xi1 = self._xi1_nd_filter(y, v, dim_order)
+
+        if self.calc_kappa:
+            self._xi0 = self._xi0_nd_filter(y, v, dim_order)
+
+        if self.calc_nu:
+            raise NotImplemented("calc_nu is not implemented")
+            # self._nu = self._nu_nd_filter(y, v, dim_order)
+
+    def _xi2_nd_filter(self, y, v, dim_order):
+
+        # calculate first model dimension
+        if len(dim_order) > 1:
+            _y = self._xi2_nd_filter(y, v, dim_order[:-1])
+        else:
+            _y = y[..., np.newaxis] # extent array cause C is 2dim
+
+        # getting the right model depending on dimension extend the Alssm Matrices (I kron I kron ... kron A)
+        model_axis = dim_order[-1]
+        data_axes = dim_order[:-1]
+        model_orders = [cm.get_model_order() for cm in self.nd_cost_model]
+        model_ext_orders = [model_orders[i-1] for i in data_axes]
+        I_ext = np.eye(int(np.prod(model_ext_orders)))
+        cost_model = self.nd_cost_model[model_axis-1]
+        betas = self.nd_betas[model_axis-1]
+
+        # managing shapes allocation and indexing tuples
+        _y_shape = np.array(np.shape(_y))
+        N = int(np.prod([model_orders[i-1] for i in dim_order]))
+
+        # create iteration range
+        iteration_shape = _y_shape.copy() # for numpy ndindex
+        iteration_shape = np.delete(iteration_shape, model_axis-1) # remove the dimension where the model will be applied from the parallel iteration index
+        iteration_shape = iteration_shape[:-1] # remove the order dimension from the index
+
+        # allocate xi2
+        _xi2_shape = _y_shape.copy()
+        _xi2_shape[-1] = N**2
+        _xi2 = np.zeros(_xi2_shape) # shape of (K1, K2, ... Kn, N)
+
+        for index in np.ndindex(*iteration_shape):
+
+            # modify index by a slice object / (:)
+            _index = list(index)
+            _index.insert(model_axis-1, slice(None)) # add where the model dimension is applied a slice object (:)
+            _index = tuple(_index) # need for ndarray
+
+            # condition v matrix depending on backend used
+            K = len(_y[_index])
+            if v is not None:
+                _v = v[_index]
+                assert len(_v) == K, "length of v is not equal to length of y"
+            elif self._backend in ('numpy', 'jit'):
+                _v = np.ones(K)
+            elif self._backend == 'lfilter':
+                _v = 1
+            else:
+                assert False, "unknown backend: '{}'".format(self._backend)
+
+
+            for segment, f, beta in zip(cost_model.segments, cost_model.F.T, betas):
+                alssm = AlssmSum(cost_model.alssms, deltas=f)
+                _A = np.kron(I_ext, alssm.A)
+                _C = np.kron(I_ext, alssm.C)
+
+                if self._backend == 'numpy':
+                    numpy_recursion_xi2(_xi2[_index],
+                                        _A, _C,
+                                        segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                        _y[_index], _v, beta)
+
+                elif self._backend == 'jit':
+                    jit_recursion_xi2(_xi2[_index],
+                                      _A, _C,
+                                      segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                      _y[_index], _v, beta)
+
+                elif self._backend == 'lfilter':
+                    if self._filter_form == 'cascade':
+                        lfilter_cascade_xi2(_xi2[_index],
+                                            _A, _C,
+                                            segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                            _y[_index], _v, beta)
+
+                    elif self._filter_form == 'parallel':
+                        lfilter_parallel_xi2(_xi2[_index],
+                                             _A, _C,
+                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                             _y[_index], _v, beta)
+                    else:
+                        raise ValueError("unknown filter-form '{}'".format(self._filter_form))
+                else:
+                    raise ValueError("unknown backend: '{}'".format(self._backend))
+
+        return _xi2
+
+    def _xi1_nd_filter(self, y, v, dim_order):
+
+        # calculate first model dimension
+        if len(dim_order) > 1:
+            _y = self._xi1_nd_filter(y, v, dim_order[:-1])
+        else:
+            _y = y[..., np.newaxis] # extent array cause C is 2dim
+
+        # getting the right model depending on dimension extend the Alssm Matrices (I kron I kron ... kron A)
+        model_axis = dim_order[-1]
+        data_axes = dim_order[:-1]
+        model_orders = [cm.get_model_order() for cm in self.nd_cost_model]
+        model_ext_orders = [model_orders[i-1] for i in data_axes]
+        I_ext = np.eye(int(np.prod(model_ext_orders)))
+        cost_model = self.nd_cost_model[model_axis-1]
+        betas = self.nd_betas[model_axis-1]
+
+        # managing shapes allocation and indexing tuples
+        _y_shape = np.array(np.shape(_y))
+        N = int(np.prod([model_orders[i-1] for i in dim_order]))
+
+        # create iteration range
+        iteration_shape = _y_shape.copy() # for numpy ndindex
+        iteration_shape = np.delete(iteration_shape, model_axis-1) # remove the dimension where the model will be applied from the parallel iteration index
+        iteration_shape = iteration_shape[:-1] # remove the order dimension from the index
+
+        # allocate xi1
+        _xi1_shape = _y_shape.copy()
+        _xi1_shape[-1] = N
+        _xi1 = np.zeros(_xi1_shape) # shape of (K1, K2, ... Kn, N)
+
+        for index in np.ndindex(*iteration_shape):
+
+            # modify index by a slice object / (:)
+            _index = list(index)
+            _index.insert(model_axis-1, slice(None)) # add where the model dimension is applied a slice object (:)
+            _index = tuple(_index) # need for ndarray
+
+            # condition v matrix depending on backend used
+            K = len(_y[_index])
+            if v is not None:
+                _v = v[_index]
+                assert len(_v) == K, "length of v is not equal to length of y"
+            elif self._backend in ('numpy', 'jit'):
+                _v = np.ones(K)
+            elif self._backend == 'lfilter':
+                _v = 1
+            else:
+                assert False, "unknown backend: '{}'".format(self._backend)
+
+
+            for segment, f, beta in zip(cost_model.segments, cost_model.F.T, betas):
+                alssm = AlssmSum(cost_model.alssms, deltas=f)
+                _A = np.kron(I_ext, alssm.A)
+                _C = np.kron(I_ext, alssm.C)
+
+                if self._backend == 'numpy':
+                    numpy_recursion_xi1(_xi1[_index],
+                                        _A, _C,
+                                        segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                        _y[_index], _v, beta)
+
+                elif self._backend == 'jit':
+                    jit_recursion_xi1(_xi1[_index],
+                                      _A, _C,
+                                      segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                      _y[_index], _v, beta)
+
+                elif self._backend == 'lfilter':
+                    if self._filter_form == 'cascade':
+                        lfilter_cascade_xi1(_xi1[_index],
+                                            _A, _C,
+                                            segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                            _y[_index], _v, beta)
+
+                    elif self._filter_form == 'parallel':
+                        lfilter_parallel_xi1(_xi1[_index],
+                                             _A, _C,
+                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                             _y[_index], _v, beta)
+                    else:
+                        raise ValueError("unknown filter-form '{}'".format(self._filter_form))
+                else:
+                    raise ValueError("unknown backend: '{}'".format(self._backend))
+
+        return _xi1
+
+    def _xi0_nd_filter(self, y, v, dim_order):
+
+        # calculate first model dimension
+        if len(dim_order) > 1:
+            _y = self._xi0_nd_filter(y, v, dim_order[:-1])
+        _y = y[..., np.newaxis] # extent array cause C is 2dim
+
+        # getting the right model depending on dimension extend the Alssm Matrices (I kron I kron ... kron A)
+        model_axis = dim_order[-1]
+        data_axes = dim_order[:-1]
+        model_orders = [cm.get_model_order() for cm in self.nd_cost_model]
+        model_ext_orders = [model_orders[i-1] for i in data_axes]
+        I_ext = np.eye(int(np.prod(model_ext_orders)))
+        cost_model = self.nd_cost_model[model_axis-1]
+        betas = self.nd_betas[model_axis-1]
+
+        # managing shapes allocation and indexing tuples
+        _y_shape = np.array(np.shape(_y))
+        # N = int(np.prod([model_orders[i-1] for i in dim_order]))
+
+        # create iteration range
+        iteration_shape = _y_shape.copy() # for numpy ndindex
+        iteration_shape = np.delete(iteration_shape, model_axis-1) # remove the dimension where the model will be applied from the parallel iteration index
+        iteration_shape = iteration_shape[:-1] # remove the order dimension from the index
+
+        # allocate xi0
+        _xi0_shape = np.shape(y)
+        # _xi0_shape[-1] = 1
+        _xi0 = np.zeros(_xi0_shape) # shape of (K1, K2, ... Kn, N)
+
+        for index in np.ndindex(*iteration_shape):
+
+            # modify index by a slice object / (:)
+            _index = list(index)
+            _index.insert(model_axis-1, slice(None)) # add where the model dimension is applied a slice object (:)
+            _index = tuple(_index) # need for ndarray
+
+            # condition v matrix depending on backend used
+            K = len(_y[_index])
+            if v is not None:
+                _v = v[_index]
+                assert len(_v) == K, "length of v is not equal to length of y"
+            elif self._backend in ('numpy', 'jit'):
+                _v = np.ones(K)
+            elif self._backend == 'lfilter':
+                _v = 1
+            else:
+                assert False, "unknown backend: '{}'".format(self._backend)
+
+
+            for segment, f, beta in zip(cost_model.segments, cost_model.F.T, betas):
+                alssm = AlssmSum(cost_model.alssms, deltas=f)
+                _A = np.kron(I_ext, alssm.A)
+                _C = np.kron(I_ext, alssm.C)
+
+                if self._backend == 'numpy':
+                    numpy_recursion_xi0(_xi0[_index[:-1]],
+                                        _A, _C,
+                                        segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                        _y[_index], _v, beta)
+
+                elif self._backend == 'jit':
+                    jit_recursion_xi0(_xi0[_index[:-1]],
+                                      _A, _C,
+                                      segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                      _y[_index], _v, beta)
+
+                elif self._backend == 'lfilter':
+                    if self._filter_form == 'cascade':
+                        lfilter_cascade_xi0(_xi0[_index[:-1]],
+                                            _A, _C,
+                                            segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                            _y[_index], _v, beta)
+
+                    elif self._filter_form == 'parallel':
+                        lfilter_parallel_xi0(_xi0[_index[:-1]],
+                                             _A, _C,
+                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                             _y[_index], _v, beta)
+                    else:
+                        raise ValueError("unknown filter-form '{}'".format(self._filter_form))
+                else:
+                    raise ValueError("unknown backend: '{}'".format(self._backend))
+
+        return _xi0
+
+    def minimize_v(self, H=None, h=None, return_constrains=False):
+        r"""
+        Returns the vector `v` of the squared error minimization with linear constraints
+
+        Minimizes the squared error over the vector `v` with linear constraints with an (optional) offset
+        [Wildhaber2018]_ [TABLE V].
+
+        **Constraint:**
+
+        - *Linear Scalar* : :math:`x=Hv,\,v\in\mathbb{R}`
+
+          known : :math:`H \in \mathbb{R}^{N \times 1}`
+
+          :math:`\hat{v}_k = \frac{\xi_k^{\mathsf{T}}H}{H^{\mathsf{T}}W_k H}`
+
+        - *Linear Combination With Offset* : :math:`x=Hv +h,\,v\in\mathbb{M}`
+
+          known : :math:`H \in \mathbb{R}^{N \times M},\,h\in\mathbb{R}^N`
+
+          :math:`\hat{v}_k = \big(H^{\mathsf{T}}W_k H\big)^{-1} H^\mathsf{T}\big(\xi_k - W_k h\big)`
+
+
+        Parameters
+        ----------
+        H : array_like, shape=(N, M)
+            Matrix for linear constraining :math:`H`
+        h : array_like, shape=(N, [S]), optional
+            Offset vector for linear constraining :math:`h`
+        return_constrains : bool
+            If set to True, the output is extended by H and h
+
+        Returns
+        -------
+        v : :class:`~numpy.ndarray`, shape = (K, M)
+            Least square state vector estimate for each time index.
+            The shape of one state vector `x[k]` is `(N, [S])`, where k is the time index of `K` samples,
+            `N` the ALSSM order.
+
+        |def_K|
+        |def_N|
+
+        """
+
+        if self._xi2 is None or self._xi1 is None:
+            raise ValueError("Not all Parameters are calculated to perform minimization. \n"
+                             "Check. calc_W=True or steady_state=True and calc_xi=True, ")
+        # check and init H
+        if H is None:
+            H = np.eye(self._N)
+            HTWH = self.W
+        else:
+            H = np.asarray(H)
+            if H.shape[0] != self._N:
+                ValueError(f"First dimension of constrain matrix H needs to be of size {self._N} (model order), "
+                           f"{info_str_found_shape(H)}.")
+            HTWH = H.T @ self.W @ H
+
+        # check and init h
+        if h is None:
+            h = np.zeros(self._N)
+            HTxiWh = np.einsum('nm, ...m-> ...n', H.T, self._xi1)
+        else:
+            if h.shape[0] != self._N:
+                ValueError(f"First dimension of offset vector h needs to be of size {self._N} (model order), "
+                           f"{info_str_found_shape(h)}.")
+            HTxiWh = np.einsum('nm, ...m-> ...n', H.T, self._xi1 - self.W @ h)
+
+        # constrained minimization
+        M = H.shape[1]
+        v = np.full((self._K, M, self._S) if self._S else (self._K, M), np.nan)
+        msk = cond(HTWH) < 1 / sys.float_info.epsilon
+        if self._steady_state:
+            assert msk, 'H.T @ W @ H is not invertible.'
+            v[...] = np.einsum('nm, ...m-> ...n', inv(HTWH), HTxiWh)
+        else:
+            v[msk] = np.einsum('...nm, ...n -> ...m', inv(HTWH[msk]), HTxiWh[msk])
+
+        if return_constrains:
+            return v, H, h
+        return v
+
+    def minimize_x(self, H=None, h=None):
+        r"""
+        Returns the state vector `x` of the squared error minimization with linear constraints
+
+        Minimizes the squared error over the state vector `x`.
+        If needed its possible to apply linear constraints with an (optional) offset.
+        [Wildhaber2018]_ [TABLE V].
+
+        **Constraint:**
+
+        - *Linear Scalar* : :math:`x=Hv,\,v\in\mathbb{R}`
+
+          known : :math:`H \in \mathbb{R}^{N \times 1}`
+
+        - *Linear Combination With Offset* : :math:`x=Hv +h,\,v\in\mathbb{M}`
+
+          known : :math:`H \in \mathbb{R}^{N \times M},\,h\in\mathbb{R}^N`
+
+        See also :meth:`minimize_v`
+
+        Parameters
+        ----------
+        H : array_like, shape=(N, M), optional
+            Matrix for linear constraining :math:`H`
+        h : array_like, shape=(N, [S]), optional
+            Offset vector for linear constraining :math:`h`
+
+        Returns
+        -------
+        xs : :class:`~numpy.ndarray` of shape = (K, N)
+            Least square state vector estimate for each time index.
+            The shape of one state vector `x[k]` is `(N,)`, where `k` is the time index of `K` samples,
+            `N` the ALSSM order.
+
+
+        |def_K|
+        |def_N|
+
+        """
+
+        if self._xi2 is None or self._xi1 is None:
+            raise ValueError("\nNot all Parameters are calculated to perform minimization. \n"
+                             "Set: calc_W=True or steady_state=True and calc_xi=True, ")
+
+        if H is None and h is None:
+            msk = cond(self.W) < (1 / sys.float_info.epsilon)
+            x = np.full_like(self.xi, np.nan)
+            if self._steady_state:
+                assert msk, 'Steady State W Matrix is not invertible.'
+                x[...] = np.einsum('nm, ...m-> ...n', inv(self.W), self.xi)
+            else:
+                assert np.any(msk), 'All W Matrices are not invertible.'
+                x[msk] = np.einsum('...nm, ...n -> ...m', inv(self.W[msk]), self.xi[msk])
+            return x
+
+        v, H, h = self.minimize_v(H, h, return_constrains=True)
+        x = np.einsum('nm, ...m->...n', H, v)
+        x += h[np.newaxis,:] if self._S is None else h[np.newaxis,:, np.newaxis]
+        return x
+
+    def filter_minimize_x(self, y, v=None, dim_order=None, H=None, h=None):
+        """
+        Combination of :meth:`RLSAlssmBase.filter` and :meth:`RLSAlssmBase.minimize_x`.
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            rls.filter(y)
+            xs = rls.minimize_x()
+
+
+        See Also
+        --------
+        :meth:`RLSAlssmBase.filter`, :meth:`RLSAlssmBase.minimize_x`
+
+        """
+
+        self.filter(y, v, dim_order)
+        return self.minimize_x(H, h)
+
+    def filter_minimize_v(self, y, v=None, dim_order=None, H=None, h=None, **kwargs):
+        """
+        Combination of :meth:`RLSAlssmBase.filter` and :meth:`RLSAlssmBase.minimize_v`.
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            rls.filter(y)
+            xs = rls.minimize_v()
+
+
+        See Also
+        --------
+        :meth:`RLSAlssmBase.filter`, :meth:`RLSAlssmBase.minimize_v`
+
+        """
+
+        self.filter(y, v, dim_order)
+        return self.minimize_v(H, h, **kwargs)
+
+    def filter_minimize_yhat(self, y, v=None, dim_order=None, H=None, h=None, alssm_weights=None, c0s=None):
+        """
+        Combination of :meth:`RLSAlssmBase.filter` and :meth:`RLSAlssmBase.minimize_x` and
+        :meth:`CostBase.eval_alssm_output`
+
+        This method has the same output as calling the methods
+
+        .. code::
+
+            xs = rls.filter_minimize_x()
+            y_hat = rls.cost_model.eval_alssm_output(xs)
+
+        See Also
+        --------
+        :meth:`RLSAlssmBase.filter`, :meth:`RLSAlssmBase.minimize_x`
+
+        """
+        xs = self.filter_minimize_x(y, v=v, dim_order=dim_order, H=H, h=h)
+        return self.cost_model.eval_alssm_output(xs, alssm_weights=alssm_weights, c0s=c0s)
+
+    def eval_errors(self, xs, ks=None):
+        r"""
+        Evaluation of the squared error for multiple state vectors `xs`.
+
+        The return value is the squared error
+
+        .. math::
+            J(x)  = x^{\mathsf{T}}W_kx -2*x^{\mathsf{T}}\xi_k + \kappa_k
+
+        for each state vector :math:`x` from the list `xs`.
+
+
+        Parameters
+        ----------
+        xs : array_like of shape=(K, N)
+            List of state vectors :math:`x`
+        ks : None, array_like of int of shape=(XS,)
+            List of indices where to evaluate the error
+
+        Returns
+        -------
+        J : :class:`np.ndarray` of shape=(XS,)
+            Squared Error for each state vector
+
+
+        |def_K|
+        |def_XS|
+        |def_N|
+
+        """
+
+        if self._steady_state:
+            J = np.einsum('...n, ...n->...', xs, np.einsum('nm, ...m->...n', self.W, xs))
+
+        if ks is None:
+            if not self._steady_state:
+                J = np.einsum('...n, ...n->...', xs, np.einsum('...nm, ...m->...n', self.W, xs))
+            return J - 2 * np.einsum('...n, ...n->...', self.xi, xs) + self.kappa
+
+        else:
+            if not self._steady_state:
+                J = np.einsum('...n, ...n->...', xs[ks], np.einsum('...nm, ...m->...n', self.W[ks], xs[ks]))
+            return J - 2 * np.einsum('...n, ...n->...', self.xi[ks], xs[ks]) + self.kappa[ks]

@@ -2,6 +2,9 @@ import numpy as np
 from numpy.linalg import inv, matrix_power
 
 # helper function for numpy method
+def _numpy_einsum_path_W(is_multichannel):
+    return 'in,nj->ij' if is_multichannel else 'i,j->ij'
+
 def _numpy_einsum_path_xi(is_multichannel):
     return 'nl..., l... ->n...' if is_multichannel else 'n..., ... ->n...'
 
@@ -28,24 +31,25 @@ def _numpy_einsum_path_kappa(is_multichannel, is_multiset, kappa_diag):
 
 # xi2 recursions
 def numpy_recursion_xi2(xi2, A, C, a, b, direction, delta, gamma, y, v, beta):
+    einsum_path = _numpy_einsum_path_W(is_multichannel = np.ndim(C) == 2)
     W = xi2.reshape(-1, *A.shape)
     if direction == 'fw':
-        numpy_forward_recursion_W(W, A, C, a, b, delta, gamma, y, v, beta)
+        numpy_forward_recursion_W(W, A, C, a, b, delta, gamma, y, v, beta, einsum_path)
     elif direction == 'bw':
-        numpy_backward_recursion_W(W, A, C, a, b, delta, gamma, y, v, beta)
+        numpy_backward_recursion_W(W, A, C, a, b, delta, gamma, y, v, beta, einsum_path)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
-def numpy_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta):
+def numpy_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, einsum_path):
 
     gamma_inv = 1 / gamma
     gamma_a = gamma ** (a - 1 - delta)
     gamma_b = gamma ** (b - delta)
     A_inv = inv(A)
     Aa = matrix_power(A, 0 if np.isinf(a) else a - 1)
-    AaccAa = np.outer(np.dot(Aa.T, C.T), np.dot(C, Aa))
+    AaccAa = np.einsum(einsum_path, np.dot(Aa.T, C.T), np.dot(C, Aa))
     Ab = matrix_power(A, b)
-    AbccAb = np.outer(np.dot(Ab.T, C.T), np.dot(C, Ab))
+    AbccAb = np.einsum(einsum_path, np.dot(Ab.T, C.T), np.dot(C, Ab))
 
     W0 = np.zeros_like(W[0])
     K = len(y)
@@ -65,14 +69,14 @@ def numpy_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta):
     if beta != 1:
         W *= beta
 
-def numpy_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta):
+def numpy_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, einsum_path):
 
     gamma_a = gamma**(a - delta)
     gamma_b = gamma**(b - delta + 1)
     Aa = matrix_power(A, a)
-    AaccAa = np.outer(np.dot(Aa.T, C.T), np.dot(C, Aa))
+    AaccAa = np.einsum(einsum_path, np.dot(Aa.T, C.T), np.dot(C, Aa))
     Ab = matrix_power(A, 0 if np.isinf(b) else b + 1)
-    AbccAb = np.outer(np.dot(Ab.T, C.T), np.dot(C, Ab))
+    AbccAb = np.einsum(einsum_path, np.dot(Ab.T, C.T), np.dot(C, Ab))
 
     W0 = np.zeros_like(W[0])
     K = len(y)
