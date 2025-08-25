@@ -540,6 +540,11 @@ class CompositeCost:
         """int : Order of the (stacked) Alssm Model"""
         return AlssmSum(self.alssms).N
 
+    def get_model_output_dimension(self):
+        """tuple : Alssm Output Dimension"""
+        alssm = AlssmSum(self.alssms)
+        return alssm.C.shape[0]  if alssm.is_MC else ()
+
     def trajectories(self, xs, F=None, thd:float=1e-6):
         """
         Returns the :class:`CompositeCost`'s ALSSM's trajectories (=output sequences for a fixed initial states) for
@@ -669,10 +674,9 @@ class CompositeCost:
         for p, segment in enumerate(self.segments):
             alssm = AlssmSum(self.alssms, self.F[:, p])
             if method == 'closed_form':
-                W += _covariance_matrix_closed_form(alssm.A, alssm.C, segment.gamma, segment.a, segment.b,
-                                                    segment.delta)
+                W += _covariance_matrix_closed_form(alssm.A, alssm.C, segment.gamma, segment.a, segment.b, segment.delta)
             if method == 'limited_sum':
-                raise NotImplementedError('limited_sum is not implemented yet.') # TODO: Implementation
+                W += _covariance_matrix_limited_sum(alssm.A, alssm.C, segment.gamma, segment.a, segment.b, segment.delta)
         return W
 
     def eval_alssm_output(self, xs, alssm_weights:list[Union[int, float]]=None, c0s=None):
@@ -972,25 +976,28 @@ class ConstrainMatrix:
 
 
 
-# class NDCompositeCost:
-#     def __init__(self, composite_costs, **kwargs):
-#         self.composite_costs = composite_costs
-#
-#     @property
-#     def composite_costs(self):
-#         return self._composite_costs
-#
-#     @composite_costs.setter
-#     def composite_costs(self, composite_costs):
-#         for c in composite_costs:
-#             assert isinstance(c, CompositeCost), '{} is not CompositeCost'.format(c)
-#         self._composite_costs = composite_costs
-#
-#     @property
-#     def ND(self):
-#         return len(self.composite_costs)
-
-
 class NDCompositeCost(list):
     def __init__(self, composite_costs):
         super().__init__(composite_costs)
+
+        # check alssm output dimensions L
+        Ls = np.array([cc.get_model_output_dimension() for cc in composite_costs])
+        assert np.all(Ls == Ls[0]), 'Output Dimension of composite costs do not match'
+
+
+    @property
+    def ND(self):
+        return len(self)
+
+    def get_model_order(self):
+        """int : Order of the (stacked, dimension-combined) Alssm Model"""
+        return int(np.prod([cc.get_model_order() for cc in self]))
+
+    def get_steady_state_W(self, dim_order):
+        W = [1]
+        for n in dim_order:
+            W = np.kron(W, self[n].get_steady_state_W())
+        return W
+
+    def get_model_output_dimension(self):
+        return self[0].get_model_output_dimension()

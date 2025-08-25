@@ -19,12 +19,14 @@ import numpy as np
 from numpy.linalg import inv, cond
 
 from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backends
+from lmlib.statespace.backends import kron_q
 from lmlib.statespace.cost import CompositeCost, NDCompositeCost
 from lmlib.statespace.model import AlssmSum, Alssm
 from lmlib.utils.check import *
 from lmlib.statespace.backends.rec_numpy import *
 from lmlib.statespace.backends.rec_lfilter import *
 from lmlib.statespace.backends.rec_jit import *
+from lmlib.statespace.backends.rec_xi_asterisk_l import *
 
 
 __all__ = ['RLSAlssm', 'NDRLSAlssm']
@@ -104,7 +106,7 @@ class RLSAlssm:
 
         self._K = None
         self._N = None
-        self._S = None
+        self._Ss = ()
         self._xi0 = None
         self._xi1 = None
         self._xi2 = None
@@ -146,6 +148,12 @@ class RLSAlssm:
         assert filter_form in ('parallel', 'cascade',
                                'auto'), 'Unknown filter_form value. Options: parallel, cascade, auto.'
         self._filter_form = filter_form
+
+    @property
+    def backend(self) -> str:
+        """str : backend used"""
+        return self._backend
+
 
     @property
     def W(self):
@@ -228,14 +236,14 @@ class RLSAlssm:
         assert isinstance(kappa_diag, bool), "kappa_diag not of type bool"
         self._kappa_diag = kappa_diag
 
-    def _allocate_xi2(self, K, N):
+    def _allocate_xi2(self, K: int, N: int):
         self._xi2 = np.zeros((K, N*N))
 
-    def _allocate_xi1(self, K, N, S):
-        self._xi1 = np.zeros((K, N)) if S is None else np.zeros((K, N, S))
+    def _allocate_xi1(self, K: int, N: int, Ss: tuple):
+        self._xi1 = np.zeros((K, N) + Ss)
 
-    def _allocate_xi0(self, K, S):
-        self._xi0 = np.zeros((K,)) if S is None else np.zeros((K, S))
+    def _allocate_xi0(self, K: int, Ss: tuple):
+        self._xi0 = np.zeros((K, 1)+Ss)
 
     def _allocate_nu(self, K):
         self._nu = np.zeros((K,))
@@ -291,72 +299,72 @@ class RLSAlssm:
         self._N = N
 
         # get signal set dimension
-        if np.ndim(alssm.C) == 2:
-            if np.ndim(y) == 2:
-                S = None
-            elif np.ndim(y) == 3:
-                S = np.shape(y)[2]
-            else:
+        Ss = ()
+        if alssm.is_MC:
+            if np.ndim(y) < 2:
                 raise ValueError("y does not have a valid shape")
+            if np.ndim(y) > 2:
+                Ss = np.shape(y)[2:]
+            _y = y
         else:
-            if np.ndim(y) == 1:
-                S = None
-            elif np.ndim(y) == 2:
-                S = np.shape(y)[1]
-            else:
-                raise ValueError("y does not have a valid shape")
-        self._S = S
+            if np.ndim(y) > 1:
+                Ss = np.shape(y)[1:]
+            _y = y.reshape(K, 1, *Ss)  # extend y for 2dim C (backend supports only 2dim C on purpose)
+
+        self._Ss = Ss
 
         # not implemented: JIT for Multi-Set
-        if S is not None and self._backend == 'jit':
+        if len(Ss) > 1 and self._backend == 'jit':
             raise NotImplementedError("Just In Time (jit) backend is not implemented for Multi-Set Signals.")
 
-
         # allocate necessary memory
-        if self.calc_W:
-            if self.steady_state:
-                self._xi2 = self.cost_model.get_steady_state_W().flatten()
-            else:
-                self._allocate_xi2(K, N)
+        if self._steady_state:
+            self._xi2 = self.cost_model.get_steady_state_W().flatten()
+        elif self.calc_W:
+            self._allocate_xi2(K, N)
+        else:
+            pass
 
         if self.calc_xi:
-            self._allocate_xi1(K, N, S)
+            self._allocate_xi1(K, N, Ss)
 
         if self.calc_kappa:
-            self._allocate_xi0(K, S)
+            self._allocate_xi0(K, Ss)
 
         if self.calc_nu:
             self._allocate_nu(K)
 
-        # run recursions
-        for segment, f, beta in zip(segments, F.T, betas):
-            alssm = AlssmSum(alssms, deltas=f)
 
-            if self.calc_W:
+        # run recursions
+
+        for segment, f, beta in zip(segments, F.T, betas):
+            alssm = AlssmSum(alssms, deltas=f, force_MC=True)  # create 2dim C for backend
+
+            if self.calc_W and not self._steady_state:
                 if self._backend == 'numpy':
                     numpy_recursion_xi2(self._xi2,
                                         alssm.A, alssm.C,
                                         segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                        y, v, beta)
+                                        _y, v, beta)
 
                 elif self._backend == 'jit':
                     jit_recursion_xi2(self._xi2,
                                       alssm.A, alssm.C,
                                       segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                      y, v, beta)
+                                      _y, v, beta)
 
                 elif self._backend == 'lfilter':
                     if self._filter_form == 'cascade':
                         lfilter_cascade_xi2(self._xi2,
                                             alssm.A, alssm.C,
                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                            y, v, beta)
+                                            _y, v, beta)
 
                     elif self._filter_form == 'parallel':
                         lfilter_parallel_xi2(self._xi2,
                                              alssm.A, alssm.C,
                                              segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                             y, v, beta)
+                                             _y, v, beta)
                     else:
                         raise ValueError("unknown filter-form: '{}'".format(self._filter_form))
                 else:
@@ -368,26 +376,26 @@ class RLSAlssm:
                     numpy_recursion_xi1(self._xi1,
                                         alssm.A, alssm.C,
                                         segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                        y, v, beta)
+                                        _y, v, beta)
 
                 elif self._backend == 'jit':
                     jit_recursion_xi1(self._xi1,
                                       alssm.A, alssm.C,
                                       segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                      y, v, beta)
+                                      _y, v, beta)
 
                 elif self._backend == 'lfilter':
                     if self._filter_form == 'cascade':
                         lfilter_cascade_xi1(self._xi1,
                                             alssm.A, alssm.C,
                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                            y, v, beta)
+                                            _y, v, beta)
 
                     elif self._filter_form == 'parallel':
                         lfilter_parallel_xi1(self._xi1,
                                              alssm.A, alssm.C,
                                              segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                             y, v, beta)
+                                             _y, v, beta)
                     else:
                         raise ValueError("unknown filter-form '{}'".format(self._filter_form))
                 else:
@@ -399,25 +407,25 @@ class RLSAlssm:
                     numpy_recursion_xi0(self._xi0,
                                         alssm.A, alssm.C,
                                         segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                        y, v, beta)
+                                        _y, v, beta)
 
                 elif self._backend == 'jit':
                     jit_recursion_xi0(self._xi0,
                                       alssm.A, alssm.C,
                                       segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                      y, v, beta)
+                                      _y, v, beta)
 
                 elif self._backend == 'lfilter':
                     if self._filter_form == 'cascade':
                         lfilter_cascade_xi0(self._xi0,
                                             alssm.A, alssm.C,
                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                            y, v, beta)
+                                            _y, v, beta)
                     elif self._filter_form == 'parallel':
                         lfilter_parallel_xi0(self._xi0,
                                              alssm.A, alssm.C,
                                              segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                             y, v, beta)
+                                             _y, v, beta)
                     else:
                         raise ValueError("unknown filter-form '{}'".format(self._filter_form))
                 else:
@@ -429,26 +437,26 @@ class RLSAlssm:
                     numpy_recursion_nu(self._nu,
                                        alssm.A, alssm.C,
                                        segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                       y, v, beta)
+                                       _y, v, beta)
 
                 elif self._backend == 'jit':
                     jit_recursion_nu(self._nu,
                                      alssm.A, alssm.C,
                                      segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                     y, v, beta)
+                                     _y, v, beta)
 
                 elif self._backend == 'lfilter':
                     if self._filter_form == 'cascade':
                         lfilter_cascade_nu(self._nu,
                                            alssm.A, alssm.C,
                                            segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                           y, v, beta)
+                                           _y, v, beta)
 
                     elif self._filter_form == 'parallel':
                         lfilter_parallel_nu(self._nu,
                                             alssm.A, alssm.C,
                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                            y, v, beta)
+                                            _y, v, beta)
                     else:
                         raise ValueError("unknown filter-form '{}'".format(self._filter_form))
                 else:
@@ -523,7 +531,7 @@ class RLSAlssm:
 
         # constrained minimization
         M = H.shape[1]
-        v = np.full((self._K, M, self._S) if self._S else (self._K, M), np.nan)
+        v = np.full((self._K, M, *self._Ss), np.nan)
         msk = cond(HTWH) < 1 / sys.float_info.epsilon
         if self._steady_state:
             assert msk, 'H.T @ W @ H is not invertible.'
@@ -592,7 +600,7 @@ class RLSAlssm:
 
         v, H, h = self.minimize_v(H, h, return_constrains=True)
         x = np.einsum('nm, km...->kn...', H, v)
-        x += h[np.newaxis,:] if self._S is None else h[np.newaxis,:, np.newaxis]
+        x += h.reshape(-1, *[1]*len(self._Ss)) # todo: only of h or and H are given
         return x
 
     def eval_errors(self, xs, ks=None):
@@ -632,7 +640,7 @@ class RLSAlssm:
         if ks is None:
             if not self._steady_state:
                 J = np.einsum('kn..., kn...->k...', xs, np.einsum('knm, km...->kn...', self.W, xs))
-            return J - 2 * np.einsum('kn..., kn...->k...', self.xi, xs) + self.kappa
+            return J - 2 * np.einsum('kn..., kn...->k...', self.xi, xs) + self.kappa[:, 0]
 
         else:
             if not self._steady_state:
@@ -727,16 +735,16 @@ class NDRLSAlssm(RLSAlssm):
 
     def __init__(self, nd_cost_model, nd_betas=None, *args, **kwargs):
         super().__init__(nd_cost_model[0], betas=None, *args, **kwargs)
-        self._ND = None
         # delattr(self, 'cost_model')
         # delattr(self, 'betas')
         # delattr(self, '_S')
         self.nd_cost_model = nd_cost_model
         self.nd_betas = nd_betas
+        self.nd = len(self.nd_cost_model)
         self._calc_nu = False
-        self._steady_state = False
         self._Ks = ()
         self._Ns = ()
+        self._N = nd_cost_model.get_model_order()
 
 
     # Properties
@@ -778,15 +786,163 @@ class NDRLSAlssm(RLSAlssm):
         N = int(np.sqrt(xi2_shape[-1]))
         return self._xi2.reshape(N, N) if self._steady_state else self._xi2.reshape(*xi2_shape[:-1], N, N)
 
-    def filter(self, y, v=None, dim_order=None):
+
+    def filter(self, y, v=None, dim_order=None)-> None:
+        """
+        Computes the intermediate parameters for subsequent squared error computations and minimization's.
+
+        Computes the intermediate parameters using efficient forward- and backward recursions.
+        The results are stored internally, ready to solve the least squares problem using e.g., :meth:`minimize_x`
+        or :meth:`minimize_v`. The parameter allocation :meth:`allocate` is called internally,
+        so a manual pre-allocation is not necessary.
+
+        Parameters
+        ----------
+        y : array_like
+            Input signal |br|
+            - Single-channel signal is of `shape =(K,)` for |br|
+            - Multi-channel signal is of `shape =(K,L)` |br|
+            - Single-channel set signals is of `shape =(K,S)` for |br|
+            - Multi-channel set signals is of `shape =(K,L,S)` |br|
+            - Multi-channel-sets signal is of `shape =(K,L,S)`
+        v : array_like, shape=(K,), optional
+            Sample weights. Weights the parameters for a time step `k` and is the same for all multi-channels.
+            By default, the sample weights are initialized to 1.
+
+
+        |def_K|
+        |def_L|
+        |def_S|
+
+        """
+
+        # check dimension order
+        if dim_order is None:
+            dim_order = np.arange(self.nd)
+        else:
+            assert len(dim_order) == self.nd, f'dim_order has wrong length, {info_str_found_shape(dim_order)}'
+
+        # check input dimensions
+        L = self.nd_cost_model.get_model_output_dimension()
+        if L == ():
+            Ks = np.shape(y)
+            y_MC = y[..., np.newaxis]
+        else:
+            assert np.shape(y)[-1] == L, 'input signal mising Alssm ouput dimension'
+            Ks = np.shape(y)[:-1]
+            y_MC = y
+        self._Ks = Ks
+
+        # check sample weight
+        if v is None:
+            v = np.broadcast_to(1., Ks) # create an array of shape Ks, but contains only a single 1.0 in memory
+        else:
+            assert np.shape(v) == Ks, f'v has wrong shape, {info_str_found_shape(v)}'
+
+        # check backends
+        # todo
+
+        # calc xi2
+        if self.steady_state:
+            self._xi2 = self.nd_cost_model.get_steady_state_W(dim_order).flatten()
+        elif self._calc_W and not self.steady_state:
+            q = 2
+
+            # first dimension
+            xi_prev = self._rls_1d_xi_q_recursion(q, y_MC, v, dim_order[0])
+
+            # n-dimensions
+            for nd_dim in dim_order[1:]:
+                xi_prev = self._rls_nd_xi_q_asterisk_l_recursion(xi_prev, q, y_MC, v, nd_dim)
+
+            self._xi2 = xi_prev
+
+
+        # calc x1
+        if self._calc_xi:
+            q = 1
+
+            # first dimension
+            xi_prev = self._rls_1d_xi_q_recursion(q, y_MC, v, dim_order[0])
+
+            # n-dimensions
+            for nd_dim in dim_order[1:]:
+                xi_prev = self._rls_nd_xi_q_asterisk_l_recursion(xi_prev, q, y_MC, v, nd_dim)
+
+            self._xi1 = xi_prev
+
+        # calc x0
+        if self._calc_kappa:
+            q = 0
+
+            # first dimension
+            xi_prev = self._rls_1d_xi_q_recursion(q, y_MC, v, dim_order[0])
+
+            # n-dimensions
+            for nd_dim in dim_order[1:]:
+                xi_prev = self._rls_nd_xi_q_asterisk_l_recursion(xi_prev, q, y_MC, v, nd_dim)
+
+            self._xi0 = xi_prev[..., 0] # remove last dimension (=1)
+
+        # calc nu
+            # steady state
+            # first dimension
+                # segments
+                    # to backends
+            # nd dimensions
+                # segments
+
+    def _rls_1d_xi_q_recursion(self, q, y, v, model_dimension):
+
+        cost_model = self.nd_cost_model[model_dimension]
+        betas = self.nd_betas[model_dimension]
+        N = cost_model.get_model_order()
+        Ks = np.shape(y)[:-1]
+
+        xi_curr = np.zeros(Ks + (N ** q,))
+        xi_curr = np.moveaxis(xi_curr, model_dimension, 0)
+        _y = np.moveaxis(y, model_dimension, 0)
+
+        # cost segments
+        for segment, f, beta in zip(cost_model.segments, cost_model.F.T, betas):
+            alssm = AlssmSum(cost_model.alssms, deltas=f, force_MC=True)
+
+            # backend recursion
+            xi_q_recursion(xi_curr, q, alssm, segment, _y, v, beta, self.backend, self.filter_form)
+
+        return np.moveaxis(xi_curr, 0, model_dimension)
+
+    def _rls_nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, v, model_dimension):
+        cost_model = self.nd_cost_model[model_dimension]
+        betas = self.nd_betas[model_dimension]
+        N = cost_model.get_model_order()
+        Nq_prev = xi_prev.shape[-1]
+        Ks = np.shape(y)[:-1]
+
+        xi_curr = np.zeros(Ks + (Nq_prev * N ** q,))
+        xi_curr = np.moveaxis(xi_curr, model_dimension, 0)
+        xi_prev = np.moveaxis(xi_prev, model_dimension, 0)
+
+        # cost segments
+        for segment, f, beta in zip(cost_model.segments, cost_model.F.T, betas):
+            alssm = AlssmSum(cost_model.alssms, deltas=f, force_MC=True)
+            xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, self.backend, self.filter_form)
+        return np.moveaxis(xi_curr, 0, model_dimension)
+
+    def _filter(self, y, v=None, dim_order=None):
 
         # check input parameters
         assert np.ndim(y) == self._ND, "y has not the same dimension as nd_cost_model"
         if dim_order is None:
-            dim_order = list(range(self._ND))
+            dim_order = np.arange(self._ND)+1
+        self._Ks = np.shape(y) if np.ndim(self.nd_cost_model[0].alssms[0].C) != 2 else np.shape(y)[:-1]
 
-        if self.calc_W:
-            self._xi2 = self._xi2_nd_filter(y, v, dim_order)
+        if self._steady_state:
+            self._xi2 = self.nd_cost_model.get_steady_state_W(dim_order).flatten()
+        elif self.calc_W:
+            self._xi2 = self._xi2_nd_filter(y , v, dim_order)
+        else:
+            pass
 
         if self.calc_xi:
             self._xi1 = self._xi1_nd_filter(y, v, dim_order)
@@ -800,9 +956,40 @@ class NDRLSAlssm(RLSAlssm):
 
     def _xi2_nd_filter(self, y, v, dim_order):
 
+        def xi_asterisk_l(xi, q, model_dimension):
+            N_xi = np.shape(xi)[-1]
+            K_dimensions = np.shape(xi)[:-1]
+            composite_cost = self.nd_cost_model[dim_order]
+            N_model_dimension = composite_cost.get_model_order()
+            cost_model = self.nd_cost_model[model_dimension]
+
+            xi_out = np.full(K_dimensions + (N_xi*N_model_dimension**q), np.nan)
+            for segment, f, beta in zip(cost_model.segments, cost_model.F.T, betas):
+                alssm = AlssmSum(cost_model.alssms, deltas=f)
+                _I_N = kron_q(N_xi, q)
+                _A = kron_q(alssm.A, q)
+                _C = kron_q(alssm.C, q)
+
+
+
+
+        first_model_dimension = dim_order[0]
+        rls = RLSAlssm(self._nd_cost_model[first_model_dimension],
+                       calc_W=self.calc_W,
+                       calc_xi=self.calc_xi,
+                       calc_kappa=self.calc_kappa,
+                       calc_nu=self.calc_nu)
+        rls.filter(y.moveaxis(first_model_dimension, 0),
+                   v.moveaxis(first_model_dimension, 0))
+
+        xi = rls._xi1
+        for model_dimension in dim_order[1:]:
+            xi = xi_asterisk_l(xi, q, model_dimension)
+
         # calculate first model dimension
         if len(dim_order) > 1:
-            _y = self._xi2_nd_filter(y, v, dim_order[:-1])
+            _y = self._xi2_nd_filter(y, v, dim_order[:-1])  # ones W1d
+
         else:
             _y = y[..., np.newaxis] # extent array cause C is 2dim
 
@@ -854,6 +1041,7 @@ class NDRLSAlssm(RLSAlssm):
                 _A = np.kron(I_ext, alssm.A)
                 _C = np.kron(I_ext, alssm.C)
 
+
                 if self._backend == 'numpy':
                     numpy_recursion_xi2(_xi2[_index],
                                         _A, _C,
@@ -868,10 +1056,33 @@ class NDRLSAlssm(RLSAlssm):
 
                 elif self._backend == 'lfilter':
                     if self._filter_form == 'cascade':
-                        lfilter_cascade_xi2(_xi2[_index],
-                                            _A, _C,
-                                            segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                            _y[_index], _v, beta)
+
+                        # new:
+                        _A = np.kron(_A, _A)
+                        _C = np.kron(_C, _C)
+
+                        einsum_path = 'kl, nl->kn' # C is 2dim
+                        if segment.direction == 'fw':
+                            lfilter_forward_cascade_xi(_xi2[_index],
+                                                       _A, _C,
+                                                       segment.a, segment.b, segment.delta, segment.gamma,
+                                                       _y, v, beta, einsum_path)
+
+                        elif segment.direction == 'bw':
+                            lfilter_backward_cascade_xi(_xi2[_index],
+                                                        _A, _C,
+                                                        segment.a, segment.b, segment.delta, segment.gamma,
+                                                        _y, v, beta, einsum_path)
+                        else:
+                            raise ValueError('direction must be either "forward" or "backward"')
+
+
+                        if False:
+                            # old :
+                            lfilter_cascade_xi2(_xi2[_index],
+                                                _A, _C,
+                                                segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                                _y[_index], _v, beta)
 
                     elif self._filter_form == 'parallel':
                         lfilter_parallel_xi2(_xi2[_index],
@@ -1000,7 +1211,7 @@ class NDRLSAlssm(RLSAlssm):
         # allocate xi0
         _xi0_shape = np.shape(y)
         # _xi0_shape[-1] = 1
-        _xi0 = np.zeros(_xi0_shape) # shape of (K1, K2, ... Kn, N)
+        _xi0 = np.zeros(_xi0_shape) # shape of (K1, K2, ... Kn)
 
         for index in np.ndindex(*iteration_shape):
 
@@ -1028,26 +1239,26 @@ class NDRLSAlssm(RLSAlssm):
                 _C = np.kron(I_ext, alssm.C)
 
                 if self._backend == 'numpy':
-                    numpy_recursion_xi0(_xi0[_index[:-1]],
+                    numpy_recursion_xi0(_xi0[_index],
                                         _A, _C,
                                         segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                         _y[_index], _v, beta)
 
                 elif self._backend == 'jit':
-                    jit_recursion_xi0(_xi0[_index[:-1]],
+                    jit_recursion_xi0(_xi0[_index],
                                       _A, _C,
                                       segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                       _y[_index], _v, beta)
 
                 elif self._backend == 'lfilter':
                     if self._filter_form == 'cascade':
-                        lfilter_cascade_xi0(_xi0[_index[:-1]],
+                        lfilter_cascade_xi0(_xi0[_index],
                                             _A, _C,
                                             segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                             _y[_index], _v, beta)
 
                     elif self._filter_form == 'parallel':
-                        lfilter_parallel_xi0(_xi0[_index[:-1]],
+                        lfilter_parallel_xi0(_xi0[_index],
                                              _A, _C,
                                              segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                              _y[_index], _v, beta)
@@ -1127,13 +1338,13 @@ class NDRLSAlssm(RLSAlssm):
 
         # constrained minimization
         M = H.shape[1]
-        v = np.full((self._K, M, self._S) if self._S else (self._K, M), np.nan)
+        v = np.full(self._Ks + (M,), np.nan)
         msk = cond(HTWH) < 1 / sys.float_info.epsilon
         if self._steady_state:
             assert msk, 'H.T @ W @ H is not invertible.'
             v[...] = np.einsum('nm, ...m-> ...n', inv(HTWH), HTxiWh)
         else:
-            v[msk] = np.einsum('...nm, ...n -> ...m', inv(HTWH[msk]), HTxiWh[msk])
+            v[msk] = np.einsum('...nm, ...m -> ...n', inv(HTWH[msk]), HTxiWh[msk])
 
         if return_constrains:
             return v, H, h
@@ -1144,7 +1355,7 @@ class NDRLSAlssm(RLSAlssm):
         Returns the state vector `x` of the squared error minimization with linear constraints
 
         Minimizes the squared error over the state vector `x`.
-        If needed its possible to apply linear constraints with an (optional) offset.
+        If needed, it is possible to apply linear constraints with an (optional) offset.
         [Wildhaber2018]_ [TABLE V].
 
         **Constraint:**
@@ -1196,7 +1407,7 @@ class NDRLSAlssm(RLSAlssm):
 
         v, H, h = self.minimize_v(H, h, return_constrains=True)
         x = np.einsum('nm, ...m->...n', H, v)
-        x += h[np.newaxis,:] if self._S is None else h[np.newaxis,:, np.newaxis]
+        x += h
         return x
 
     def filter_minimize_x(self, y, v=None, dim_order=None, H=None, h=None):
@@ -1304,3 +1515,121 @@ class NDRLSAlssm(RLSAlssm):
             if not self._steady_state:
                 J = np.einsum('...n, ...n->...', xs[ks], np.einsum('...nm, ...m->...n', self.W[ks], xs[ks]))
             return J - 2 * np.einsum('...n, ...n->...', self.xi[ks], xs[ks]) + self.kappa[ks]
+
+
+def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, backend, filter_form):
+    Nq_prev = xi_prev.shape[-1]
+    INq = np.eye(Nq_prev)
+    A = kron_q(alssm.A, q)
+    C = kron_q(alssm.C, q)
+
+    if backend == 'numpy':
+        numpy_xi_asterisk_l_recursion(xi_curr, A, C,
+                                      segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                      INq, xi_prev,
+                                      v, beta)
+
+    elif backend == 'jit':
+        raise NotImplementedError('xi_asterisk_l_recursion is not implemented for backend {}'.format(backend))
+
+    elif backend == 'lfilter':
+        raise NotImplementedError('xi_asterisk_l_recursion is not implemented for backend {}'.format(backend))
+
+        if filter_form == 'cascade':
+            pass
+
+        elif filter_form == 'parallel':
+            pass
+        else:
+            raise ValueError("unknown filter-form: '{}'".format(filter_form))
+    else:
+        raise ValueError("unknown backend: '{}'".format(backend))
+
+
+def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form):
+    if backend == 'numpy':
+        if q == 2:
+            numpy_recursion_xi2(xi,
+                                alssm.A, alssm.C,
+                                segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                y, v, beta)
+        elif q == 1:
+            numpy_recursion_xi1(xi,
+                                alssm.A, alssm.C,
+                                segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                y, v, beta)
+        elif q == 0:
+            numpy_recursion_xi0(xi,
+                                alssm.A, alssm.C,
+                                segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                y, v, beta)
+        else:
+            raise ValueError("q value not supported: '{}'".format(q))
+
+    elif backend == 'jit':
+
+        if q == 2:
+            jit_recursion_xi2(xi,
+                              alssm.A, alssm.C,
+                              segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                              y, v, beta)
+        elif q == 1:
+
+            jit_recursion_xi1(xi,
+                              alssm.A, alssm.C,
+                              segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                              y, v, beta)
+        elif q == 0:
+            jit_recursion_xi0(xi,
+                                alssm.A, alssm.C,
+                                segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                y, v, beta)
+        else:
+            raise ValueError("q value not supported: '{}'".format(q))
+
+
+
+    elif backend == 'lfilter':
+        if filter_form == 'cascade':
+            if q == 2:
+                lfilter_cascade_xi2(xi,
+                                    alssm.A, alssm.C,
+                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    y, v, beta)
+            elif q == 1:
+                lfilter_cascade_xi1(xi,
+                                    alssm.A, alssm.C,
+                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    y, v, beta)
+            elif q == 0:
+                lfilter_cascade_xi0(xi,
+                                    alssm.A, alssm.C,
+                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    y, v, beta)
+            else:
+                raise ValueError("q value not supported: '{}'".format(q))
+
+
+
+        elif filter_form == 'parallel':
+            if q == 2:
+                lfilter_parallel_xi2(xi,
+                                    alssm.A, alssm.C,
+                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    y, v, beta)
+            elif q == 1:
+                lfilter_parallel_xi1(xi,
+                                    alssm.A, alssm.C,
+                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    y, v, beta)
+            elif q == 0:
+                lfilter_parallel_xi0(xi,
+                                    alssm.A, alssm.C,
+                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    y, v, beta)
+            else:
+                raise ValueError("q value not supported: '{}'".format(q))
+        else:
+            raise ValueError("unknown filter-form: '{}'".format(filter_form))
+    else:
+        raise ValueError("unknown backend: '{}'".format(backend))

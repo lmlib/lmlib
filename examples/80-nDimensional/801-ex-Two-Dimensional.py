@@ -125,25 +125,28 @@ F = [[1, 0],  # mixing matrix, turning on and off models per segment (1=on, 0=of
 
 # filter signal in first dimension
 cost = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
+
 nd_cost = lm.NDCompositeCost([cost, cost])
-nd_rls = lm.NDRLSAlssm(nd_cost)
+nd_rls = lm.NDRLSAlssm(nd_cost, steady_state=True, backend='numpy')
 nd_rls.filter(Y)
 
 xs_H1 = nd_rls.minimize_x()
 xs_ref = xs_H1[K1_REF, K2_REF]  # store state variables as reference pulse shape
-
 J_B = nd_rls.eval_errors(xs_H1)
 
-N1tilde = alssm_k1dummy.N
-H_A = np.concatenate(([1], np.zeros(N1tilde ** 2 - 1))).reshape(
-    (N1tilde ** 2, 1))  # constrain matrix to find pulses of same shape as the reference pulse
-h = xs_ref.reshape((N1tilde ** 2, 1)).copy()
-h[0] = 0
-v_A = rls2d.minimize_v(H_A, h=h)
-xs_A = H_A @ v_A + h
-J_A = rls2d.eval_errors(xs_A)  # get SE (squared error) for hypothesis 1
+
+N = nd_cost.get_model_order()
+
+H_A = np.zeros((N, 1))
+H_A[0, 0] = 1
+
+h_A = xs_ref.copy()
+h_A[0] = 0
+xs_H2 = nd_rls.minimize_x(H_A, h_A)
+J_A = nd_rls.eval_errors(xs_H2)  # get SE (squared error) for hypothesi# s 1
 
 cr = J_B / J_A
+
 
 # ------------ Plotting -------------------------------
 plot_ref = True
@@ -204,7 +207,7 @@ if plot_costratio:
 
     # Plot the original and highlighted images
     figsize = (7.8 * 0.7, 4.9 * 0.7)
-    fig = plt.figure(layout='constrained', figsize=figsize, dpi=dpi)
+    fig = plt.figure(layout='constrained', figsize=figsize, dpi=72)
     axs = fig.subplots(1, 1)
     cset = axs.imshow(highlighted_image)
 

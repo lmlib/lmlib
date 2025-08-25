@@ -136,11 +136,6 @@ class ModelBase(ABC):
         self._deltas = np.asarray(deltas)
 
     @property
-    def state_var_labels(self):
-        """dict : Dictionary containing state variable labels and index"""
-        return self._state_var_labels
-
-    @property
     def force_MC(self):
         """bool : Flag to broadcast to a 2-dimensional `C` state space variable"""
         return self._force_MC
@@ -149,6 +144,11 @@ class ModelBase(ABC):
     def force_MC(self, force_MC):
         assert isinstance(force_MC, bool), 'force_MC is not of type boolean'
         self._force_MC = force_MC
+
+    @ property
+    def is_MC(self):
+        """bool : returns True if 'C' is MultiChannel (2d)"""
+        return np.ndim(self._C) == 2
 
     def eval_states(self, xs):
         r"""
@@ -192,7 +192,10 @@ class ModelBase(ABC):
         [ 0.1  0.  -0.8  1. ]
 
         """
-        return np.asarray([self.C@x for x in xs])
+        if self.is_MC:
+            return np.einsum('ln, kn...->kl...', self.C, xs)
+        else:
+            return np.einsum('n, kn...->k...', self.C, xs)
 
     def eval_state(self, x):
         r"""

@@ -1,3 +1,12 @@
+"""
+State-Space Module Tools
+========================
+
+Helper functions for State-Space Module
+
+"""
+
+
 import numpy as np
 from numpy.linalg import matrix_power
 
@@ -5,7 +14,8 @@ import warnings
 
 __all__ = ['_trajectory_output', '_window_range', '_window_output',
            '_merge_ks_seg',
-           '_covariance_matrix_closed_form']
+           '_covariance_matrix_closed_form', '_covariance_matrix_limited_sum',
+           'kron_q']
 
 
 def _transform_ALSSM_matrices(A, C, P):
@@ -42,7 +52,6 @@ def _window_output(a, b, direction, gamma, delta, thd):
     ab_range = _window_range(a, b, direction, gamma, delta, thd)
     return ab_range, gamma ** (np.array(ab_range) - delta)
 
-
 def _merge_ks_seg(arr, merge_ks, merge_seg):
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -58,6 +67,10 @@ def _merge_ks_seg(arr, merge_ks, merge_seg):
                 return arr
 
 def _covariance_matrix_closed_form(A, C, gamma, a, b, delta):
+    if np.shape(np.atleast_2d(C))[0] != 1:
+        # TODO:_covariance_matrix_limited_sum() as alternative
+        raise ValueError('Multi-channel ALSSM Steady State not implemented.')
+
     N = np.shape(A)[0]
     gATA = gamma * np.kron(np.transpose(A), A)
 
@@ -83,3 +96,37 @@ def _covariance_matrix_closed_form(A, C, gamma, a, b, delta):
                       np.kron(np.atleast_2d(C).T, np.eye(N))
                       )
 
+
+
+def _covariance_matrix_limited_sum(A, C, gamma, a, b, delta):
+    # TODO: Implementation
+    raise NotImplementedError('limited_sum is not implemented yet.')
+
+def kron_q(x, q):
+    """
+    Kronecker Power for a vector x by as non-negative integer q
+
+    For reference, see  [Baeriswyl2025]_ [Eq. 6].
+
+    Parameters
+    ----------
+    x : array_like
+        Base array/matrix
+    q : int
+        Kronecker exponent
+
+    Returns
+    -------
+    out : array_like
+        array/matrix raised by the kronecker exponent
+
+    """
+    if q == 0:
+        return np.eye(1)
+    elif q == 1:
+        return x
+    else:
+        out = x
+        for _ in range(q-1):
+            out = np.kron(out, out)
+    return out

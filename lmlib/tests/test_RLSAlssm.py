@@ -340,12 +340,14 @@ class TestRLSAlssm(unittest.TestCase):
     def test_eval_error_set_multi_output_steady_state_numpy(self):
         y = np.dstack([np.sin(np.linspace(0, 2 * np.pi, 20)[:, None]),
                        1.5 * np.cos(np.linspace(0, 2 * np.pi, 20))[:, None]])
+        y = np.moveaxis(y, 1, -1)
         alssm = lm.AlssmPoly(poly_degree=2, force_MC=True)
         segment_fw = lm.Segment(a=-5, b=-1, direction=lm.FW, g=10, delta=0)
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
-        rls = lm.RLSAlssm(cost, steady_state=True, backend='numpy')
-        xs = rls.filter_minimize_x(y)
+        nd_cost = lm.NDCompositeCost([cost])
+        rls = lm.NDRLSAlssm(nd_cost, steady_state=True, backend='numpy')
+        xs = rls.filter_minimize_x(y, dim_order=[0])
         error = \
             [[0.09217478, 1.79342604]
                 , [0.17659045, 1.28098271]
