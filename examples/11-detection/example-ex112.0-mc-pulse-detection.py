@@ -88,8 +88,8 @@ axs[1].legend(('true spikes',), loc=1)
 OFFSETS = [0, 2, 4]
 axs[2].set(ylabel='$y_k$')
 axs[2].plot(range(K), y + OFFSETS, c='tab:gray', lw=1)
-axs[2].plot(range(K), trajs_pulse + OFFSETS, color='b', lw=1.5, linestyle="-")
-axs[2].plot(range(K), trajs_baseline + OFFSETS, color='k', lw=1.5, linestyle="-")
+axs[2].plot(range(K), trajs_pulse.T + OFFSETS, color='b', lw=1.5, linestyle="-")
+axs[2].plot(range(K), trajs_baseline.T + OFFSETS, color='k', lw=1.5, linestyle="-")
 axs[2].legend(('$y$', '_', '_', '"pulses"', '_', '_', '"baseline"', '_', '_',), loc=1)
 
 # LCR

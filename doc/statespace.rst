@@ -13,7 +13,7 @@ Cost functions based on ALSSM  are internally efficiently computed using recursi
 
 This module implements the methods published in
 [Wildhaber2018]_  :download:`PDF <https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8355586#page=5>`,
-with extensions from [Zalmai2017]_ and [Wildhaber2019]_.
+with extensions from [Zalmai2017]_ , [Wildhaber2019]_ and [Baeriswyl2025]_.
 
 
 

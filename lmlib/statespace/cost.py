@@ -5,14 +5,15 @@ all based on ALSSMs
 
 
 from numpy.typing import ArrayLike
-from typing import Union
+from typing import Union, Iterable
 from collections.abc import Iterable
 import warnings
 import copy
 
 import numpy as np
+from numpy.linalg import matrix_power
 
-from lmlib.statespace.model import ModelBase, AlssmSum
+from lmlib.statespace.model import ModelBase, AlssmSum, AlssmProd
 from lmlib.utils.check import *
 from lmlib.statespace.backends.statespace_tools import *
 
@@ -87,7 +88,7 @@ def map_windows(windows: ArrayLike, ks, K: int, merge_ks:bool=False, merge_seg:b
             boundary_mask = np.bitwise_and(0 <= ab_range + k, ab_range + k < K)
             w[i, p, ab_range[boundary_mask] + k] = weights[boundary_mask]
 
-    return _merge_ks_seg(w, merge_ks, merge_seg)
+    return _merge_ks_seg(w, merge_ks, merge_seg, segment_dim=1)
 
 
 def map_trajectories(trajectories, ks, K:int, merge_ks:bool=False, merge_seg:bool=False, fill_value:Union[None, int, float]=np.nan):
@@ -133,40 +134,38 @@ def map_trajectories(trajectories, ks, K:int, merge_ks:bool=False, merge_seg:boo
     |def_XS|
     |def_P|
     |def_K|
-    |def_L|
+    |def_Q|
     |def_S|
 
     """
 
     # return an empty array if ks is empty
     if len(ks) == 0:
+        print('Warning: ks is empty. Returned empty array from map_trajectories(.')
         return np.array([])
 
-    # TODO: change for ndRLSAlssm
+    Ks = np.shape(trajectories)[:-1]
+    P = np.shape(trajectories)[-1]
+    segment_dim = len(Ks)
+    assert Ks[0] == len(ks), "Length of trajectories and ks does not match up"
 
-    t_ = trajectories[0][0][1]
-    P = len(trajectories[0])
-    XS = len(trajectories)
-    assert XS == len(ks), "number of trajectories and ks does not match up"
-
-    if t_.ndim == 2:  # check if the trajectory is from a RLSAlssmSet
-        S = t_.shape[1]
-        t = np.full((XS, P, K, S), fill_value)
-    else:
-        t = np.full((XS, P, K), fill_value)
-
-    for i, k in enumerate(ks):
-        for p, (j_range, trajectory) in enumerate(trajectories[i]):
+    # if len(Ks) == 2:  # check if the trajectory is from a RLSAlssmSet
+    #     out = np.full((*Ks, P, K), fill_value)
+    # else:
+    out = np.full((np.prod(Ks), P, K), fill_value)
+    ks_ = np.asarray(ks).tolist() * np.prod(Ks[1:])
+    for i, (k, trajectory_p) in enumerate(zip(ks_, trajectories.reshape(-1, P))):
+        for p, (j_range, trajectory) in enumerate(trajectory_p):
             j_list = np.array(j_range)
             mask = np.bitwise_and(k + j_list >= 0, k + j_list < K)
-            t[i, p, k + j_list[mask], ...] = trajectory[mask]
+            out[i, p, k + j_list[mask]] = trajectory[mask]
 
-    return _merge_ks_seg(t, merge_ks, merge_seg)
+    return _merge_ks_seg(out.reshape(*Ks, P, K), merge_ks, merge_seg, segment_dim)
 
 
 class Segment:
     r"""
-    Segment represents a window of finite or infinite interval borders used to select and weight signal samples in a cost function.
+    The Segment represents a window of finite or infinite interval borders used to select and weight signal samples in a cost function.
 
     Segments are commonly used in combination with ALSSM signal models to select and weight the samples in cost
     functions, see :class:`CostSegment` or :class:`CompositeCost`. The window of a segment either has an exponentially
@@ -217,11 +216,12 @@ class Segment:
 
     Notes
     -----
-    The interval of the semgment includes both boundaries `a` and `b` into the calculations.
+    The interval of the semgment includes both boundaries `a` and `b` in the calculations.
     i.e., if the sum runs over the interval :math:`k \in [a,b] ` it treats `b-a+1` samples.
 
     Examples
     --------
+    >>> import lmlib as lm
     >>> segment = lm.Segment(a=-20, b=-1, direction=lm.FORWARD, g=15)
     >>> print(segment)
     Segment : a:-20, b:-1, fw, g:15, delta:0, label: None
@@ -381,14 +381,15 @@ class Segment:
 
         """
 
-        return _window_output(self.a, self.b, self.direction, self.gamma, self.delta, thd=thd)
+        ab_range = _window_range(self.a, self.b, self.direction, self.gamma, self.delta, thd)
+        return ab_range, self.gamma ** (np.array(ab_range) - self.delta)
 
 
 class CompositeCost:
     r"""
     Quadratic cost function defined by a conjunction one or multiple  of :class:`~lmlib.statespace.model.Alssm` and :class:`.Segment`
 
-    A composite costs combines multiple ALSSM models and multiple Segments in form of a grid,
+    A composite costs combines multiple ALSSM models and multiple Segments in the form of a grid,
     where each row is a model and each column a Segment.
     The segments define the temporal relations of the models.
     Mapping matrix `F` enables or disables each ALSSM/Segment pair in each grid node;
@@ -576,7 +577,7 @@ class CompositeCost:
             Each element in `trajectories` is a tuple with
 
             * :code:`range` `of length JR`: relative index range of trajectory with respect to segment's boundaries
-            * :code:`array` `of shape(JR, L, [S])`: trajectory values over reported range.
+            * :code:`array` `of shape(JR,[S,] L)`: trajectory values over reported range.
 
             Dimension `S` is only present in the output, if dimension `S` is also present in :attr:`xs` (i.e., if multiple signal sets are used)
 
@@ -595,22 +596,22 @@ class CompositeCost:
         if F is None:
             F = self.F
         else:
-            M = self.alssms.__len__()
-            P = self.segments.__len__()
-            assert (M, P) == np.shape(F), f'F is not array_like of shape (M={M}, P={P})'
+            assert (len(self.alssms), len(self.segments)) == np.shape(F), \
+                f'F is not array_like of shape (M={len(self.alssms)}, P={len(self.segments)})'
             F = np.asarray(F)
 
-        trajectories = []
-        for x in xs:
-            _tmp = []
-            for p, seg in enumerate(self.segments):
-                alssm = AlssmSum(self.alssms, deltas=F.T[p])
+        Ks = np.shape(xs)[:-1]
+        N = np.shape(xs)[-1]
+        P = len(self.segments)
+        trajectories = np.empty((np.prod(Ks), P), dtype=tuple)
+        for i, x in enumerate(np.reshape(xs, (-1, N))):
+            for p, (f, seg) in enumerate(zip(F.T, self.segments)):
+                alssm = AlssmSum(self.alssms, deltas=f)
                 ab_range = _window_range(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd)
-                _tmp.append((ab_range, alssm.trajectory(x, ab_range)))
-            trajectories.append(_tmp)
-        return trajectories
+                trajectories [i, p] = ab_range, alssm.trajectory(x, ab_range)
+        return trajectories.reshape(*Ks, -1)
 
-    def windows(self, segment_indices:list[int], thd:float=1e-6):
+    def windows(self, segment_indices:list[int]=None, thd:float=1e-6):
         """
         Returns for each selected segment its window generated by :meth:`CostSegment.windows`.
 
@@ -620,6 +621,9 @@ class CompositeCost:
         Parameters
         ----------
         segment_indices : array_like, shape=(P,) of Boolean
+            TODO: wrong docstring
+                array of segment indices if None (Default) all segemtns are returned
+
             Enables (:code:`True`, 1) or disables (:code:`False`, 0) the evaluation of the
             p-th Segment in :attr:`CompositeCost.segments` using :meth:`CostSegment.window`
         thd : list of shape=(P,) of floats, scalar, optional
@@ -642,15 +646,12 @@ class CompositeCost:
 
         """
 
+        if segment_indices is None:
+            segment_indices = np.arange(len(self.segments))
         assert is_array_like(segment_indices), 'segment_index is not an integer nor array_like'
         assert 0 <= min(segment_indices) and max(segment_indices) < len(self.segments), 'segment_index out of range'
 
-        windows = []
-        for segment_index in segment_indices:
-            seg = self.segments[segment_index]
-            window = _window_output(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd)
-            windows.append(window)
-        return windows
+        return  [seg.window(thd) for seg in self.segments]
 
     def get_steady_state_W(self, method:str='closed_form'):
         """
@@ -707,7 +708,7 @@ class CompositeCost:
 
 
         |def_N|
-        |def_L|
+        |def_Q|
         |def_M|
         |def_S|
         |def_XS|
@@ -758,7 +759,7 @@ class CompositeCost:
 
         return alssm_sum.eval_states(xs)
 
-    def get_state_var_indices(self, label):
+    def get_state_var_indices(self, label) -> Iterable[int]:
         """
         Returns the state indices for a specified label of the stacked internal ALSSM
 
@@ -789,7 +790,7 @@ class CostSegment(CompositeCost):
 
           window weight
               ^
-            2_|                   ___     exponentially rising window of segment
+            2_|                   ___     exponentially rising window of a segment
             1_|              ____/     <- normalized to 1 at index delta; to
             0_|    _________/             weight the cost function
 
@@ -827,6 +828,7 @@ class CostSegment(CompositeCost):
     --------
     Set up a cost segment with finite boundaries and a line ALSSM.
 
+    >>> import lmlib as lm
     >>> alssm = lm.AlssmPoly(poly_degree=1, label="slope with offset")
     >>> segment = lm.Segment(a=-30, b=0, direction=lm.FORWARD, g=20, label="finite left")
     >>> cost = lm.CostSegment(alssm, segment, label="left line")
@@ -837,11 +839,22 @@ class CostSegment(CompositeCost):
 
     """
 
-    def __init__(self, alssm: ModelBase, segment:Segment, **kwargs):
+    def __init__(self, alssm, segment, **kwargs):
         super().__init__(alssms=[alssm], segments=[segment], F=np.ones((1, 1)), **kwargs)
 
     def __str__(self):
         return f'{type(self).__name__}(label: {self.label}) \n  └- {self.alssms[0]}, \n  └- {self.segments[0]}'
+
+    @property
+    def alssm(self):
+        """Alssm : Cost Segments Alssm"""
+        return self.alssms[0]
+
+    @property
+    def segment(self):
+        """Segment : Costs' Segments"""
+        return self.segments[0]
+
 
 
 class ConstrainMatrix:
@@ -977,6 +990,30 @@ class ConstrainMatrix:
 
 
 class NDCompositeCost(list):
+    """
+    N-Dimensional Composite Cost
+
+    A NDCompositeCost is an implementation of [Baeriswyl2025]_ :download:`PDF  <https://>`
+
+    Parameters
+    ----------
+    composite_costs : List of CompositeCost
+        List Composite costs containing `CompositeCost` for each dimension
+
+    Examples
+    --------
+    Set up a cost segment with finite boundaries and a line ALSSM.
+
+    >>> import lmlib as lm
+    >>> alssm = lm.AlssmPoly(poly_degree=1, label="slope with offset")
+    >>> segment = lm.Segment(a=-30, b=0, direction=lm.FORWARD, g=20, label="finite left")
+    >>> cost = lm.CostSegment(alssm, segment, label="left line")
+    >>> print(cost)
+    CostSegment : label: left line
+      └- Alssm : polynomial, A: (2, 2), C: (1, 2), label: slope with offset,
+      └- Segment : a:-30, b:0, fw, g:20, delta:0, label: finite left
+
+    """
     def __init__(self, composite_costs):
         super().__init__(composite_costs)
 
@@ -986,18 +1023,221 @@ class NDCompositeCost(list):
 
 
     @property
-    def ND(self):
+    def L(self) -> int:
+        """int : number of dimensions :math:`L`"""
         return len(self)
 
-    def get_model_order(self):
+    def get_model_order(self) -> int:
         """int : Order of the (stacked, dimension-combined) Alssm Model"""
         return int(np.prod([cc.get_model_order() for cc in self]))
 
     def get_steady_state_W(self, dim_order):
+        """
+        Returns the steady state W of the n-dimensional Composite Cost
+
+        Parameters
+        ----------
+        dim_order : list of int
+            Specifies the dimensional order in a list of integers
+
+        Returns
+        -------
+        W : :class:`numpy.ndarray` of shape(N, N)
+            Steady state matrix :math:`W`
+        """
         W = [1]
         for n in dim_order:
             W = np.kron(W, self[n].get_steady_state_W())
         return W
 
     def get_model_output_dimension(self):
+        """returns the ALSSM output dimension 'Q' if the output is a scalar an empty tuple is returned"""
         return self[0].get_model_output_dimension()
+
+
+    def eval_nd_alssm_output(self, xs, dim_order=None, alssm_weights=None):
+        """
+        Evaluation of the ALSSM for multiple state vectors `xs`.
+
+        **See also:** :meth:`~lmlib.statespace.models.Alssm.eval_states`
+
+        Parameters
+        ----------
+        xs : array_like of shape=(K1, ...KL, N)
+            Array of state vectors :math:`x`
+        dim_order : list of int, optional
+            List of indexes of length L the defines the dimension order applied
+        alssm_weights : tuple(array_like) or None
+            Tuple of length nd where each element is array_like containing the corresponding ALSSM weights
+
+        Returns
+        -------
+        s : :class:`~numpy.ndarray` of shape=(K1, ... KL,[Q,]) of floats
+            ALSSM outputs
+
+
+        |def_N|
+        |def_L|
+        |def_Q|
+        |def_M|
+        |def_S|
+        |def_XS|
+
+        """
+
+        nd_alssm = self.get_nd_alssm(dim_order=dim_order, alssm_weights=alssm_weights)
+        Ks = np.shape(xs)[:-1]
+        N = np.shape(xs)[-1]
+        return nd_alssm.eval_states(xs.reshape(-1, N)).reshape(*Ks)
+
+    def get_nd_alssm(self, dim_order=None, alssm_weights=None):
+        """
+        Returns the n-dimensional ALSSM
+
+        Parameters
+        ----------
+        dim_order : list of int, optional
+            List of indexes of length L the defines the dimension order applied
+        alssm_weights : tuple(array_like) or None
+            Tuple of length nd where each element is array_like containing the corresponding ALSSM weights
+
+        Returns
+        -------
+        nd_alssm : :class:`~lmlib.statespace.models.ModelBase`
+            n-Dimensional ALSSM
+
+        """
+        alssms = []
+        if dim_order is None:
+            dim_order = np.arange(self.L)
+        for model_dimension in dim_order:
+            cc = self[model_dimension]
+            if alssm_weights is not None:
+                alssm = AlssmSum(cc.alssms, alssm_weights[model_dimension])
+            else:
+                alssm = AlssmSum(cc.alssms)
+            alssms.append(alssm)
+
+        nd_alssm = AlssmProd(alssms)
+
+    def nd_windows(self, nd_segment_indices, thd:float=1e-6):
+        """
+        Returns the n-dimensional window for each dimension
+
+        Parameters
+        ----------
+        nd_segment_indices: array_like of int
+            Selection of Segments for each dimension and segments in the corresponding CompositeCost
+        thd : float, optional
+            threshold for infinit Segments. The window os cutoff when the window weight is lower the threshold.
+
+        Returns
+        -------
+        nd_windows : list of windows
+            Each entry in the nd_windows contains the windows of a Composite Cost relative to the dimension
+
+        """
+        assert is_array_like(nd_segment_indices), 'nd_segment_indices is not an integer nor array_like'
+        assert len(nd_segment_indices) == self.L, 'nd_segment_indices not same length as NDCompositeCost.nd'
+        nd_windows = []
+        for n, segment_indices in enumerate(nd_segment_indices):
+            assert is_array_like(segment_indices), 'segment_index is not an integer nor array_like'
+            assert 0 <= min(segment_indices) and max(segment_indices) < len(self[n].segments), 'segment_index out of range'
+
+            windows = []
+            for segment_index in segment_indices:
+                seg = self[n].segments[segment_index]
+                window = _window_output(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd)
+                windows.append(window)
+            nd_windows.append(windows)
+        return nd_windows
+
+    def two_dim_trajectory(self, x, dim_order=None, thd:float=1e-6):
+        """
+        Returns the 2-dimensional trajectory of the ALSSM output of the state vector `x`.
+
+
+        Parameters
+        ----------
+        x : array_like of shape (N,)
+            State vector :math:`x` of the n-dimensional ALSSM
+        dim_order : list of int, optional
+            List of indexes of length L that defines the dimension order applied
+        thd : float, optional
+            threshold for infinit Segments. The window os cutoff when the window weight is lower the threshold.
+
+
+        Returns
+        -------
+        trajectory_indexes : array_like of shape(JS1, JS2)
+            relative indices
+        trajectory_values : array_like
+            2-dimensional alssm outputs
+        """
+
+        if dim_order is None:
+            dim_order = np.arange(self.L)
+
+        cc_1st_dim = self[dim_order[0]]
+        ab_range_1st_dim = []
+        alssm_1st_dim = []
+        for seg, f in zip(cc_1st_dim.segments, cc_1st_dim.F.T):
+            ab_range_1st_dim.append(_window_range(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd))
+            alssm_1st_dim.append(AlssmSum(cc_1st_dim.alssms, deltas=f))
+        
+        cc_2st_dim = self[dim_order[1]]
+        ab_range_2st_dim = []
+        alssm_2st_dim = []
+        for seg, f in zip(cc_2st_dim.segments, cc_2st_dim.F.T):
+            ab_range_2st_dim.append(_window_range(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd))
+            alssm_2st_dim.append(AlssmSum(cc_2st_dim.alssms, deltas=f))
+
+        traj = np.zeros((
+            sum(len(r) for r in ab_range_1st_dim),  # 1st dim
+            sum(len(r) for r in ab_range_2st_dim)  # 2st dim
+        ))
+        traj_index = np.zeros((
+            sum(len(r) for r in ab_range_1st_dim),  # 1st dim
+            sum(len(r) for r in ab_range_2st_dim), # 2st dim
+            2
+        ))
+        off_i = 0
+        for alssm_1, ab_range_1 in zip(alssm_1st_dim, ab_range_1st_dim):
+            off_j = 0
+            for alssm_2, ab_range_2 in zip(alssm_2st_dim, ab_range_2st_dim):
+                for index_i, i in enumerate(ab_range_1):
+                    CA1 = alssm_1.C @ matrix_power(alssm_1.A, i)
+                    for index_j, j in enumerate(ab_range_2):
+                        CA2 = alssm_2.C @ matrix_power(alssm_2.A, j)
+                        traj[index_i+off_i, index_j+off_j] = np.kron(CA1, CA2) @ x
+                        traj_index[index_i+off_i, index_j+off_j] = i, j
+                off_j += len(ab_range_2)
+            off_i += len(ab_range_1)
+        return traj_index, traj
+
+    def two_dim_map_trajectory(self, trajectory, k0, Ks):
+        """
+        Maps a two-dimensional trajectory onto a two-dimensional signal, with np.nan otherwise.
+
+        Parameters
+        ----------
+        trajectory: tuple
+            Tuple containing trajectory_indexes and trajectory_values from `two_dim_trajectory()`
+        k0 : tuple of int
+            Tuple of two indexes for the two dimensions ins the signal
+            This maps the `trajectory` into the two-dimensional signal.
+        Ks : tuple of int
+            Size of the two-dimensional signal
+
+        Returns
+        -------
+        Y : np.ndarray of shape Ks
+            two-dimensional signal containing the trajectory at k0
+        """
+
+        traj_index, traj  = trajectory
+        mappedtraj = np.full(Ks, np.nan)
+        for t, ij in zip(traj.ravel(), traj_index.reshape(-1, 2)):
+            mappedtraj[int(ij[0]+k0[0]), int(ij[1]+k0[1])] = t
+
+        return mappedtraj

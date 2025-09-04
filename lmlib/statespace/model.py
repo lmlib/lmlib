@@ -1,14 +1,15 @@
 """This module provides methods to define linear state space models and methods to use them as signal models in recursive least squares problems."""
 
-from typing import Union
-
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 import re
 import numpy as np
+import numpy.typing as npt
+
+from numpy.linalg import matrix_power
+
 from scipy.linalg import block_diag, pascal
 from lmlib.utils import *
-from lmlib.statespace.backends.statespace_tools import *
 
 __all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmSin', 'AlssmExp',
            'AlssmStacked', 'AlssmSum', 'AlssmSum', 'AlssmProd', 'ModelBase']
@@ -21,7 +22,7 @@ class ModelBase(ABC):
     Parameters
     ----------
     label : str, optional
-        Label of Alssm, default: 'n/a'
+        Label of ALSSM, default: 'n/a'
     C_init : array_like, None, optional
         Initialized Output Matrix, default: 'None'
     force_MC : bool, optional
@@ -30,7 +31,7 @@ class ModelBase(ABC):
 
     def __init__(self, label:str='n/a', C_init=None, force_MC:bool=False):
         self._alssms = list()
-        self._deltas = list()
+        self._deltas = np.ndarray([])
         self._A = None
         self._C = None
         self.label = label
@@ -53,7 +54,7 @@ class ModelBase(ABC):
         pass
 
     @property
-    def A(self):
+    def A(self) -> npt.NDArray:
         """:class:`~numpy.ndarray`, shape=(N, N) : State matrix :math:`A \\in \\mathbb{R}^{N \\times N}`"""
         return self._A
 
@@ -64,8 +65,8 @@ class ModelBase(ABC):
         self._A = np.asarray(A)
 
     @property
-    def C(self):
-        """:class:`~numpy.ndarray`, shape=([L,] N) : Output matrix :math:`C \\in \\mathbb{R}^{L \\times N}`"""
+    def C(self) -> npt.NDArray:
+        """:class:`~numpy.ndarray`, shape=([Q,] N) : Output matrix :math:`C \\in \\mathbb{R}^{Q \\times N}`"""
         return self._C
 
     @C.setter
@@ -75,8 +76,8 @@ class ModelBase(ABC):
         self._C = np.asarray(C)
 
     @property
-    def C_init(self):
-        """:class:`~numpy.ndarray`, shape=([L,] N) : Initialized Output matrix :math:`C \\in \\mathbb{R}^{L \\times N}`"""
+    def C_init(self) -> npt.NDArray:
+        """:class:`~numpy.ndarray`, shape=([Q,] N) : Initialized Output matrix :math:`C \\in \\mathbb{R}^{Q \\times N}`"""
         return self._C_init
 
     @C_init.setter
@@ -89,22 +90,22 @@ class ModelBase(ABC):
             self._C_init = np.asarray(C)
 
     @property
-    def label(self):
+    def label(self) -> str:
         """str : Label of the model"""
         return self._label
 
     @label.setter
-    def label(self, label):
+    def label(self, label: str):
         assert isinstance(label, str)
         self._label = label
 
     @property
-    def N(self):
+    def N(self) ->int:
         """int : Model order :math:`N`"""
         return self._A.shape[0]
 
     @property
-    def alssms(self):
+    def alssms(self) -> list:
         """list : Set of models"""
         return self._alssms
 
@@ -112,11 +113,11 @@ class ModelBase(ABC):
     def alssms(self, alssms):
         assert isinstance(alssms, Iterable), 'alssms is not iterable'
         for alssm in alssms:
-            assert isinstance(alssm, ModelBase), 'element in alssms is not instance nor subclass of Alssm'
+            assert isinstance(alssm, ModelBase), 'element in alssms is not instance nor subclass of ALSSM'
         self._alssms = list(alssms)
 
     @property
-    def deltas(self):
+    def deltas(self) -> npt.NDArray:
         """:class:`np.ndarray` : Output scaling factors for each ALSSM in `alssms`"""
         return self._deltas
 
@@ -136,23 +137,23 @@ class ModelBase(ABC):
         self._deltas = np.asarray(deltas)
 
     @property
-    def force_MC(self):
+    def force_MC(self) -> bool:
         """bool : Flag to broadcast to a 2-dimensional `C` state space variable"""
         return self._force_MC
 
     @force_MC.setter
-    def force_MC(self, force_MC):
+    def force_MC(self, force_MC: bool):
         assert isinstance(force_MC, bool), 'force_MC is not of type boolean'
         self._force_MC = force_MC
 
     @ property
-    def is_MC(self):
+    def is_MC(self) -> bool:
         """bool : returns True if 'C' is MultiChannel (2d)"""
         return np.ndim(self._C) == 2
 
     def eval_states(self, xs):
         r"""
-        Evaluation of the ALSSM for an array of state vectors `xs`.
+        Evaluation of the ALSSM for state vectors `xs`.
 
         `eval_states(...)` returns the ALSSM output
 
@@ -164,19 +165,29 @@ class ModelBase(ABC):
 
         Parameters
         ----------
-        xs : array_like of shape=(XS,N[,S])
-            List of length `XS` with state vectors :math:`x`.
+        xs : array_like of shape=(..., N)
+            Array of state state vectors :math:`x`.
+            The last dimension must be of size N. Any number of
+            leading dimensions (`...`) are supported, and the function will be
+            applied independently to each slice along these dimensions.
+
 
         Returns
         -------
-        s : :class:`~numpy.ndarray` of shape=(XS,[L[,S]])
-            ALSSM outputs
+        s : :class:`~numpy.ndarray` of shape=(...[,L])
+            ALSSM output
+            For each input slice of shape (N,), the function produces
+            an output of shape ([L,]). The leading dimensions (`...`) are preserved,
+            so the result has the same batch shape as the input.
 
+        Notes
+        -----
+        This function vectorizes over the leading dimensions. That is, if the input
+        has shape (a, b, N), the function is applied independently to each of the
+        `a * b` slices of shape (N,), producing an output of shape (a, b, L).
 
         |def_N|
-        |def_L|
-        |def_S|
-
+        |def_Q|
 
         Examples
         --------
@@ -193,9 +204,9 @@ class ModelBase(ABC):
 
         """
         if self.is_MC:
-            return np.einsum('ln, kn...->kl...', self.C, xs)
+            return np.einsum('ln, ...n->...l', self.C, xs)
         else:
-            return np.einsum('n, kn...->k...', self.C, xs)
+            return np.einsum('n, ...n', self.C, xs)
 
     def eval_state(self, x):
         r"""
@@ -211,19 +222,22 @@ class ModelBase(ABC):
 
         Parameters
         ----------
-        x : array_like of shape=(N[,S])
+        x : array_like of shape=(N,)
            State vector :math:`x`
 
         Returns
         -------
-        s : :class:`~numpy.ndarray` of shape=([L[,S]])
+        s : :class:`~numpy.ndarray` of shape=([L,])
             ALSSM output
 
-
+        Notes
+        -----
         |def_N|
-        |def_L|
-        |def_S|
+        |def_Q|
 
+        See Also
+        --------
+        eval_states : evaluation of the ALSSM for multiple state vectors `xs`.
 
         Examples
         --------
@@ -242,7 +256,7 @@ class ModelBase(ABC):
 
         return np.tensordot(self.C, x, axes=(-1, 0))
 
-    def trajectory(self, x, js):
+    def trajectory(self, x, js) -> npt.NDArray:
         r"""
         Evaluation of the ALSSM for a state vector `x` at evaluation indeces js.
 
@@ -256,20 +270,20 @@ class ModelBase(ABC):
 
         Parameters
         ----------
-        x : array_like of shape=(N[,S])
-           State vector :math:`x`
+        x : array_like of shape=(N)
+            State vector :math:`x`
         js : array_like of shape=(J,)
             ALSSM evaluation indices
 
         Returns
         -------
-        s : :class:`~numpy.ndarray` of shape=(J, [L[,S]])
+        s : :class:`~numpy.ndarray` of shape=(J [,L])
             ALSSM outputs
 
-
+        Notes
+        -----
         |def_N|
-        |def_L|
-        |def_S|
+        |def_Q|
         |def_j_index|
         |def_J|
 
@@ -286,56 +300,12 @@ class ModelBase(ABC):
         >>> print(s)
 
         """
-        return _trajectory_output(self.A, self.C, x, js)
+        if self.is_MC:
+            return np.asarray([np.einsum('ln, n->l', self.C @ matrix_power(self.A, j), x) for j in js])
+        else:
+            return np.asarray([np.einsum('n, n', self.C @ matrix_power(self.A, j), x) for j in js])
 
-    def trajectories(self, xs, js):
-        r"""
-        Evaluation of the ALSSM for an array state vectors `xs` at evaluation indeces js.
-
-        `trajectories(...)` returns the ALSSM output
-
-        .. math::
-            s_j(x) = CA^jx = Cx
-
-        for a state vector :math:`x` and index :math:`j` in the list `js`
-
-
-        Parameters
-        ----------
-        xs : array_like of shape=(XS,N[,S])
-            List of length `XS` with state vectors :math:`x`.
-        js : array_like of shape=(J,)
-            ALSSM evaluation indices
-
-        Returns
-        -------
-        s : :class:`~numpy.ndarray` of shape=(XS, J, [L[,S]])
-            ALSSM outputs
-
-
-        |def_N|
-        |def_L|
-        |def_S|
-        |def_j_index|
-        |def_J|
-        |def_XS|
-
-        Examples
-        --------
-        >>> import lmlib as lm
-        >>>
-        >>> A = [[1, 1], [0, 1]]
-        >>> C = [1, 0]
-        >>> alssm = lm.Alssm(A, C, label='line')
-        >>>
-        >>> xs = [[0.1, 3], [0, 1], [-0.8, 0.2], [1, -3]]
-        >>> s = alssm.trajectories(xs, js=[0, 1, 2, 3, 4, 5])
-        >>> print(s)
-
-        """
-        return np.asarray([_trajectory_output(self.A, self.C, x, js) for x in xs])
-
-    def dump_tree(self):
+    def dump_tree(self) -> str:
         """
         Returns the internal structure of the ALSSM model as a string.
 
@@ -346,6 +316,7 @@ class ModelBase(ABC):
 
         Examples
         --------
+        >>> import lmlib as lm
         >>> alssm_poly = lm.AlssmPoly(4, label="high order polynomial.rst")
         >>> A = [[1, 1], [0, 1]]
         >>> C = [[1, 0]]
@@ -378,10 +349,10 @@ class ModelBase(ABC):
         >>>
         >>> alssm = lm.AlssmPoly(poly_degree=1, label='slope_with_offset')
         >>> alssm.set_state_var_label('slope', (1,))
-        >>> alssm.state_var_labels
+        >>> alssm._state_var_labels
         {'x': range(0, 2), 'x0': (0,), 'x1': (1,), 'slope': (1,)}
-        >>> alssm.state_var_labels['slope']
-        (1,)
+        >>> alssm._state_var_labels['slope']
+        1,
 
         """
         self._state_var_labels[label] = indices
@@ -402,7 +373,7 @@ class ModelBase(ABC):
                 str_tree += alssm._rec_tree(level=level + 1)
         return str_tree
 
-    def get_state_var_labels(self):
+    def get_state_var_labels(self) -> list[str]:
         """
         Returns a list of state variable labels
 
@@ -422,7 +393,7 @@ class ModelBase(ABC):
             N += alssm.N
         return state_list
 
-    def get_state_var_indices(self, label:str):
+    def get_state_var_indices(self, label: str)-> list[int]:
         """
         Returns the state indices for a specified label
 
@@ -436,9 +407,11 @@ class ModelBase(ABC):
         out : list of int
             state indices of the label
         """
+
         for l, indices in self.get_state_var_labels():
             if label == l:
                 return indices
+        return []
 
     def _broadcast_C_to_multichannel(self):
         if self.force_MC:
@@ -457,7 +430,7 @@ class Alssm(ModelBase):
 
        s_k(x) = y[k] &= Cx[k],
 
-    where :math:`A \in \mathbb{R}^{N\times N}, C \in \mathbb{R}^{L \times N}` are the fixed model parameters (matrices),
+    where :math:`A \in \mathbb{R}^{N\times N}, C \in \mathbb{R}^{Q \times N}` are the fixed model parameters (matrices),
     :math:`k` the time index,
     :math:`y[k] \in \mathbb{R}^{L \times 1}` the output vector,
     and :math:`x[k] \in \mathbb{R}^{N}` the state vector.
@@ -468,19 +441,18 @@ class Alssm(ModelBase):
     ----------
     A : array_like, shape=(N, N)
         State Matrix
-    C : array_like, shape=([L,] N)
+    C : array_like, shape=([Q,] N)
         Output Matrix
     **kwargs
         Forwarded to :class:`.ModelBase`
 
-
-    |def_N|
-    |def_L|
-
     Note
     ----
-    The output matrix :math:`C` can be of the form (N,) for a 1-dimensional output or of the form (L, N), resulting in a
-    2-dimensional output. Accordingly, the signal sample :math:`y[k]` in a cost function must be of the form of the ALSSM output.
+    The output matrix :math:`C` can be of the form (N,) for a 1-dimensional output or of the form (Q, N), resulting in a
+    2-dimensional output. Accordingly, the signal sample :math:`y[k]` in a cost function must be in the form of the ALSSM output.
+
+    |def_N|
+    |def_Q|
 
     Examples
     --------
@@ -545,18 +517,19 @@ class AlssmPoly(ModelBase):
     Parameters
     ----------
     poly_degree : int
-        Polynomial degree `Q`. Corresponds to the highest exponent of the polynomial.rst.
-        It follows an ALSSM system of order `N = Q+1`.
-    C : array_like, shape=([L,] N), optional
+        Polynomial degree. Corresponds to the highest exponent of the polynomial.rst.
+        It follows an ALSSM system of order `N = poly_degree+1`.
+    C : array_like, shape=([Q,] N), optional
         Output Matrix.
         If no output matrix is given, C gets initialized automatically to `[1, 0, ...]` such that the shape
         is `(N,)`. In addition with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)`. (default: C=None)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
-
+    Notes
+    -----
     |def_N|
-    |def_L|
+    |def_Q|
 
 
     Examples
@@ -564,8 +537,7 @@ class AlssmPoly(ModelBase):
     Setting up a 4. order polynomial.rst, autonomous linear state space model.
     >>> import lmlib as lm
     >>>
-    >>> poly_degree = 3
-    >>> alssm = lm.AlssmPoly(poly_degree, label='poly')
+    >>> alssm = lm.AlssmPoly(poly_degree=3, label='poly')
     >>> print(alssm)
     A =
     [[1 1 1 1]
@@ -604,8 +576,8 @@ class AlssmPoly(ModelBase):
         self._broadcast_C_to_multichannel()
 
     @property
-    def poly_degree(self):
-        """int : Polynomial degree :math:`Q` (highest exponent/ order - 1)"""
+    def poly_degree(self) -> int:
+        """int : Polynomial degree (highest exponent/ order - 1)"""
         return self._poly_degree
 
     @poly_degree.setter
@@ -645,7 +617,7 @@ class AlssmPolyJordan(ModelBase):
 
 
     |def_N|
-    |def_L|
+    |def_Q|
 
 
     Examples
@@ -682,7 +654,7 @@ class AlssmPolyJordan(ModelBase):
         self._broadcast_C_to_multichannel()
 
     @property
-    def poly_degree(self):
+    def poly_degree(self) -> int:
         """int : Polynomial degree :math:`Q` (highest exponent/ order - 1)"""
         return self._poly_degree
 
@@ -714,16 +686,17 @@ class AlssmSin(ModelBase):
         Frequency :math:`\omega = 2\pi f_s`
     rho : float, int, optional
         Decay factor, default: rho = 1.0
-    C : array_like, shape=(L, N), optional
+    C : array_like, shape=([Q,] N), optional
         Output Matrix.
         If no output matrix is given, C gets initialized automatically to `[1, 0]`, such that the shape
         is `(N,)`. In addition, with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)` (default: C=None)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
-
+    Notes
+    -----
     |def_N|
-    |def_L|
+    |def_Q|
 
 
     Notes
@@ -731,18 +704,15 @@ class AlssmSin(ModelBase):
     To convert a continuous-time frequency to a normalized frequency, see :func:`~lmlib.utils.generator.k_period_to_omega`, e.g.,
     >>> import lmlib as lm
     >>> from lmlib.utils.generator import k_period_to_omega
-    >>> ...
-    >>> ...
-    >>> alssm = lm.AlssmSin(k_period_to_omega(k_period), rho)
+    >>> k_period = 20
+    >>> alssm = lm.AlssmSin(k_period_to_omega(k_period), rho=0.9)
 
 
     Examples
     --------
     Parametrization of a sinusoidal ALSSM:
 
-    >>> omega = 0.1
-    >>> rho = 0.9
-    >>> alssm = lm.AlssmSin(omega, rho)
+    >>> alssm = lm.AlssmSin(omega= 0.1, rho= 0.9)
     >>> print(alssm)
     A =
     [[ 0.89550375 -0.08985007]
@@ -772,22 +742,22 @@ class AlssmSin(ModelBase):
         self._broadcast_C_to_multichannel()
 
     @property
-    def omega(self):
+    def omega(self) -> float:
         """float : Frequency factor :math:`\\omega = 2\\pi f_s`"""
         return self._omega
 
     @omega.setter
-    def omega(self, omega):
+    def omega(self, omega: float):
         assert np.isscalar(omega), 'Frequency factor omega is a scalar'
         self._omega = float(omega)
 
     @property
-    def rho(self):
+    def rho(self) -> float:
         """float : Decay factor :math:`\\rho`"""
         return self._rho
 
     @rho.setter
-    def rho(self, rho):
+    def rho(self, rho: float):
         assert np.isscalar(rho), 'Decay factor rho is not a scalar'
         self._rho = float(rho)
 
@@ -805,23 +775,23 @@ class AlssmExp(ModelBase):
     ----------
     gamma : float, int
         Decay factor per sample step ( > 1.0 : left-sided decaying; < 1.0 : right-sided decaying)
-    C : array_like, shape=(L, N), optional
+    C : array_like, shape=([Q,], N), optional
         Output Matrix.
         If no output matrix is given, C gets initialize automatically to `[[1]]`. (default: C=None)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
-
+    Notes
+    -----
     |def_N|
-    |def_L|
+    |def_Q|
 
 
     Examples
     --------
     Parametrizing an exponentially ALSSM:
     >>> import lmlib as lm
-    >>> gamma = 0.8
-    >>> alssm = lm.AlssmExp(gamma)
+    >>> alssm = lm.AlssmExp(gamma= 0.8)
     >>> print(alssm)
     A =
     [[0.8]]
@@ -846,12 +816,12 @@ class AlssmExp(ModelBase):
         self._broadcast_C_to_multichannel()
 
     @property
-    def gamma(self):
+    def gamma(self) -> float:
         """float :  Decay factor per sample :math:`\\gamma`"""
         return self._gamma
 
     @gamma.setter
-    def gamma(self, gamma):
+    def gamma(self, gamma: float):
         assert np.isscalar(gamma), 'Decay factor gamma is not scalar'
         self._gamma = gamma
 
@@ -919,23 +889,23 @@ class AlssmStacked(ModelBase):
 
     Parameters
     ----------
-    alssms : tuple of shape(M) of ALSSMs
+    alssms : tuple of ALSSMs
         Set of `M` autonomous linear state space models
-    deltas: list of shape=(M) of floats, optional
+    deltas: list of floats, optional
         List of `M` scalar factors for each output matrix of the ALSSM in `alssms`.
         (default: deltas = None, i.e., all scalars are set to 1)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
-
+    Notes
+    -----
     |def_M|
-
 
     Examples
     --------
     >>> import lmlib as lm
     >>>
-    >>> alssm_poly = lm.AlssmPoly(4, label="high order polynomial")
+    >>> alssm_poly = lm.AlssmPoly(poly_degree=4, label="high order polynomial")
     >>>
     >>> A = np.array([[1, 1], [0, 1]])
     >>> C = np.array([[1, 0]])

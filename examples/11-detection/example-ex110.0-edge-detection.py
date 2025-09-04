@@ -45,7 +45,7 @@ H_edge = H_Continuous = np.array(
 
 
 # Filter
-rls = lm.RLSAlssm(cost, steady_state=False)
+rls = lm.RLSAlssm(cost)
 rls.filter(y)
 xs_hat_edge = rls.minimize_x(H_edge)
 xs_hat_line = rls.minimize_x(H_line)

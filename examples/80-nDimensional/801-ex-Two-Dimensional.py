@@ -16,7 +16,6 @@ from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backe
 
 from lmlib import RLSAlssm
 
-
 # # import colorcet as cc
 #
 #
@@ -144,33 +143,28 @@ h_A = xs_ref.copy()
 h_A[0] = 0
 xs_H2 = nd_rls.minimize_x(H_A, h_A)
 J_A = nd_rls.eval_errors(xs_H2)  # get SE (squared error) for hypothesi# s 1
-
 cr = J_B / J_A
 
 
 # ------------ Plotting -------------------------------
 plot_ref = True
 if plot_ref:
-    width, height = 40, 40
-    k1plot = np.arange(K1_REF - width, K1_REF + width)
-    k2plot = np.arange(K2_REF - height, K2_REF + height)
-    k1alssm = np.arange(K1_REF - l_side, K1_REF + l_side)
-    k2alssm = np.arange(K2_REF - l_side, K2_REF + l_side)
-    traj = lmmulti.trajectory_4seg((alssm_k1, alssm_k1), (alssm_k2, alssm_k2), xs_ref, k1alssm, k2alssm, K1_REF, K2_REF)
-    mappedtraj = lmmulti.maptraj(traj, k1alssm, k2alssm, k1, k2, K1, K2)
+
+    mappedtraj = nd_cost.two_dim_map_trajectory(nd_cost.two_dim_trajectory(xs_ref), k0=(K1_REF, K2_REF), Ks=(K1, K2))
+
+    width, height = 40, 40 # image cut-outsize
 
     figsize = (6.5, 4.8)
-    fig = plt.figure(layout='constrained', figsize=figsize, dpi=dpi)
-    k1k1_, k2k2_ = np.meshgrid(k1plot, k2plot, indexing='ij')
+    fig = plt.figure(layout='constrained', figsize=figsize, dpi=72)
     ax = fig.add_subplot(121)
-    cset = ax.imshow(Ynans[k1k1_, k2k2_], cmap='gray_r')
-    # csetlcr = ax.imshow(mappedtraj[k1k1_, k2k2_], cmap=cc.cm.fire, alpha=0.5)
-    csetlcr = ax.imshow(mappedtraj[k1k1_, k2k2_], cmap=plt.cm.get_cmap('hot'), alpha=0.5)
+    cset = ax.imshow(Y, cmap='gray_r')
+    csetlcr = ax.imshow(mappedtraj, cmap='hot', alpha=0.5)
+    ax.axis((K2_REF - height, K2_REF + height, K1_REF + width, K1_REF - width))
 
     # 3D plot
     ax = fig.add_subplot(122, projection='3d')
-    ax.plot_surface(k1k1_, k2k2_, Ynans[k1k1_, k2k2_], cmap='gray_r', alpha=0.6, zorder=1)
-
+    k1k1_, k2k2_ = np.meshgrid(range(K1_REF - width, K1_REF + width), range(K2_REF - height, K2_REF + height), indexing='ij')
+    ax.plot_surface(k1k1_, k2k2_, Y[k1k1_, k2k2_], cmap='gray_r', alpha=0.6, zorder=1)
     ax.plot_surface(k1k1_, k2k2_, mappedtraj[k1k1_, k2k2_], cmap='plasma', alpha=0.7, zorder=3)
     ax.plot_wireframe(k1k1_, k2k2_, mappedtraj[k1k1_, k2k2_], colors='b', zorder=3)
 

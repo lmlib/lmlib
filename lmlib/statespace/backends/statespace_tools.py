@@ -52,14 +52,14 @@ def _window_output(a, b, direction, gamma, delta, thd):
     ab_range = _window_range(a, b, direction, gamma, delta, thd)
     return ab_range, gamma ** (np.array(ab_range) - delta)
 
-def _merge_ks_seg(arr, merge_ks, merge_seg):
+def _merge_ks_seg(arr, merge_ks, merge_seg, segment_dim):
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         if merge_seg:
             if merge_ks:
-                return np.nanmax(arr, axis=(0, 1))
+                return np.nanmax(arr, axis=(0, segment_dim))
             else:
-                return np.nanmax(arr, axis=1)
+                return np.nanmax(arr, axis=segment_dim1)
         else:
             if merge_ks:
                 return np.nanmax(arr, axis=0)

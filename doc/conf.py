@@ -100,7 +100,7 @@ rst_prolog = """
    <br />
 .. |def_K| replace:: `K` : number of samples |br|
 .. |def_k_index| replace:: `k` : sample index |br|
-.. |def_L| replace:: `L` : output order / number of signal channels |br|
+.. |def_Q| replace:: `Q` : output order / number of signal channels |br|
 .. |def_S| replace:: `S` : number of signal sets |br|
 .. |def_P| replace:: `P` : number of segments |br|
 .. |def_M| replace:: `M` : number of ALSSMs |br|
@@ -110,7 +110,7 @@ rst_prolog = """
 .. |def_XS| replace:: `XS` : number of state vectors in a list |br|
 .. |def_KS| replace:: `KS` : number of (time) indices in the list |br|
 .. |def_JR| replace:: `JR` : index range length |br|
-.. |def_Q| replace:: `Q` : Polynomial Order |br|
+.. |def_L| replace:: `L` : number of dimension of an ND-Alssm/ND-Cost |br|
 """
 
 # -- Options for HTML output -------------------------------------------------
