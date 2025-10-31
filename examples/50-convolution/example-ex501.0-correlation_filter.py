@@ -9,12 +9,11 @@ Author(s): Christof Baeriswyl
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import gridspec
 import time
+
 import lmlib as lm
 from lmlib.utils.generator import gen_rect
 from lmlib.utils.generator import gen_wgn
-from lmlib.utils.generator import gen_conv
 
 # -- 0. Generate Test signal ---
 K = 2500  # number of samples to process
@@ -32,7 +31,7 @@ segment = lm.Segment(a=a, b=b, direction=lm.BACKWARD, g=400)
 cost = lm.CostSegment(alssm, segment)
 
 # -- 2. Project observations (and the template) to ALSSM feature space --
-rls_y = lm.RLSAlssm(cost)
+rls_y = lm.RLSAlssm(cost, backend='numpy')
 rls_y.filter(y_mc)  # Transform observations
 
 xs_hat = rls_y.minimize_x()  # get transformed observations

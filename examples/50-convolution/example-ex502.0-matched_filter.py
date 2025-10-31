@@ -31,7 +31,7 @@ segment = lm.Segment(a=a, b=b, direction=lm.BACKWARD, g=400)
 cost = lm.CostSegment(alssm, segment)
 
 # -- 2. Project observations (and the template) to ALSSM feature space --
-rls_y = lm.RLSAlssm(cost)
+rls_y = lm.RLSAlssm(cost, backend='numpy')
 rls_y.filter(y_mc)  # Transform observations
 
 xs_hat = rls_y.minimize_x()  # get transformed observations

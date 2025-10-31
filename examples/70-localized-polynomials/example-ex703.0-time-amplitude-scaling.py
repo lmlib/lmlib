@@ -53,7 +53,7 @@ ks_alpha = np.array([370])  # fixing template
 alssm = lm.AlssmPoly(poly_degree=Q - 1)
 segment_right = lm.Segment(a=-ab_half, b=ab_half, direction=lm.BW, g=50, delta=ab_half)
 cost = lm.CostSegment(alssm, segment_right)
-rls = lm.RLSAlssm(cost)
+rls = lm.RLSAlssm(cost, backend="numpy")
 xs = rls.filter_minimize_x(y)
 
 # generate template
@@ -62,7 +62,7 @@ amplitude_factor = 0.945
 y_template = amplitude_factor * np.column_stack(
     [np.interp(np.linspace(0, K, int(K * dilate_factor)), np.arange(K), y0) for y0 in y.T])
 
-rls_tmpl = lm.RLSAlssm(cost)
+rls_tmpl = lm.RLSAlssm(cost, backend="numpy")
 xs_tmpl = rls_tmpl.filter_minimize_x(y_template)
 alphas = xs_tmpl[(ks_alpha * dilate_factor).astype(int)]
 
