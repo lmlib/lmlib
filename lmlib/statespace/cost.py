@@ -361,7 +361,7 @@ class Segment:
     def set_boundaries(self, a, b):
         assert isinstance(a, int) or np.isinf(a), 'Left boundary is not of type integer or np.inf.'
         assert isinstance(b, int) or np.isinf(b), 'Right boundary is not of type integer or np.inf.'
-        assert a <= b, 'left boundary \'a\' has to be smaller/equal to the right boundary \'b\'.'
+        assert a < b, 'left boundary \'a\' must be smaller than the right boundary \'b\'.'
         self._a = a
         self._b = b
 

@@ -115,16 +115,16 @@ gr = 70.0 * fs  # Right segment window decay
 
 ccost = J_TSLM(y, a, b, gl, gr)
 
-cost_l = J_TSLM(y, a, 0, gl, gr)  # for illustrative purpose in the plot only
-cost_r = J_TSLM(y, -1, b, gl, gr)  # for illustrative purpose in the plot only
+cost_l = J_TSLM(y, a, 1, gl, gr)  # for illustrative purpose in the plot only
+cost_r = J_TSLM(y, -2, b, gl, gr)  # for illustrative purpose in the plot only
 
 # Applying Filters
-rls = lm.RLSAlssm(ccost)
+rls = lm.RLSAlssm(ccost, steady_state=False)
 rls.filter(y)
 
-rls_l = lm.RLSAlssm(cost_l)
+rls_l = lm.RLSAlssm(cost_l, steady_state=False)
 rls_l.filter(y)
-rls_r = lm.RLSAlssm(cost_r)
+rls_r = lm.RLSAlssm(cost_r, steady_state=False)
 rls_r.filter(y)
 
 # Filter

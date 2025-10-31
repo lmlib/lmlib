@@ -35,16 +35,16 @@ gr = 70.0 * fs  # Right segment window decay
 ccost = lm.TSLM.create_cost(ab=(a, b), gs=(gl, gr))
 
 # the following two costs are for visulatization purpose only - and not needed to solve the problem
-cost_l = lm.TSLM.create_cost(ab=(a, 0), gs=(gl, gr))
-cost_r = lm.TSLM.create_cost(ab=(-1, b), gs=(gl, gr))
+cost_l = lm.TSLM.create_cost(ab=(a, 1), gs=(gl, gr))
+cost_r = lm.TSLM.create_cost(ab=(-2, b), gs=(gl, gr))
 
 # Applying Filters
 rls = lm.RLSAlssm(ccost, steady_state=False)
 rls.filter(y)
 
-rls_l = lm.RLSAlssm(cost_l)
+rls_l = lm.RLSAlssm(cost_l, steady_state=False)
 rls_l.filter(y)
-rls_r = lm.RLSAlssm(cost_r)
+rls_r = lm.RLSAlssm(cost_r, steady_state=False)
 rls_r.filter(y)
 
 # Filter

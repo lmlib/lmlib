@@ -163,7 +163,7 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
     einsum_path : str (see RLSALssm)
     """
     if not (a >= 0 and b > 0):
-        NotImplemented('BACKEND: a and b has to be higher then zero for  backward calculated segments.')
+        NotImplemented('BACKEND: a and b has to be higher then zero for backward calculated segments.')
 
 
     # gamma pre-calculation

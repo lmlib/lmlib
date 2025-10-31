@@ -24,7 +24,7 @@ F = np.ones((2, 2))
 cost = lm.CompositeCost(alssms, segments, F)
 
 # filter and minimize
-rls = lm.RLSAlssm(cost)
+rls = lm.RLSAlssm(cost, backend='numpy')
 xs = rls.filter_minimize_x(ys)
 
 # ------------------------------
@@ -36,7 +36,7 @@ ys_hat_normal = cost.eval_alssm_output(xs)
 # output by RLSAlssm*
 ys_hat_normal = rls.filter_minimize_yhat(ys)
 
-# ------------------------------
+# ------------------------------s
 # alternative outputs with alssm weights parameter
 
 # output by cost model
