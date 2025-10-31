@@ -1,36 +1,10 @@
-.. _lmlib_signal_catalog:
+.. _biosignals_catalog:
 
+Biosignal Catalog
+#################
 
-
-Signal Catalog
-==============
-
-Functions
-^^^^^^^^^
-
-.. currentmodule:: lmlib.utils.generator
-
-.. autosummary::
-
-    load_lib_csv
-    load_lib_csv_mc
-
-    load_csv
-    load_csv_mc
-
-Signals
-^^^^^^^
 *lmlib* provides some bioelectric signals to work with.
 Just import the submodule and load one of the signals as show down below.
-
-.. code-block::
-
-    from lmlib.utils import load_lib_csv
-
-    # load signal
-    y = load_lib_csv('EECG_BASELINE_1CH_10S_FS2400HZ.csv')
-
-
 
 EECG_BASELINE_1CH_10S_FS2400HZ.csv
 ----------------------------------

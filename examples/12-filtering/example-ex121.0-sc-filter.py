@@ -38,8 +38,8 @@ y_hat_1 = costs.eval_alssm_output(xs, alssm_weights=[1])
 
 # --- Plot II: ALSSM Filtering - Symmetric Infinite Support Moving Average Filter ---
 # Segments
-segment_left = lm.Segment(a=-np.Infinity, b=-1, direction=lm.FORWARD, g=20)
-segment_right = lm.Segment(a=0, b=np.Infinity, direction=lm.BACKWARD, g=20)
+segment_left = lm.Segment(a=-np.inf, b=-1, direction=lm.FORWARD, g=20)
+segment_right = lm.Segment(a=0, b=np.inf, direction=lm.BACKWARD, g=20)
 
 # Composite Cost
 costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])

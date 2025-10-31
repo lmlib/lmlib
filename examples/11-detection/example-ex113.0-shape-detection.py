@@ -39,10 +39,10 @@ alssm_baseline = lm.AlssmPoly(poly_degree=N1 - 1, label="alssm-baseline")
 alssm_pulse = lm.AlssmPolyJordan(poly_degree=N2 - 1, label="alssm-pulse")
 
 # Defining segments with a left- resp. right-sided decaying window and a center segment with nearly rectangular window
-segmentL = lm.Segment(a=-np.infty, b=-1 - SHAPE_LEN_2, direction=lm.FORWARD, g=g_bl, delta=-1 - SHAPE_LEN_2,
+segmentL = lm.Segment(a=-np.inf, b=-1 - SHAPE_LEN_2, direction=lm.FORWARD, g=g_bl, delta=-1 - SHAPE_LEN_2,
                       label='left-segment')
 segmentC = lm.Segment(a=-SHAPE_LEN_2, b=SHAPE_LEN_2, direction=lm.FORWARD, g=g_sp, label='center-segment')
-segmentR = lm.Segment(a=SHAPE_LEN_2 + 1, b=np.infty, direction=lm.BACKWARD, g=g_bl, delta=SHAPE_LEN_2 + 1,
+segmentR = lm.Segment(a=SHAPE_LEN_2 + 1, b=np.inf, direction=lm.BACKWARD, g=g_bl, delta=SHAPE_LEN_2 + 1,
                       label='right-segment')
 
 # Defining the final cost function (a so called composite cost = CCost)

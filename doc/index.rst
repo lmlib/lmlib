@@ -1,13 +1,12 @@
-.. title:: lmlib: Model-Based Signal Processing
+:html_theme.sidebar_secondary.remove: true
 
-=======================
-**lmlib** Documentation
-=======================
+
+lmlib documentation
+===================
 
 .. rst-class:: versiontext
 
    *Version:* |release| (*Documentation:* |today|) --- Open-Source and for Python.
-
 
 This is the official documentation for `lmlib <https://pypi.org/project/lmLib/>`_,
 a signal processing library to efficiently analyze single- and multi-channel time series.
@@ -19,12 +18,12 @@ a signal processing library to efficiently analyze single- and multi-channel tim
 
     .. grid-item-card:: Windowed Linear State-Space Models
 
-        (Package  :ref:`lmlib_api_statespace`)
+        (Package  :py:mod:`lmlib.statespace`)
 
     .. grid-item-card:: Continuous-Time Polynomial Signal Models
 
-        (Package :ref:`lmlib_api_polynomial`)
-   
+        (Package :py:mod:`lmlib.polynomial`)
+
 *This library provides methods for*
 
 * :ref:`Recursive, Linear Filters <filtering>`,
@@ -35,23 +34,19 @@ a signal processing library to efficiently analyze single- and multi-channel tim
 
 
 
-
-
 .. rst-class:: maintext1
 
-   This library also supports :ref:`JIT (Just-in-Time) <jit>` compilation for fast processing. 
+   This library also supports :ref:`different backends <_backend>` for fast processing.
 
-   This library is the result of many years of :ref:`research <about>` documented in various publications (see :ref:`bibliography`).
+   This library is the result of many years of :ref:`research <about_us.rst>` documented in various publications (see :ref:`bibliography`).
 
 
 
 .. toctree::
-   :hidden:
+   :maxdepth: 1
+   :caption: Contents:
 
-    User Guide <user_guide>
-    API Reference <reference>
-    Examples <_gallery_examples/index>
-    Install <install>
-    About <about>
-
-
+    User Guide<user_guide/index>
+    API<api/index>
+    Examples<_gallery_examples/index>
+    About Us<about_us>

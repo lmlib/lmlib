@@ -1,8 +1,15 @@
+:html_theme.sidebar_primary.remove: true
 .. _about:
-
 
 About Us
 ========
+
+
+.. grid:: 2
+
+    .. grid-item-card:: lmlib.society
+
+        Support lmlib by joining the `community <https://www.lmlib.ch/>`_.
 
 Institutes
 ----------
@@ -16,17 +23,20 @@ Institutes
 Software Authors
 ----------------
 
-- Reto Wildhaber, FHNW Muttenz, / ETH Zürich 
-- Frédéric Waldmann, FHNW Muttenz, 
+- Reto Wildhaber, FHNW Muttenz, / ETH Zürich
+- Frédéric Waldmann, FHNW Muttenz,
+- Christof Baeriswyl, ETH Zürich,
 - Luca Fleischmann, BFH Biel
 
 
 Research
 --------
 
-- Reto Wildhaber, FHNW Muttenz / ETH Zürich 
+- Reto Wildhaber, FHNW Muttenz / ETH Zürich
 - Nour Zalmai, ETH Zürich
 - Frédéric Waldmann, FHNW Muttenz
+- Christof Baeriswyl, ETH Zürich
+
 
 The research was further directly influenced or supported by
 
