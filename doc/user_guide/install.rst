@@ -5,7 +5,10 @@ Install
 
 Requirements
 ------------
-TODO
+- numpy
+- scipy
+- matplotlib
+- numba (optional and needs to be installed manually)
 
 pip
 ---

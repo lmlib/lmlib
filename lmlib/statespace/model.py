@@ -202,6 +202,7 @@ class ModelBase(ABC):
 
         Examples
         --------
+
         >>> import lmlib as lm
         >>>
         >>> A = [[1, 1], [0, 1]]
@@ -252,6 +253,7 @@ class ModelBase(ABC):
 
         Examples
         --------
+
         >>> import lmlib as lm
         >>>
         >>> A = [[1, 1], [0, 1]]
@@ -300,6 +302,7 @@ class ModelBase(ABC):
 
         Examples
         --------
+
         >>> import lmlib as lm
         >>>
         >>> A = [[1, 1], [0, 1]]
@@ -356,6 +359,7 @@ class ModelBase(ABC):
 
         Examples
         --------
+
         >>> import lmlib as lm
         >>>
         >>> alssm = lm.AlssmPoly(poly_degree=1, label='slope_with_offset')
@@ -467,6 +471,7 @@ class Alssm(ModelBase):
 
     Examples
     --------
+
     >>> import lmlib as lm
     >>>
     >>> A = [[1, 1], [0, 1]]
@@ -478,6 +483,7 @@ class Alssm(ModelBase):
      [0 1]]
     C =
     [1 0]
+
     >>> alssm
     Alssm : native, A: (2, 2), C: (1, 2), label: line
 
@@ -546,9 +552,9 @@ class AlssmPoly(ModelBase):
     Examples
     --------
     Setting up a 4. order polynomial.rst, autonomous linear state space model.
+
     >>> import lmlib as lm
-    >>>
-    >>> alssm = lm.AlssmPoly(poly_degree=3, label='poly')
+    >>> alssm = lm.AlssmPoly(poly_degree=3, label="poly")
     >>> print(alssm)
     A =
     [[1 1 1 1]
@@ -558,8 +564,10 @@ class AlssmPoly(ModelBase):
     C =
     [1 0 0 0]
 
+    Setting up a 3. order polynomial, autonomous linear state space model with two outputs.
+
     >>> C = np.array([[1, 0, 0], [0, 1, 0]])
-    >>> alssm = lm.AlssmPoly(poly_degree=2, C=C, label='poly')
+    >>> alssm = lm.AlssmPoly(poly_degree=2, C=C, label="poly")
     >>> print(alssm)
     A =
     [[1 1 1]
@@ -569,7 +577,7 @@ class AlssmPoly(ModelBase):
     [[1 0 0]
      [0 1 0]]
 
-   """
+    """
 
     def __init__(self, poly_degree:int, C=None, **kwargs):
         super().__init__(**kwargs)
@@ -634,11 +642,13 @@ class AlssmPolyJordan(ModelBase):
     Examples
     --------
     Setting up a 3th degree polynomial ALSSM.
+
     >>> import lmlib as lm
     >>>
     >>> polynomial_degree = 3
-    >>> alssm = lm.AlssmPolyJordan(polynomial_degree, label='poly')
-    >>> print(alssm)
+    >>> alssm = lm.AlssmPolyJordan(polynomial_degree, label="poly")
+    >>>
+    print(alssm)
     A =
     [[1. 1. 0. 0.]
      [0. 1. 1. 0.]
@@ -647,7 +657,7 @@ class AlssmPolyJordan(ModelBase):
     C =
     [[1 0 0 0]]
 
-   """
+    """
 
     def __init__(self, poly_degree:int, C=None, **kwargs):
         super().__init__(**kwargs)
@@ -713,6 +723,7 @@ class AlssmSin(ModelBase):
     Notes
     -----
     To convert a continuous-time frequency to a normalized frequency, see :func:`~lmlib.utils.generator.k_period_to_omega`, e.g.,
+
     >>> import lmlib as lm
     >>> from lmlib.utils.generator import k_period_to_omega
     >>> k_period = 20
@@ -801,6 +812,7 @@ class AlssmExp(ModelBase):
     Examples
     --------
     Parametrizing an exponentially ALSSM:
+
     >>> import lmlib as lm
     >>> alssm = lm.AlssmExp(gamma= 0.8)
     >>> print(alssm)
@@ -914,6 +926,7 @@ class AlssmStacked(ModelBase):
 
     Examples
     --------
+
     >>> import lmlib as lm
     >>>
     >>> alssm_poly = lm.AlssmPoly(poly_degree=4, label="high order polynomial")
@@ -998,6 +1011,7 @@ class AlssmSum(ModelBase):
 
     Examples
     --------
+
     >>> import lmlib as lm
     >>>
     >>> alssm_poly = lm.AlssmPoly(poly_degree=3)
@@ -1074,6 +1088,7 @@ class AlssmProd(ModelBase):
     Examples
     --------
     Multiply two ALSSMs
+
     >>> import lmlib as lm
     >>>
     >>> alssm_p = lm.AlssmPoly(poly_degree=2, label='poly')

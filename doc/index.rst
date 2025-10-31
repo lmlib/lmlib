@@ -36,9 +36,9 @@ a signal processing library to efficiently analyze single- and multi-channel tim
 
 .. rst-class:: maintext1
 
-   This library also supports :ref:`different backends <_backend>` for fast processing.
+   This library also supports `different backends <_backend>`_ for fast processing.
 
-   This library is the result of many years of :ref:`research <about_us.rst>` documented in various publications (see :ref:`bibliography`).
+   This library is the result of many years of `research <about_us.rst>`_ documented in various publications (see :ref:`bibliography`).
 
 
 
