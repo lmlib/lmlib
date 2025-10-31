@@ -28,7 +28,6 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
     'sphinx.ext.napoleon',
-    "sphinx.ext.githubpages",
     'sphinx.ext.graphviz',
     'sphinx.ext.inheritance_diagram',
     "matplotlib.sphinxext.plot_directive",
@@ -45,6 +44,7 @@ autosummary_generate = True
 add_module_names = False
 numpydoc_show_class_members = False
 inheritance_graph_attrs = dict(rankdir="TB")
+graphviz_output_format = 'svg'
 
 # -- Options for Prolog Keys  ------------------------------------------------
 

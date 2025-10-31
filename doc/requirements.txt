@@ -2,6 +2,7 @@ sphinx
 sphinx-gallery
 pydata-sphinx-theme
 sphinx-design
+graphviz
 matplotlib
 numpy
 scipy
