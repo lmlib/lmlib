@@ -1,0 +1,8 @@
+sphinx
+sphinx-gallery
+pydata-sphinx-theme
+sphinx-design
+matplotlib
+numpy
+scipy
+numba
