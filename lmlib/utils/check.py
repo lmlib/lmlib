@@ -3,7 +3,7 @@ import functools
 import numpy as np
 
 __all__ = ['is_square', 'is_2dim', 'is_1dim', 'is_array_like', 'is_string',
-           'info_str_found_shape', 'info_str_found_type', 'common_C_dim',
+           'info_str_found_shape', 'info_str_found_type',
            'deprecated', 'DeprecationHelper']
 
 
@@ -25,12 +25,6 @@ def is_array_like(arr):
 
 def info_str_found_shape(arr):
     return f'found shape: {np.shape(arr)}'
-
-
-def common_C_dim(alssms):
-    C_ndim = [alssm.C.ndim for alssm in alssms]
-    C_L = [np.atleast_2d(alssm.C).shape[0] for alssm in alssms]
-    return sum(np.diff(C_ndim)) == 0 and sum(np.diff(C_L)) == 0
 
 
 def is_string(s):
@@ -56,7 +50,6 @@ def deprecated(func):
         return func(*args, **kwargs)
 
     return new_func
-
 
 
 class DeprecationHelper(object):

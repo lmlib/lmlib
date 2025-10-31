@@ -17,7 +17,7 @@ cost = lm.CostSegment(lm.AlssmPoly(poly_degree=4),
 cost_wide = lm.CostSegment(lm.AlssmPoly(poly_degree=4),
                            lm.Segment(0 - 20, 220 + 20, lm.BW, 300))
 
-rls = lm.RLSAlssmSteadyState(cost)  # Using steady state leads to faster computation and increased numerical stability
+rls = lm.RLSAlssm(cost)  # Using steady state leads to faster computation and increased numerical stability
 xs = rls.filter_minimize_x(y)
 
 K_refs = [500, 1130, 1800]

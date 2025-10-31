@@ -32,7 +32,7 @@ segment = lm.Segment(a=a, b=b, direction=lm.BACKWARD, g=400)
 cost = lm.CostSegment(alssm, segment)
 
 # -- 2. Project observations (and the template) to ALSSM feature space --
-rls_y = lm.create_rls(cost, multi_channel_set=True)
+rls_y = lm.RLSAlssm(cost)
 rls_y.filter(y_mc)  # Transform observations
 
 xs_hat = rls_y.minimize_x()  # get transformed observations
@@ -70,7 +70,7 @@ template_trajectory = lm.map_trajectories(cost.trajectories([xs_h, ]), [K_REF, ]
 
 _, axs = plt.subplots(2, 1, figsize=(7, 5), gridspec_kw={'height_ratios': [2, 1]}, sharex='all')
 nax = 0
-offsets = (np.arange(NOFCH, 0, -1) * .5)
+offsets = (np.arange(NOFCH, 0, -1) * .5)[None,:]
 
 # Observation 
 axs[nax].set(xlabel='k', ylabel=r'$y$')

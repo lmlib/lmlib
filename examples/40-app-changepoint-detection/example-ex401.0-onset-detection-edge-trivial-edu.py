@@ -8,7 +8,7 @@ a "Continuous" versus a "Straight" line in a LCR term.
 
 
 **Education Examples (Edu):**
-This is an illustrative example to demonstrates the use of the core package(s) :py:mod:`~lmlib.statespace.model`
+This is an illustrative example to demonstrate the use of the core package(s) :py:mod:`~lmlib.statespace.model`
 and :py:mod:`~lmlib.statespace.cost`.
 The implementation of this example could be significantly simplified when additionally using creator functions from
 package as demonstrated in [Example ex401.1].
@@ -119,25 +119,25 @@ cost_l = J_TSLM(y, a, 0, gl, gr)  # for illustrative purpose in the plot only
 cost_r = J_TSLM(y, -1, b, gl, gr)  # for illustrative purpose in the plot only
 
 # Applying Filters
-separam = lm.RLSAlssm(ccost)
-separam.filter(y)
+rls = lm.RLSAlssm(ccost)
+rls.filter(y)
 
-separam_l = lm.RLSAlssmSteadyState(cost_l)
-separam_l.filter(y)
-separam_r = lm.RLSAlssmSteadyState(cost_r)
-separam_r.filter(y)
+rls_l = lm.RLSAlssm(cost_l)
+rls_l.filter(y)
+rls_r = lm.RLSAlssm(cost_r)
+rls_r.filter(y)
 
 # Filter
-x_hat_line = separam.minimize_x(H_Straight)
-x_hat_edge_l = separam_l.minimize_x()
-x_hat_edge_r = separam_r.minimize_x()
-x_hat_edge = separam.minimize_x(H_Continuous)
+x_hat_line = rls.minimize_x(H_Straight)
+x_hat_edge_l = rls_l.minimize_x()
+x_hat_edge_r = rls_r.minimize_x()
+x_hat_edge = rls.minimize_x(H_Continuous)
 
 # Square Error and LCR
-error_edge_l = separam_l.eval_errors(x_hat_edge_l)
-error_edge_r = separam_r.eval_errors(x_hat_edge_r)
-error_edge = separam.eval_errors(x_hat_edge)
-error_line = separam.eval_errors(x_hat_line)
+error_edge_l = rls_l.eval_errors(x_hat_edge_l)
+error_edge_r = rls_r.eval_errors(x_hat_edge_r)
+error_edge = rls.eval_errors(x_hat_edge)
+error_line = rls.eval_errors(x_hat_line)
 lcr = -1 / 2 * np.log(np.divide(error_edge, error_line))
 
 # Find LCR peaks with minimal distance and height
@@ -164,7 +164,7 @@ for index in range(peaks_1.shape[0]):  # iterate through the peaks
     axs[nax].plot(t, trajs_line[index, 1, :], c='k', lw=1, ls='--', zorder=1)
     axs[nax].scatter(peaks_1[0], x_hat_edge[peaks_1[0], 0], marker='.', c='k', s=20.0)
 
-    break  # only show trajectory of the first peak (comment out to show all trajectories)
+    break  # only show the trajectory of the first peak (comment out to show all trajectories)
 
 for xp in peaks_1:
     axs[nax].axvline(x=xp, ls='--', c='b', lw=0.5)

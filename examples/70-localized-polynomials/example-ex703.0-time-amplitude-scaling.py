@@ -53,7 +53,7 @@ ks_alpha = np.array([370])  # fixing template
 alssm = lm.AlssmPoly(poly_degree=Q - 1)
 segment_right = lm.Segment(a=-ab_half, b=ab_half, direction=lm.BW, g=50, delta=ab_half)
 cost = lm.CostSegment(alssm, segment_right)
-rls = lm.RLSAlssmSetSteadyState(cost)
+rls = lm.RLSAlssm(cost)
 xs = rls.filter_minimize_x(y)
 
 # generate template
@@ -62,7 +62,7 @@ amplitude_factor = 0.945
 y_template = amplitude_factor * np.column_stack(
     [np.interp(np.linspace(0, K, int(K * dilate_factor)), np.arange(K), y0) for y0 in y.T])
 
-rls_tmpl = lm.RLSAlssmSetSteadyState(cost)
+rls_tmpl = lm.RLSAlssm(cost)
 xs_tmpl = rls_tmpl.filter_minimize_x(y_template)
 alphas = xs_tmpl[(ks_alpha * dilate_factor).astype(int)]
 
@@ -82,9 +82,9 @@ for k in range(K):
     alpha_alpha = np.zeros(Q ** 2)
 
     for m in range(M):
-        beta_beta += np.kron(xs[k, :, m], xs[k, :, m])
-        alpha_beta += np.kron(alphas[0, ..., m], xs[k, :, m])
-        alpha_alpha += np.kron(alphas[0, ..., m], alphas[0, ..., m])
+        beta_beta += np.kron(xs[k, m], xs[k, m])
+        alpha_beta += np.kron(alphas[0, m], xs[k, m])
+        alpha_alpha += np.kron(alphas[0, m], alphas[0, m])
 
     a1 = A @ beta_beta
     for eta in etas:
@@ -101,7 +101,7 @@ k_range_mask = np.flatnonzero(mask)
 k_min = k_range_mask[np.argmin(cost_ratio[mask])]
 
 L_dilate = lm.poly_dilation_coef_L(np.arange(Q), time_scaling_hat[k_min])
-alphas_hat = amplitude_hat[k_min] * np.einsum('jn, knm->kjm', L_dilate, alphas)
+alphas_hat = amplitude_hat[k_min] * np.einsum('mn, ksn->ksm', L_dilate, alphas)
 
 offset_channels = np.arange(M) + 1
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, gridspec_kw={'width_ratios': [1, 2, 2]})
@@ -109,26 +109,27 @@ ab_half_ext = int(ab_half * 1.15)
 segment_right = lm.Segment(a=-ab_half_ext, b=ab_half_ext, direction=lm.BW, g=50, delta=ab_half_ext)
 cost_ext = lm.CostSegment(alssm, segment_right)
 
-segment_k, trajs_tmpl = cost.trajectories(alphas)[0][0]
 trajs_obs = lm.map_trajectories(cost.trajectories(xs[ks_alpha]), ks_alpha, K, True, True)
 trajs_tmpl_hat = lm.map_trajectories(cost.trajectories(alphas_hat), [k_min], K, True, True)
 trajs_obs_ext = lm.map_trajectories(cost_ext.trajectories(xs[ks_alpha]), ks_alpha, K, True, True)
 
+segment_k, trajs_tmpl = cost.trajectories(alphas)[0][0]
 ax1.plot(segment_k, trajs_tmpl + offset_channels, lw=1, c='r', label=r'$\alpha^T z^q$')
+
 ax1.set_xlim([min(segment_k), max(segment_k)])
 ax1.set_xticks([max(segment_k)])
 ax1.set_xticklabels(['1'])
 ax1.legend([Line2D([0], [0], color='r', lw=1)], [r'$\alpha^T z^q$'], loc=1, fontsize=8)
 
 ax2.plot(t, y + offset_channels, lw=1, c='k')
-ax2.plot(t, trajs_obs_ext + offset_channels, lw=0.8, ls='--', c='b')
-ax2.plot(t, trajs_obs + offset_channels, lw=1, c='b')
+ax2.plot(t, trajs_obs_ext +  offset_channels, lw=0.8, ls='--', c='b')
+ax2.plot(t, trajs_obs +  offset_channels, lw=1, c='b')
 ax2.legend([Line2D([0], [0], color='b', lw=1)], [r'$\beta_k^T z^q$'], loc=1, fontsize=8)
 
 ax3.plot(t, y + offset_channels, lw=1, c='grey')
 ax3.plot(t, trajs_obs_ext + offset_channels, lw=0.8, ls='--', c='b')
-ax3.plot(t, trajs_obs + offset_channels, lw=1, c='b')
-ax3.plot(t, trajs_tmpl_hat + offset_channels, lw=1, c='r', label=r'$\alpha^T z^q$')
+ax3.plot(t, trajs_obs  + offset_channels, lw=1, c='b')
+ax3.plot(t, trajs_tmpl_hat  + offset_channels, lw=1, c='r', label=r'$\alpha^T z^q$')
 ax3.legend([Line2D([0], [0], color='r', lw=1)], [r'$\lambda \alpha^T (\eta z)^q$'], loc=1, fontsize=8)
 
 for ax in fig.axes:

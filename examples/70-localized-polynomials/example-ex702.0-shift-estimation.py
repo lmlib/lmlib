@@ -79,7 +79,7 @@ alssm = lm.AlssmPoly(poly_degree=3)
 segment_left = lm.Segment(a=-80, b=-1, direction=lm.FW, g=600)
 segment_right = lm.Segment(a=0, b=80 - 1, direction=lm.BW, g=600)
 cost = lm.CompositeCost([alssm], [segment_left, segment_right], F=[[1, 1]])
-rls = lm.RLSAlssmSetSteadyState(cost)
+rls = lm.RLSAlssm(cost)
 xs = rls.filter_minimize_x(y)
 
 # boundaries cost function
@@ -104,8 +104,8 @@ Js = np.full(K, np.nan)
 shifts_hat = np.zeros(K)
 
 for k0 in range(K):
-    alpha = xs[k0, :, 0]
-    beta = xs[k0, :, 1]
+    alpha = xs[k0, 0]
+    beta = xs[k0, 1]
 
     if method_py_stable:
         alphas = (Ct @ np.kron(Lt @ alpha - Bt @ beta, Lt @ alpha - Bt @ beta))
@@ -124,8 +124,8 @@ for k0 in range(K):
     alphas = np.zeros(Ct.shape[0])
 
     for k in np.unique(np.clip(k_span + k0, 0, K - 1)):
-        alpha = xs[k, :, 0]
-        beta = xs[k, :, 1]
+        alpha = xs[k, 0]
+        beta = xs[k, 1]
         if method_py_stable:
             alphas += (Ct @ np.kron(Lt @ alpha - Bt @ beta, Lt @ alpha - Bt @ beta))
         else:

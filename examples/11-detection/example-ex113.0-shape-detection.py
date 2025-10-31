@@ -53,10 +53,10 @@ ccost = lm.CompositeCost((alssm_pulse, alssm_baseline), (segmentL, segmentC, seg
 print(ccost)
 
 # filter signal
-se_param = lm.RLSAlssm(ccost)
-se_param.filter(y)  # run recursions
+rls = lm.RLSAlssm(ccost, steady_state=False)
+rls.filter(y)  # run recursions
 
-xs = se_param.minimize_x()  # unconstrained minimization
+xs = rls.minimize_x()  # unconstrained minimization
 xs_ref = xs[K_REF]  # store state variables as reference pulse shape
 
 H_A = np.transpose(block_diag([xs_ref[0:N2]], np.eye(N1)))  # constrain matrix to find pulses of same shape as the reference pulse
@@ -65,15 +65,15 @@ H_0 = np.transpose(np.hstack([np.zeros((N1, N2)), np.eye(N1)]))  # constrain mat
 print("H_A : ", H_A)
 print("H_0 : ", H_0)
 
-xs_A = se_param.minimize_x(H_A)
-xs_0 = se_param.minimize_x(H_0)
+xs_A = rls.minimize_x(H_A)
+xs_0 = rls.minimize_x(H_0)
 
-J_A = se_param.eval_errors(xs_A)  # get SE (squared error) for hypothesis 1 (baseline + pulse)
-J_0 = se_param.eval_errors(xs_0)  # get SE (squared error)  for hypothesis 0 (baseline only) --> J0 should be a vector not a matrice
+J_A = rls.eval_errors(xs_A)  # get SE (squared error) for hypothesis 1 (baseline + pulse)
+J_0 = rls.eval_errors(xs_0)  # get SE (squared error)  for hypothesis 0 (baseline only) --> J0 should be a vector not a matrice
 
 lcr = -0.5 * np.log(J_A / J_0)  # log-cost ratio computation
 
-vs = se_param.minimize_v(H_A)
+vs = rls.minimize_v(H_A)
 amp = vs[:, 0]
 
 # find peaks

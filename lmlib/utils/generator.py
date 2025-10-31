@@ -1,4 +1,3 @@
-"""Generators for deterministic and stochastic (test) signals"""
 
 import os
 from warnings import warn
@@ -42,7 +41,7 @@ def gen_sine(K, k_periods, amplitudes=None, k0s=None):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_sinusoidal_plot.py
+    .. plot:: static/generator_func_plots_src/gen_sinusoidal_plot.py
         :include-source:
     """
 
@@ -89,7 +88,7 @@ def gen_exp(K, decay, k0=0):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_exponential_plot.py
+    .. plot:: static/generator_func_plots_src/gen_exponential_plot.py
         :include-source:
     """
     return np.power(decay, np.arange(0 - k0, K - k0))
@@ -119,7 +118,7 @@ def gen_rect(K, k_period, k_on=None, duty_cycle=None, k0=0):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_rectangle_plot.py
+    .. plot:: static/generator_func_plots_src/gen_rectangle_plot.py
         :include-source:
     """
 
@@ -175,7 +174,7 @@ def gen_tri(K, k_period):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_triangle_plot.py
+    .. plot:: static/generator_func_plots_src/gen_triangle_plot.py
         :include-source:
     """
     return 1 - abs(np.remainder(range(K), k_period) - 0.5 * k_period) / (0.5 * k_period) - 0.5
@@ -199,7 +198,7 @@ def gen_pulse(K, ks):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_pulse_plot.py
+    .. plot:: static/generator_func_plots_src/gen_pulse_plot.py
         :include-source:
     """
     out = np.zeros((K,))
@@ -228,7 +227,7 @@ def gen_steps(K, ks, deltas):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_steps_plot.py
+    .. plot:: static/generator_func_plots_src/gen_steps_plot.py
         :include-source:
     """
     out = np.zeros((K,))
@@ -256,7 +255,7 @@ def gen_slopes(K, ks, deltas):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_slopes_plot.py
+    .. plot:: static/generator_func_plots_src/gen_slopes_plot.py
         :include-source:
     """
     return np.interp(np.arange(K), ks, np.cumsum(deltas))
@@ -282,7 +281,7 @@ def gen_wgn(size, sigma, seed=None):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_wgn_plot.py
+    .. plot:: static/generator_func_plots_src/gen_wgn_plot.py
         :include-source:
     """
     np.random.seed(seed)
@@ -306,7 +305,7 @@ def gen_rand_walk(size, seed=None):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_rand_walk_plot.py
+    .. plot:: static/generator_func_plots_src/gen_rand_walk_plot.py
         :include-source:
     """
     np.random.seed(seed)
@@ -337,7 +336,7 @@ def gen_rand_pulse(size, n_pulses, length=1, seed=None):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_rand_pulse_plot.py
+    .. plot:: static/generator_func_plots_src/gen_rand_pulse_plot.py
         :include-source:
     """
     np.random.seed(seed)
@@ -374,7 +373,7 @@ def gen_conv(base, template):
 
     Example
     -------
-    .. plot:: static/plot_generation/generator_func_plots_src/gen_convolve_plot.py
+    .. plot:: static/generator_func_plots_src/gen_convolve_plot.py
         :include-source:
     """
     y1 = np.asarray(base)
@@ -391,7 +390,7 @@ def gen_conv(base, template):
 @deprecated
 def load_data(name, K=-1, kstart=0, chIdx=0):
     """
-    Loads a single channel signal from the signal catalog, see :ref:`lmlib_signal_catalog`.
+    Loads a single channel signal from the signal catalog, see :ref:`biosignals_catalog`.
 
     Parameters
     ----------
@@ -422,7 +421,7 @@ def load_data(name, K=-1, kstart=0, chIdx=0):
 @deprecated
 def load_data_mc(name, K=-1, kstart=0, chIdxs=None):
     """
-    Loads a multi-channel signal from the signal catalog, see :ref:`lmlib_signal_catalog`.
+    Loads a multi-channel signal from the signal catalog, see :ref:`biosignals_catalog`.
 
     Parameters
     ----------
@@ -553,13 +552,13 @@ def load_lib_csv(filename, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
     """
     loads a library-internal csv data file from the signal catalog as a single-channel data shape
 
-    See filenames as :ref:`lmlib_signal_catalog`
+    See filenames as :ref:`biosignals_catalog`
     `load_lib_csv` calls :class:`numpy.genfromtxt` with a different interface.
 
     Parameters
     ----------
     filename : str
-        filename (with '.csv' ending ) See :ref:`lmlib_signal_catalog`.
+        filename (with '.csv' ending ) See :ref:`biosignals_catalog`.
     K : int, optional
         signal length, default loads whole data (K=-1)
     k_start : int, optional
@@ -585,13 +584,13 @@ def load_lib_csv_mc(filename, K=-1, k_start=0, channels=None, ds_rate=1, **kwarg
     """
     loads a library-internal csv data file from the signal catalog as a multi-channel data shape
 
-    See filenames as :ref:`lmlib_signal_catalog`
+    See filenames as :ref:`biosignals_catalog`
     `load_csv_mc` calls numpy.genfromtxt with a different interface.
 
     Parameters
     ----------
     filename : str
-        filename (with '.csv' ending ) See :ref:`lmlib_signal_catalog`.
+        filename (with '.csv' ending ) See :ref:`biosignals_catalog`.
     K : int, optional
         signal length, default loads whole data (K=-1)
     k_start : int, optional

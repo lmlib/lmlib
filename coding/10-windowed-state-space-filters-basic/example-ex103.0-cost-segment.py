@@ -37,15 +37,14 @@ xs = [[-1, 2, 0, 0],  # polynomial coefficients of trajectories
 
 # --------- Upper Plots ---------
 # get window weights
-windows = costs.windows()
-js, window = windows[0]
+window = left_seg.window()
 
 trajectories = costs.trajectories(xs)
 print(xs[0])
 
 # plot
 fig, axs = plt.subplots(5, sharex='all', gridspec_kw={'hspace': 0.1}, figsize=(6, 6))
-axs[0].plot(js, window, '-', c='k', lw=1.5, label='winodw weights $w_j = \gamma^j$')
+axs[0].plot(*window, '-', c='k', lw=1.5, label='winodw weights $w_j = \gamma^j$')
 axs[0].set_title('costs.trajectories(xs)')
 axs[0].axvline(0, color="black", linestyle="--", lw=1.0)
 axs[0].axhline(1, color="black", linestyle="--", lw=0.5)
@@ -53,9 +52,8 @@ axs[0].axvline(a, color="gray", linestyle="-", lw=0.5)
 axs[0].axvline(b, color="gray", linestyle="-", lw=0.5)
 axs[0].set(ylim=[0, 2.1])
 
-for n in range(len(trajectories)):
-    print(trajectories[n][0])
-    js, trajectory = trajectories[n][0]
+for n, trajectory_p in enumerate(trajectories):
+    js, trajectory = trajectory_p[0]
     axs[1].plot(js, trajectory, lw=1.5, label='trajectory $s_j(x_' + str(n) + ') = cA^jx_' + str(n) + '$')
 axs[1].set_xlabel('Evaluation Index $j$')
 axs[1].axvline(0, color="black", linestyle="--", lw=0.5)

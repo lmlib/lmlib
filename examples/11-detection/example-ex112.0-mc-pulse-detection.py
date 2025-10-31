@@ -44,7 +44,7 @@ F = [[0, 1, 0],
      [1, 1, 1]]
 cost = lm.CompositeCost((alssm_sp, alssm_bl), (segment_left, segment_middle, segment_right), F)
 
-rls = lm.RLSAlssmSet(cost)
+rls = lm.RLSAlssm(cost)
 rls.filter(y)
 H_sp = block_diag([[0], [1]], np.eye(alssm_bl.N))
 xs_sp = rls.minimize_x(H_sp)

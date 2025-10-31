@@ -1,12 +1,14 @@
 .. _install:
 
-
-
 Install
--------
+#######
+
+Requirements
+------------
+TODO
 
 pip
-^^^
+---
 
 Using **pip**, install lmlib in the command shell with command
 
@@ -22,7 +24,7 @@ To install in **developer mode**, type
 
 
 conda
-^^^^^
+-----
 
 For **conda** users, the installation runs via the *pip installer* of conda.
 
@@ -43,3 +45,11 @@ For **conda** users, the installation runs via the *pip installer* of conda.
 .. code-block:: console
 
     /anaconda/envs/venv/bin/pip install lmlib
+
+Documentation Generation
+------------------------
+Dependency install:
+
+.. code-block:: console
+
+    pip install /doc/requirements.txt

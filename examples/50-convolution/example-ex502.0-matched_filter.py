@@ -31,7 +31,7 @@ segment = lm.Segment(a=a, b=b, direction=lm.BACKWARD, g=400)
 cost = lm.CostSegment(alssm, segment)
 
 # -- 2. Project observations (and the template) to ALSSM feature space --
-rls_y = lm.create_rls(cost, multi_channel_set=True)
+rls_y = lm.RLSAlssm(cost)
 rls_y.filter(y_mc)  # Transform observations
 
 xs_hat = rls_y.minimize_x()  # get transformed observations
@@ -41,7 +41,7 @@ y_hat = cost.eval_alssm_output(xs_hat)  # signal reconstruction using ALSSM appr
 
 # -- 3a. Get ALSSM Template of Matched filter
 Ryy = np.cov(y_mc.T)
-xs_h_matched = np.matmul(np.linalg.inv(Ryy), xs_h.T).T
+xs_h_matched = np.matmul(np.linalg.inv(Ryy), xs_h)
 # additionally, we may scale (normalize) the filter, such that E(noise) = 1. 
 # alpha = 1/np.sqrt(np.sum(np.matmul(xs_h, np.matmul(np.linalg.inv(Ryy), xs_h_matched.T)), axis=(0,1)))
 # xs_h_matched = alpha * xs_h_matched 
@@ -64,7 +64,7 @@ start = time.process_time()  # start timer for speed comparison
 
 corr_alssm = np.zeros(K)
 for j in range(NOFCH):
-    corr_alssm = corr_alssm + np.matmul(rls_y.xi[:, :, j], xs_h_matched[:, j])
+    corr_alssm = corr_alssm + np.matmul(rls_y.xi[:, j], xs_h_matched[j])
 
 print("Duration of correlation (or convolution) in ALSSM feature space (w/o mapping time): {:10.3f}ms".format(
     (time.process_time() - start) * 1e3))

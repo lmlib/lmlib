@@ -5,10 +5,10 @@ import sys
 
 __all__ = ['set_backend', 'is_backend_available', 'get_backend', 'BACKEND_TYPES', 'available_backends']
 
-_backend = 'py' # current backend selection (global)
+_backend = 'numpy' # current backend selection (global)
 
-BACKEND_TYPES = ('jit', 'py', 'python') # known backends
-available_backends = ('py',) # available backends
+BACKEND_TYPES = ('jit', 'numpy', 'lfilter') # known backends
+available_backends = ('numpy', 'lfilter') # available backends
 
 
 def set_backend(backend):
@@ -17,10 +17,12 @@ def set_backend(backend):
 
     Parameters
     ----------
-    backend : str ("jit", "py", "python")
+    backend : str ("jit", "py", "python", "numpy", "lfilter")
         
-          - "py" (default), "python": Plain Python 
+          - "numpy" : for State Space Backend in Python (default)
+          - "lfilter" : for Transfer Function Backend in Python
           - "jit": Just-in-Time compilation (if available)
+          - "python" or "py" : Deprecated. (same as numpy)
  
     
     If the selected backend is not available, an assert is risen. 
@@ -33,8 +35,12 @@ def set_backend(backend):
         assert backend in available_backends, "jit backend not available. Check that numba package is installed!"
         _backend = 'jit'
     if backend in ('py', 'python'):
-        _backend = 'py'
-
+        DeprecationWarning("backend name 'py' and 'python' is deprecated and will be removed. Use 'numpy' instead.")
+        _backend = 'numpy'
+    if backend == 'numpy':
+        _backend = 'numpy'
+    if backend == 'lfilter':
+        _backend = 'lfilter'
 
 def is_backend_available(backend):
     """
@@ -51,8 +57,7 @@ def is_backend_available(backend):
              :code:`True` or :code:`False`
     """    
     
-    return (backend in available_backends)
-
+    return backend in available_backends
 
 def get_backend():
     """
@@ -67,7 +72,6 @@ def get_backend():
         
     global _backend
     return _backend
-
 
 # check if numba is installed, when yes import and add to available_backends.
 if (spec := importlib.util.find_spec('numba')) is not None:

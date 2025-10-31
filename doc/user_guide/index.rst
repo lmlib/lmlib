@@ -1,55 +1,31 @@
-.. _install:
+.. _user_guide:
 
-Install
-#######
+User Guide
+##########
 
-Requirements
-------------
-TODO
+This guide provides an overview and explains the important features.
+More details can be found in :ref:`API`.
 
-pip
----
+.. toctree::
+   :caption: Getting Started
+   :maxdepth: 1
 
-Using **pip**, install lmlib in the command shell with command
+   What is lmlib?<whats_lmlib>
+   Install <install>
+   State-Space Tutorial<state-space-tutorial.rst>
+   Bibliography<bibliography>
 
-.. code-block:: console
+.. toctree::
+   :caption: Coding Examples
+   :maxdepth: 1
 
-    pip install lmlib
+   Window State Space Filters Basic<../_gallery_coding/10-windowed-state-space-filters-basic/index>
+   RLS Backend<../_gallery_coding/13-backend/index>
+   Polynomials Basic<../_gallery_coding/20-polynomials-basic/index>
 
-To install in **developer mode**, type
+.. toctree::
+   :caption: Signal & Generator Catalog
+   :maxdepth: 1
 
-.. code-block:: console
-
-    pip install -e lmlib
-
-
-conda
------
-
-For **conda** users, the installation runs via the *pip installer* of conda.
-
-1. Create a virtual environment (here: venv)
-
-.. code-block:: console
-
-    conda create -n venv
-
-2. Install conda pip
-
-.. code-block:: console
-
-    conda install pip
-
-3. Install lmlib using the path to your virtual environment and install the package with
-
-.. code-block:: console
-
-    /anaconda/envs/venv/bin/pip install lmlib
-
-Documentation Generation
-------------------------
-Dependency install:
-
-.. code-block:: console
-
-    pip install /doc/doc_requirements.txt
+   Biosignals<../catalog/biosignals>
+   Synthetic Signals Generation<../catalog/generators>
