@@ -100,7 +100,7 @@ html_theme_options = {
             "path/to/page": [],
     },
 }
-
+html_css_files = ['css/lmlib.css']
 
 # -- Sphinx Gallery Configuration -----------------------------------------------
 from sphinx_gallery.sorting import ExplicitOrder, FileNameSortKey
