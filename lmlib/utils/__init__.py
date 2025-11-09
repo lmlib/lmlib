@@ -1,5 +1,5 @@
 """
-This package is a collection of utility functions accelerate algorithm development and/or for educative purposes.
+This module is a collection of utility functions accelerate algorithm development and/or for educative purposes.
 
 
 Signal Loading Functions

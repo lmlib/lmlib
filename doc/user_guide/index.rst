@@ -3,8 +3,8 @@
 User Guide
 ##########
 
-This guide provides an overview and explains the important features.
-More details can be found in :ref:`API`.
+This user guide provides an overview and introduction the library and its main features.
+For more details see the `API Reference <api>`_ .
 
 .. toctree::
    :caption: Getting Started

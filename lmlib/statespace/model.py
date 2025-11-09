@@ -222,14 +222,14 @@ class ModelBase(ABC):
 
     def eval_state(self, x):
         r"""
-        Evaluation of the ALSSM for a state vector `x`.
+        Evaluates the ALSSM output for a fixed initial state vector `x`.
 
         `eval_state(...)` returns the ALSSM output
 
-        .. math::
+        .. Math::
             s_0(x) = CA^0x = Cx
 
-        for a state vector :math:`x`.
+        For a state vector :math:`x`.
 
 
         Parameters
@@ -271,14 +271,14 @@ class ModelBase(ABC):
 
     def trajectory(self, x, js) -> npt.NDArray:
         r"""
-        Evaluation of the ALSSM for a state vector `x` at evaluation indeces js.
+        Evaluates the ALSSM output for many time points (time indices `js`) with a fix initial state vector `x`.
 
         `trajectory(...)` returns the ALSSM output
 
-        .. math::
+        .. Math::
             s_j(x) = CA^jx = Cx
 
-        for a state vector :math:`x` and index :math:`j` in the list `js`
+        For a state vector :math:`x` and index :math:`j` in the list `js`
 
 
         Parameters

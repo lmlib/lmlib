@@ -4,8 +4,9 @@ State-Space Tutorial
 ====================
 
 This is a beginner’s tutorial to start using the model-based signal
-processing library lmlib. Install lmlib and make sure you have
-`matplotlib <https://matplotlib.org/stable/>`__ installed as well.
+processing library lmlib.
+
+To start, `install lmlib <install>`_ .
 
 .. code:: ipython3
 
@@ -17,7 +18,7 @@ processing library lmlib. Install lmlib and make sure you have
 Description
 -----------
 
-This tutorial includes the following steps:
+This tutorial takes the following steps:
 
 .. raw:: html
 

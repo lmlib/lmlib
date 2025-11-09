@@ -9,7 +9,7 @@ lmlib documentation
    *Version:* |release| (*Documentation:* |today|) --- Open-Source and for Python.
 
 This is the official documentation for `lmlib <https://pypi.org/project/lmLib/>`_,
-a signal processing library to efficiently analyze single- and multi-channel time series.
+a signal processing library to efficiently analyze single- and multi-channel time series using linear state space models.
 
 
 **This library implements Recursive Least Squares (RLS) algorithms with**
@@ -26,7 +26,7 @@ a signal processing library to efficiently analyze single- and multi-channel tim
 
 *This library provides methods for*
 
-* :ref:`Recursive, Linear Filters <filtering>`,
+* :ref:`Recursive, Linear Filtering <filtering>`,
 * :ref:`Shape Detection <detection>`,
 * :ref:`Event Detection <onset>`,
 * :ref:`Correlation, Convolution, and Matched Filters <convolution>` in low-dimensional vector spaces,
@@ -36,9 +36,9 @@ a signal processing library to efficiently analyze single- and multi-channel tim
 
 .. rst-class:: maintext1
 
-   This library also supports `different backends <_backend>`_ for fast processing.
+   This library is optimized for fast processing using GOU and other.
 
-   This library is the result of many years of `research <about_us.rst>`_ documented in various publications (see :ref:`bibliography`).
+   This library is the essence of many years of `research <about>`_ documented in many publications (see :ref:`bibliography`).
 
 
 
