@@ -14,10 +14,10 @@ all based on ALSSMs
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import Iterable, Union, List
-
-from lmlib import ModelBase, AlssmSum
 from lmlib.utils.check import *
-from lmlib.statespace.segment import window_rangem, Segment
+
+from lmlib.statespace.model import ModelBase, AlssmSum
+from lmlib.statespace.segment import window_range, Segment
 
 __all__ = ['CostSegment', 'CompositeCost']
 
@@ -193,7 +193,7 @@ class CostSegment(BaseCost, BaseCost1d, ABC):
     @property
     def alssm(self):
         """ModelBase : Alssm"""
-        return self.alssm
+        return self._alssm
 
     @alssm.setter
     def alssm(self, alssm):
@@ -364,11 +364,12 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
         """Iterate over cost segments."""
         return iter(self._get_cost_segments())
 
-    def _get_cost_segments(self):
-        """Returns list of the updated CostSegments"""
+    def _get_cost_segments(self, F=None):
+        """Returns list of the updated CostSegments (modified by F if provided)."""
+        F_ = self.F if F is None else F
         cost_segments = []
         for p, segment in enumerate(self.segments):
-            alssm = AlssmSum(self.alssms, self.F[:, p])
+            alssm = AlssmSum(self.alssms, F_[:, p])
             cost_segment = CostSegment(alssm, segment, self.label + '-' + str(p))
             cost_segments.append(cost_segment)
         return cost_segments

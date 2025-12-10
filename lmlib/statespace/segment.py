@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 from lmlib.statespace.backends.statespace_tools import _window_range
 
-__all__ = ['FW', 'FORWARD', 'BW', 'BACKWARD', 'Segment']
+__all__ = ['FW', 'FORWARD', 'BW', 'BACKWARD', 'Segment', 'window_range']
 
 BACKWARD = 'bw'
 """str : Sets the recursion direction in a :class:`Segment` to backward, use :const:`BACKWARD` or :const:`BW`"""
