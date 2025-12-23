@@ -25,3 +25,7 @@ class TestTrajectory(unittest.TestCase):
             for ttrue, ttest in zip(ttrue_ks, ttest_ks):
                 self.assertTrue(np.isclose(ttrue[0], ttest[0]).all())
                 self.assertTrue(np.isclose(ttrue[1], ttest[1]).all())
+
+    def test_get_mapped(self):
+        trajs_test = lm.Trajectory.get_mapped(self.cost, self.xs[self.ks], self.ks, self.K)
+

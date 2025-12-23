@@ -2,6 +2,8 @@ import numpy as np
 from lmlib.statespace.cost_v2 import CostSegment, CompositeCost
 from lmlib.statespace.segment import window_range
 
+import warnings
+
 __all__ = ['Trajectory']
 
 
@@ -48,9 +50,76 @@ class Trajectory:
         return out
 
     @staticmethod
-    def get_mapped(cost, xs, ks, K, merged_ks=False, merged_seg=False, F=None, thd=1e-6):
+    def get_mapped(cost, xs, ks, K, merged_ks=False, merged_seg=False, F=None, thd=1e-6, fill_value=np.nan):
+        """Maps trajectories at indices `ks` into a common target output vector of length `K`.
+
+        Computes a mapped output array by processing input trajectories and mapping values based on
+        conditions. The function allows for optional merging of the `ks` dimension and/or merging along
+        the last axis of the trajectories.
+
+        Parameters
+        ----------
+        cost : CostSegment, CompositeCost
+            CostSegment or CompositeCost to compute trajectories for
+        xs : array_like of shape (..., N)
+            Array of state vectors defining the trajectories. Last Dimension must be the state dimension.
+        ks : sequence of int
+            A sequence of indices representing the mapping to be applied.
+        K : int
+            Length of the resulting mapped output array (first dimension size).
+        merged_ks : bool, optional
+            If True, merges the `ks` dimension using the maximum value along axis 1. Defaults to False.
+        merged_seg : bool, optional
+            If True, merges values along the last trajectory dimension using the maximum value.
+            Defaults to False.
+        F : None, array_like of shape (M, P)
+            Mapping matrix :math:`F`, maps models to segment, where the value weights ALSSM Output
+        thd : float, optional
+            Threshold for window range computation, by default 1e-6
+        fill_value : scalar, optional
+            The fill value for initializing the output array or handling empty inputs.
+            Defaults to `np.nan`.
+
+        Returns
+        -------
+        numpy.ndarray of shape (K, [XS,] [multi_dim], [P,])
+            A multi-dimensional mapped output array based on the input conditions and mapping indices. If
+            `merged_ks` is enabled, the array will be reduced along the `ks` dimension (second dimension) axis using the
+            maximum value. If `merged_seg` is enabled, the array is further reduced along the last axis.
+
+
+        Notes
+        -----
+        If the input `ks` is empty, the function will issue a warning and return an empty array filled
+        with the specified `fill_value` of size `(K,)`.
+
+        Examples
+        --------
+        TODO
+
+        """
+
+        # return an empty array if ks is empty
+        if len(ks) == 0:
+            print('Warning: ks is empty. Returned empty array of size K.')
+            return np.full(K, fill_value=fill_value)
+
         trajs = Trajectory.get_local(cost, xs, F, thd)
-        return trajs
+        xs_dim, *multi_dim, P = trajs.shape
+
+        out = np.full((K, xs_dim, *multi_dim, P), fill_value=fill_value)
+        for xs_idx, *multi_idx, p in np.ndindex(trajs.shape):
+            ab_range, traj = trajs[xs_idx][*multi_idx][p]
+            out[ks[xs_idx]+ab_range, xs_idx, ..., p] = traj
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            if merged_ks:
+                out = np.nanmax(out, axis=1)
+            if merged_seg:
+                out = np.nanmax(out, axis=-1)
+
+        return out
 
     @staticmethod
     def plot(ax, trajs, **kwargs):
