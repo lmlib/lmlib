@@ -1,4 +1,3 @@
-import random
 import unittest
 import lmlib as lm
 import numpy as np
@@ -28,4 +27,5 @@ class TestTrajectory(unittest.TestCase):
 
     def test_get_mapped(self):
         trajs_test = lm.Trajectory.get_mapped(self.cost, self.xs[self.ks], self.ks, self.K)
-
+        trajs_true = np.array([[[np.nan, np.nan]], [[np.nan, np.nan]], [[-1.9706964767585613, np.nan]], [[-1.4937114663462618, np.nan]], [[-1.0167264559339624, np.nan]], [[np.nan, 3.248943919430755]], [[np.nan, 2.227716395075158]], [[np.nan, 1.2064888707195611]], [[np.nan, 0.1852613463639643]], [[np.nan, np.nan]]])
+        self.assertTrue(np.isclose(trajs_test, trajs_true, equal_nan=True).all())
