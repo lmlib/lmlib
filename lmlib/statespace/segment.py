@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 from lmlib.statespace.backends.statespace_tools import _window_range
 
-__all__ = ['FW', 'FORWARD', 'BW', 'BACKWARD', 'Segment', 'window_range']
+__all__ = ['FW', 'FORWARD', 'BW', 'BACKWARD', 'Segment']
 
 BACKWARD = 'bw'
 """str : Sets the recursion direction in a :class:`Segment` to backward, use :const:`BACKWARD` or :const:`BW`"""
@@ -204,6 +204,24 @@ class Segment:
         self._a = a
         self._b = b
 
+    def _ab_range(self, thd=1e-6):
+
+        if self.direction is FW:
+            if self.gamma > 1:
+                a_lim = max(np.log(thd) / np.log(self.gamma) - 1 + self.delta, self.a)
+            else:
+                a_lim = max(np.log(thd) / np.log(1 / self.gamma) - 1 + self.delta, self.a)
+            return range(int(a_lim), self.b + 1)
+
+        if self.direction is BW:
+            if self.gamma < 1:
+                b_lim = min(np.log(thd) / np.log(self.gamma) + 1 + self.delta, self.b)
+            else:
+                b_lim = min(np.log(thd) / np.log(1 / self.gamma) + 1 + self.delta, self.b)
+            return range(self.a, int(b_lim) + 1)
+
+        return None
+
     def window(self, thd=1e-6):
         r"""
         Returns the per-sample window weighs
@@ -236,29 +254,3 @@ class Segment:
         ab_range = _window_range(self.a, self.b, self.direction, self.gamma, self.delta, thd)
         return ab_range, self.gamma ** (np.array(ab_range) - self.delta)
 
-
-
-
-# helper functions
-def window_range(segment, thd):
-    a, b = segment.a, segment.b
-    direction = segment.direction
-    gamma =segment.gamma
-    delta = segment.delta
-
-    if direction == 'fw':
-        if gamma > 1:
-            a_lim = max(np.log(thd) / np.log(gamma) - 1 + delta, a)
-        else:
-            a_lim = max(np.log(thd) / np.log(1 / gamma) - 1 + delta, a)
-        b_lim = b
-    elif direction == 'bw':
-        a_lim = a
-        if gamma < 1:
-            b_lim = min(np.log(thd) / np.log(gamma) + 1 + delta, b)
-        else:
-            b_lim = min(np.log(thd) / np.log(1 / gamma) + 1 + delta, b)
-    else:
-        raise ValueError(f'direction {direction} not supported. Must be \'forward\' or \'backward\'.')
-
-    return range(int(a_lim), int(b_lim) + 1)

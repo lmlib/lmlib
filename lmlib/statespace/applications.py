@@ -1,7 +1,7 @@
 """Provides useful and specific applications based on :mod:`lmlib.statespace` methods""" 
 
 
-from lmlib.statespace.cost import CompositeCost, Segment
+from lmlib.statespace.cost_old import CompositeCost, Segment
 from lmlib.statespace.model import AlssmPoly
 
 from abc import ABC

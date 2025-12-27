@@ -37,14 +37,13 @@ xs = [[-1, 2, 0, 0],  # polynomial coefficients of trajectories
 
 # --------- Upper Plots ---------
 # get window weights
-window = left_seg.window()
+windows = lm.Window.get_local(costs)
 
-trajectories = costs.trajectories(xs)
-print(xs[0])
+trajectories = lm.Trajectory.get_local(costs, xs)
 
 # plot
 fig, axs = plt.subplots(5, sharex='all', gridspec_kw={'hspace': 0.1}, figsize=(6, 6))
-axs[0].plot(*window, '-', c='k', lw=1.5, label='winodw weights $w_j = \gamma^j$')
+axs[0].plot(*(windows[0]), '-', c='k', lw=1.5, label='winodw weights $w_j = \gamma^j$')
 axs[0].set_title('costs.trajectories(xs)')
 axs[0].axvline(0, color="black", linestyle="--", lw=1.0)
 axs[0].axhline(1, color="black", linestyle="--", lw=0.5)
@@ -71,14 +70,12 @@ K = 70  # total signal length
 K_refs = [20, 40, 60]  # trajectory locations (indices)
 COLS_W = ['black', 'gray', 'lightgray']
 
-wins = lm.map_windows(costs.windows(), K_refs, K, merge_seg=True)
-axs[3].set_title('lm.map_trajectories( costs.trajectories(xs) )')
-for n, win in enumerate(wins):
-    axs[3].plot(win, '-', color=COLS_W[n], lw=1.5, label=r"winodw weights $w_{k-K_{ref}}$")
-trajectory = lm.map_trajectories(costs.trajectories(xs), K_refs, K)
+windows = lm.Window.get_mapped(costs, K_refs, K, merged_seg=True)
+axs[3].plot(windows,  lw=1.5, label=r"winodw weights $w_{k-K_{ref}}$")
 
-for n in range(len(trajectories)):
-    axs[4].plot(trajectory[n][0], lw=2, label='y_hat')
+trajectories = lm.Trajectory.get_mapped(costs, xs, K_refs, K, merged_seg=True)
+
+axs[4].plot(trajectories, lw=2, label='y_hat')
 
 for k_ref in K_refs:
     axs[4].axvline(k_ref + a, color="gray", linestyle="-", lw=0.5)

@@ -11,394 +11,241 @@ all based on ALSSMs
 """
 
 
-from numpy.typing import ArrayLike
-from typing import Union, Iterable
-from collections.abc import Iterable
-import warnings
-import copy
-
+from abc import ABC, abstractmethod
 import numpy as np
-from numpy.linalg import matrix_power
-
-from lmlib.statespace.model import ModelBase, AlssmSum, AlssmProd
+from typing import Iterable, Union, List
 from lmlib.utils.check import *
-from lmlib.statespace.backends.statespace_tools import *
 
+from lmlib.statespace.model import ModelBase, AlssmSum
+from lmlib.statespace.segment import Segment
 
-__all__ = ['ConstrainMatrix', 'CompositeCost', 'CostSegment', 'Segment', 'NDCompositeCost',
-           'FW', 'FORWARD', 'BW', 'BACKWARD',
-           'map_trajectories', 'map_windows'
-           ]
-
-BACKWARD = 'bw'
-"""str : Sets the recursion direction in a :class:`Segment` to backward, use :const:`BACKWARD` or :const:`BW`"""
-BW = BACKWARD
-"""str : Sets the recursion direction in a :class:`Segment` to backward, use :const:`BACKWARD` or :const:`BW`"""
-FORWARD = 'fw'
-"""str : Sets the recursion direction in a :class:`Segment` to forward, use :const:`FORWARD` or :const:`FW`"""
-FW = FORWARD
-"""str : Sets the recursion direction in a :class:`Segment` to forward, use :const:`FORWARD` or :const:`FW`"""
-
-
-def map_windows(windows: ArrayLike, ks, K: int, merge_ks:bool=False, merge_seg:bool=False, fill_value:Union[int, float]=0):
-    """
-    Maps the window amplitudes of one or multiple :class:`Segment` to indices `ks` into a common target output vector of
-     length `K`.
-
-    The parameter :attr:`windows` is commonly directly the output of one of the following methods:
-
-    * :meth:`CostSegment.windows`
-    * :meth:`CompositeCost.windows`
-
-    Parameters
-    ----------
-    windows :
-        * `tuple` :code:`(range, tuple)`, as output by :meth:`CostSegment.windows`.
-        * `tuple of shape=(P) of tuples` :code:`(range, tuple)`, as  output by :meth:`CompositeCost.windows`.
-    ks : array_like of shape=(KS) of ints
-        target indices in the target output vector, where to map the windows to
-    K : int
-        Length of target output vector
-    merge_ks : bool, optional
-        If :code:`True`, all windows from different target indices :attr:`ks` are merged into a single array of length
-        :attr:`K`; if the windows of two target indices overlap, only the window with the larger value remains.
-    merge_seg : bool, optional
-        If :code:`True`, all segments `P` are merged to a single target vector of length :attr:`K`;
-        if the windows of two segments overlap,
-        only window value with the larger value remains.
-    fill_value : scalar, optional
-        Value of target output vector where no window is assigned, defaults to 0.
-
-    Returns
-    -------
-    output : :class:`~numpy.ndarray` of shape=([KS,] [P,] K) of floats
-        * Dimension `KS` only exists, if :attr:`merge_ks`:code:`=False`.
-        * Dimension `P` only exists, if :attr:`merge_seg`:code:`=False`.
+__all__ = ['CostSegment', 'CompositeCost']
 
 
 
-    |def_KS|
-    |def_P|
-    |def_K|
 
-    """
+class BaseCost(ABC):
+    """Base interface for all cost-like objects."""
 
-    # return an empty array if ks is empty
-    if len(ks) == 0:
-        return np.array([])
+    def __iter__(self):
+        """Default iterator: yield self (leaf behavior)."""
+        yield self
 
-    w = np.full((len(ks), len(windows), K), fill_value, dtype=float)
-    for p, (ab_range, weights) in enumerate(windows):
-        ab_range = np.arange(ab_range.start, ab_range.stop)
+    def _get_sub_cost(self, dim=None, seg=None):
+        return self
 
-        for i, k in enumerate(ks):
-            boundary_mask = np.bitwise_and(0 <= ab_range + k, ab_range + k < K)
-            w[i, p, ab_range[boundary_mask] + k] = weights[boundary_mask]
-
-    return _merge_ks_seg(w, merge_ks, merge_seg)
-
-
-def map_trajectories(trajectories, ks, K:int, merge_ks:bool=False, merge_seg:bool=False, fill_value:Union[None, int, float]=np.nan):
-    """Maps trajectories at indices `ks` into a common target output vector of length `K`.
-
-    The parameter :attr:`trajectories` is commonly directly the output of one of the following methods:
-
-    * :meth:`CostSegment.trajectories`
-    * :meth:`CompositeCost.trajectories`
-
-    Parameters
-    ----------
-    trajectories :
-        * `list of shape=(XS) of tuples` :code:`(range, tuple)`,
-            such tuples are the output of :meth:`CostSegment.trajectories`.
-        * `list of shape=(XS) of tuples of shape=(P) of tuple` :code:`(range, tuple)`,
-            such tuples are the output of :meth:`CompositeCost.trajectories`.
-    ks : array_like of shape=(XS) of ints
-         target indices in the target output vector, where to map the windows to
-    K : int
-        Length of target vector
-    merge_ks : bool, optional
-        If :code:`True`, all trajectories from different target indices :attr:`ks` are merged into a single array of length :attr:`K`;
-        if the trajectories of two target indices overlap,
-        only trajectory value with the larger :class:`CostSegment` window value remains.
-    merge_seg : bool, optional
-        If :code:`True`, all segments `P` are merged to a single target vector of length :attr:`K`;
-        if the trajectories of two segments overlap,
-        only trajectory value with the larger :class:`CostSegment` window value remains.
-    fill_value : None, scalar, optional
-        Value of target output vector where no trajectory is assigned. Defaults is None that assigns `np.nan`.
-
-    Returns
-    -------
-    output : :class:`~numpy.ndarray` `of shape=shape of ([XS,] [P,] K, L [,S]) of floats`
-
-        * Dimension `XS` only exists, if :attr:`merge_ks`:code:`=False`.
-        * Dimension `P` only exists, if :attr:`merge_seg`:code:`=False`
-        * Dimension `S` only exists, if the parameter :attr:`xs` of :meth:`CompositeCost.trajectories` or
-          :meth:`CompositeCost.trajectories` also provides dimension `S` (i.e., provides multiple signal set processing).
-
-
-    |def_XS|
-    |def_P|
-    |def_K|
-    |def_Q|
-    |def_S|
-
-    """
-
-    # return an empty array if ks is empty
-    if len(ks) == 0:
-        print('Warning: ks is empty. Returned empty array from map_trajectories(.')
-        return np.array([])
-
-    XS = np.shape(trajectories)[0]
-    P  = np.shape(trajectories)[1]
-    if np.ndim(trajectories) > 2:
-        Ss = np.shape(trajectories)[2:]
-    else:
-        Ss = ()
-
-    assert XS == len(ks), "Length of trajectories and ks does not match up"
-
-    out = np.full((XS, P, K) + Ss, fill_value)
-    out = []
-    for i, (k0, trajectory_p) in enumerate(zip(ks, trajectories)):
-        out_ks = []
-        for p, (j_range, trajectory) in enumerate(trajectory_p):
-            j_list = np.array(j_range)
-            mask = np.bitwise_and(k0 + j_list >= 0, k0 + j_list < K)
-            Ss = trajectory.shape[1:]
-            out_Ss = np.full((K,) + Ss, fill_value)
-            out_Ss[k0 + j_list[mask]]  = trajectory[mask]
-            out_ks.append(out_Ss)
-        out.append(out_ks)
-    out = np.asarray(out)
-    return _merge_ks_seg(out, merge_ks, merge_seg)
-
-
-class Segment:
-    r"""
-    The Segment represents a window of finite or infinite interval borders used to select and weight signal samples in a cost function.
-
-    Segments are commonly used in combination with ALSSM signal models to select and weight the samples in cost
-    functions, see :class:`CostSegment` or :class:`CompositeCost`. The window of a segment either has an exponentially
-    decaying shape or is defined by the output of its own ALSSM model, denoted ast the `window ALSSM`.
-    The selection of a window also controls the direction of a stable recursive cost computation (forward or backward).
-
-
-    In cunjunction with an ALSSM,
-    a Segment leads to a cost function of the form
-
-    .. math::
-        J_k(x) = \sum_{i=k+a}^{k+b} \gamma^{i-k-\delta}\big(CA^{i-k}x - y_i\big)^2 \ ,
-
-    and when additionally using sample weights :math:`v_k`, of the form
-
-    .. math::
-        J_k(x) = \sum_{i=k+a}^{k+b} v_k  {\alpha}_{k+\delta}(k+\delta) \big(CA^{i-k}x - y_i\big)^2 \ ,
-
-    with the sample weights :math:`v_k`
-    and the window weight :math:`\alpha_k(j)` which depends on the sample weights, see Equation (14) in [Wildhaber2018]_
-
-    See also [Wildhaber2018]_ [Wildhaber2019]_
-
-    Parameters
-    ----------
-    a : int, np.inf
-        Left boundary of the segment's interval
-    b : int, np.inf
-        Right boundary of the segment's interval
-    g : int, float, None
-        :math:`g > 0`. Effective number of samples under the window. This is used as a (more readable) surrogate for the
-        window decay of exponential windows, see [Wildhaber2018]_. |br|
-        :math:`g` is counted to the left or right of :math:`k+ \delta`, for a forward or backward computation
-        direction, respectively.
-    direction : str
-        Computation direction of recursive computations (also select a left- or right-side decaying window) |br|
-        :data:`statespace.FORWARD` or `'fw'` use forward computation with forward recursions |br|
-        :data:`statespace.BACKWARD` or `'bw'` use backward computation with backward recursions
-    delta : int, optional
-        Exponential window is normalized to 1 at relative index :code:`delta`.
-    gamma : float, int
-        Window Constant Decay, (Alternative for `g`. If gamma is set `g` has to be None)
-        `gamma` is to choose dependent of the direction (forward, backward). Forward directions with `gamma <= 1` will
-        raise a warning for possible instability, backwards directions with `gamma >= 1`.
-        See [Wildhaber2018]_ Table IV
-    label : str, None, optional
-        Segment label, useful for debugging in more complex systems (default: label = None)
-
-    Notes
-    -----
-    The interval of the semgment includes both boundaries `a` and `b` in the calculations.
-    i.e., if the sum runs over the interval :math:`k \in [a,b] ` it treats `b-a+1` samples.
-
-    Examples
-    --------
-    >>> import lmlib as lm
-    >>> segment = lm.Segment(a=-20, b=-1, direction=lm.FORWARD, g=15)
-    >>> print(segment)
-    Segment : a:-20, b:-1, fw, g:15, delta:0, label: None
-
-    >>> segment = lm.Segment(a=-0, b=100, direction=lm.BACKWARD, g=15, delta=30, label="right-sided window with shift")
-    >>> print(segment)
-    Segment : a:0, b:100, bw, g:15, delta:30, label: right-sided window with shift
-
-    """
-
-    def __init__(self, a:Union[int, float], b:Union[int, float], direction:str, g:int, delta:int=0, label:str=None, gamma:Union[int, float]=None):
-        self._a = None
-        self._b = None
-        self.set_boundaries(a, b)
-        self.direction = direction
-        if gamma is not None:
-            assert g is None, "g is not None. If gamma is set, g has to be None."
-            self._g = None
-            self.gamma = gamma
-            if self.direction == FW and self.gamma <= 1:
-                warnings.warn('gamma <= 1 in forward direction can result into instability')
-            if self.direction == BW and self.gamma >= 1:
-                warnings.warn('gamma >= 1 in backward direction can result into instability')
-        else:
-            self.g = g
-            if self.direction == FW:
-                self.gamma = self.g / (self.g - 1)
-            else:
-                self.gamma = (self.g - 1) / self.g
-        self.delta = delta
-        self.label = 'n/a' if label is None else label
-
-    def __str__(self):
-        return f'{type(self).__name__}(' \
-               f'a={self.a}, ' \
-               f'b={self.b}, ' \
-               f'direction={self.direction}, ' \
-               f'g={self.g}, ' \
-               f'delta={self.delta}, ' \
-               f'label={self.label})'
-
-    @property
-    def a(self):
-        """int, np.inf: Left boundary of the segment's interval :math:`a`"""
-        return self._a
-
-    @property
-    def b(self):
-        """int, np.inf : Right boundary of the segment's interval :math:`b`"""
-        return self._b
-
-    @property
-    def g(self):
-        """int, float, None : Effective number of samples :math:`g`, setting the window with
-
-        The effective number of samples :math:`g` is used to derive
-        and set the window decay factor :math:`\\gamma` internally.
-
-        [Wildhaber2018] [Section III.A]
-
-        """
-        return self._g
-
-    @g.setter
-    def g(self, g):
-        assert isinstance(g, (int, float)), 'Effective number of samples g is not of type integer or float.'
-        assert g > 1, 'Effective number of samples g has to be greater than one.'
-        self._g = g
-
-    @property
-    def direction(self):
-        """str : Sets the segment's recursion computation `direction`
-
-            - :data:`FORWARD`, :data:`FW` or `'fw'` use forward computation with forward recursions
-            - :data:`BACKWARD`, :data:`BW` or `'bw'` use backward computation with backward recursions
-        """
-        return self._direction
-
-    @direction.setter
-    def direction(self, direction):
-        assert isinstance(direction, str), 'Computation direction is not of type string.'
-        assert direction in (BW, FW), f'Unknown direction parameter: {self.direction}'
-        self._direction = direction
-
-    @property
-    def delta(self):
-        """int : Relative window shift :math:`\\delta`"""
-        return self._delta
-
-    @delta.setter
-    def delta(self, delta):
-        assert isinstance(delta, int), 'Relative window shift delta is not of type integer.'
-        self._delta = delta
+    def _get_cost_segments(self, F=None):
+        """Returns list of the updated CostSegments (modified by F if provided)."""
+        return [self]
 
     @property
     def label(self):
-        """str, None : Label of the segment"""
+        """str : Label of the Cost Model"""
         return self._label
 
     @label.setter
     def label(self, label):
+        assert isinstance(label, str)
         self._label = label
 
-    @property
-    def gamma(self):
-        r"""float : Window decay factor :math:`\gamma`
+    @abstractmethod
+    def get_model_order(self):
+        """int : Order of the (stacked) Alssm Model"""
+        pass
 
-        Window decay factor :math:`\gamma` is set internally on the initialization of a new segment object
-        and is derived from the *effective number of samples* :attr:`Segment.g` as follows:
+    @abstractmethod
+    def get_model_output_dimension(self):
+        """int : Output dimension of the Alssm"""
+        pass
 
-        - for a segment with forward recursions: :math:`\gamma = \frac{g}{g-1}`
-        - for a segment with forward recursions: :math:`\gamma = \big(\frac{g}{g-1}\big)^{-1}`
-
-        [Wildhaber2018] [Table IV]
-
+    @abstractmethod
+    def get_steady_state_W(self, dim_order=None, method='closed_form'):
         """
-        return self._gamma
-
-    @gamma.setter
-    def gamma(self, gamma):
-        assert isinstance(gamma, float), 'Window decay factor gamma is not of type float.'
-        self._gamma = gamma
-
-    def set_boundaries(self, a, b):
-        assert isinstance(a, int) or np.isinf(a), 'Left boundary is not of type integer or np.inf.'
-        assert isinstance(b, int) or np.isinf(b), 'Right boundary is not of type integer or np.inf.'
-        assert a < b, 'left boundary \'a\' must be smaller than the right boundary \'b\'.'
-        self._a = a
-        self._b = b
-
-    def window(self, thd=1e-6):
-        r"""
-        Returns the per-sample window weighs
-
-        The return values are the window weights :math:`\alpha_{\delta}(i) \quad \forall i \in [a, b]` for a constant
-        :math:`\gamma`. The window weight function is defined as
-
-        .. math::
-            w_i = \gamma^{i}
-
-        For more details see [Wildhaber2018]_.
+        Returns Steady State Matrix W
 
         Parameters
         ----------
-        thd : float, None, optional
-            Threshold for infinite Segment boundaries. Crops any window weight below the threshold.
+        dim_order : list of int, None
+            Specifies the dimensional order in a list of integers.
+            If None, dim_order is equal to to range(self.L)
+        method : str, optional
+            If 'closed_form' is used, the steady state matrix will be calculated in a close form.
+            This method can be critical, as it can produce badly conditioned matrices internally.
+            If 'limited_sum' is used, the steady state matrix will be calculated brute force, with a stop condition
+            on a minimum change.
 
         Returns
         -------
-        `tuple` :code:`(range, array)`
-
-            * :code:`range` of length `JR`: relative index range of window with respect to segment's boundaries.
-            * :code:`array` of shape=(JR) of floats: per-index window weight over the reported index range
-
-
-        |def_JR|
-
+        Wss = `class:numpy.ndarray`
+            Steady State Matrix W
         """
+        pass
 
-        ab_range = _window_range(self.a, self.b, self.direction, self.gamma, self.delta, thd)
-        return ab_range, self.gamma ** (np.array(ab_range) - self.delta)
+    @abstractmethod
+    def get_number_of_dimensions(self):
+        """int : Number of dimensions of the cost function"""
+        pass
+
+class BaseCost1d(ABC):
+
+    @abstractmethod
+    def eval_alssm_output(self, xs, alssm_weights=None):
+        """
+        Evaluation of the ALSSM for multiple state vectors `xs`.
+
+        **See:** :meth:`~lmlib.statespace.models.Alssm.eval`
+
+        Parameters
+        ----------
+        xs : array_like of shape=(XS, N [,S]) of floats
+            List of state vectors :math:`x`
+        alssm_weights : None, scalar, array_like
+            CostSegments contains a single Alssm, where CompositeCost and NDCompositeCost
+            may have multiple Alssms.
+            - If is None no Alssm output weights are set (all equal 1).
+            - If is scalar, each Alssm output has the same weight as `alssm_weights`.
+            - If is array_like, each Alssm output has the weight respectively to the alssms_weights.
+            Each element sets the weight of the output of the m-th ALSSM in :attr:`CompositeCost.alssms`.
+        """
+        pass
+
+    @abstractmethod
+    def get_state_var_indices(self, label):
+        """
+        Returns the state indices for a specified label of the stacked internal ALSSM
+
+        Parameters
+        ----------
+        label : str
+            state label
+
+        Returns
+        -------
+        out : list of int
+            state indices of the label
+        """
+        pass
+
+    def get_number_of_dimensions(self):
+        return 1
+
+class CostSegment(BaseCost, BaseCost1d, ABC):
+    r"""
+    Quadratic cost function defined by an ALSSM and a Segment.
+
+    A CostSegment is an implementation of [Wildhaber2019]_ :download:`PDF (Cost Segment) <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=117>`
+
+    .. code-block:: text
+
+        ==================
+        Class: CostSegment (= 1 ALSSM + 1 Segment)
+        ==================
+
+          window weight
+              ^
+            2_|                   ___     exponentially rising window of a segment
+            1_|              ____/     <- normalized to 1 at index delta; to
+            0_|    _________/             weight the cost function
+
+                       segment
+                   +----------------+
+          alssm    |                |
+                   +----------------+
+
+                   |--|-------|-----|----> k (time, relativ to the segment reference index 0)
+                   a  0     delta   b
+
+        a,b : segment interval borders a and b in N, a < b
 
 
-class CompositeCost:
+    A cost segment is the quadratic cost function
+
+    .. math::
+        J_a^b(k,x,\theta) = \sum_{i=k+a}^{k+b} \alpha_{k+\delta}(i)v_i(y_i - cA^{i-k}x)^2
+
+    over a fixed interval :math:`\{a, \dots, b\}` with :math:`a \in \mathbb{Z} \cup \{ - \infty \}`,
+    :math:`b \in \mathbb{Z} \cup \{ + \infty\}`, and :math:`a \le b`,
+    and with initial state vector :math:`x \in \mathbb{R}^{N \times 1}`.
+    For more details, seen in Section 4.2.6  and Chapter 9 in [Wildhaber2019]_ .
+
+    Parameters
+    ----------
+    alssm : ModelBase
+        ALSSM, defining the signal model
+    segment : Segment
+        Segment, defining the window
+    label : str, optional
+        Label of CostSegment, default: 'n/a'
+
+    Examples
+    --------
+    Set up a cost segment with finite boundaries and a line ALSSM.
+
+    >>> import lmlib as lm
+    >>> alssm_line = lm.AlssmPoly(poly_degree=1, label="slope with offset")
+    >>> segment_left = lm.Segment(a=-30, b=0, direction=lm.FORWARD, g=20, label="finite left")
+    >>> cost = lm.CostSegment(alssm_line, segment_left, label="left line")
+    >>> print(cost)
+    CostSegment : label: left line
+      └- Alssm : polynomial, A: (2, 2), C: (1, 2), label: slope with offset,
+      └- Segment : a:-30, b:0, fw, g:20, delta:0, label: finite left
+
+    """
+
+    def __init__(self, alssm, segment, label='n/a'):
+        self.alssm = alssm
+        self.segment = segment
+        self.label = label
+
+    def __str__(self):
+        return f'{type(self).__name__}(label: {self.label}) \n  └- {self.alssm}, \n  └- {self.segment}'
+
+    @property
+    def alssm(self):
+        """ModelBase : Alssm"""
+        return self._alssm
+
+    @alssm.setter
+    def alssm(self, alssm):
+        assert isinstance(alssm, ModelBase), 'alssm is not of instance ModelBase'
+        self._alssm = alssm
+
+    @property
+    def segment(self):
+        """Segment : Segment"""
+        return self._segment
+
+    @segment.setter
+    def segment(self, segment):
+        assert isinstance(segment, Segment), 'element in segments is not instance of Segment'
+        self._segment = segment
+
+    def get_model_order(self) -> int:
+        return self.alssm.N
+
+    def get_model_output_dimension(self) -> int:
+        return self.alssm.get_model_output_dimension()
+
+    def get_steady_state_W(self, dim_order=None, method='closed_form'):
+        A, C = self.alssm.A, self.alssm.C
+        gamma = self.segment.gamma
+        a, b, delta = self.segment.a, self.segment.b, self.segment.delta
+
+        if method == 'closed_form':
+            return _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+        elif method == 'limited_sum':
+            return _covariance_matrix_limited_sum(A, C, gamma, a, b, delta)
+        else:
+            raise NotImplementedError(f'unknown method {method}')
+
+    def get_state_var_indices(self, label):
+        return self.alssm.get_state_var_indices('cost.' + label)
+
+    def eval_alssm_output(self, xs, alssm_weights=None):
+        return AlssmSum([self.alssm], alssm_weights).eval_states(xs)
+
+
+class CompositeCost(BaseCost, BaseCost1d, ABC):
     r"""
     Quadratic cost function defined by a conjunction one or multiple  of :class:`~lmlib.statespace.model.Alssm` and :class:`.Segment`
 
@@ -446,7 +293,7 @@ class CompositeCost:
     output signal.
 
 
-    For more details, seen Chapter 9 in [Wildhaber2019]_.
+    For more details, see Chapter 9 in [Wildhaber2019]_.
     The cost function of a composite cost is defined as
 
     .. math::
@@ -492,9 +339,19 @@ class CompositeCost:
 
     """
 
-    def __init__(self, alssms, segments, F, label:str='n/a'):
-        self.alssms = alssms
-        self.segments = segments
+    def __init__(self, alssms, segments, F, label='n/a'):
+        # set alssms
+        assert isinstance(alssms, Iterable), 'alssms is not iterable'
+        for alssm in alssms:
+            assert isinstance(alssm, ModelBase), 'element in alssms is not of instance ModelBase'
+        self._alssms = list(alssms)
+
+        # set segments
+        assert isinstance(segments, Iterable), 'segments is not iterable'
+        for segment in segments:
+            assert isinstance(segment, Segment), 'element in segments is not instance of Segment'
+        self._segments = list(segments)
+
         self.F = F
         self.label = label
 
@@ -503,40 +360,36 @@ class CompositeCost:
                f'  └- {[alssm.__str__() for alssm in self.alssms]}, \n' \
                f'  └- {[segment.__str__() for segment in self.segments]} '
 
+    def __iter__(self):
+        """Iterate over cost segments."""
+        return iter(self._get_cost_segments())
+
+    def _get_cost_segments(self, F=None):
+        """Returns list of the updated CostSegments (modified by F if provided)."""
+        F_ = self.F if F is None else F
+        cost_segments = []
+        for p, segment in enumerate(self.segments):
+            alssm = AlssmSum(self.alssms, F_[:, p])
+            cost_segment = CostSegment(alssm, segment, self.label + '-' + str(p))
+            cost_segments.append(cost_segment)
+        return cost_segments
+
+    def _get_sub_cost(self, dim=None, seg=None):
+        """Returns a specific CostSegment by segment index."""
+        if seg is None:
+            # if no segment specified, return all segments as list
+            return self._get_cost_segments()
+        return self._get_cost_segments()[seg]
+
     @property
     def alssms(self):
-        """tuple : Set of ALSSM"""
+        """Iterable : List of ALSSM"""
         return self._alssms
-
-    @alssms.setter
-    def alssms(self, alssms):
-        assert isinstance(alssms, Iterable), 'alssms is not iterable'
-        for alssm in alssms:
-            assert isinstance(alssm, ModelBase), 'element in alssms is not of instance ModelBase'
-        assert common_C_dim(alssms), "Alssms has not same C dimensions."
-        self._alssms = list(alssms)
 
     @property
     def segments(self):
-        """tuple : Set of Segment"""
+        """Iterable : List of Segment"""
         return self._segments
-
-    @segments.setter
-    def segments(self, segments):
-        assert isinstance(segments, Iterable), 'segments is not iterable'
-        for segment in segments:
-            assert isinstance(segment, Segment), 'element in segments is not instance of Segment'
-        self._segments = list(segments)
-
-    @property
-    def label(self):
-        """str, None : Label of the Cost Model"""
-        return self._label
-
-    @label.setter
-    def label(self, label):
-        assert isinstance(label, str)
-        self._label = label
 
     @property
     def F(self):
@@ -547,349 +400,104 @@ class CompositeCost:
     def F(self, F):
         assert is_array_like(F), 'F is not array_like'
         F = np.atleast_2d(F)
-        assert np.shape(F) == (len(self.alssms), len(self.segments)), f'F has wrong shape, {info_str_found_shape(F)}'
+        assert np.shape(F) == (self.M, self.P), f'F has wrong shape, {info_str_found_shape(F)}'
         self._F = F
 
+    @property
+    def M(self):
+        """int : Number of Alssms"""
+        return len(self.alssms)
+
+    @property
+    def P(self):
+        """int : Number of Segments"""
+        return len(self.segments)
+
     def get_model_order(self):
-        """int : Order of the (stacked) Alssm Model"""
-        return AlssmSum(self.alssms).N
+        return self._get_sub_cost(seg=0).get_model_order()
 
     def get_model_output_dimension(self):
-        """tuple : Alssm Output Dimension"""
-        alssm = AlssmSum(self.alssms)
-        return alssm.C.shape[0]  if alssm.is_MC else ()
+        return self._get_sub_cost(seg=0).get_model_output_dimension()
 
-    def trajectories(self, xs, F=None, thd:float=1e-6, model_axis=0):
-        """
-        Returns the :class:`CompositeCost`'s ALSSM's trajectories (=output sequences for a fixed initial states) for
-        multiple initial state vectors :attr:`xs`
-
-        Evaluates the :class:`CompositeCost`'s ALSSM with the state vectors :attr:`xs` over the time indices defined
-        by :attr:`CompositeCost.segments`.
-        The segment's interval boundaries limit the evaluation interval (samples outside this interval are set to 0).
-        In particular for segments with infinite interval borders, the threshold option :attr:`thds` additionally
-        limits the evaluation boundaries by defining a minimal window height of the :attr:`CompositeCost.segments`.
-
-        Parameters
-        ----------
-        xs : array_like of shape=(XS, N [,S]) of floats
-            List of initial state vectors :math:`x`
-        F : array_like, shape(M, P) of int, shape(M,) of int
-            Mapping matrix. If not set to :code:`None`, the given matrix overloads the CompositeCost's internal mapping
-            matrix as provided by the class constructor for :class:`CompositeCost`.
-            If :attr:`F` is only of :code:`shape(M,)`, the vector gets enlarged to size :code:`shape(M, P)` by repeating
-            the vector `P`-times. (This is a shortcut to select a single ALSSM over all segments.)
-        thd : list of shape(P) of floats, scalar, None, optional
-            Per segment threshold limiting the evaluation boundaries by setting a minimum window height of the
-            associated :attr:`~CompositeCost.segments`
-            Scalar to use the same threshold for all available segments.
-
-        Returns
-        -------
-        trajectories : list of shape=(XS) of tuples of shape=(P) of tuples :code:`(range, array)`
-            Each element in `trajectories` is a tuple with
-
-            * :code:`range` `of length JR`: relative index range of trajectory with respect to segment's boundaries
-            * :code:`array` `of shape(JR,[S,] L)`: trajectory values over reported range.
-
-            Dimension `S` is only present in the output, if dimension `S` is also present in :attr:`xs` (i.e., if multiple signal sets are used)
-
-
-        |def_JR|
-        |def_XS|
-        |def_N|
-        |def_S|
-        |def_M|
-        |def_P|
-
-
-        """
-
-
-        if F is None:
-            F = self.F
-        else:
-            assert (len(self.alssms), len(self.segments)) == np.shape(F), \
-                f'F is not array_like of shape (M={len(self.alssms)}, P={len(self.segments)})'
-            F = np.asarray(F)
-
-        # Ks = np.shape(xs)[:-1]
-        # N = np.shape(xs)[-1]
-        # P = len(self.segments)
-        # trajectories = np.empty((np.prod(Ks), P), dtype=tuple)
-        # for i, x in enumerate(np.reshape(xs, (-1, N))):
-        #     for p, (f, seg) in enumerate(zip(F.T, self.segments)):
-        #         alssm = AlssmSum(self.alssms, deltas=f)
-        #         ab_range = _window_range(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd)
-        #         trajectories [i, p] = ab_range, alssm.trajectory(x, ab_range)
-        #
-
-        XS = np.shape(xs)[model_axis]
-        Ss = list(np.shape(xs)[:-1]); del Ss[model_axis]
-        Ss = tuple(Ss)
-        N = np.shape(xs)[-1]
-        P = len(self.segments)
-        trajectories = np.empty((XS, P), dtype=tuple)
-
-        for i, x in enumerate(xs):
-            for p, (f, seg) in enumerate(zip(F.T, self.segments)):
-                alssm = AlssmSum(self.alssms, deltas=f)
-                ab_range = _window_range(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd)
-                trajectories[i, p] = ab_range, alssm.trajectory(x, ab_range)
-
-        return trajectories
-
-    def windows(self, segment_indices:list[int]=None, thd:float=1e-6):
-        """
-        Returns for each selected segment its window generated by :meth:`CostSegment.windows`.
-
-        The segments are selected by :attr:`segment_selection`.
-
-
-        Parameters
-        ----------
-        segment_indices : array_like, shape=(P,) of Boolean
-            TODO: wrong docstring
-                array of segment indices if None (Default) all segemtns are returned
-
-            Enables (:code:`True`, 1) or disables (:code:`False`, 0) the evaluation of the
-            p-th Segment in :attr:`CompositeCost.segments` using :meth:`CostSegment.window`
-        thd : list of shape=(P,) of floats, scalar, optional
-            List of per-segment threshold values or scalar to use the same threshold for all segments
-            Evaluation is stopped for window weights below the given threshold.
-            Set list element to :code:`None` to disable the threshold for a segment.
-
-        Returns
-        -------
-        `list of shape=(P) of tuples` :code:`(range, array)`
-            Each element is a tuple with
-
-            * :code:`range` of length `JR`: relative index range of window with respect to segment's boundaries.
-            * :code:`array` of shape=(JR) of floats: per-index window weight over the reported index range
-
-
-        |def_JR|
-        |def_P|
-
-
-        """
-
-        if segment_indices is None:
-            segment_indices = np.arange(len(self.segments))
-        assert is_array_like(segment_indices), 'segment_index is not an integer nor array_like'
-        assert 0 <= min(segment_indices) and max(segment_indices) < len(self.segments), 'segment_index out of range'
-
-        return  [seg.window(thd) for seg in self.segments]
-
-    def get_steady_state_W(self, method:str='closed_form'):
-        """
-        Returns Steady State Matrix W
-
-        Parameters
-        ----------
-        method : str, optional
-            If 'closed_form' is used the steady state matrix will be calculated in a close form.
-            This method can be critical, as it can produce badly conditioned matrices internally.
-            If 'limited_sum' is used, the steady state matrix will be calculated brute force, with a stop condition
-            on a minimum change.
-
-        Returns
-        -------
-        Wss = `class:numpy.ndarray`
-            Steady State Matrix W
-        """
+    def get_steady_state_W(self, dim_order=None, method='closed_form'):
         N = self.get_model_order()
         W = np.zeros((N, N))
-        for p, segment in enumerate(self.segments):
-            alssm = AlssmSum(self.alssms, self.F[:, p])
-            if method == 'closed_form':
-                W += _covariance_matrix_closed_form(alssm.A, alssm.C, segment.gamma, segment.a, segment.b, segment.delta)
-            if method == 'limited_sum':
-                W += _covariance_matrix_limited_sum(alssm.A, alssm.C, segment.gamma, segment.a, segment.b, segment.delta)
+
+        for cost_segment in self:
+            W += cost_segment.get_steady_state_W(method=method)
         return W
 
-    def eval_alssm_output(self, xs, alssm_weights:list[Union[int, float]]=None, c0s=None):
-        """
-        Evaluation of the ALSSM for multiple state vectors `xs`.
+    def eval_alssm_output(self, xs, alssm_weights=None):
+        return AlssmSum(self.alssms, alssm_weights).eval_states(xs)
 
-        **See:** :meth:`~lmlib.statespace.models.Alssm.eval`
-
-        Parameters
-        ----------
-        xs : array_like of shape=(XS, N [,S]) of floats
-            List of state vectors :math:`x`
-        alssm_weights : None, scalar, array_like, shape=(M,) of floats, optional
-            Each element sets the weight of the output of the m-th ALSSM in :attr:`CompositeCost.alssms`.
-            If alssm_weights is a scalar it set for each alssms the same weight.
-            If None no weights are set.
-        c0s : None, scalar, array_like, tuple, optional
-            - None type is default and doesn't change the model output matrix
-            - Scalar type will result in a 1 dimensional output matrix filled with the scalar value.
-            - Array_like type expects c0s shape of ([L,] N,) and replaces the composite output matrix.
-            - Tuple type c0s have an entry for each sub ALSSM in the composite model. Possible tuple entries are `None`, `scalar`, `array_like`, which are behaving like to composite c0s entries above. See Notes for more detail.
-
-
-        Returns
-        -------
-        s : :class:`~numpy.ndarray` of shape=(XS,[J,]L[,S]) of floats
-            ALSSM outputs
-
-
-        |def_N|
-        |def_Q|
-        |def_M|
-        |def_S|
-        |def_XS|
-
-        Notes
-        -----
-        C0s of type tuple can have different element types `None`, `scalar`, `array_like`.
-
-        - Entries are array_like and for each ALSSM resp. i.e. :code:`c0s = ([1, 2], [1, 0])` will result in the first :code:`alssms[0].C = [1, 2]` and in the second :code:`alssms[1].C = [1, 0]`.
-
-        - Entries are scalars or `None` and for each ALSSM resp. i.e. :code:`c0s = ([1, 2], 3)`  will result in the first :code:`alssms[0].C = [1, 2]` and in the second :code:`alssms[1].C = [3, 3]`.
-
-        - A None element won't change the ALSSM Output Matrix C. i.e. :code:`c0s = (None, 3)`  will leave alone first ALSSM.C and the second changes to :code:`alssms[1].C = [3, 3]`.
-
-        """
-
-        N = AlssmSum(self.alssms).N
-        input_type = ''
-
-        if c0s is None:
-            input_type = 'none'
-        if np.isscalar(c0s):
-            input_type = 'scalar'
-        if is_array_like(c0s):
-            input_type = 'output_matrix'
-        if isinstance(c0s, tuple):
-            input_type = 'mixed'
-
-        assert input_type != '', "c0s input unknown type"
-
-        alssm_sum = AlssmSum(self.alssms, alssm_weights)
-
-        if input_type == 'scalar':
-            alssm_sum.C = np.full(N, fill_value=c0s)
-        if input_type == 'output_matrix':
-            alssm_sum.C = c0s
-        if input_type == 'mixed':
-            alssms = []
-            for alssm, c0 in zip(self.alssms, c0s):
-                alssm_ = copy.deepcopy(alssm)
-                if c0 is None:
-                    c0 = alssm_.C
-                if np.isscalar(c0):
-                    c0 = np.full_like(alssm_.C, c0)
-                alssm_.C_init = c0
-                alssms.append(alssm_)
-            alssm_sum = AlssmSum(alssms, alssm_weights)
-
-        return alssm_sum.eval_states(xs)
-
-    def get_state_var_indices(self, label) -> Iterable[int]:
-        """
-        Returns the state indices for a specified label of the stacked internal ALSSM
-
-        Parameters
-        ----------
-        label : str
-            state label
-
-        Returns
-        -------
-        out : list of int
-            state indices of the label
-        """
+    def get_state_var_indices(self, label):
         return AlssmSum(self.alssms, label='cost').get_state_var_indices('cost.' + label)
 
 
-class CostSegment(CompositeCost):
-    r"""
-    Quadratic cost function defined by an ALSSM and a Segment.
+class NDCompositeCost(BaseCost, ABC):
 
-    A CostSegment is an implementation of [Wildhaber2019]_ :download:`PDF (Cost Segment) <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=117>`
+    def __init__(self, costs: List[Union[CompositeCost, CostSegment]]):
+        self.costs = costs
 
-    .. code-block:: text
+    def __iter__(self):
+        return iter(self.costs)
 
-        ==================
-        Class: CostSegment (= 1 ALSSM + 1 Segment)
-        ==================
-
-          window weight
-              ^
-            2_|                   ___     exponentially rising window of a segment
-            1_|              ____/     <- normalized to 1 at index delta; to
-            0_|    _________/             weight the cost function
-
-                       segment
-                   +----------------+
-          alssm    |                |
-                   +----------------+
-
-                   |--|-------|-----|----> k (time, relativ to the segment reference index 0)
-                   a  0     delta   b
-
-        a,b : segment interval borders a and b in N, a < b
-
-
-    A cost segment is the quadratic cost function
-
-    .. math::
-        J_a^b(k,x,\theta) = \sum_{i=k+a}^{k+b} \alpha_{k+\delta}(i)v_i(y_i - cA^{i-k}x)^2
-
-    over a fixed interval :math:`\{a, \dots, b\}` with :math:`a \in \mathbb{Z} \cup \{ - \infty \}`,
-    :math:`b \in \mathbb{Z} \cup \{ + \infty\}`, and :math:`a \le b`,
-    and with initial state vector :math:`x \in \mathbb{R}^{N \times 1}`.
-    For more details, seen in Section 4.2.6  and Chapter 9 in [Wildhaber2019]_ .
-
-    Parameters
-    ----------
-    alssm : ModelBase
-        ALSSM, defining the signal model
-    segment : Segment
-        Segment, defining the window
-    **kwargs
-        Forwarded to :class:`CompositeCost`
-
-    Examples
-    --------
-    Set up a cost segment with finite boundaries and a line ALSSM.
-
-    >>> import lmlib as lm
-    >>> alssm = lm.AlssmPoly(poly_degree=1, label="slope with offset")
-    >>> segment = lm.Segment(a=-30, b=0, direction=lm.FORWARD, g=20, label="finite left")
-    >>> cost = lm.CostSegment(alssm, segment, label="left line")
-    >>> print(cost)
-    CostSegment : label: left line
-      └- Alssm : polynomial, A: (2, 2), C: (1, 2), label: slope with offset,
-      └- Segment : a:-30, b:0, fw, g:20, delta:0, label: finite left
-
-    """
-
-    def __init__(self, alssm, segment, **kwargs):
-        super().__init__(alssms=[alssm], segments=[segment], F=np.ones((1, 1)), **kwargs)
-
-    def __str__(self):
-        return f'{type(self).__name__}(label: {self.label}) \n  └- {self.alssms[0]}, \n  └- {self.segments[0]}'
+    def _get_sub_cost(self, dim=None, seg=None):
+        """Access cost by dimension and/or segment."""
+        if dim is None:
+            return self.costs
+        elif seg is None:
+            return self.costs[dim]
+        else:
+            return self.costs[dim]._get_sub_cost(seg=seg)
 
     @property
-    def alssm(self):
-        """Alssm : Cost Segments Alssm"""
-        return self.alssms[0]
+    def costs(self):
+        """Iterable : List/Tuple of CostSegment/CompositeCost"""
+        return self._costs
+
+    @costs.setter
+    def costs(self, costs):
+
+        # check type
+        for cost in costs:
+            assert isinstance(cost, (CompositeCost, CostSegment)), 'Element of costs is not a CompositeCost/CostSegment'
+
+        # check alssm output dimensions L
+        Qs = np.array([cost.get_model_output_dimension() for cost in costs])
+        assert np.all(Qs == Qs[0]), 'Output Dimension of composite costs do not match'
+
+        self._costs = costs
 
     @property
-    def segment(self):
-        """Segment : Costs' Segments"""
-        return self.segments[0]
+    def L(self):
+        """int : Number of Dimensions/Costs :math:`L`"""
+        return len(self.costs)
 
+    def get_number_of_dimensions(self):
+        return self.L
+
+    def get_model_order(self):
+        return int(np.prod(cost.get_model_order() for cost in self.costs))
+
+    def get_model_output_dimension(self):
+        return self.costs[0].get_model_output_dimension()
+
+    def get_steady_state_W(self, dim_order=None, method='closed_form'):
+        if dim_order is None:
+            dim_order = range(self.L)
+
+        W = [1]
+        for n in dim_order:
+            W = np.kron(W, self.costs[n].get_steady_state_W(method))
+        return W
 
 
 class ConstrainMatrix:
     """
     Constrain Matrix Generator
 
-    Builder class to set up matrix `H` as a linear constraint for the squared error minimization
+    Builder class to set up matrix `H` as a linear constraint for the squared error minimization.
 
     Parameters
     ----------
@@ -918,10 +526,9 @@ class ConstrainMatrix:
 
     def constrain(self, indices, value):
         """
-        Add constrain
+        Add constraining
 
-        I.e. Apply a dependency between two indices.
-        See example below.
+        I.e., Apply a dependency between two indices.
 
         Parameters
         ----------
@@ -942,17 +549,16 @@ class ConstrainMatrix:
 
     def constrain_by_labels(self, label_1, label_2, value):
         """
-        Add constrain by labels
+        Add constraining by labels
 
-        I.e. Apply a dependency between two indices.
-        See example below.
+        I.e., Apply a dependency between two indices.
 
         Parameters
         ----------
         label_1: str
-            label of first state variable index to apply a dependency
+            label of the first state variable index to apply a dependency
         label_2: str
-            label of second state variable index to apply a dependency
+            label of the second state variable index to apply a dependency
         value: int, float
             dependency value
 
@@ -990,7 +596,7 @@ class ConstrainMatrix:
         # append zero columns to del_cols
         del_cols.extend(np.where(~H.any(axis=0))[0])
 
-        # check if all combination of columns in H are a mulitple of each-other when yes add last one to del_cols
+        # check if all combinations of columns in H are a mulitple of each-other when yes add last one to del_cols
         for j, c1 in enumerate(H.T):
             c1_norm = np.linalg.norm(c1)
             if c1_norm != 0.0:
@@ -1014,258 +620,3 @@ class ConstrainMatrix:
         print(' ——' * self._N)
         for r, row in enumerate(self._data):
             print(row, ' | ', r)
-
-
-
-class NDCompositeCost:
-    """
-    N-Dimensional Composite Cost
-
-    A NDCompositeCost is an implementation of [Baeriswyl2025]_ :download:`PDF  <https://>`
-
-    Parameters
-    ----------
-    composite_costs : List of CompositeCost
-        List Composite costs containing a `CompositeCost` for each dimension
-    """
-
-    def __init__(self, composite_costs):
-        self.composite_costs = composite_costs
-
-
-
-    @property
-    def composite_costs(self):
-        return self._composite_costs
-
-    @composite_costs.setter
-    def composite_costs(self, composite_costs):
-
-        # check type
-        for cc in composite_costs:
-            assert isinstance(cc, CompositeCost), 'Element of composite_costs is not a CompositeCost'
-
-        # check alssm output dimensions L
-        Ls = np.array([cc.get_model_output_dimension() for cc in composite_costs])
-        assert np.all(Ls == Ls[0]), 'Output Dimension of composite costs do not match'
-
-        self._composite_costs = composite_costs
-
-    @property
-    def L(self) -> int:
-        """int : number of dimensions :math:`L`"""
-        return len(self.composite_costs)
-
-    def get_model_order(self) -> int:
-        """int : Order of the (stacked, dimension-combined) Alssm Model"""
-        return int(np.prod([cc.get_model_order() for cc in self.composite_costs]))
-
-    def get_steady_state_W(self, dim_order):
-        """
-        Returns the steady state W of the n-dimensional Composite Cost
-
-        Parameters
-        ----------
-        dim_order : list of int
-            Specifies the dimensional order in a list of integers
-
-        Returns
-        -------
-        W : :class:`numpy.ndarray` of shape(N, N)
-            Steady state matrix :math:`W`
-        """
-        W = [1]
-        for n in dim_order:
-            W = np.kron(W, self.composite_costs[n].get_steady_state_W())
-        return W
-
-    def get_model_output_dimension(self):
-        """returns the ALSSM output dimension 'Q' if the output is a scalar an empty tuple is returned"""
-        return self.composite_costs[0].get_model_output_dimension()
-
-    def eval_nd_alssm_output(self, xs, dim_order=None, alssm_weights=None):
-        """
-        Evaluation of the ALSSM for multiple state vectors `xs`.
-
-        **See also:** :meth:`~lmlib.statespace.models.Alssm.eval_states`
-
-        Parameters
-        ----------
-        xs : array_like of shape=(K1, ...KL, N)
-            Array of state vectors :math:`x`
-        dim_order : list of int, optional
-            List of indexes of length L the defines the dimension order applied
-        alssm_weights : tuple(array_like) or None
-            Tuple of length nd where each element is array_like containing the corresponding ALSSM weights
-
-        Returns
-        -------
-        s : :class:`~numpy.ndarray` of shape=(K1, ... KL,[Q,]) of floats
-            ALSSM outputs
-
-
-        |def_N|
-        |def_L|
-        |def_Q|
-        |def_M|
-        |def_S|
-        |def_XS|
-
-        """
-
-        nd_alssm = self.get_nd_alssm(dim_order=dim_order, alssm_weights=alssm_weights)
-        Ks = np.shape(xs)[:-1]
-        N = np.shape(xs)[-1]
-        return np.reshape(nd_alssm.eval_states(xs.reshape(-1, N)), *Ks)
-
-    def get_nd_alssm(self, dim_order=None, alssm_weights=None):
-        """
-        Returns the n-dimensional ALSSM
-
-        Parameters
-        ----------
-        dim_order : list of int, optional
-            List of indexes of length L the defines the dimension order applied
-        alssm_weights : tuple(array_like) or None
-            Tuple of length nd where each element is array_like containing the corresponding ALSSM weights
-
-        Returns
-        -------
-        nd_alssm : :class:`~lmlib.statespace.models.ModelBase`
-            n-Dimensional ALSSM
-
-        """
-        alssms = []
-        if dim_order is None:
-            dim_order = np.arange(self.L)
-        for model_dimension in dim_order:
-            cc = self._composite_costs[model_dimension]
-            if alssm_weights is not None:
-                alssm = AlssmSum(cc.alssms, alssm_weights[model_dimension])
-            else:
-                alssm = AlssmSum(cc.alssms)
-            alssms.append(alssm)
-
-        return AlssmProd(alssms)
-
-    def nd_windows(self, nd_segment_indices, thd:float=1e-6):
-        """
-        Returns the n-dimensional window for each dimension
-
-        Parameters
-        ----------
-        nd_segment_indices: array_like of int
-            Selection of Segments for each dimension and segments in the corresponding CompositeCost
-        thd : float, optional
-            threshold for infinit Segments. The window os cutoff when the window weight is lower the threshold.
-
-        Returns
-        -------
-        nd_windows : list of windows
-            Each entry in the nd_windows contains the windows of a Composite Cost relative to the dimension
-
-        """
-        assert is_array_like(nd_segment_indices), 'nd_segment_indices is not an integer nor array_like'
-        assert len(nd_segment_indices) == self.L, 'nd_segment_indices not same length as NDCompositeCost.nd'
-        nd_windows = []
-        for n, segment_indices in enumerate(nd_segment_indices):
-            assert is_array_like(segment_indices), 'segment_index is not an integer nor array_like'
-            assert 0 <= min(segment_indices) and max(segment_indices) < len(self.composite_costs[n].segments), 'segment_index out of range'
-
-            windows = []
-            for segment_index in segment_indices:
-                seg = self.composite_costs[n].segments[segment_index]
-                window = _window_output(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd)
-                windows.append(window)
-            nd_windows.append(windows)
-        return nd_windows
-
-    def two_dim_trajectory(self, x, dim_order=None, thd:float=1e-6):
-        """
-        Returns the 2-dimensional trajectory of the ALSSM output of the state vector `x`.
-
-
-        Parameters
-        ----------
-        x : array_like of shape (N,)
-            State vector :math:`x` of the n-dimensional ALSSM
-        dim_order : list of int, optional
-            List of indexes of length L that defines the dimension order applied
-        thd : float, optional
-            threshold for infinit Segments. The window os cutoff when the window weight is lower the threshold.
-
-
-        Returns
-        -------
-        trajectory_indexes : array_like of shape(JS1, JS2)
-            relative indices
-        trajectory_values : array_like
-            2-dimensional alssm outputs
-        """
-
-        if dim_order is None:
-            dim_order = np.arange(self.L)
-
-        cc_1st_dim = self.composite_costs[dim_order[0]]
-        ab_range_1st_dim = []
-        alssm_1st_dim = []
-        for seg, f in zip(cc_1st_dim.segments, cc_1st_dim.F.T):
-            ab_range_1st_dim.append(_window_range(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd))
-            alssm_1st_dim.append(AlssmSum(cc_1st_dim.alssms, deltas=f))
-        
-        cc_2st_dim = self.composite_costs[dim_order[1]]
-        ab_range_2st_dim = []
-        alssm_2st_dim = []
-        for seg, f in zip(cc_2st_dim.segments, cc_2st_dim.F.T):
-            ab_range_2st_dim.append(_window_range(seg.a, seg.b, seg.direction, seg.gamma, seg.delta, thd))
-            alssm_2st_dim.append(AlssmSum(cc_2st_dim.alssms, deltas=f))
-
-        traj = np.zeros((
-            sum(len(r) for r in ab_range_1st_dim),  # 1st dim
-            sum(len(r) for r in ab_range_2st_dim)  # 2st dim
-        ))
-        traj_index = np.zeros((
-            sum(len(r) for r in ab_range_1st_dim),  # 1st dim
-            sum(len(r) for r in ab_range_2st_dim), # 2st dim
-            2
-        ))
-        off_i = 0
-        for alssm_1, ab_range_1 in zip(alssm_1st_dim, ab_range_1st_dim):
-            off_j = 0
-            for alssm_2, ab_range_2 in zip(alssm_2st_dim, ab_range_2st_dim):
-                for index_i, i in enumerate(ab_range_1):
-                    CA1 = alssm_1.C @ matrix_power(alssm_1.A, i)
-                    for index_j, j in enumerate(ab_range_2):
-                        CA2 = alssm_2.C @ matrix_power(alssm_2.A, j)
-                        traj[index_i+off_i, index_j+off_j] = np.kron(CA1, CA2) @ x
-                        traj_index[index_i+off_i, index_j+off_j] = i, j
-                off_j += len(ab_range_2)
-            off_i += len(ab_range_1)
-        return traj_index, traj
-
-    def two_dim_map_trajectory(self, trajectory, k0, Ks):
-        """
-        Maps a two-dimensional trajectory onto a two-dimensional signal, with np.nan otherwise.
-
-        Parameters
-        ----------
-        trajectory: tuple
-            Tuple containing trajectory_indexes and trajectory_values from `two_dim_trajectory()`
-        k0 : tuple of int
-            Tuple of two indexes for the two dimensions ins the signal
-            This maps the `trajectory` into the two-dimensional signal.
-        Ks : tuple of int
-            Size of the two-dimensional signal
-
-        Returns
-        -------
-        Y : np.ndarray of shape Ks
-            two-dimensional signal containing the trajectory at k0
-        """
-
-        traj_index, traj  = trajectory
-        mappedtraj = np.full(Ks, np.nan)
-        for t, ij in zip(traj.ravel(), traj_index.reshape(-1, 2)):
-            mappedtraj[int(ij[0]+k0[0]), int(ij[1]+k0[1])] = t
-
-        return mappedtraj

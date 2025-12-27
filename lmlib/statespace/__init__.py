@@ -27,9 +27,9 @@ with extensions from [Zalmai2017]_ , [Wildhaber2019]_ and [Baeriswyl2025]_.
 """
 
 from .model import *
-# from .cost import *
-from .cost_v2 import *
+from .cost import *
 from .trajectory import *
+from .window import *
 from .rls import *
 from .applications import *
 from .backend import *

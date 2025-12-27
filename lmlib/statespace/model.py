@@ -15,10 +15,9 @@ from collections.abc import Iterable
 import re
 import numpy as np
 import numpy.typing as npt
-
 from numpy.linalg import matrix_power
-
 from scipy.linalg import block_diag, pascal
+
 from lmlib.utils import *
 from lmlib.statespace.backends.statespace_tools import *
 
@@ -51,8 +50,8 @@ class ModelBase(ABC):
         self.force_MC = force_MC
 
     def __str__(self):
-        A_str = re.sub('\s+', ',', np.array_str(self.A).replace('\n', '')).replace('[,', '[')
-        C_str = re.sub('\s+', ',', np.array_str(self.C).replace('\n', '')).replace('[,', '[')
+        A_str = re.sub('\n+', ',', np.array_str(self.A).replace('\n', '')).replace('[,', '[')
+        C_str = re.sub('\n+', ',', np.array_str(self.C).replace('\n', '')).replace('[,', '[')
         return f'{type(self).__name__}(A={A_str}, C={C_str}, label={self.label})'
 
     @abstractmethod
@@ -120,7 +119,6 @@ class ModelBase(ABC):
         """int, None : Alssm output dimension :math:`Q`"""
         return self._C.shape[0] if np.ndim(self._C) == 2 else None
 
-
     @property
     def alssms(self) -> list:
         """list : Set of models"""
@@ -168,162 +166,45 @@ class ModelBase(ABC):
         """bool : returns True if 'C' is MultiChannel (2d)"""
         return np.ndim(self._C) == 2
 
-    def eval_states(self, xs):
-        r"""
-        Evaluation of the ALSSM for state vectors `xs`.
-
-        `eval_states(...)` returns the ALSSM output
-
-        .. math::
-            s_0(x) = CA^0x = Cx
-
-        for each state vector :math:`x` from the array `xs`
-
-
-        Parameters
-        ----------
-        xs : array_like of shape=(..., N)
-            Array of state state vectors :math:`x`.
-            The last dimension must be of size N. Any number of
-            leading dimensions (`...`) are supported, and the function will be
-            applied independently to each slice along these dimensions.
-
-
-        Returns
-        -------
-        s : :class:`~numpy.ndarray` of shape=(...[,L])
-            ALSSM output
-            For each input slice of shape (N,), the function produces
-            an output of shape ([L,]). The leading dimensions (`...`) are preserved,
-            so the result has the same batch shape as the input.
-
-        Notes
-        -----
-        This function vectorizes over the leading dimensions. That is, if the input
-        has shape (a, b, N), the function is applied independently to each of the
-        `a * b` slices of shape (N,), producing an output of shape (a, b, L).
-
-        |def_N|
-        |def_Q|
-
-        Examples
-        --------
-
-        >>> import lmlib as lm
-        >>>
-        >>> A = [[1, 1], [0, 1]]
-        >>> C = [1, 0]
-        >>> alssm = lm.Alssm(A, C, label='line')
-        >>>
-        >>> xs = np.array([[0.1, 3], [0, 1], [-0.8, 0.2], [1, -3]])
-        >>> s = alssm.eval_states(xs)
-        >>> print(s)
-        [ 0.1  0.  -0.8  1. ]
-
+    def eval_states(self, xs, js=None):
         """
-        if self.is_MC:
-            return np.einsum('ln, ...n->...l', self.C, xs)
-        else:
-            return np.einsum('n, ...n', self.C, xs)
+        Evaluate ALSSM outputs.
 
-    def eval_state(self, x):
-        r"""
-        Evaluates the ALSSM output for a fixed initial state vector `x`.
-
-        `eval_state(...)` returns the ALSSM output
-
-        .. Math::
-            s_0(x) = CA^0x = Cx
-
-        For a state vector :math:`x`.
-
+        If js is None:
+            s(x) = C x
+        If js is provided:
+            s_j(x) = C A^j x
 
         Parameters
         ----------
-        x : array_like of shape=(N,)
-           State vector :math:`x`
-
-        Returns
-        -------
-        s : :class:`~numpy.ndarray` of shape=([L,])
-            ALSSM output
-
-        Notes
-        -----
-        |def_N|
-        |def_Q|
-
-        See Also
-        --------
-        eval_states : evaluation of the ALSSM for multiple state vectors `xs`.
-
-        Examples
-        --------
-
-        >>> import lmlib as lm
-        >>>
-        >>> A = [[1, 1], [0, 1]]
-        >>> C = [1, 0]
-        >>> alssm = lm.Alssm(A, C, label='line')
-        >>>
-        >>> x = [0.1, 3]
-        >>> s = alssm.eval_state(x)
-        >>> print(s)
-        0.1
-
-        """
-
-        return np.tensordot(self.C, x, axes=(-1, 0))
-
-    def trajectory(self, x, js) -> npt.NDArray:
-        r"""
-        Evaluates the ALSSM output for many time points (time indices `js`) with a fix initial state vector `x`.
-
-        `trajectory(...)` returns the ALSSM output
-
-        .. Math::
-            s_j(x) = CA^jx = Cx
-
-        For a state vector :math:`x` and index :math:`j` in the list `js`
-
-
-        Parameters
-        ----------
-        x : array_like of shape=(N)
-            State vector :math:`x`
-        js : array_like of shape=(J,)
+        xs : array_like, shape=(..., N)
+            State vector(s)
+        js : array_like, optional, shape=(J,)
             ALSSM evaluation indices
 
         Returns
         -------
-        s : :class:`~numpy.ndarray` of shape=(J [,L])
-            ALSSM outputs
-
-        Notes
-        -----
-        |def_N|
-        |def_Q|
-        |def_j_index|
-        |def_J|
-
-        Examples
-        --------
-
-        >>> import lmlib as lm
-        >>>
-        >>> A = [[1, 1], [0, 1]]
-        >>> C = [1, 0]
-        >>> alssm = lm.Alssm(A, C, label='line')
-        >>>
-        >>> x = [0.1, 3]
-        >>> s = alssm.trajectory(x, js=[0, 1, 2, 3, 4, 5])
-        >>> print(s)
-
+        s : ndarray
+            If js is None:
+                shape=(..., [L])
+            If js is provided:
+                shape=(J, ..., [L])
         """
-        if self.is_MC:
-            return np.asarray([np.einsum('ln, ...n->...l', self.C @ matrix_power(self.A, j), x) for j in js])
-        else:
-            return np.asarray([np.einsum('n, ...n->...', self.C @ matrix_power(self.A, j), x) for j in js])
+        xs = np.asarray(xs)
+
+        # Ensure last axis is state dimension
+        if xs.shape[-1] != self.N:
+            raise ValueError(f"Last dimension of xs must be {self.N}")
+
+        # No propagation: s = C x
+        if js is None:
+            _subscript = 'ln,...n->...l' if self.is_MC else 'n,...n->...'
+            return np.einsum(_subscript, self.C, xs)
+
+        # Propagation: s_j = C A^j x
+        A_powers = [matrix_power(self.A, int(j)) for j in js]
+        _subscript = 'ln,...n->...l' if self.is_MC else 'n,...n->...'
+        return np.asarray([np.einsum(_subscript, self.C @ Aj, xs) for Aj in A_powers])
 
     def dump_tree(self) -> str:
         """
@@ -433,6 +314,9 @@ class ModelBase(ABC):
             if label == l:
                 return indices
         return []
+
+    def get_model_output_dimension(self):
+        return self.Q
 
     def _broadcast_C_to_multichannel(self):
         if self.force_MC:

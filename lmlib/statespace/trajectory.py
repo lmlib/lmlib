@@ -1,6 +1,5 @@
 import numpy as np
-from lmlib.statespace.cost_v2 import CostSegment, CompositeCost
-from lmlib.statespace.segment import window_range
+from lmlib.statespace.cost import CostSegment, CompositeCost
 
 import warnings
 
@@ -28,25 +27,22 @@ class Trajectory:
 
         Returns
         -------
-        out : ndarray of shape (..., P)
+        out : ndarray of shape (P, ...)
             For each state vector in `xs` and Cost-Segment in `cost`, returns a tuple of (window_range, trajectory)
 
         Examples
         --------
         TODO
         """
+        xs = np.asarray(xs)
+        cost_segments = cost._get_cost_segments(F)
+        XS = xs.shape[:-1]
 
-        if isinstance(cost, CostSegment):
-            cost_segments = [cost]
-        elif isinstance(cost, CompositeCost):
-            cost_segments = cost._get_cost_segments(F)
-        else:
-            raise ValueError('cost must be CostSegment or CompositeCost')
-
-        out = np.empty(xs.shape[:-1] + (len(cost_segments),), dtype=tuple)
-        ab_ranges = [window_range(cs.segment, thd) for cs in cost_segments]
-        for *idx, p in np.ndindex(out.shape):
-            out[*idx][p] = ab_ranges[p], cost_segments[p].alssm.trajectory(xs[*idx], ab_ranges[p])
+        out = np.empty((len(cost_segments), *XS), dtype=tuple)
+        for p, cs in enumerate(cost_segments):
+            ab_range = cs.segment._ab_range(thd)
+            for idx in np.ndindex(XS):
+                out[p][*idx] = ab_range, cs.alssm.eval_states(xs[*idx], ab_range)
         return out
 
     @staticmethod
@@ -63,13 +59,13 @@ class Trajectory:
             CostSegment or CompositeCost to compute trajectories for
         xs : array_like of shape (..., N)
             Array of state vectors defining the trajectories. Last Dimension must be the state dimension.
-        ks : sequence of int
-            A sequence of indices representing the mapping to be applied.
+        ks : array_like of shape (XS,)
+            A list of indices representing the mapping to be applied.
         K : int
             Length of the resulting mapped output array (first dimension size).
-        merged_ks : bool, optional
+        merged_ks : bool, optional  TODO: default value
             If True, merges the `ks` dimension using the maximum value along axis 1. Defaults to False.
-        merged_seg : bool, optional
+        merged_seg : bool, optional TODO: default value
             If True, merges values along the last trajectory dimension using the maximum value.
             Defaults to False.
         F : None, array_like of shape (M, P)
@@ -82,10 +78,10 @@ class Trajectory:
 
         Returns
         -------
-        numpy.ndarray of shape (K, [XS,] [multi_dim], [P,])
+        numpy.ndarray of shape ([P,] [XS,] [...], K )
             A multi-dimensional mapped output array based on the input conditions and mapping indices. If
             `merged_ks` is enabled, the array will be reduced along the `ks` dimension (second dimension) axis using the
-            maximum value. If `merged_seg` is enabled, the array is further reduced along the last axis.
+            maximum value. If `merged_seg` is enabled, the array is further reduced along the first axis.
 
 
         Notes
@@ -105,19 +101,19 @@ class Trajectory:
             return np.full(K, fill_value=fill_value)
 
         trajs = Trajectory.get_local(cost, xs, F, thd)
-        xs_dim, *multi_dim, P = trajs.shape
+        P, xs_dim, *multi_dim = trajs.shape
 
-        out = np.full((K, xs_dim, *multi_dim, P), fill_value=fill_value)
-        for xs_idx, *multi_idx, p in np.ndindex(trajs.shape):
-            ab_range, traj = trajs[xs_idx][*multi_idx][p]
-            out[ks[xs_idx]+ab_range, xs_idx, ..., p] = traj
+        out = np.full((P, xs_dim, *multi_dim, K), fill_value=fill_value)
+        for p, xs_idx, *multi_idx in np.ndindex(trajs.shape):
+            ab_range, traj = trajs[p, xs_idx, *multi_idx]
+            out[p, xs_idx, ...,  ks[xs_idx]+np.array(ab_range)] = traj
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)
             if merged_ks:
                 out = np.nanmax(out, axis=1)
             if merged_seg:
-                out = np.nanmax(out, axis=-1)
+                out = np.nanmax(out, axis=0)
 
         return out
 
