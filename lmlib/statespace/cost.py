@@ -465,7 +465,7 @@ class NDCompositeCost(BaseCost, ABC):
 
         # check alssm output dimensions L
         Qs = np.array([cost.get_model_output_dimension() for cost in costs])
-        assert np.all(Qs == Qs[0]), 'Output Dimension of composite costs do not match'
+        assert np.all(Qs == Qs[0]), 'Output Dimension of CompositeCosts do not match'
 
         self._costs = costs
 
@@ -481,7 +481,7 @@ class NDCompositeCost(BaseCost, ABC):
         return int(np.prod(cost.get_model_order() for cost in self.costs))
 
     def get_model_output_dimension(self):
-        return self.costs[0].get_model_output_dimension()
+        return(cost.get_model_output_dimension() for cost in self.costs)
 
     def get_steady_state_W(self, dim_order=None, method='closed_form'):
         if dim_order is None:

@@ -1394,6 +1394,8 @@ class RLSAlssm(NDRLSAlssm):
 
 
 def _xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, backend, filter_form):
+    # Equation 47 in Baeriswyl2025
+
     Nq_prev = xi_prev.shape[-1]
     INq = np.eye(Nq_prev)
     A = kron_q(alssm.A, q)
@@ -1409,6 +1411,7 @@ def _xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, bac
 
 
 def _xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form):
+    # Equation 18 in Baeriswyl2025
 
     if backend == 'numpy':
         if q == 2:

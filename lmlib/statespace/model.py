@@ -116,8 +116,8 @@ class ModelBase(ABC):
 
     @property
     def Q(self):
-        """int, None : Alssm output dimension :math:`Q`"""
-        return self._C.shape[0] if np.ndim(self._C) == 2 else None
+        """int : Alssm output dimension :math:`Q`"""
+        return self._C.shape[0] if np.ndim(self._C) == 2 else 0
 
     @property
     def alssms(self) -> list:
