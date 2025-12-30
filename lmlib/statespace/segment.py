@@ -1,7 +1,6 @@
-from typing import Union, Iterable
+from typing import Union
 import warnings
 import numpy as np
-from lmlib.statespace.backends.statespace_tools import _window_range
 
 __all__ = ['FW', 'FORWARD', 'BW', 'BACKWARD', 'Segment']
 
@@ -251,6 +250,6 @@ class Segment:
 
         """
 
-        ab_range = _window_range(self.a, self.b, self.direction, self.gamma, self.delta, thd)
+        ab_range = self._ab_range(thd=thd)
         return ab_range, self.gamma ** (np.array(ab_range) - self.delta)
 

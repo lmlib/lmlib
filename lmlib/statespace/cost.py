@@ -16,12 +16,11 @@ import numpy as np
 from typing import Iterable, Union, List
 from lmlib.utils.check import *
 
-from lmlib.statespace.model import ModelBase, AlssmSum
+from lmlib.statespace.model import ModelBase, AlssmSum, AlssmProd
 from lmlib.statespace.segment import Segment
+from lmlib.statespace.backends.steady_state import *
 
-__all__ = ['CostSegment', 'CompositeCost']
-
-
+__all__ = ['CostSegment', 'CompositeCost', 'NDCompositeCost', 'ConstrainMatrix']
 
 
 class BaseCost(ABC):
@@ -33,10 +32,6 @@ class BaseCost(ABC):
 
     def _get_sub_cost(self, dim=None, seg=None):
         return self
-
-    def _get_cost_segments(self, F=None):
-        """Returns list of the updated CostSegments (modified by F if provided)."""
-        return [self]
 
     @property
     def label(self):
@@ -86,6 +81,7 @@ class BaseCost(ABC):
         """int : Number of dimensions of the cost function"""
         pass
 
+
 class BaseCost1d(ABC):
 
     @abstractmethod
@@ -126,8 +122,11 @@ class BaseCost1d(ABC):
         """
         pass
 
-    def get_number_of_dimensions(self):
-        return 1
+    @abstractmethod
+    def get_alssms(self):
+        """Returns the list of internal ALSSMs."""
+        pass
+
 
 class CostSegment(BaseCost, BaseCost1d, ABC):
     r"""
@@ -220,8 +219,16 @@ class CostSegment(BaseCost, BaseCost1d, ABC):
         assert isinstance(segment, Segment), 'element in segments is not instance of Segment'
         self._segment = segment
 
+    def _get_cost_segments(self, F=None, force_MC=False):
+        """Returns a list of the updated CostSegments (modified by F or force_MC if provided)."""
+        alssm = AlssmSum([self.alssm], [1], force_MC=force_MC)
+        return [CostSegment(alssm, self.segment, self.label)]
+
     def get_model_order(self) -> int:
         return self.alssm.N
+
+    def get_number_of_dimensions(self):
+        return 1
 
     def get_model_output_dimension(self) -> int:
         return self.alssm.get_model_output_dimension()
@@ -232,9 +239,9 @@ class CostSegment(BaseCost, BaseCost1d, ABC):
         a, b, delta = self.segment.a, self.segment.b, self.segment.delta
 
         if method == 'closed_form':
-            return _covariance_matrix_closed_form(A, C, gamma, a, b, delta)
+            return covariance_matrix_closed_form(A, C, gamma, a, b, delta)
         elif method == 'limited_sum':
-            return _covariance_matrix_limited_sum(A, C, gamma, a, b, delta)
+            return covariance_matrix_limited_sum(A, C, gamma, a, b, delta)
         else:
             raise NotImplementedError(f'unknown method {method}')
 
@@ -244,6 +251,8 @@ class CostSegment(BaseCost, BaseCost1d, ABC):
     def eval_alssm_output(self, xs, alssm_weights=None):
         return AlssmSum([self.alssm], alssm_weights).eval_states(xs)
 
+    def get_alssms(self):
+        return [self.alssm]
 
 class CompositeCost(BaseCost, BaseCost1d, ABC):
     r"""
@@ -364,12 +373,12 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
         """Iterate over cost segments."""
         return iter(self._get_cost_segments())
 
-    def _get_cost_segments(self, F=None):
+    def _get_cost_segments(self, F=None, force_MC=False):
         """Returns list of the updated CostSegments (modified by F if provided)."""
         F_ = self.F if F is None else F
         cost_segments = []
         for p, segment in enumerate(self.segments):
-            alssm = AlssmSum(self.alssms, F_[:, p])
+            alssm = AlssmSum(self.alssms, F_[:, p], force_MC=force_MC)
             cost_segment = CostSegment(alssm, segment, self.label + '-' + str(p))
             cost_segments.append(cost_segment)
         return cost_segments
@@ -378,7 +387,7 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
         """Returns a specific CostSegment by segment index."""
         if seg is None:
             # if no segment specified, return all segments as list
-            return self._get_cost_segments()
+            return self
         return self._get_cost_segments()[seg]
 
     @property
@@ -419,6 +428,9 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
     def get_model_output_dimension(self):
         return self._get_sub_cost(seg=0).get_model_output_dimension()
 
+    def get_number_of_dimensions(self):
+        return 1
+
     def get_steady_state_W(self, dim_order=None, method='closed_form'):
         N = self.get_model_order()
         W = np.zeros((N, N))
@@ -433,6 +445,8 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
     def get_state_var_indices(self, label):
         return AlssmSum(self.alssms, label='cost').get_state_var_indices('cost.' + label)
 
+    def get_alssms(self):
+        return self.alssms
 
 class NDCompositeCost(BaseCost, ABC):
 
@@ -478,10 +492,10 @@ class NDCompositeCost(BaseCost, ABC):
         return self.L
 
     def get_model_order(self):
-        return int(np.prod(cost.get_model_order() for cost in self.costs))
+        return int(np.prod([cost.get_model_order() for cost in self.costs]))
 
     def get_model_output_dimension(self):
-        return(cost.get_model_output_dimension() for cost in self.costs)
+        return self.costs[0].get_model_output_dimension()
 
     def get_steady_state_W(self, dim_order=None, method='closed_form'):
         if dim_order is None:
@@ -492,6 +506,31 @@ class NDCompositeCost(BaseCost, ABC):
             W = np.kron(W, self.costs[n].get_steady_state_W(method))
         return W
 
+    def eval_alssm_output(self, xs, nd_alssm_weights=None):
+        """
+        Evaluate n-dimensional Alssm output
+
+        Parameters
+        ----------
+        xs : array_like of shape(..., N)
+            states at which to evaluate the output
+        nd_alssm_weights : array_like of shape(L, M), optional
+            Alssm weights for each dimension
+
+        Returns
+        -------
+        ndarray of shape(..., [Q])
+            Alssm output for each state in xs
+        """
+        alssms = []
+        for l in range(self.L):
+            sub_cost = self._get_sub_cost(dim=l)
+            if nd_alssm_weights is not None:
+                alssms.append(AlssmSum(sub_cost.alssms, nd_alssm_weights[l]))
+            else:
+                alssms.append(AlssmSum(sub_cost.alssms))
+        alssm = AlssmProd(alssms)
+        return alssm.eval_states(xs)
 
 class ConstrainMatrix:
     """
