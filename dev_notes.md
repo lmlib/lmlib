@@ -19,14 +19,14 @@
 
   Remove argument betas in `RLSAlssm(betas=...)` Constructor
 
-  **Decision:**
+  **Decision:** As suggested.
 ---
 
 - Change the variable of sample weight "v" to "w". Close usage to another variable named v (rls.minimize_v())
   ```
   rls.minimize_filter_v(y, v, H, h) # v has both different meaning
   ```
-  **Decision:**
+  **Decision:** sample_weights as name instead of v rls.minimize_filter_v(y, H, h, sample_weights)
 ---
 - Change minimize_v/x to minimize(output='x'/'v') same for filter_minimize_x/v/yhat.
   -> less functions/documentation
@@ -39,20 +39,28 @@
   vs = rls.filter_minimize(y, H, h, output='x')
   y_hat = rls.filter_minimize(y, H, h, output='y_hat')
   ```
-  **Decision:**
+  **Decision:**  Rejected
 ---
 
 - change name of filter_minimize() --> suggestion: rls.solve(y)
   ```
   rls = RLSAlssm(cost)
-  xs = rls.solve(y)
+  y_hat = rls.solve(y)
+  
+  
   vs = rls.solve(y, H, output='v')
-  y_hat = rls.solve(y, output='y_hat')
+  
+  y_hat, ... = rls.solve(y, output=('y_hat', 'x', 'error'))
   ```
   other names rls.estimate(y) or rls.fit(y) (both imply y_hat as output)
   
-  **Decision:**
+  **Decision:**   y_hat, ...  = rls.fit(y, output=str, list of names ()) (fitler, minizimze, alssm_output)
+
 ---
+
+- lcr = rls.lcr(y, H0, H1=Identity, h0=None, h1=None, output=lcr, (....))
+
+  **Decision:**  Accepted
 
 - Trajectory and Window class method naming and default values. Suggestion:
   ```
@@ -64,19 +72,26 @@
   If user likes to deep-dive with plot change parameters.
   
   **Decision:**
----
+  ```
+  trajs = Trajectory.eval(cost, xs, F=None, thd=1e-6)
+  trajs = Trajectory.eval_y(cost, xs, ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan)
+  ```
+--- 
 
 - Naming of cost.eval_alssm_output(xs) and alssm.eval_states(xs)?
   Concerns: alssm.eval_states(xs) results in an alssm output. Why not use alssm.output(xs)?
   Then cost.alssm_output(xs) makes sense.
   eval_....(xs) implies more an assessment/judgment of the output in compare to xs
 
-- **Decision:**
+- **Decision:** alssm.eval_output(xs)
 ---
 
 ---
 
 - Naming of NDCompsiteCost.costs or other name? nd_costs?
 - Naming if RLSAlssm(cost?) or better cost_model?
-- **Decision:**
+
+
+- **Decision:** nameing cost_terms for nd_costs or cost_model
+
 ---

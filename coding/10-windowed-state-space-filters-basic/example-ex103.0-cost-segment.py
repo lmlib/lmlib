@@ -54,6 +54,12 @@ axs[0].set(ylim=[0, 2.1])
 for n, trajectory_p in enumerate(trajectories):
     js, trajectory = trajectory_p[0]
     axs[1].plot(js, trajectory, lw=1.5, label='trajectory $s_j(x_' + str(n) + ') = cA^jx_' + str(n) + '$')
+
+# ideas for alternative plotting functions:
+# ax = traj_obj.plot_merged(axs[1], lw=1.5, label='trajectory $s_j$')
+# ax = traj_obj.plot_merged_segments(axs[1], lw=1.5, label=['trajectory $s_j$' for ..])
+# ax = traj_obj.plot_merged_states(axs[1], lw=1.5, label=['trajectory $s_j$' for ..])
+
 axs[1].set_xlabel('Evaluation Index $j$')
 axs[1].axvline(0, color="black", linestyle="--", lw=0.5)
 axs[1].axvline(a, color="gray", linestyle="-", lw=0.5)
