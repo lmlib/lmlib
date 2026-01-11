@@ -37,14 +37,14 @@ class RLSAlssm:
 
         self._Ks = ()
         self._Ns = ()
-        self._N = cost.get_model_order()
+        self._N = cost.get_alssm_order()
 
         self._xi0 = None
         self._xi1 = None
         self._xi2 = None
         self._nu = None
 
-    def filter(self, y, w=None, dim_order=None):
+    def filter(self, y, sample_weights=None, dim_order=None):
 
         # -------- check dimension order --------
         L = self.cost.get_number_of_dimensions()
@@ -53,7 +53,7 @@ class RLSAlssm:
         assert len(dim_order) == L, f'dim_order has wrong length, {info_str_found_shape(dim_order)}'
 
         # -------- broadcast and check y --------
-        Q = self.cost.get_model_output_dimension()
+        Q = self.cost.get_alssm_output_dimension()
         y = np.asarray(y)
         if isinstance(self.cost, (CompositeCost, CostSegment)):
             if Q is 0: # scalar output
@@ -80,12 +80,12 @@ class RLSAlssm:
                 raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
 
         # -------- check sample weight --------
-        if w is None:
+        if sample_weights is None:
             # each element points to the same memory-location
-            w = np.broadcast_to(1., y.shape[:-1])
+            sample_weights = np.broadcast_to(1., y.shape[:-1])
         else:
-            if np.shape(w) == y.shape[:-1]:
-                raise ValueError(f'w has wrong shape, {info_str_found_shape(w)}')
+            if np.shape(sample_weights) == y.shape[:-1]:
+                raise ValueError(f'sample_weights has wrong shape, {info_str_found_shape(sample_weights)}')
 
         # -------- calc xi2 --------
         if self.steady_state:
@@ -94,11 +94,11 @@ class RLSAlssm:
             q = 2
 
             # first dimension
-            xi_prev = self._nd_xi_q_recursion(q, y, w, dim_order[0])
+            xi_prev = self._nd_xi_q_recursion(q, y, sample_weights, dim_order[0])
 
             # n-dimensions
             for nd_dim in dim_order[1:]:
-                xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, w, nd_dim)
+                xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, sample_weights, nd_dim)
 
             self._xi2 = xi_prev
 
@@ -107,11 +107,11 @@ class RLSAlssm:
             q = 1
 
             # first dimension
-            xi_prev = self._nd_xi_q_recursion(q, y, w, dim_order[0])
+            xi_prev = self._nd_xi_q_recursion(q, y, sample_weights, dim_order[0])
 
             # n-dimensions
             for nd_dim in dim_order[1:]:
-                xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, w, nd_dim)
+                xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, sample_weights, nd_dim)
 
             self._xi1 = xi_prev
 
@@ -120,11 +120,11 @@ class RLSAlssm:
             q = 0
 
             # first dimension
-            xi_prev = self._nd_xi_q_recursion(q, y, w, dim_order[0])
+            xi_prev = self._nd_xi_q_recursion(q, y, sample_weights, dim_order[0])
 
             # n-dimensions
             for nd_dim in dim_order[1:]:
-                xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, w, nd_dim)
+                xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, sample_weights, nd_dim)
 
             self._xi0 = xi_prev[..., 0]  # remove the last dimension  due to leftovers of nd-model-order
 
@@ -136,11 +136,11 @@ class RLSAlssm:
         pass
 
 
-    def _nd_xi_q_recursion(self, q, y, w, model_dimension):
+    def _nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
 
-        sub_cost = self.cost._get_sub_cost(model_dimension)
+        sub_cost = self.cost._get_sub_cost_term(model_dimension)
         # betas = self.nd_betas[model_dimension] # todo
-        N = sub_cost.get_model_order()
+        N = sub_cost.get_alssm_order()
         *Ks, Q = np.shape(y)
         xi_curr = np.zeros((*Ks, N ** q,)) # the last dimension is the nd-model-order
 
@@ -152,27 +152,25 @@ class RLSAlssm:
         _xi_curr = np.reshape(_xi_curr, (-1, *_xi_curr.shape[-2:]))
         _y = np.moveaxis(y, model_dimension, -2) # to the second last dimension, last is the model output dimension
         _y = np.reshape(_y, (-1, *_y.shape[-2:]))
-        _w = np.moveaxis(w, model_dimension, -1) # to the last dimension, no model output dimension
-        _w = np.reshape(_w, (-1, *_w.shape[-1:]))
+        _sample_weights = np.moveaxis(sample_weights, model_dimension, -1) # to the last dimension, no model output dimension
+        _sample_weights = np.reshape(_sample_weights, (-1, *_sample_weights.shape[-1:]))
 
         # iterate over CostSegments
         for cs in sub_cost._get_cost_segments(force_MC=True):
-            beta = 1 # todo
-
             # backend recursion
             for i in range(_y.shape[0]):
                 xi_q_recursion(_xi_curr[i], q,
                                cs.alssm, cs.segment,
-                               _y[i], _w[i],
-                               beta, self.backend, self.filter_form)
+                               _y[i], _sample_weights[i],
+                               cs.beta, self.backend, self.filter_form)
 
         return xi_curr
 
-    def _nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, w, model_dimension):
+    def _nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, sample_weights, model_dimension):
 
-        sub_cost = self.cost._get_sub_cost(model_dimension)
+        sub_cost = self.cost._get_sub_cost_term(model_dimension)
         # betas = self.nd_betas[model_dimension] # todo
-        N = sub_cost.get_model_order()
+        N = sub_cost.get_alssm_order()
         Nq_prev = xi_prev.shape[-1]
         *Ks, Q = np.shape(y)
         xi_curr = np.zeros((*Ks, Nq_prev * N ** q,)) # the last dimension is the nd-model-order
@@ -180,16 +178,15 @@ class RLSAlssm:
         # move subarray to first dimensions (returns a view)
         _xi_curr = np.moveaxis(xi_curr, model_dimension, 0)
         _xi_prev = np.moveaxis(xi_prev, model_dimension, 0)
-        _w = np.moveaxis(w, model_dimension, 0)
+        _sample_weights = np.moveaxis(sample_weights, model_dimension, 0)
 
         # cost segments
         # iterate over CostSegments
         for cs in sub_cost._get_cost_segments(force_MC=True):
-            beta = 1  # todo
 
             xi_q_asterisk_l_recursion(_xi_curr, q,
                                       cs.alssm, cs.segment,
-                                      _xi_prev, _w,
-                                      beta, self.backend, self.filter_form)
+                                      _xi_prev, _sample_weights,
+                                      cs.beta, self.backend, self.filter_form)
         return xi_curr
 

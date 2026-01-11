@@ -30,7 +30,7 @@ class BaseCost(ABC):
         """Default iterator: yield self (leaf behavior)."""
         yield self
 
-    def _get_sub_cost(self, dim=None, seg=None):
+    def _get_sub_cost_term(self, dim=None, seg=None):
         return self
 
     @property
@@ -44,12 +44,12 @@ class BaseCost(ABC):
         self._label = label
 
     @abstractmethod
-    def get_model_order(self):
+    def get_alssm_order(self):
         """int : Order of the (stacked) Alssm Model"""
         pass
 
     @abstractmethod
-    def get_model_output_dimension(self):
+    def get_alssm_output_dimension(self):
         """int : Output dimension of the Alssm"""
         pass
 
@@ -171,8 +171,10 @@ class CostSegment(BaseCost, BaseCost1d, ABC):
     ----------
     alssm : ModelBase
         ALSSM, defining the signal model
-    segment : Segment
+    segment : :class:`.Segment`
         Segment, defining the window
+    beta : float, optional
+        Scaling factor on each cost term. beta >= 0.0, default: 1.0
     label : str, optional
         Label of CostSegment, default: 'n/a'
 
@@ -191,9 +193,10 @@ class CostSegment(BaseCost, BaseCost1d, ABC):
 
     """
 
-    def __init__(self, alssm, segment, label='n/a'):
+    def __init__(self, alssm, segment, beta=1.0, label='n/a'):
         self.alssm = alssm
         self.segment = segment
+        self.beta = beta
         self.label = label
 
     def __str__(self):
@@ -219,19 +222,30 @@ class CostSegment(BaseCost, BaseCost1d, ABC):
         assert isinstance(segment, Segment), 'element in segments is not instance of Segment'
         self._segment = segment
 
+    @property
+    def beta(self):
+        """float : Scaling factor on CostSegment"""
+        return self._beta
+
+    @beta.setter
+    def beta(self, beta):
+        assert np.isscalar(beta), 'beta is not scalar'
+        assert beta >= 0.0, 'beta is negative'
+        self._beta = float(beta)
+
     def _get_cost_segments(self, F=None, force_MC=False):
         """Returns a list of the updated CostSegments (modified by F or force_MC if provided)."""
         alssm = AlssmSum([self.alssm], [1], force_MC=force_MC)
-        return [CostSegment(alssm, self.segment, self.label)]
+        return [CostSegment(alssm, self.segment, self.beta, self.label)]
 
-    def get_model_order(self) -> int:
+    def get_alssm_order(self) -> int:
         return self.alssm.N
 
     def get_number_of_dimensions(self):
         return 1
 
-    def get_model_output_dimension(self) -> int:
-        return self.alssm.get_model_output_dimension()
+    def get_alssm_output_dimension(self) -> int:
+        return self.alssm.get_alssm_output_dimension()
 
     def get_steady_state_W(self, dim_order=None, method='closed_form'):
         A, C = self.alssm.A, self.alssm.C
@@ -246,10 +260,10 @@ class CostSegment(BaseCost, BaseCost1d, ABC):
             raise NotImplementedError(f'unknown method {method}')
 
     def get_state_var_indices(self, label):
-        return self.alssm.get_state_var_indices('cost.' + label)
+        return self.alssm.get_state_var_indices(label)
 
     def eval_alssm_output(self, xs, alssm_weights=None):
-        return AlssmSum([self.alssm], alssm_weights).eval_states(xs)
+        return AlssmSum([self.alssm], alssm_weights).eval_output(xs)
 
     def get_alssms(self):
         return [self.alssm]
@@ -320,6 +334,8 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
         Set of Segments
     F : array_like of shape=(M, P)
         Mapping matrix :math:`F`, maps models to segment
+    betas : array_like of shape=(P,), optional
+        Segment scalars on cost terms, default: all ones
     label : str, optional
         Label of ALSSM, default: 'n/a'
 
@@ -348,7 +364,7 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
 
     """
 
-    def __init__(self, alssms, segments, F, label='n/a'):
+    def __init__(self, alssms, segments, F, betas=None, label='n/a'):
         # set alssms
         assert isinstance(alssms, Iterable), 'alssms is not iterable'
         for alssm in alssms:
@@ -361,7 +377,19 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
             assert isinstance(segment, Segment), 'element in segments is not instance of Segment'
         self._segments = list(segments)
 
+        # set F
         self.F = F
+
+        # set betas
+        if betas is not None:
+            assert is_array_like(betas), 'betas is not array_like'
+            assert betas.shape == (self.P,), f'betas has wrong shape, {info_str_found_shape(betas)}'
+            for beta in betas:
+                assert np.isscalar(beta), 'beta is not scalar'
+                assert beta >= 0.0, 'beta is negative'
+            self._betas = betas
+        else:
+            self._betas = np.ones(self.P)
         self.label = label
 
     def __str__(self):
@@ -379,11 +407,11 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
         cost_segments = []
         for p, segment in enumerate(self.segments):
             alssm = AlssmSum(self.alssms, F_[:, p], force_MC=force_MC)
-            cost_segment = CostSegment(alssm, segment, self.label + '-' + str(p))
+            cost_segment = CostSegment(alssm, segment, self.betas[p], self.label + '-' + str(p))
             cost_segments.append(cost_segment)
         return cost_segments
 
-    def _get_sub_cost(self, dim=None, seg=None):
+    def _get_sub_cost_term(self, dim=None, seg=None):
         """Returns a specific CostSegment by segment index."""
         if seg is None:
             # if no segment specified, return all segments as list
@@ -401,6 +429,16 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
         return self._segments
 
     @property
+    def M(self):
+        """int : Number of Alssms"""
+        return len(self.alssms)
+
+    @property
+    def P(self):
+        """int : Number of Segments"""
+        return len(self.segments)
+
+    @property
     def F(self):
         """:class:`~numpy.ndarray` : Mapping matrix :math:`F`, maps models to segments"""
         return self._F
@@ -413,26 +451,21 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
         self._F = F
 
     @property
-    def M(self):
-        """int : Number of Alssms"""
-        return len(self.alssms)
+    def betas(self):
+        """array_like of shape=(P,) : Segment scalars on cost terms"""
+        return self._betas
 
-    @property
-    def P(self):
-        """int : Number of Segments"""
-        return len(self.segments)
+    def get_alssm_order(self):
+        return self._get_sub_cost_term(seg=0).get_alssm_order()
 
-    def get_model_order(self):
-        return self._get_sub_cost(seg=0).get_model_order()
-
-    def get_model_output_dimension(self):
-        return self._get_sub_cost(seg=0).get_model_output_dimension()
+    def get_alssm_output_dimension(self):
+        return self._get_sub_cost_term(seg=0).get_alssm_output_dimension()
 
     def get_number_of_dimensions(self):
         return 1
 
     def get_steady_state_W(self, dim_order=None, method='closed_form'):
-        N = self.get_model_order()
+        N = self.get_alssm_order()
         W = np.zeros((N, N))
 
         for cost_segment in self:
@@ -440,7 +473,7 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
         return W
 
     def eval_alssm_output(self, xs, alssm_weights=None):
-        return AlssmSum(self.alssms, alssm_weights).eval_states(xs)
+        return AlssmSum(self.alssms, alssm_weights).eval_output(xs)
 
     def get_state_var_indices(self, label):
         return AlssmSum(self.alssms, label='cost').get_state_var_indices('cost.' + label)
@@ -450,35 +483,35 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
 
 class NDCompositeCost(BaseCost, ABC):
 
-    def __init__(self, costs: List[Union[CompositeCost, CostSegment]]):
-        self.costs = costs
+    def __init__(self, cost_terms: List[Union[CompositeCost, CostSegment]]):
+        self.cost_terms = cost_terms
 
     def __iter__(self):
-        return iter(self.costs)
+        return iter(self.cost_terms)
 
-    def _get_sub_cost(self, dim=None, seg=None):
+    def _get_sub_cost_term(self, dim=None, seg=None):
         """Access cost by dimension and/or segment."""
         if dim is None:
-            return self.costs
+            return self.cost_terms
         elif seg is None:
-            return self.costs[dim]
+            return self.cost_terms[dim]
         else:
-            return self.costs[dim]._get_sub_cost(seg=seg)
+            return self.cost_terms[dim]._get_sub_cost_term(seg=seg)
 
     @property
-    def costs(self):
+    def cost_terms(self):
         """Iterable : List/Tuple of CostSegment/CompositeCost"""
         return self._costs
 
-    @costs.setter
-    def costs(self, costs):
+    @cost_terms.setter
+    def cost_terms(self, costs):
 
         # check type
         for cost in costs:
             assert isinstance(cost, (CompositeCost, CostSegment)), 'Element of costs is not a CompositeCost/CostSegment'
 
         # check alssm output dimensions L
-        Qs = np.array([cost.get_model_output_dimension() for cost in costs])
+        Qs = np.array([cost.get_alssm_output_dimension() for cost in costs])
         assert np.all(Qs == Qs[0]), 'Output Dimension of CompositeCosts do not match'
 
         self._costs = costs
@@ -486,16 +519,16 @@ class NDCompositeCost(BaseCost, ABC):
     @property
     def L(self):
         """int : Number of Dimensions/Costs :math:`L`"""
-        return len(self.costs)
+        return len(self.cost_terms)
 
     def get_number_of_dimensions(self):
         return self.L
 
-    def get_model_order(self):
-        return int(np.prod([cost.get_model_order() for cost in self.costs]))
+    def get_alssm_order(self):
+        return int(np.prod([cost.get_alssm_order() for cost in self.cost_terms]))
 
-    def get_model_output_dimension(self):
-        return self.costs[0].get_model_output_dimension()
+    def get_alssm_output_dimension(self):
+        return self.cost_terms[0].get_alssm_output_dimension()
 
     def get_steady_state_W(self, dim_order=None, method='closed_form'):
         if dim_order is None:
@@ -503,7 +536,7 @@ class NDCompositeCost(BaseCost, ABC):
 
         W = [1]
         for n in dim_order:
-            W = np.kron(W, self.costs[n].get_steady_state_W(method))
+            W = np.kron(W, self.cost_terms[n].get_steady_state_W(method))
         return W
 
     def eval_alssm_output(self, xs, nd_alssm_weights=None):
@@ -524,13 +557,13 @@ class NDCompositeCost(BaseCost, ABC):
         """
         alssms = []
         for l in range(self.L):
-            sub_cost = self._get_sub_cost(dim=l)
+            sub_cost = self._get_sub_cost_term(dim=l)
             if nd_alssm_weights is not None:
                 alssms.append(AlssmSum(sub_cost.alssms, nd_alssm_weights[l]))
             else:
                 alssms.append(AlssmSum(sub_cost.alssms))
         alssm = AlssmProd(alssms)
-        return alssm.eval_states(xs)
+        return alssm.eval_output(xs)
 
 class ConstrainMatrix:
     """
@@ -560,7 +593,7 @@ class ConstrainMatrix:
     def __init__(self, cost):
         assert isinstance(cost, (CompositeCost, CostSegment)), 'cost not of type CompositeCost,'
         self._cost = cost
-        self._N = self._cost.get_model_order()
+        self._N = self._cost.get_alssm_order()
         self._data = np.eye(self._N)
 
     def constrain(self, indices, value):

@@ -18,15 +18,15 @@ js = range(-20, 20)  # ALSSM evaluation range
 
 alssm = lm.AlssmPoly(poly_degree=1, label='1th degree')
 x0_d1 = [-1, 2]  # initial state vector
-sx0_d1 = alssm.eval_states(x0_d1, js)
+sx0_d1 = alssm.eval_output(x0_d1, js)
 
 alssm = lm.AlssmPoly(poly_degree=2, label='2nd degree')
 x0_d2 = [-1, 2, .1]  # initial state vector
-sx0_d2 = alssm.eval_states(x0_d2, js)
+sx0_d2 = alssm.eval_output(x0_d2, js)
 
 alssm = lm.AlssmPoly(poly_degree=3, label='3nd degree')
 x0_d3 = [-1, 2, .1, -.01]  # initial state vector
-sx0_d3 = alssm.eval_states(x0_d3, js)
+sx0_d3 = alssm.eval_output(x0_d3, js)
 
 # Printing Model to Console
 print("--DUMP--\n", alssm.dump_tree())

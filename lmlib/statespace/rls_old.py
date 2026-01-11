@@ -779,7 +779,7 @@ class NDRLSAlssm:
 
         self._Ks = ()
         self._Ns = ()
-        self._N = nd_cost_model.get_model_order()
+        self._N = nd_cost_model.get_alssm_order()
 
         self._xi0 = None
         self._xi1 = None
@@ -952,7 +952,7 @@ class NDRLSAlssm:
             assert len(dim_order) == self.L, f'dim_order has wrong length, {info_str_found_shape(dim_order)}'
 
         # check input dimensions
-        Q = self.nd_cost_model.get_model_output_dimension()
+        Q = self.nd_cost_model.get_alssm_output_dimension()
         if Q == ():
             Ks = np.shape(y)
             y_MC = y[..., np.newaxis]
@@ -1022,7 +1022,7 @@ class NDRLSAlssm:
 
         cost_model = self.nd_cost_model.composite_costs[model_dimension]
         betas = self.nd_betas[model_dimension]
-        N = cost_model.get_model_order()
+        N = cost_model.get_alssm_order()
         Ks = np.shape(y)[:-1]
 
         xi_curr = np.zeros(Ks + (N ** q,))
@@ -1048,7 +1048,7 @@ class NDRLSAlssm:
     def _rls_nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, v, model_dimension):
         cost_model = self.nd_cost_model.composite_costs[model_dimension]
         betas = self.nd_betas[model_dimension]
-        N = cost_model.get_model_order()
+        N = cost_model.get_alssm_order()
         Nq_prev = xi_prev.shape[-1]
         Ks = np.shape(y)[:-1]
 
@@ -1344,7 +1344,7 @@ class NDRLSAlssm:
 
 
         nd_alssm = self.nd_cost_model.get_nd_alssm(dim_order=dim_order, alssm_weights=alssm_weights)
-        return nd_alssm.eval_states(xs)
+        return nd_alssm.eval_output(xs)
 
 
 

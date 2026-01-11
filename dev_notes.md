@@ -2,7 +2,6 @@
 
 ## TODOs
 - Change all get_model_... to get_alssm_...
-- Change all sample weights from v to w if decided
 - Nu implementation
 - Covariance steady state for limited sum
 - Complete beta implementation if decided
@@ -20,6 +19,8 @@
   Remove argument betas in `RLSAlssm(betas=...)` Constructor
 
   **Decision:** As suggested.
+  **Added** beta parameter to CostSegment and CompositeCost.
+  **Removed** beta from RLSAlssm constructor.
 ---
 
 - Change the variable of sample weight "v" to "w". Close usage to another variable named v (rls.minimize_v())
@@ -27,6 +28,8 @@
   rls.minimize_filter_v(y, v, H, h) # v has both different meaning
   ```
   **Decision:** sample_weights as name instead of v rls.minimize_filter_v(y, H, h, sample_weights)
+  **Renamed** v to sample_weights.
+- 
 ---
 - Change minimize_v/x to minimize(output='x'/'v') same for filter_minimize_x/v/yhat.
   -> less functions/documentation
@@ -76,6 +79,8 @@
   trajs = Trajectory.eval(cost, xs, F=None, thd=1e-6)
   trajs = Trajectory.eval_y(cost, xs, ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan)
   ```
+  **Renamed** to eval and eval_y.
+
 --- 
 
 - Naming of cost.eval_alssm_output(xs) and alssm.eval_states(xs)?
@@ -83,7 +88,9 @@
   Then cost.alssm_output(xs) makes sense.
   eval_....(xs) implies more an assessment/judgment of the output in compare to xs
 
-- **Decision:** alssm.eval_output(xs)
+  **Decision:** alssm.eval_output(xs)
+  **Renamed** alssm.eval_states(xs) to alssm.eval_output(xs)"
+
 ---
 
 ---
@@ -92,6 +99,7 @@
 - Naming if RLSAlssm(cost?) or better cost_model?
 
 
-- **Decision:** nameing cost_terms for nd_costs or cost_model
-
+  **Decision:** nameing cost_terms for nd_costs or cost_model
+  **Renamed** to costs to cost_terms
 ---
+

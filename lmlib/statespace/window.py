@@ -5,12 +5,12 @@ __all__ = ['Window']
 
 class Window:
     @staticmethod
-    def get_local(cost, segment_indices=None, thd=1e-6):
+    def eval(cost, segment_indices=None, thd=1e-6):
 
         if segment_indices is None:
             cost_segments = cost._get_cost_segments()
         else:
-            cost_segments = [cost._get_sub_cost(seg=p) for p in segment_indices]
+            cost_segments = [cost._get_sub_cost_term(seg=p) for p in segment_indices]
 
         out = np.empty(len(cost_segments), dtype=tuple)
         for p, cs, in enumerate(cost_segments):
@@ -20,14 +20,14 @@ class Window:
         return out
 
     @staticmethod
-    def get_mapped(cost, ks, K, merged_ks=False, merged_seg=False, segment_indices=None, thd=1e-6, fill_value=np.nan):
+    def eval_y(cost, ks, K, merged_ks=True, merged_seg=True, segment_indices=None, thd=1e-6, fill_value=np.nan):
 
         # return an empty array if ks is empty
         if len(ks) == 0:
             print('Warning: ks is empty. Returned empty array of size K.')
             return np.full(K, fill_value=fill_value)
 
-        wins = Window.get_local(cost, segment_indices, thd)
+        wins = Window.eval(cost, segment_indices, thd)
         ks_dim = len(ks)
         P = len(wins)
 

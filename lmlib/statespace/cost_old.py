@@ -550,11 +550,11 @@ class CompositeCost:
         assert np.shape(F) == (len(self.alssms), len(self.segments)), f'F has wrong shape, {info_str_found_shape(F)}'
         self._F = F
 
-    def get_model_order(self):
+    def get_alssm_order(self):
         """int : Order of the (stacked) Alssm Model"""
         return AlssmSum(self.alssms).N
 
-    def get_model_output_dimension(self):
+    def get_alssm_output_dimension(self):
         """tuple : Alssm Output Dimension"""
         alssm = AlssmSum(self.alssms)
         return alssm.C.shape[0]  if alssm.is_MC else ()
@@ -698,7 +698,7 @@ class CompositeCost:
         Wss = `class:numpy.ndarray`
             Steady State Matrix W
         """
-        N = self.get_model_order()
+        N = self.get_alssm_order()
         W = np.zeros((N, N))
         for p, segment in enumerate(self.segments):
             alssm = AlssmSum(self.alssms, self.F[:, p])
@@ -785,7 +785,7 @@ class CompositeCost:
                 alssms.append(alssm_)
             alssm_sum = AlssmSum(alssms, alssm_weights)
 
-        return alssm_sum.eval_states(xs)
+        return alssm_sum.eval_output(xs)
 
     def get_state_var_indices(self, label) -> Iterable[int]:
         """
@@ -913,7 +913,7 @@ class ConstrainMatrix:
     def __init__(self, cost):
         assert isinstance(cost, (CompositeCost, CostSegment)), 'cost not of type CompositeCost,'
         self._cost = cost
-        self._N = self._cost.get_model_order()
+        self._N = self._cost.get_alssm_order()
         self._data = np.eye(self._N)
 
     def constrain(self, indices, value):
@@ -1046,7 +1046,7 @@ class NDCompositeCost:
             assert isinstance(cc, CompositeCost), 'Element of composite_costs is not a CompositeCost'
 
         # check alssm output dimensions L
-        Ls = np.array([cc.get_model_output_dimension() for cc in composite_costs])
+        Ls = np.array([cc.get_alssm_output_dimension() for cc in composite_costs])
         assert np.all(Ls == Ls[0]), 'Output Dimension of composite costs do not match'
 
         self._composite_costs = composite_costs
@@ -1056,9 +1056,9 @@ class NDCompositeCost:
         """int : number of dimensions :math:`L`"""
         return len(self.composite_costs)
 
-    def get_model_order(self) -> int:
+    def get_alssm_order(self) -> int:
         """int : Order of the (stacked, dimension-combined) Alssm Model"""
-        return int(np.prod([cc.get_model_order() for cc in self.composite_costs]))
+        return int(np.prod([cc.get_alssm_order() for cc in self.composite_costs]))
 
     def get_steady_state_W(self, dim_order):
         """
@@ -1079,9 +1079,9 @@ class NDCompositeCost:
             W = np.kron(W, self.composite_costs[n].get_steady_state_W())
         return W
 
-    def get_model_output_dimension(self):
+    def get_alssm_output_dimension(self):
         """returns the ALSSM output dimension 'Q' if the output is a scalar an empty tuple is returned"""
-        return self.composite_costs[0].get_model_output_dimension()
+        return self.composite_costs[0].get_alssm_output_dimension()
 
     def eval_nd_alssm_output(self, xs, dim_order=None, alssm_weights=None):
         """
@@ -1116,7 +1116,7 @@ class NDCompositeCost:
         nd_alssm = self.get_nd_alssm(dim_order=dim_order, alssm_weights=alssm_weights)
         Ks = np.shape(xs)[:-1]
         N = np.shape(xs)[-1]
-        return np.reshape(nd_alssm.eval_states(xs.reshape(-1, N)), *Ks)
+        return np.reshape(nd_alssm.eval_output(xs.reshape(-1, N)), *Ks)
 
     def get_nd_alssm(self, dim_order=None, alssm_weights=None):
         """

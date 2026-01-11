@@ -10,9 +10,9 @@ __all__ = ['Trajectory']
 class Trajectory:
 
     @staticmethod
-    def get_local(cost, xs, F=None, thd=1e-6):
+    def eval(cost, xs, F=None, thd=1e-6):
         """
-        Returns local trajectories of cost segments for each sample in xs
+        Evaluates the trajectories for given state vectors `xs` over the specified `cost`.
 
         Parameters
         ----------
@@ -42,12 +42,14 @@ class Trajectory:
         for p, cs in enumerate(cost_segments):
             ab_range = cs.segment._ab_range(thd)
             for idx in np.ndindex(XS):
-                out[p][*idx] = ab_range, cs.alssm.eval_states(xs[*idx], ab_range)
+                out[p][idx] = ab_range, cs.alssm.eval_output(xs[idx], ab_range)
         return out
 
     @staticmethod
-    def get_mapped(cost, xs, ks, K, merged_ks=False, merged_seg=False, F=None, thd=1e-6, fill_value=np.nan):
-        """Maps trajectories at indices `ks` into a common target output vector of length `K`.
+    def eval_y(cost, xs, ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan):
+        """
+        Evaluates the trajectories for given state vectors `xs` over the specified `cost` and
+        maps trajectories at indices `ks` into a common target output vector of length `K`.
 
         Computes a mapped output array by processing input trajectories and mapping values based on
         conditions. The function allows for optional merging of the `ks` dimension and/or merging along
@@ -63,11 +65,11 @@ class Trajectory:
             A list of indices representing the mapping to be applied.
         K : int
             Length of the resulting mapped output array (first dimension size).
-        merged_ks : bool, optional  TODO: default value
-            If True, merges the `ks` dimension using the maximum value along axis 1. Defaults to False.
-        merged_seg : bool, optional TODO: default value
+        merged_ks : bool, optional
+            If True, merges the `ks` dimension using the maximum value along axis 1. Defaults to True.
+        merged_seg : bool, optional
             If True, merges values along the last trajectory dimension using the maximum value.
-            Defaults to False.
+            Defaults to True.
         F : None, array_like of shape (M, P)
             Mapping matrix :math:`F`, maps models to segment, where the value weights ALSSM Output
         thd : float, optional
@@ -100,12 +102,12 @@ class Trajectory:
             print('Warning: ks is empty. Returned empty array of size K.')
             return np.full(K, fill_value=fill_value)
 
-        trajs = Trajectory.get_local(cost, xs, F, thd)
+        trajs = Trajectory.eval(cost, xs, F, thd)
         P, xs_dim, *multi_dim = trajs.shape
 
         out = np.full((P, xs_dim, *multi_dim, K), fill_value=fill_value)
         for p, xs_idx, *multi_idx in np.ndindex(trajs.shape):
-            ab_range, traj = trajs[p, xs_idx, *multi_idx]
+            ab_range, traj = trajs[(p, xs_idx, *multi_idx)]
             out[p, xs_idx, ...,  ks[xs_idx]+np.array(ab_range)] = traj
 
         with warnings.catch_warnings():

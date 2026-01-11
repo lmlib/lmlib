@@ -166,7 +166,7 @@ class ModelBase(ABC):
         """bool : returns True if 'C' is MultiChannel (2d)"""
         return np.ndim(self._C) == 2
 
-    def eval_states(self, xs, js=None):
+    def eval_output(self, xs, js=None):
         """
         Evaluate ALSSM outputs.
 
@@ -315,7 +315,7 @@ class ModelBase(ABC):
                 return indices
         return []
 
-    def get_model_output_dimension(self):
+    def get_alssm_output_dimension(self):
         return self.Q
 
     def _broadcast_C_to_multichannel(self):
