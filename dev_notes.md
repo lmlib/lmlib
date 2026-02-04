@@ -1,13 +1,15 @@
 # Development Notes
 
 ## TODOs
-- RLSAlssm fit method output multiple outputs (x, v, y_hat, error)
+- Change all function names in examples
+- Add documentation 
+- Optimize code and doc with AI
 - RLSAlssm lcr method implementation
 - Nu implementation
 - Covariance steady state for limited sum
 - Trajectory and Window Class plot method implementation
 - Trajectory and Window Class extended for nd-cost
-
+s
 
 ## Open Questions / Ideas to Discuss
 - Move beta parameter used in recursions from RLSAlssm to CostSegment/CompositeCost/NDCompositeCost.
@@ -59,7 +61,7 @@
   other names rls.estimate(y) or rls.fit(y) (both imply y_hat as output)
   
   **Decision:**   y_hat, ...  = rls.fit(y, output=str, list of names ()) (fitler, minizimze, alssm_output)
-
+  **Added function**  
 ---
 
 - lcr = rls.lcr(y, H0, H1=Identity, h0=None, h1=None, output=lcr, (....))
