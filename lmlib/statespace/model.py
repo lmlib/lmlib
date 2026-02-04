@@ -275,7 +275,7 @@ class ModelBase(ABC):
                 str_tree += alssm._rec_tree(level=level + 1)
         return str_tree
 
-    def get_state_var_labels(self) -> list[str]:
+    def get_state_var_labels(self):
         """
         Returns a list of state variable labels
 
@@ -295,7 +295,7 @@ class ModelBase(ABC):
             N += alssm.N
         return state_list
 
-    def get_state_var_indices(self, label: str)-> list[int]:
+    def get_state_var_indices(self, label):
         """
         Returns the state indices for a specified label
 

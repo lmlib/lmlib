@@ -14,7 +14,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='numpy')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.00078396, 0.00175143, 0.00267136, 0.00290315, 0.00288889, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.00288889, 0.00290315, 0.00267136,
@@ -28,7 +29,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='numpy')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.00078396, 0.00175143, 0.00267136, 0.00290315, 0.00288889, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.00288889, 0.00290315, 0.00267136,
@@ -42,7 +44,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='lfilter')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.00078396, 0.00175143, 0.00267136, 0.00290315, 0.00288889, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.00288889, 0.00290315, 0.00267136,
@@ -56,7 +59,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='lfilter')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.00078396, 0.00175143, 0.00267136, 0.00290315, 0.00288889, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.00288889, 0.00290315, 0.00267136,
@@ -70,7 +74,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='jit')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.00078396, 0.00175143, 0.00267136, 0.00290315, 0.00288889, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.00288889, 0.00290315, 0.00267136,
@@ -84,7 +89,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='jit')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.00078396, 0.00175143, 0.00267136, 0.00290315, 0.00288889, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.00288889, 0.00290315, 0.00267136,
@@ -99,7 +105,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='numpy')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.09217478, 0.17659045, 0.22973486, 0.18450274, 0.07276776, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.07276776, 0.18450274, 0.22973486,
@@ -113,7 +120,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='numpy')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.09217478, 0.17659045, 0.22973486, 0.18450274, 0.07276776, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.07276776, 0.18450274, 0.22973486,
@@ -127,7 +135,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='lfilter')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.09217478, 0.17659045, 0.22973486, 0.18450274, 0.07276776, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.07276776, 0.18450274, 0.22973486,
@@ -141,7 +150,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='lfilter')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.09217478, 0.17659045, 0.22973486, 0.18450274, 0.07276776, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.07276776, 0.18450274, 0.22973486,
@@ -155,7 +165,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='jit')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.09217478, 0.17659045, 0.22973486, 0.18450274, 0.07276776, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.07276776, 0.18450274, 0.22973486,
@@ -169,7 +180,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='jit')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [0.09217478, 0.17659045, 0.22973486, 0.18450274, 0.07276776, 0.00629653,
                  0.02259697, 0.05396076, 0.08716118, 0.10819699, 0.10819699, 0.08716118,
                  0.05396076, 0.02259697, 0.00629653, 0.07276776, 0.18450274, 0.22973486,
@@ -185,7 +197,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='numpy')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [
             [0.00078396, 0.00198539],
             [0.00175143, 0.00838537],
@@ -217,7 +230,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='numpy')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [
             [0.00078396, 0.00198539],
             [0.00175143, 0.00838537],
@@ -249,7 +263,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='lfilter')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [
             [0.00078396, 0.00198539],
             [0.00175143, 0.00838537],
@@ -281,7 +296,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='lfilter')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [
             [0.00078396, 0.00198539],
             [0.00175143, 0.00838537],
@@ -313,7 +329,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='jit')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [
             [0.00078396, 0.00198539],
             [0.00175143, 0.00838537],
@@ -345,7 +362,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=False, backend='jit')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = [
             [0.00078396, 0.00198539],
             [0.00175143, 0.00838537],
@@ -378,7 +396,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='numpy')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error =\
             [[0.09217478, 1.79342604]
             , [0.17659045, 1.28098271]
@@ -410,8 +429,9 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         nd_cost = lm.NDCompositeCost([cost])
-        rls = lm.NDRLSAlssm(nd_cost, steady_state=True, backend='numpy')
-        xs = rls.filter_minimize_x(y, dim_order=[0])
+        rls = lm.RLSAlssm(nd_cost, steady_state=True, backend='numpy')
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = \
             [[0.09217478, 1.79342604]
                 , [0.17659045, 1.28098271]
@@ -443,7 +463,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='lfilter')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = \
             [[0.09217478, 1.79342604]
                 , [0.17659045, 1.28098271]
@@ -475,7 +496,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='lfilter')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = \
             [[0.09217478, 1.79342604]
                 , [0.17659045, 1.28098271]
@@ -507,7 +529,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='jit')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = \
             [[0.09217478, 1.79342604]
                 , [0.17659045, 1.28098271]
@@ -539,7 +562,8 @@ class TestRLSAlssm(unittest.TestCase):
         segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
         cost = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
         rls = lm.RLSAlssm(cost, steady_state=True, backend='jit')
-        xs = rls.filter_minimize_x(y)
+        rls.filter(y)
+        xs = rls.minimize_x()
         error = \
             [[0.09217478, 1.79342604]
                 , [0.17659045, 1.28098271]

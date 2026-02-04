@@ -128,7 +128,7 @@ class BaseCost1d(ABC):
         pass
 
 
-class CostSegment(BaseCost, BaseCost1d, ABC):
+class CostSegment(BaseCost, BaseCost1d):
     r"""
     Quadratic cost function defined by an ALSSM and a Segment.
 
@@ -268,7 +268,7 @@ class CostSegment(BaseCost, BaseCost1d, ABC):
     def get_alssms(self):
         return [self.alssm]
 
-class CompositeCost(BaseCost, BaseCost1d, ABC):
+class CompositeCost(BaseCost, BaseCost1d):
     r"""
     Quadratic cost function defined by a conjunction one or multiple  of :class:`~lmlib.statespace.model.Alssm` and :class:`.Segment`
 
@@ -481,7 +481,7 @@ class CompositeCost(BaseCost, BaseCost1d, ABC):
     def get_alssms(self):
         return self.alssms
 
-class NDCompositeCost(BaseCost, ABC):
+class NDCompositeCost(BaseCost):
 
     def __init__(self, cost_terms: List[Union[CompositeCost, CostSegment]]):
         self.cost_terms = cost_terms

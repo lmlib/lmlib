@@ -2,8 +2,6 @@
 Recursive Least Square Alssm Classes to solve Alssm Cost Functions
 
 
-x
-
 """
 
 import sys
@@ -27,22 +25,54 @@ class RLSAlssm:
     def __init__(self, cost, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=False, filter_form='cascade',
                  backend=None):
         self.cost = cost
-        self.steady_state = steady_state
-        self.calc_W = calc_W
-        self.calc_xi = calc_xi
-        self.calc_kappa = calc_kappa
-        self.calc_nu = calc_nu
-        self.filter_form = filter_form
-        self.backend = backend if backend is not None else get_backend()
+        assert all(isinstance(_, bool) for _ in (steady_state, calc_W, calc_xi, calc_kappa, calc_nu)), \
+            'steady_state, calc_W, calc_xi, calc_kappa and calc_nu must be boolean.'
 
-        self._Ks = ()
-        self._Ns = ()
+        self._steady_state = steady_state
+        self._calc_W = calc_W
+        self._calc_xi = calc_xi
+        self._calc_kappa = calc_kappa
+        self._calc_nu = calc_nu
+
+        self._filter_form = filter_form
+        self._backend = backend if backend is not None else get_backend()
+
         self._N = cost.get_alssm_order()
 
         self._xi0 = None
         self._xi1 = None
         self._xi2 = None
         self._nu = None
+
+    @property
+    def W(self):
+        """:class:`~numpy.ndarray` : Filter Parameter :math:`W`"""
+        if self._xi2 is None:
+            raise ValueError('xi2 has not been calculated. '
+                             'Please run the filter() method with calc_W=True before calling W.')
+        return self._xi2.reshape(self._xi2.shape[:-1] + (self._N, self._N))
+
+    @property
+    def xi(self):
+        """:class:`~numpy.ndarray` :  Filter Parameter :math:`\\xi`"""
+        if self._xi1 is None:
+            raise ValueError('xi1 has not been calculated. '
+                             'Please run the filter() method with calc_xi=True before calling xi.')
+        return self._xi1
+
+    @property
+    def kappa(self):
+        """:class:`~numpy.ndarray` : Filter Parameter :math:`\\kappa`"""
+        if self._xi0 is None:
+            raise ValueError('xi0 has not been calculated. '
+                             'Please run the filter() method with calc_kappa=True before calling kappa.')
+        return self._xi0
+
+    @property
+    def nu(self):
+        """:class:`~numpy.ndarray` : Filter Parameter :math:`\\nu`"""
+        # TODO nu implementation
+        raise NotImplementedError("nu calculation is not yet implemented.")
 
     def filter(self, y, sample_weights=None, dim_order=None):
 
@@ -56,7 +86,7 @@ class RLSAlssm:
         Q = self.cost.get_alssm_output_dimension()
         y = np.asarray(y)
         if isinstance(self.cost, (CompositeCost, CostSegment)):
-            if Q is 0: # scalar output
+            if Q == 0: # scalar output
                 if y.ndim == 1: # 1 dim signal
                     y = y.reshape(-1, 1)
                 elif y.ndim >= 2 and y.shape[-1] != 1: # multi dimension signal (processed in parallel)
@@ -71,7 +101,7 @@ class RLSAlssm:
                     raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
 
         if isinstance(self.cost, NDCompositeCost):
-            if Q is 0: # scalar output
+            if Q == 0: # scalar output
                 if y.ndim == L:
                     y = y.reshape(*y.shape, 1)
                 else:
@@ -88,9 +118,9 @@ class RLSAlssm:
                 raise ValueError(f'sample_weights has wrong shape, {info_str_found_shape(sample_weights)}')
 
         # -------- calc xi2 --------
-        if self.steady_state:
+        if self._steady_state:
             self._xi2 = self.cost.get_steady_state_W(dim_order).flatten()
-        elif self.calc_W and not self.steady_state:
+        elif self._calc_W and not self._steady_state:
             q = 2
 
             # first dimension
@@ -103,7 +133,7 @@ class RLSAlssm:
             self._xi2 = xi_prev
 
         # -------- calc x1 --------
-        if self.calc_xi:
+        if self._calc_xi:
             q = 1
 
             # first dimension
@@ -116,7 +146,7 @@ class RLSAlssm:
             self._xi1 = xi_prev
 
         # -------- calc x0 --------
-        if self.calc_kappa:
+        if self._calc_kappa:
             q = 0
 
             # first dimension
@@ -131,15 +161,60 @@ class RLSAlssm:
         # -------- calc nu --------
         # TODO
 
+    def minimize_v(self, H=None, h=None):
 
-    def minimize(self, H=None, h=None, output='x'):
-        pass
+        _H = np.eye(self._N) if H is None else np.asarray(H)
+        _h = np.zeros(self._N) if h is None else np.asarray(h)
+        assert _H.shape[0] == self._N, f'H has wrong shape, {info_str_found_shape(H)}'
+        assert _h.shape[0] == self._N, f'h has wrong shape, {info_str_found_shape(h)}'
 
+        # constrained minimization
+        if H is None:
+            HTWH = self.W
+        else:
+            HTWH = _H.T @ self.W @ _H
+
+        if h is None:
+            HTxiWh = np.einsum('nm, ...m-> ...n', _H.T, self.xi)
+        else:
+            HTxiWh = np.einsum('nm, ...m-> ...n', _H.T, self.xi - self.W @ _h)
+
+        v = np.full(self.xi.shape[:-1] + (_H.shape[1],), np.nan)
+        msk = cond(HTWH) < 1 / sys.float_info.epsilon
+        if self._steady_state:
+            assert msk, 'H.T @ W @ H is not invertible.'
+            np.einsum('nm, ...m-> ...n', inv(HTWH), HTxiWh, out=v)
+        else:
+            v[msk] = np.einsum('...nm, ...m -> ...n', inv(HTWH[msk]), HTxiWh[msk])
+
+        return v
+
+    def minimize_x(self, H=None, h=None):
+
+        v = self.minimize_v(H, h)
+
+        if H is None:
+            x = v
+        else:
+            x = np.einsum('nm, ...m-> ...n', H, v)
+
+        if h is not None:
+            x+=h
+
+        return x
+
+    def eval_errors(self, xs):
+
+        if self._steady_state:
+            J = np.einsum('...n, ...n', xs, np.einsum('nm, ...m->...n', self.W, xs))
+        else:
+            J = np.einsum('...n, ...n', xs, np.einsum('...nm, ...m->...n', self.W, xs))
+
+        return J - 2 * np.einsum('...n, ...n', self.xi, xs) + self.kappa
 
     def _nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
 
         sub_cost = self.cost._get_sub_cost_term(model_dimension)
-        # betas = self.nd_betas[model_dimension] # todo
         N = sub_cost.get_alssm_order()
         *Ks, Q = np.shape(y)
         xi_curr = np.zeros((*Ks, N ** q,)) # the last dimension is the nd-model-order
@@ -162,14 +237,13 @@ class RLSAlssm:
                 xi_q_recursion(_xi_curr[i], q,
                                cs.alssm, cs.segment,
                                _y[i], _sample_weights[i],
-                               cs.beta, self.backend, self.filter_form)
+                               cs.beta, self._backend, self._filter_form)
 
         return xi_curr
 
     def _nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, sample_weights, model_dimension):
 
         sub_cost = self.cost._get_sub_cost_term(model_dimension)
-        # betas = self.nd_betas[model_dimension] # todo
         N = sub_cost.get_alssm_order()
         Nq_prev = xi_prev.shape[-1]
         *Ks, Q = np.shape(y)
@@ -187,6 +261,6 @@ class RLSAlssm:
             xi_q_asterisk_l_recursion(_xi_curr, q,
                                       cs.alssm, cs.segment,
                                       _xi_prev, _sample_weights,
-                                      cs.beta, self.backend, self.filter_form)
+                                      cs.beta, self._backend, self._filter_form)
         return xi_curr
 

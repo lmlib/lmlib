@@ -156,10 +156,12 @@ def jit_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Ab, gam
         xi0[:] = gamma * (A.T.dot(xi0))
 
         if -(a - 1) + 1 <= k <= K - (a - 1):
-            xi0 += gamma_a * v[k + a - 1 + -1] * np.dot(Aac, y[k + a - 1 + -1])
+            y_slice = np.ascontiguousarray(y[k + a - 1 + -1])
+            xi0 += gamma_a * v[k + a - 1 + -1] * np.dot(Aac, y_slice)
 
         if -b + 1 <= k <= K - b:
-            xi0 -= gamma_b * v[k + b + -1] * np.dot(Abc, y[k + b + -1])
+            y_slice = np.ascontiguousarray(y[k + b + -1])
+            xi0 -= gamma_b * v[k + b + -1] * np.dot(Abc, y_slice)
 
         if 2 <= k <= K + 1:
             xi[k - 2] += xi0
@@ -195,10 +197,12 @@ def jit_forward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, gamma_a):
         kappa0 *= gamma_inv
 
         if 1 - a <= k <= K - a:
-            kappa0 -= gamma_a * v[k + a - 1] * np.dot(y[k + a - 1], y[k + a - 1])
+            y_slice = np.ascontiguousarray(y[k + a - 1])
+            kappa0 -= gamma_a * v[k + a - 1] * np.dot(y_slice, y_slice)
 
         if -b <= k <= K - b - 1:
-            kappa0 += gamma_b * v[k + b] * np.dot(y[k + b], y[k + b])
+            y_slice = np.ascontiguousarray(y[k + b])
+            kappa0 += gamma_b * v[k + b] * np.dot(y_slice, y_slice)
 
         if 0 <= k <= K - 1:
             kappa[k] += kappa0
@@ -219,10 +223,12 @@ def jit_backward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, gamma_b)
         kappa0 *= gamma
 
         if -(a - 1) + 1 <= k <= K - (a - 1):
-            kappa0 += gamma_a * v[k + a - 1 + -1] * np.dot(y[k + a - 1 + -1], y[k + a - 1 + -1])
+            y_slice = np.ascontiguousarray(y[k + a - 1 + -1])
+            kappa0 += gamma_a * v[k + a - 1 + -1] * np.dot(y_slice, y_slice)
 
         if -b + 1 <= k <= K - b:
-            kappa0 -= gamma_b * v[k + b + -1] * np.dot(y[k + b + -1], y[k + b + -1])
+            y_slice = np.ascontiguousarray(y[k + b + -1])
+            kappa0 -= gamma_b * v[k + b + -1] * np.dot(y_slice, y_slice)
 
         if 2 <= k <= K + 1:
             kappa[k - 2] += kappa0

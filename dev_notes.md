@@ -1,12 +1,13 @@
 # Development Notes
 
 ## TODOs
-- Change all get_model_... to get_alssm_...
+- RLSAlssm fit method output multiple outputs (x, v, y_hat, error)
+- RLSAlssm lcr method implementation
 - Nu implementation
 - Covariance steady state for limited sum
-- Complete beta implementation if decided
 - Trajectory and Window Class plot method implementation
 - Trajectory and Window Class extended for nd-cost
+
 
 ## Open Questions / Ideas to Discuss
 - Move beta parameter used in recursions from RLSAlssm to CostSegment/CompositeCost/NDCompositeCost.
