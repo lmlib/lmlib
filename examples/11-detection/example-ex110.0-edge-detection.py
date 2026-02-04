@@ -51,7 +51,8 @@ xs_hat_edge = rls.minimize_x(H_edge)
 xs_hat_line = rls.minimize_x(H_line)
 
 # Signal Approximation
-y_hat = cost.eval_alssm_output(xs_hat_edge, alssm_weights=[0, 1])
+# y_hat = cost.eval_alssm_output(xs_hat_edge, alssm_weights=[0, 1])
+y_hat, xs = rls.fit(y, output=('y_hat', 'x'), eval_alssm_weights=[0, 1])
 
 # Square Error and lcr
 error_edge = rls.eval_errors(xs_hat_edge)

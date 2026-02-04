@@ -13,6 +13,7 @@ from numpy.linalg import inv, cond
 
 from lmlib.statespace.backend import get_backend
 from lmlib.statespace.cost import CompositeCost, CostSegment, NDCompositeCost
+from lmlib.statespace.model import AlssmSum
 from lmlib.utils.check import *
 from lmlib.statespace.backends.rec import *
 
@@ -22,9 +23,9 @@ __all__ = ['RLSAlssm']
 
 class RLSAlssm:
 
-    def __init__(self, cost, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=False, filter_form='cascade',
+    def __init__(self, cost_terms, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=False, filter_form='cascade',
                  backend=None):
-        self.cost = cost
+        self._cost_terms = cost_terms
         assert all(isinstance(_, bool) for _ in (steady_state, calc_W, calc_xi, calc_kappa, calc_nu)), \
             'steady_state, calc_W, calc_xi, calc_kappa and calc_nu must be boolean.'
 
@@ -37,7 +38,7 @@ class RLSAlssm:
         self._filter_form = filter_form
         self._backend = backend if backend is not None else get_backend()
 
-        self._N = cost.get_alssm_order()
+        self._N = self._cost_terms.get_alssm_order()
 
         self._xi0 = None
         self._xi1 = None
@@ -77,15 +78,15 @@ class RLSAlssm:
     def filter(self, y, sample_weights=None, dim_order=None):
 
         # -------- check dimension order --------
-        L = self.cost.get_number_of_dimensions()
+        L = self._cost_terms.get_number_of_dimensions()
         if dim_order is None:
             dim_order = np.arange(L)
         assert len(dim_order) == L, f'dim_order has wrong length, {info_str_found_shape(dim_order)}'
 
         # -------- broadcast and check y --------
-        Q = self.cost.get_alssm_output_dimension()
+        Q = self._cost_terms.get_alssm_output_dimension()
         y = np.asarray(y)
-        if isinstance(self.cost, (CompositeCost, CostSegment)):
+        if isinstance(self._cost_terms, (CompositeCost, CostSegment)):
             if Q == 0: # scalar output
                 if y.ndim == 1: # 1 dim signal
                     y = y.reshape(-1, 1)
@@ -100,7 +101,7 @@ class RLSAlssm:
                 if y.shape[-1] != Q:
                     raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
 
-        if isinstance(self.cost, NDCompositeCost):
+        if isinstance(self._cost_terms, NDCompositeCost):
             if Q == 0: # scalar output
                 if y.ndim == L:
                     y = y.reshape(*y.shape, 1)
@@ -119,7 +120,7 @@ class RLSAlssm:
 
         # -------- calc xi2 --------
         if self._steady_state:
-            self._xi2 = self.cost.get_steady_state_W(dim_order).flatten()
+            self._xi2 = self._cost_terms.get_steady_state_W(dim_order).flatten()
         elif self._calc_W and not self._steady_state:
             q = 2
 
@@ -212,9 +213,52 @@ class RLSAlssm:
 
         return J - 2 * np.einsum('...n, ...n', self.xi, xs) + self.kappa
 
+    def fit(self, y, output='y_hat', sample_weights=None, dim_order=None, H=None, h=None, eval_alssm_weights=None):
+
+        # ----------- check output parameter -----------
+        if isinstance(output, str):
+            _output = (output,)
+        else:
+            _output = tuple(output)
+        assert len(_output) != 0, 'output is empty. Must be a string or a tuple of strings.'
+        assert any(_ in ('y_hat', 'x', 'v') for _ in _output), (f'output contains unknown entries: {_output}'
+                                                                f'. Allowed entries are "y_hat", "x", "v".')
+        # ----------- filter -----------
+        self.filter(y, sample_weights, dim_order)
+
+        # ----------- v calc -----------
+        v = self.minimize_v(H, h)
+        if _output == ('v',):
+            return v
+
+        out_dict = {'v': v}
+
+        # ----------- x -----------
+        if H is None:
+            x = v
+        else:
+            x = np.einsum('nm, ...m-> ...n', H, v)
+
+        if h is not None:
+            x+=h
+
+        out_dict['x'] = x
+        if _output == ('x',):
+            return x
+        if 'y_hat' not in _output:
+            return (out_dict[_] for _ in _output)
+
+        # ----------- yhat -----------
+        alssms = self._cost_terms.get_alssms()
+        out_dict['y_hat'] = AlssmSum(alssms, eval_alssm_weights).eval_output(x)
+
+        if _output == ('y_hat',):
+            return out_dict['y_hat']
+        return tuple(out_dict[_] for _ in _output)
+
     def _nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
 
-        sub_cost = self.cost._get_sub_cost_term(model_dimension)
+        sub_cost = self._cost_terms._get_sub_cost_term(model_dimension)
         N = sub_cost.get_alssm_order()
         *Ks, Q = np.shape(y)
         xi_curr = np.zeros((*Ks, N ** q,)) # the last dimension is the nd-model-order
@@ -243,7 +287,7 @@ class RLSAlssm:
 
     def _nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, sample_weights, model_dimension):
 
-        sub_cost = self.cost._get_sub_cost_term(model_dimension)
+        sub_cost = self._cost_terms._get_sub_cost_term(model_dimension)
         N = sub_cost.get_alssm_order()
         Nq_prev = xi_prev.shape[-1]
         *Ks, Q = np.shape(y)
