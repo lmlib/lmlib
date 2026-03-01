@@ -403,7 +403,7 @@ class CompositeCost(BaseCost, BaseCost1d):
 
     def _get_cost_segments(self, F=None, force_MC=False):
         """Returns list of the updated CostSegments (modified by F if provided)."""
-        F_ = self.F if F is None else F
+        F_ = self.F if F is None else np.asarray(F)
         cost_segments = []
         for p, segment in enumerate(self.segments):
             alssm = AlssmSum(self.alssms, F_[:, p], force_MC=force_MC)

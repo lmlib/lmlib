@@ -51,7 +51,6 @@ xs_hat_edge = rls.minimize_x(H_edge)
 xs_hat_line = rls.minimize_x(H_line)
 
 # Signal Approximation
-# y_hat = cost.eval_alssm_output(xs_hat_edge, alssm_weights=[0, 1])
 y_hat, xs = rls.fit(y, output=('y_hat', 'x'), eval_alssm_weights=[0, 1])
 
 # Square Error and lcr
@@ -66,11 +65,11 @@ print('Indices of slope changes (reference): ', ks)
 print('Indices of slope changes (estimates): ', peaks)
 
 # Trajectories
-trajs_edge = lm.map_trajectories(cost.trajectories(xs_hat_edge[peaks], thd=0.01), peaks, K, merge_ks=True, merge_seg=False)
-trajs_line = lm.map_trajectories(cost.trajectories(xs_hat_line[peaks], thd=0.01), peaks, K, merge_ks=True)
+trajs_edge = lm.Trajectory.eval_y(cost, xs_hat_edge, peaks, K, thd=0.01, merged_seg=False)
+trajs_line = lm.Trajectory.eval_y(cost, xs_hat_line, peaks, K, thd=0.01, merged_seg=False)
 
 # Windows
-wins = lm.map_windows(cost.windows(segment_indices=[0, 1]), peaks, K, merge_ks=True, fill_value=0)
+wins = lm.Window.eval_y(cost, peaks, K, thd=0.01, merged_seg=False)
 
 # Plot
 _, axs = plt.subplots(4, 1, sharex='all', figsize=(9, 8))

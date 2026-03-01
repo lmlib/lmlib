@@ -141,13 +141,13 @@ error_line = rls.eval_errors(x_hat_line)
 lcr = -1 / 2 * np.log(np.divide(error_edge, error_line))
 
 # Find LCR peaks with minimal distance and height
-peaks_1, _ = find_peaks(lcr, height=.1, distance=200 * fs)
+peaks, _ = find_peaks(lcr, height=.1, distance=200 * fs)
 
 # Evaluate trajectories (for plotting only)
-trajs_edge = lm.map_trajectories(ccost.trajectories(x_hat_edge[peaks_1]), peaks_1, K, merge_ks=False)
-trajs_line = lm.map_trajectories(ccost.trajectories(x_hat_line[peaks_1]), peaks_1, K, merge_ks=False)
+trajs_edge = lm.Trajectory.eval_y(ccost, x_hat_edge, peaks, K, merged_seg=False)
+trajs_line = lm.Trajectory.eval_y(ccost, x_hat_line, peaks, K, merged_seg=False)
 
-wins = lm.map_windows(ccost.windows(segment_indices=[1, 1]), peaks_1, K, merge_ks=True)
+wins = lm.Window.eval_y(ccost, peaks, K, merged_seg=False)
 
 # -- PLOTTING --
 _, axs = plt.subplots(3, 1, figsize=(6, 3.2), gridspec_kw={'height_ratios': [1.5, 1.0, 0.7]}, sharex='all')
@@ -155,19 +155,15 @@ nax = 0  # current subplot index
 
 t = np.array(list(k))
 axs[nax].plot(t, y, lw=1, c='gray', label='$y$', zorder=0)
-for index in range(peaks_1.shape[0]):  # iterate through the peaks
-    axs[nax].plot(t, trajs_edge[index, 0, :], c='k', lw=2, ls='-', zorder=1,
-                  label='$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
-    axs[nax].plot(t, trajs_edge[index, 1, :], c='b', lw=2, ls='-', zorder=1,
-                  label='$\overleftarrow{s}_{i-k}(\hat x_r)$')
-    axs[nax].plot(t, trajs_line[index, 0, :], c='k', lw=1, ls='--', zorder=1, label='${s}_{i-k}(H_0 \hat v)$')
-    axs[nax].plot(t, trajs_line[index, 1, :], c='k', lw=1, ls='--', zorder=1)
-    axs[nax].scatter(peaks_1[0], x_hat_edge[peaks_1[0], 0], marker='.', c='k', s=20.0)
+axs[nax].plot(t, trajs_edge[0, :], c='k', lw=2, ls='-', zorder=1, label='$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
+axs[nax].plot(t, trajs_edge[1, :], c='b', lw=2, ls='-', zorder=1, label='$\overleftarrow{s}_{i-k}(\hat x_r)$')
+axs[nax].plot(t, trajs_line[0, :], c='k', lw=1, ls='--', zorder=1, label='${s}_{i-k}(H_0 \hat v)$')
+axs[nax].plot(t, trajs_line[1, :], c='k', lw=1, ls='--', zorder=1)
+axs[nax].scatter(peaks[0], x_hat_edge[peaks[0], 0], marker='.', c='k', s=20.0)
 
-    break  # only show the trajectory of the first peak (comment out to show all trajectories)
 
-for xp in peaks_1:
-    axs[nax].axvline(x=xp, ls='--', c='b', lw=0.5)
+for peak in peaks:
+    axs[nax].axvline(x=peak, ls='--', c='b', lw=0.5)
 
 axs[nax].legend(loc='upper right', labelspacing=-0.0)
 axs[nax].set_ylim(bottom=min(y), top=max(y))
@@ -180,14 +176,14 @@ axs[nax].plot(k, error_edge, c='xkcd:black', label=r'$\tilde J(H_1 \hat v)$', lw
 axs[nax].plot(k, error_line, c='xkcd:black', ls='--', label=r'$\tilde J(H_0 \hat v)$', lw=1.0)
 
 axs[nax].legend(loc='upper right', labelspacing=-0.0)
-for xp in peaks_1:
-    axs[nax].axvline(x=xp, ls='--', c='b', lw=0.5)
+for peak in peaks:
+    axs[nax].axvline(x=peak, ls='--', c='b', lw=0.5)
 
 nax += 1
 # LCR plot
 axs[nax].plot(k, np.concatenate((lcr[kdif:], lcr[0:kdif],)), c='xkcd:black', label='LCR', lw=1.0)
 axs[nax].legend(loc='center right')
-axs[nax].scatter(peaks_1, lcr[peaks_1], marker=7, c='b')
+axs[nax].scatter(peaks, lcr[peaks], marker=7, c='b')
 axs[nax].set_ylim(-0.05, 1.6)
 axs[nax].set_xlim(left=0.0, right=3200.0)
 

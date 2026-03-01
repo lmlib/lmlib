@@ -46,8 +46,8 @@ lcr_A = -1 / 2 * np.log(np.divide(error_edge_A, error_line_A))
 peaks_A, _ = find_peaks(lcr_A, height=.25, distance=300)
 
 # Evaluate trajectories (for plotting only)
-trajs_edge_A = lm.map_trajectories(costs_A.trajectories(x_hat_H1_A[peaks_A]), peaks_A, K, merge_ks=True)
-trajs_line_A = lm.map_trajectories(costs_A.trajectories(x_hat_H0_A[peaks_A]), peaks_A, K, merge_ks=True)
+trajs_edge_A = lm.Trajectory.eval_y(costs_A, x_hat_H1_A, peaks_A, K, merged_seg=False)
+trajs_line_A = lm.Trajectory.eval_y(costs_A, x_hat_H0_A, peaks_A, K, merged_seg=False)
 
 # (B) -- T wave peak Detection -----
 costs_B = lm.TSLM.create_cost(ab=(-45, 45), gs=(80, 80))
@@ -69,11 +69,10 @@ lcr = -1 / 2 * np.log(np.divide(error_edge_B, error_line_B))
 peaks_B, _ = find_peaks(lcr, height=.25, distance=150)
 
 # Evaluate trajectories (for plotting only)
-trajs_edge = lm.map_trajectories(costs_B.trajectories(x_hat_H1_B[peaks_B]), peaks_B, K, merge_ks=True)
-trajs_line = lm.map_trajectories(costs_B.trajectories(x_hat_H0_B[peaks_B]), peaks_B, K, merge_ks=True)
+trajs_edge_B = lm.Trajectory.eval_y(costs_B, x_hat_H1_B, peaks_B, K, merged_seg=False)
+trajs_line_B = lm.Trajectory.eval_y(costs_B, x_hat_H0_B, peaks_B, K, merged_seg=False)
 
-wins = lm.map_windows(costs_B.windows(segment_indices=[1, 1]), peaks_B, K, merge_ks=True)
-
+wins = lm.Window.eval_y(costs_B, peaks_B, K, merged_seg=False)
 # -- PLOTTING --
 _, axs = plt.subplots(5, 1, figsize=(6, 4), gridspec_kw={'height_ratios': [1.5, 1, 0.1, 1.5, 1]}, sharex='all')
 nax = 0
@@ -108,8 +107,8 @@ t = np.array(list(k)) / fs
 
 axs[nax].plot(t, y, lw=1.0, c='gray', label='$y$', zorder=0)
 if True:
-    axs[nax].plot(t, trajs_edge[0, :], c='k', lw=.75, ls='-', zorder=1, label='$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
-    axs[nax].plot(t, trajs_edge[1, :], c='b', lw=.75, ls='-', zorder=1, label='$\overleftarrow{s}_{i-k}(\hat x_r)$')
+    axs[nax].plot(t, trajs_edge_B[0, :], c='k', lw=.75, ls='-', zorder=1, label='$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
+    axs[nax].plot(t, trajs_edge_B[1, :], c='b', lw=.75, ls='-', zorder=1, label='$\overleftarrow{s}_{i-k}(\hat x_r)$')
     axs[nax].scatter(peaks_B[1] / fs, x_hat_H1_B[peaks_B[1], 0], marker='.', c='k', s=20.0)
 
 for xp in peaks_B / fs:

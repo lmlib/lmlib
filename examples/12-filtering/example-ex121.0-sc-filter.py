@@ -30,11 +30,9 @@ costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]
 
 # filter signal and take the approximation
 rls = lm.RLSAlssm(costs, steady_state=False, calc_W=True)
-rls.filter(y)
-xs = rls.minimize_x()
 
 # extracts filtered signal
-y_hat_1 = costs.eval_alssm_output(xs, alssm_weights=[1])
+y_hat_1 = rls.fit(y)
 
 # --- Plot II: ALSSM Filtering - Symmetric Infinite Support Moving Average Filter ---
 # Segments
@@ -44,12 +42,9 @@ segment_right = lm.Segment(a=0, b=np.inf, direction=lm.BACKWARD, g=20)
 # Composite Cost
 costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])
 
-# filter signal and take the approximation
+# filter signal, take the approximation, and extracts filtered signal
 rls = lm.RLSAlssm(costs, steady_state=False)
-xs = rls.filter_minimize_x(y)
-
-# extracts filtered signal
-y_hat_2 = costs.eval_alssm_output(xs, alssm_weights=[1])
+y_hat_2 = rls.fit(y)
 
 # --- Plotting ----
 fig, ax = plt.subplots(2, 1, sharex='all', figsize=(10,6))

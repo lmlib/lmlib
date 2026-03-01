@@ -64,8 +64,7 @@ print("Duration of correlation (or convolution) in sample space.                
     (time.process_time() - start) * 1e3))
 
 # -- 5.  Plotting --
-template_trajectory = lm.map_trajectories(cost.trajectories([xs_h, ]), [K_REF, ], K,
-                                          merge_ks=True, merge_seg=True)
+template_trajectory = lm.Trajectory.eval_y(cost, [xs_h, ], [K_REF, ], K)
 
 _, axs = plt.subplots(2, 1, figsize=(7, 5), gridspec_kw={'height_ratios': [2, 1]}, sharex='all')
 nax = 0

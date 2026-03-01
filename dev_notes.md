@@ -9,9 +9,19 @@
 - Covariance steady state for limited sum
 - Trajectory and Window Class plot method implementation
 - Trajectory and Window Class extended for nd-cost
-s
+- Two dimensional eval function for NDCompositeCost (example)
 
 ## Open Questions / Ideas to Discuss
+- Trajectory and Window Class eval_y xs already selected or gets selected by ks?
+  ```
+  trajs = Trajectory.eval_y(cost, xs, ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan)
+  OR
+  trajs = Trajectory.eval_y(cost, xs[ks], ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan)
+    
+  ```
+  **Decision:** 
+- 
+
 - Move beta parameter used in recursions from RLSAlssm to CostSegment/CompositeCost/NDCompositeCost.
   ```
   cost = lm.CostSegment(alssm, segment, beta=0.8) # default beta=1
@@ -83,7 +93,7 @@ s
   trajs = Trajectory.eval_y(cost, xs, ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan)
   ```
   **Renamed** to eval and eval_y.
-
+    
 --- 
 
 - Naming of cost.eval_alssm_output(xs) and alssm.eval_states(xs)?

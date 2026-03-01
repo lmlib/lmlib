@@ -49,11 +49,11 @@ segmentR = lm.Segment(a=SHAPE_LEN_2 + 1, b=np.inf, direction=lm.BACKWARD, g=g_bl
 # mapping matrix between models and segments (rows = models, columns = segments)
 F = [[0, 1, 0],
      [1, 1, 1]]
-ccost = lm.CompositeCost((alssm_pulse, alssm_baseline), (segmentL, segmentC, segmentR), F)
-print(ccost)
+cost = lm.CompositeCost((alssm_pulse, alssm_baseline), (segmentL, segmentC, segmentR), F)
+print(cost)
 
 # filter signal
-rls = lm.RLSAlssm(ccost, steady_state=False)
+rls = lm.RLSAlssm(cost, steady_state=False)
 rls.filter(y)  # run recursions
 
 xs = rls.minimize_x()  # unconstrained minimization
@@ -82,11 +82,13 @@ peaks, _ = find_peaks(lcr, height=LCR_THD, distance=MIN_DIST)
 # --------------- plotting of results -----------------------
 k = np.arange(K)
 
+# Window
+wins = lm.Window.eval_y(cost, peaks, K, merged_seg=False)
+
 # Trajectories
-trajs_baseline = lm.map_trajectories(ccost.trajectories(xs_A[peaks], F=[[0, 0, 0], [1, 1, 1]], thd=0.01), peaks, K,
-                                     merge_ks=True, merge_seg=True)
-trajs_pulse = lm.map_trajectories(ccost.trajectories(xs_A[peaks], F=[[0, 1, 0], [1, 1, 1]], thd=0.01), peaks, K,
-                                  merge_ks=True, merge_seg=True)
+trajs_baseline = lm.Trajectory.eval_y(cost, xs_A, peaks, K, F=[[0, 0, 0], [1, 1, 1]], thd=0.01)
+trajs_pulse = lm.Trajectory.eval_y(cost, xs_A, peaks, K, F=[[0, 1, 0], [1, 1, 1]], thd=0.01)
+
 
 fig, axs = plt.subplots(6, 1, sharex='all', figsize=(8, 6))
 
@@ -94,12 +96,9 @@ fig, axs = plt.subplots(6, 1, sharex='all', figsize=(8, 6))
 fig.tight_layout()
 fig.subplots_adjust(hspace=0.0, left=0.08, bottom=0.05)
 
-if peaks.size != 0:
-    wins = lm.map_windows(ccost.windows(segment_indices=[0, 1, 2], thd=0.001), peaks, K, merge_ks=True,
-                         fill_value=0)
-    axs[0].plot(k, wins[0], color='k', lw=1.0, ls='--', label=segmentL.label)
-    axs[0].plot(k, wins[1], color='k', lw=1.0, ls='-', label=segmentC.label)
-    axs[0].plot(k, wins[2], color='k', lw=1.0, ls=':', label=segmentR.label)
+axs[0].plot(k, wins[0], color='k', lw=1.0, ls='--', label=segmentL.label)
+axs[0].plot(k, wins[1], color='k', lw=1.0, ls='-', label=segmentC.label)
+axs[0].plot(k, wins[2], color='k', lw=1.0, ls=':', label=segmentR.label)
     
 axs[0].set(ylabel='windows')
 axs[0].legend(loc='upper right')

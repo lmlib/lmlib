@@ -29,9 +29,7 @@ segments = lm.Segment(a=-20, b=-1, direction=lm.FW, g=100), lm.Segment(a=0, b=20
 cost = lm.CompositeCost([alssm], segments, F=np.ones((1, 2)))
 
 rls = lm.RLSAlssm(cost, steady_state=False)
-xs = rls.filter_minimize_x(y_sparse, v)
-
-y_os = cost.eval_alssm_output(xs)
+y_os = rls.fit(y_sparse, sample_weights=v)
 
 plt.scatter(k_sparse, y, s=20, edgecolors='k', marker='o', linewidths=0.3, facecolor='none', label='original signal')
 plt.plot(k_os, y_os, 'b-', label='oversampled signal')

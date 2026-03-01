@@ -126,7 +126,7 @@ F = [[1, 0],  # mixing matrix, turning on and off models per segment (1=on, 0=of
 cost = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
 
 nd_cost = lm.NDCompositeCost([cost, cost])
-nd_rls = lm.NDRLSAlssm(nd_cost, steady_state=True, backend='numpy')
+nd_rls = lm.RLSAlssm(nd_cost, steady_state=True, backend='numpy')
 nd_rls.filter(Y)
 
 xs_H1 = nd_rls.minimize_x()
@@ -134,7 +134,7 @@ xs_ref = xs_H1[K1_REF, K2_REF]  # store state variables as reference pulse shape
 J_B = nd_rls.eval_errors(xs_H1)
 
 
-N = nd_cost.get_model_order()
+N = nd_cost.get_alssm_order()
 
 H_A = np.zeros((N, 1))
 H_A[0, 0] = 1

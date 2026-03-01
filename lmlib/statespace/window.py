@@ -20,7 +20,7 @@ class Window:
         return out
 
     @staticmethod
-    def eval_y(cost, ks, K, merged_ks=True, merged_seg=True, segment_indices=None, thd=1e-6, fill_value=np.nan):
+    def eval_y(cost, ks, K, merged_ks=True, merged_seg=True, segment_indices=None, thd=1e-6, fill_value=0):
 
         # return an empty array if ks is empty
         if len(ks) == 0:
@@ -32,9 +32,12 @@ class Window:
         P = len(wins)
 
         out = np.full((P, ks_dim, K), fill_value=fill_value)
-        for p, win in enumerate(wins):
+        for p in range(P):
+            ab_range, win = wins[p]
             for i, k in enumerate(ks):
-                out[p, i, k + np.array(win[0])] = win[1]
+                k_indexes = k + np.array(ab_range)
+                mask = (k_indexes >= 0) & (k_indexes < K)
+                out[p, i, k_indexes[mask]] = win[mask]
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)

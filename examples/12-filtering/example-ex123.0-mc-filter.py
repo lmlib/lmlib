@@ -32,10 +32,9 @@ costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]
 
 # filter signal and take the approximation
 rls = lm.RLSAlssm(costs, steady_state=False)
-xs = rls.filter_minimize_x(y)
 
 # extracts filtered signals
-y_hat = costs.eval_alssm_output(xs, alssm_weights=[1])
+y_hat = rls.fit(y)
 
 # --- Plotting ----
 fig, axs = plt.subplots(len(seeds), 1, sharex='all')

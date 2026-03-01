@@ -37,11 +37,10 @@ costs_trans = lm.CompositeCost((alssm_trans,), (segment_left, segment_right), F=
 
 # filter signal and take the approximation
 rls = lm.RLSAlssm(costs, backend='numpy')
-y_hat = rls.filter_minimize_yhat(y)
+y_hat = rls.fit(y)
 
 rls_trans = lm.RLSAlssm(costs_trans)
-rls_trans.filter(y)
-y_hat_trans = costs_trans.eval_alssm_output(rls_trans.xi)
+y_hat_trans = rls_trans.fit(y)
 
 # --- Plotting ----
 fig, ax = plt.subplots(1, sharex='all', figsize=(8,3))

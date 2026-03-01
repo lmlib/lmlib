@@ -34,13 +34,9 @@ costs_Q = lm.CostSegment(alssm_poly_Q, segment_right)
 # filter signal and take the approximation
 rls = lm.RLSAlssm(costs_Q)  # data storage object
 
-# se_param.set_transform(  se_param.get_steady_state_root() )
-
-
 # filter data with the cost model defined above and minimize the costs using squared error filter parameters,
 # xs are the polynomial coefficients
-xs = rls.filter_minimize_x(y)
-y_hat = costs_Q.eval_alssm_output(xs)  # signal estimate
+y_hat, xs = rls.fit(y, output=('y_hat', 'x'))
 
 # --- Polynomial to Polynomial Approximation ---
 
@@ -69,14 +65,14 @@ betas = np.einsum('ij, nj -> ni', Lambda, xs)  # approximated low order polynomi
 
 # ----------------  Plot  -----------------
 ks = [200, 550, 800]  # show trajectory and windows at the indices in ks
-wins = lm.map_windows(costs_Q.windows(), ks, K, merge_seg=True)  # windows
+wins = lm.Window.eval_y(costs_Q, ks, K, merged_ks=False)
 
 # trajectories of the higher order polynomial
-trajs_Q = lm.map_trajectories(costs_Q.trajectories(xs[ks]), ks, K, merge_ks=True, merge_seg=True)
+trajs_Q = lm.Trajectory.eval_y(costs_Q, xs, ks, K)
 
 # trajectories of the lower order polynomial
 costs_R = lm.CostSegment(lm.AlssmPoly(R - 1), segment_right)
-trajs_R = lm.map_trajectories(costs_R.trajectories(betas[ks]), ks, K, merge_ks=True, merge_seg=True)
+trajs_R = lm.Trajectory.eval_y(costs_R, xs[:, :3], ks, K)
 
 
 # Generate the plot

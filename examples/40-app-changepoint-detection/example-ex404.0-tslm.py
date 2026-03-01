@@ -37,18 +37,19 @@ fig.subplots_adjust(left=0.08, right=.98, top=.98, bottom=0.02)
 i = 0 # iteration counter
 iaxs = 0 # axis counter
 for H0, H1, c0, name0, name1 in zip(H0s, H1s, colors0,  H0s_Labels, H1s_Labels):
-    xs_0 = rls.filter_minimize_x(y, H=H0)
-    xs_1 = rls.filter_minimize_x(y, H=H1)
+    rls.filter(y)
+    xs_0 = rls.minimize_x(H=H0)
+    xs_1 = rls.minimize_x(H=H1)
 
     J_0 = rls.eval_errors(xs_0)
     J_1 = rls.eval_errors(xs_1)
 
     LCR = -0.5 * np.log10(J_0 / J_1)
 
-    ks_range = np.arange(K) # todo vereinfachen
+    ks_range = np.arange(K)
     ks_max = ks_range[[np.nanargmax(LCR)]]
 
-    trajs_0 = lm.map_trajectories(cost.trajectories(xs_0[ks_max]), ks_max, K, True, True)
+    trajs_0 = lm.Trajectory.eval_y(cost, xs_0, ks_max, K, True, True)
     trajs_1 = lm.map_trajectories(cost.trajectories(xs_1[ks_max]), ks_max, K, True, True)
 
     # add spacer between subplots   

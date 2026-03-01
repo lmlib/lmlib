@@ -61,17 +61,16 @@ lcr = -0.5 * np.log(J_sum / J_bl_sum)
 
 peaks, _ = find_peaks(lcr, height=0.041, distance=30)
 
-# Plot
-fig, axs = plt.subplots(5, 1, figsize=(9, 8), gridspec_kw={'height_ratios': [1, 1, 3, 1, 1]}, sharex='all')
 
 # Window
-wins = lm.map_windows(cost.windows(segment_indices=[0, 1, 2]), peaks, K, merge_ks=True)
+wins = lm.Window.eval_y(cost, peaks, K, merged_seg=False)
 
 # Trajectories
-trajs_baseline = lm.map_trajectories(cost.trajectories(xs_sp[peaks], F=[[0, 0, 0], [1, 1, 1]], thd=0.01), peaks, K,
-                                     merge_ks=True, merge_seg=True)
-trajs_pulse = lm.map_trajectories(cost.trajectories(xs_sp[peaks], F=[[0, 1, 0], [1, 1, 1]], thd=0.01), peaks, K,
-                                  merge_ks=True, merge_seg=True)
+trajs_baseline = lm.Trajectory.eval_y(cost, xs_sp, peaks, K, F=[[0, 0, 0], [1, 1, 1]], thd=0.01)
+trajs_pulse = lm.Trajectory.eval_y(cost, xs_sp, peaks, K, F=[[0, 1, 0], [1, 1, 1]], thd=0.01)
+
+# Plot
+fig, axs = plt.subplots(5, 1, figsize=(9, 8), gridspec_kw={'height_ratios': [1, 1, 3, 1, 1]}, sharex='all')
 
 axs[0].set(ylabel='$w_k$')
 axs[0].plot(range(K), wins[0], lw=1, c='k', ls='--')
@@ -85,7 +84,7 @@ axs[1].set_ylim(-0.5, 2)
 axs[1].legend(('true spikes',), loc=1)
 
 # Signals
-OFFSETS = [0, 2, 4]
+OFFSETS = np.array([0, 2, 4])
 axs[2].set(ylabel='$y_k$')
 axs[2].plot(range(K), y + OFFSETS, c='tab:gray', lw=1)
 axs[2].plot(range(K), trajs_pulse + OFFSETS, color='b', lw=1.5, linestyle="-")

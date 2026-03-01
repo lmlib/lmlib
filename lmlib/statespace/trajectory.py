@@ -70,7 +70,7 @@ class Trajectory:
         merged_seg : bool, optional
             If True, merges values along the last trajectory dimension using the maximum value.
             Defaults to True.
-        F : None, array_like of shape (M, P)
+        F : array_like of shape (M, P), optional
             Mapping matrix :math:`F`, maps models to segment, where the value weights ALSSM Output
         thd : float, optional
             Threshold for window range computation, by default 1e-6
@@ -102,13 +102,15 @@ class Trajectory:
             print('Warning: ks is empty. Returned empty array of size K.')
             return np.full(K, fill_value=fill_value)
 
-        trajs = Trajectory.eval(cost, xs, F, thd)
+        trajs = Trajectory.eval(cost, xs[ks], F, thd)
         P, xs_dim, *multi_dim = trajs.shape
 
-        out = np.full((P, xs_dim, *multi_dim, K), fill_value=fill_value)
+        out = np.full((P, xs_dim, K, *multi_dim), fill_value=fill_value)
         for p, xs_idx, *multi_idx in np.ndindex(trajs.shape):
             ab_range, traj = trajs[(p, xs_idx, *multi_idx)]
-            out[p, xs_idx, ...,  ks[xs_idx]+np.array(ab_range)] = traj
+            ks_indexes = ks[xs_idx] + np.array(ab_range)
+            mask = (ks_indexes >= 0) & (ks_indexes < K)
+            out[(p, xs_idx, ...,  ks_indexes[mask], *multi_idx)] = traj[mask]
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)

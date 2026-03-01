@@ -115,7 +115,7 @@ class RLSAlssm:
             # each element points to the same memory-location
             sample_weights = np.broadcast_to(1., y.shape[:-1])
         else:
-            if np.shape(sample_weights) == y.shape[:-1]:
+            if np.shape(sample_weights) != y.shape[:-1]:
                 raise ValueError(f'sample_weights has wrong shape, {info_str_found_shape(sample_weights)}')
 
         # -------- calc xi2 --------

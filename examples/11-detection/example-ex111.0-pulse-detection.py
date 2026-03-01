@@ -42,15 +42,14 @@ segmentR = lm.Segment(a=len_pulse+1, b=np.inf, direction=lm.BACKWARD, g=g_bl, de
 # mapping matrix between models and segments (rows = models, columns = segments)
 F = [[0, 1, 0],
      [1, 1, 1]]
-costs = lm.CompositeCost((alssm_pulse, alssm_baseline), (segmentL, segmentC, segmentR), F)
+cost_term = lm.CompositeCost((alssm_pulse, alssm_baseline), (segmentL, segmentC, segmentR), F)
 
 # filter signal
-rls = lm.RLSAlssm(costs)
-xs_1 = rls.filter_minimize_x(y)
-y_hat = costs.eval_alssm_output(xs_1, alssm_weights=[1, 0])
+rls = lm.RLSAlssm(cost_term)
+y_hat, xs_1 = rls.fit(y, output=('y_hat', 'x'), eval_alssm_weights=[1, 0])
 
 xs_0 = np.copy(xs_1)
-xs_0[:, costs.get_state_var_indices('line-model-pulse.x')] = 0
+xs_0[:, cost_term.get_state_var_indices('line-model-pulse.x')] = 0
 
 J1 = rls.eval_errors(xs_1)  # get SE (squared error) for hypothesis 1 (baseline + pulse)
 J0 = rls.eval_errors(xs_0)  # get SE (squared error)  for hypothesis 0 (baseline only)
@@ -63,15 +62,17 @@ peaks, _ = find_peaks(lcr, height=LCR_THD, distance=30)
 
 # --------------- plotting of results -----------------------
 
+
+wins = lm.Window.eval_y(cost_term, peaks, K, thd=0.001, merged_seg=False)
+
+
 fig, axs = plt.subplots(5, 1, sharex='all', figsize=(9,6))
 
 fig.subplots_adjust(hspace=0.1)
 
-if peaks.size != 0:
-    wins = lm.map_windows(costs.windows(segment_indices=[0,1,2], thd=0.001), peaks, K, merge_ks=True)
-    axs[0].plot(k, wins[0], color='k', lw=0.75, ls='--', label=r"$\alpha_k(.)$")
-    axs[0].plot(k, wins[1], color='k', lw=0.75, ls='-', label=r"$\alpha_k(.)$")
-    axs[0].plot(k, wins[2], color='k', lw=0.75, ls=':', label=r"$\alpha_k(.)$")
+axs[0].plot(k, wins[0], color='k', lw=0.75, ls='--', label=r"$\alpha_k(.)$")
+axs[0].plot(k, wins[1], color='k', lw=0.75, ls='-', label=r"$\alpha_k(.)$")
+axs[0].plot(k, wins[2], color='k', lw=0.75, ls=':', label=r"$\alpha_k(.)$")
 axs[0].set(ylabel='windows')
 axs[0].legend(loc='upper right')
 
@@ -81,7 +82,7 @@ axs[1].legend(loc='upper right')
 
 axs[2].plot(k, y, color="grey", lw=0.25, label='$y$')
 axs[2].plot(peaks, y[peaks], "s", color='b', fillstyle='none', markersize=15, markeredgewidth=1.0, lw=1.0, label='detected pulses')
-axs[2].plot(k, xs_1[:,costs.get_state_var_indices('offset-model-baseline.x')[0]],
+axs[2].plot(k, xs_1[:,cost_term.get_state_var_indices('offset-model-baseline.x')[0]],
                '-', lw=1.0, color='k', label=r'(baseline)')
 axs[2].legend(loc='upper right')
 
@@ -90,8 +91,8 @@ axs[3].scatter(peaks, lcr[peaks], marker=7, c='b')
 axs[3].axhline(LCR_THD, color="black", linestyle="--", lw=1.0)
 axs[3].legend(loc='upper right')
 
-axs[4].plot(k, xs_1[:,costs.get_state_var_indices('line-model-pulse.x')], '-', lw=.5, color='gray', label=r'$\hat{\lambda}_{k}$ (pulse amplitudes estimates)')
-axs[4].plot(peaks, xs_1[peaks,  costs.get_state_var_indices('line-model-pulse.x')], "o", color='b', markersize=4, markeredgewidth=1.0)
+axs[4].plot(k, xs_1[:,cost_term.get_state_var_indices('line-model-pulse.x')], '-', lw=.5, color='gray', label=r'$\hat{\lambda}_{k}$ (pulse amplitudes estimates)')
+axs[4].plot(peaks, xs_1[peaks,  cost_term.get_state_var_indices('line-model-pulse.x')], "o", color='b', markersize=4, markeredgewidth=1.0)
 axs[4].axhline(0, color="black",  lw=0.5)
 axs[4].legend(loc='upper right')
 axs[4].set(xlabel='time index $k$')

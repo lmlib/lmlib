@@ -124,13 +124,14 @@ error_H0 = rls.eval_errors(x_hat_H0)
 lcr = -1 / 2 * np.log(np.divide(error_H1, error_H0))
 
 # Find LCR peaks with minimal distance and height
-peaks_1, _ = find_peaks(lcr, height=0.5, distance=300)
+peaks, _ = find_peaks(lcr, height=0.5, distance=300)
 
 # Evaluate trajectories (for plotting only)
-trajs_edge = lm.map_trajectories(costs.trajectories(x_hat_H1[peaks_1]), peaks_1, K, merge_ks=False)
-trajs_line = lm.map_trajectories(costs.trajectories(x_hat_H0[peaks_1]), peaks_1, K, merge_ks=False)
 
-wins = lm.map_windows(costs.windows(segment_indices=[1, 1]), peaks_1, K, merge_ks=True)
+trajs_edge = lm.Trajectory.eval_y(costs, x_hat_H1, peaks, K, merged_seg=False)
+trajs_line = lm.Trajectory.eval_y(costs, x_hat_H0, peaks, K, merged_seg=False)
+
+wins = lm.Window.eval_y(costs, peaks, K, merged_seg=False)
 
 # -- PLOTTING --
 _, axs = plt.subplots(2, 1, figsize=(5, 2.5), gridspec_kw={'height_ratios': [1.5, 1]}, sharex='all')
@@ -138,24 +139,20 @@ _, axs = plt.subplots(2, 1, figsize=(5, 2.5), gridspec_kw={'height_ratios': [1.5
 nax = 0
 t = np.array(list(k)) / fs
 axs[nax].plot(t, y, lw=1.0, c='gray', label='$y$', zorder=0)
-if True:
-    ref_index = 0
-    axs[nax].plot(t, trajs_edge[ref_index, 0, :], c='k', lw=1.5, ls='-', zorder=1,
-                  label='$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
-    axs[nax].plot(t, trajs_edge[ref_index, 1, :], c='b', lw=1.5, ls='-', zorder=1,
-                  label='$\overleftarrow{s}_{i-k}(\hat x_r)$')
-    axs[nax].scatter(peaks_1[ref_index] / fs, x_hat_H1[peaks_1[ref_index], 0], marker='.', c='k', s=20.0)
+axs[nax].plot(t, trajs_edge[0, :], c='k', lw=1.5, ls='-', zorder=1, label='$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
+axs[nax].plot(t, trajs_edge[1, :], c='b', lw=1.5, ls='-', zorder=1, label='$\overleftarrow{s}_{i-k}(\hat x_r)$')
+axs[nax].scatter(peaks[0] / fs, x_hat_H1[peaks[0], 0], marker='.', c='k', s=20.0)
 
-# axs[nax].axhline(x=peaks_1, ymin=plt.ylim()[0], ymax=plt.ylim()[1])
-for xp in peaks_1 / fs:
-    axs[nax].axvline(x=xp, ls='--', c='b', lw=0.5)
+# axs[nax].axhline(x=peaks, ymin=plt.ylim()[0], ymax=plt.ylim()[1])
+for peak in peaks / fs:
+    axs[nax].axvline(x=peak, ls='--', c='b', lw=0.5)
 
-# axs[nax].scatter(peaks_1, y[peaks_1], marker=7, c='b')
+# axs[nax].scatter(peaks, y[peaks], marker=7, c='b')
 axs[nax].legend(loc=1)
 nax += 1
 
 axs[nax].plot(t, lcr, lw=1.0, c='k', label='LCR')
-axs[nax].scatter(peaks_1 / fs, lcr[peaks_1], marker=7, c='b')
+axs[nax].scatter(peaks / fs, lcr[peaks], marker=7, c='b')
 axs[nax].legend(loc='upper right', labelspacing=-0.0)
 axs[nax].set_ylim(-0.0, 1.2)
 axs[nax].set(xlabel='time [s]')

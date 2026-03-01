@@ -29,26 +29,24 @@ for i in range(0, 4):
     segment_right = lm.Segment(a=0, b=np.inf, direction=lm.BACKWARD, g=20)
 
     # -- Symmetric Filter --
-    # CompsiteCost
+    # Composite Cost
     costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 1]])
 
     # filter signal and take the approximation
     rls = lm.RLSAlssm(costs, steady_state=False)
-    xs = rls.filter_minimize_x(y)
 
     # extracts filtered signal
-    y_hats_sym.append(costs.eval_alssm_output(xs, alssm_weights=[1]))
+    y_hats_sym.append(rls.fit(y))
 
     # -- Left-Sided Filter --
-    # CompsiteCost
+    # CompositeCost
     costs = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=[[1, 0]])
 
     # filter signal and take the approximation
     rls = lm.RLSAlssm(costs)
-    xs = rls.filter_minimize_x(y)
 
     # extracts filtered signal
-    y_hats_left.append(costs.eval_alssm_output(xs, alssm_weights=[1]))
+    y_hats_left.append(rls.fit(y))
 
 # --- Plotting ----
 STYLES = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown']
