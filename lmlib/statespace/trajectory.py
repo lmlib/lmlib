@@ -98,11 +98,21 @@ class Trajectory:
         """
 
         # return an empty array if ks is empty
+        if isinstance(ks, int):
+            ks = np.array([ks])
+            xs = np.asarray([xs])
+
         if len(ks) == 0:
             print('Warning: ks is empty. Returned empty array of size K.')
             return np.full(K, fill_value=fill_value)
 
-        trajs = Trajectory.eval(cost, xs[ks], F, thd)
+        if len(xs) == len(ks):
+            trajs = Trajectory.eval(cost, xs, F, thd)
+        elif len(xs) == K:
+            trajs = Trajectory.eval(cost, xs[ks], F, thd)
+        else:
+            raise ValueError('Length of xs must match length of ks or is equal to K.')
+
         P, xs_dim, *multi_dim = trajs.shape
 
         out = np.full((P, xs_dim, K, *multi_dim), fill_value=fill_value)

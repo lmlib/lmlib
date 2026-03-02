@@ -19,7 +19,8 @@
   trajs = Trajectory.eval_y(cost, xs[ks], ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan)
     
   ```
-  **Decision:** 
+  **Decision:**  when not possible both options then only second one: Trajectory.eval_y(cost, xs[ks], ks, K, m ...)
+  **Added**  Both functionalities and as well if ks is of type integer
 - 
 
 - Move beta parameter used in recursions from RLSAlssm to CostSegment/CompositeCost/NDCompositeCost.
