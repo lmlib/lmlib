@@ -82,7 +82,8 @@ class RLSAlssm:
         if dim_order is None:
             dim_order = np.arange(L)
         assert len(dim_order) == L, f'dim_order has wrong length, {info_str_found_shape(dim_order)}'
-
+        if L > 1:
+            assert self._steady_state, "for multidimensional ALSSMs steady_state=True has to be used"
         # -------- broadcast and check y --------
         Q = self._cost_terms.get_alssm_output_dimension()
         y = np.asarray(y)
@@ -157,7 +158,7 @@ class RLSAlssm:
             for nd_dim in dim_order[1:]:
                 xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, sample_weights, nd_dim)
 
-            self._xi0 = xi_prev[..., 0]  # remove the last dimension  due to leftovers of nd-model-order
+            self._xi0 = xi_prev[..., 0]  # remove the last dimension due to leftovers of nd-model-order
 
         # -------- calc nu --------
         # TODO

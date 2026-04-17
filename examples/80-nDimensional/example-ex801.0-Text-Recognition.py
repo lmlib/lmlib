@@ -126,7 +126,7 @@ F = [[1, 0],  # mixing matrix, turning on and off models per segment (1=on, 0=of
 cost = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
 
 nd_cost = lm.NDCompositeCost([cost, cost])
-nd_rls = lm.RLSAlssm(nd_cost, steady_state=True, backend='numpy')
+nd_rls = lm.RLSAlssm(nd_cost, steady_state=True, backend='lfilter')
 nd_rls.filter(Y)
 
 xs_H1 = nd_rls.minimize_x()
@@ -147,7 +147,7 @@ cr = J_B / J_A
 
 
 # ------------ Plotting -------------------------------
-plot_ref = True
+plot_ref = False
 if plot_ref:
 
     mappedtraj = nd_cost.two_dim_map_trajectory(nd_cost.two_dim_trajectory(xs_ref), k0=(K1_REF, K2_REF), Ks=(K1, K2))
