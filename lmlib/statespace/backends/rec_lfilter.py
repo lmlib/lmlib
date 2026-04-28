@@ -2,6 +2,7 @@ import numpy as np
 from numpy.linalg import inv, matrix_power
 from scipy.signal import lfilter
 from warnings import warn
+from lmlib.utils.profiling import profile
 
 
 # xi2 lfilter cascade
@@ -57,6 +58,10 @@ def lfilter_cascade_nu(nu, A, C, a, b, direction, delta, gamma, y, v, beta):
 
 
 # general forward cascade
+# @profile is intentional on this production function: the decorator is a
+# transparent pass-through when lm.profiling.enable() has not been called
+# (overhead is a single bool check per call). See lmlib/utils/profiling.py.
+@profile
 def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
     """
     IIR forward calculation of xi
@@ -86,7 +91,7 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
     """
 
     if not (a < 0 and b <= 0):
-        NotImplemented('BACKEND: a and b has to be lower then zero for forward calculated segments.')
+        raise ValueError('BACKEND: a and b has to be lower then zero for forward calculated segments.')
 
     # gamma pre-calculation
     gamma_inv = 1 / gamma
@@ -103,7 +108,7 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
     N = np.shape(A)[1]
 
     if not np.allclose(gAinvT, np.tril(gAinvT)):
-        raise "State-Space Matrix A needs to be upper triangular for cascaded version"
+        raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
 
     vy = y*v[:, None]
 
@@ -119,22 +124,23 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
         y_delayed_a[-a + 1:] = vy[:a - 1] # vy[:K + a - 1]
         y_diff -= np.einsum('kl, nl->kn', y_delayed_a, gamma_a * Aac)
 
-    # iterating through dimensions
+    # iterating through dimensions — write directly into xi (F-order in-place, no scratch buffer).
+    # Correct when xi is zero at the start of this call, which is guaranteed by _nd_xi_q_recursion
+    # (xi_curr is freshly allocated as zeros before any cost-segment iteration).
     y_diff = np.swapaxes(y_diff, 0, 1)  # convenient for later indexing
-    xi0 = np.zeros_like(xi)
     n_ = 0
-    xi0[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
+    xi[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
     for n_ in range(1, N):
-        y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi0[:-1], gAinvT[n_])
-        xi0[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
-    xi += xi0
-
+        y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi[:-1], gAinvT[n_])
+        xi[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
 
     # SE weight for this cost segment
     if beta != 1:
         xi *= beta
 
 # general backward cascade
+# @profile is intentional on this production function (see forward cascade comment above).
+@profile
 def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
     """-
     IIR backward calculation of xi
@@ -163,8 +169,7 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
     einsum_path : str (see RLSALssm)
     """
     if not (a >= 0 and b > 0):
-        NotImplemented('BACKEND: a and b has to be higher then zero for backward calculated segments.')
-
+        raise ValueError('BACKEND: a and b has to be higher then zero for backward calculated segments.')
 
     # gamma pre-calculation
     gamma_a = gamma ** (a - delta)
@@ -179,7 +184,7 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
     N = np.shape(A)[1]
 
     if not np.allclose(gAT, np.tril(gAT)):
-        raise "State-Space Matrix A needs to be upper triangular for cascaded version"
+        raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
 
     K = len(xi)
     vy = y*v[:, None]
@@ -199,15 +204,16 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
     y_diff_flipped = y_diff[::-1]
     # "axis_reverse" numpy version ? TODO
 
-    # iterating through dimensions
+    # iterating through dimensions — write directly into xi via a reversed view (in-place).
+    # Safe because the caller (_nd_xi_q_recursion) now guarantees xi is zero on entry:
+    # each cost segment receives its own freshly-allocated xi_seg.
     y_diff_flipped = np.swapaxes(y_diff_flipped, 0, 1)  # convenient for later indexing
-    xi0 = np.zeros_like(xi)
+    xi_rev = xi[::-1]  # reversed view along time axis, no copy
     n_ = 0
-    xi0[:, n_] = lfilter([1, 0], [1, -gamma], y_diff_flipped[n_].T).T
+    xi_rev[:, n_] = lfilter([1, 0], [1, -gamma], y_diff_flipped[n_].T).T
     for n_ in range(1, N):
-        y_diff_flipped[n_, 1:] += np.einsum('kn..., n->k...', xi0[:-1], gAT[n_])
-        xi0[:, n_] = lfilter([1, 0], [1, -gamma], y_diff_flipped[n_].T).T
-    xi += xi0[::-1]
+        y_diff_flipped[n_, 1:] += np.einsum('kn..., n->k...', xi_rev[:-1], gAT[n_])
+        xi_rev[:, n_] = lfilter([1, 0], [1, -gamma], y_diff_flipped[n_].T).T
 
 
     # SE weight for this cost segment
