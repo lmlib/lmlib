@@ -261,7 +261,8 @@ class RLSAlssm:
         sub_cost = self._cost_terms._get_sub_cost_term(model_dimension)
         N = sub_cost.get_alssm_order()
         *Ks, Q = np.shape(y)
-        xi_curr = np.zeros((*Ks, N ** q,)) # the last dimension is the nd-model-order
+        # F-order: xi[:,n] columns are contiguous → faster column writes in lfilter backend
+        xi_curr = np.zeros((*Ks, N ** q,), order='F') # the last dimension is the nd-model-order
 
         # most efficient to access subarrays in a ndarray
         # 1. move subarray to last dimensions (returns a view)
@@ -274,14 +275,25 @@ class RLSAlssm:
         _sample_weights = np.moveaxis(sample_weights, model_dimension, -1) # to the last dimension, no model output dimension
         _sample_weights = np.reshape(_sample_weights, (-1, *_sample_weights.shape[-1:]))
 
-        # iterate over CostSegments
-        for cs in sub_cost._get_cost_segments(force_MC=True):
-            # backend recursion
+        # Single segment: write in-place directly into xi_curr (already zeros) — no extra buffer.
+        # Multiple segments: allocate one xi_seg per segment and accumulate; xi_curr stays zero
+        # on entry to each cascade call because it only receives contributions via +=.
+        cost_segs = list(sub_cost._get_cost_segments(force_MC=True))
+        multi = len(cost_segs) > 1
+        for cs in cost_segs:
+            if multi:
+                _xi_seg = np.zeros((*Ks, N ** q,), order='F')
+                _target = np.reshape(np.moveaxis(_xi_seg, model_dimension, -2),
+                                     (-1, *_xi_curr.shape[-2:]))
+            else:
+                _target = _xi_curr
             for i in range(_y.shape[0]):
-                xi_q_recursion(_xi_curr[i], q,
+                xi_q_recursion(_target[i], q,
                                cs.alssm, cs.segment,
                                _y[i], _sample_weights[i],
                                cs.beta, self._backend, self._filter_form)
+            if multi:
+                xi_curr += _xi_seg
 
         return xi_curr
 
@@ -298,13 +310,22 @@ class RLSAlssm:
         _xi_prev = np.moveaxis(xi_prev, model_dimension, 0)
         _sample_weights = np.moveaxis(sample_weights, model_dimension, 0)
 
-        # cost segments
-        # iterate over CostSegments
-        for cs in sub_cost._get_cost_segments(force_MC=True):
-
-            xi_q_asterisk_l_recursion(_xi_curr, q,
+        # Single segment: write in-place directly into xi_curr (already zeros) — no extra buffer.
+        # Multiple segments: allocate one xi_seg per segment and accumulate.
+        cost_segs = list(sub_cost._get_cost_segments(force_MC=True))
+        multi = len(cost_segs) > 1
+        for cs in cost_segs:
+            if multi:
+                _xi_seg = np.zeros((*Ks, Nq_prev * N ** q,), order='F')
+                _target = np.moveaxis(_xi_seg, model_dimension, 0)
+            else:
+                _target = _xi_curr
+            xi_q_asterisk_l_recursion(_target, q,
                                       cs.alssm, cs.segment,
                                       _xi_prev, _sample_weights,
                                       cs.beta, self._backend, self._filter_form)
+            if multi:
+                xi_curr += _xi_seg
+
         return xi_curr
 
