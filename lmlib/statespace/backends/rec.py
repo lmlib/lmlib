@@ -74,18 +74,15 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form):
         if filter_form == 'cascade':
             if q == 2:
                 lfilter_cascade_xi2(xi,
-                                    alssm.A, alssm.C,
-                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    segment, alssm.A, alssm.C,
                                     y, v, beta)
             elif q == 1:
                 lfilter_cascade_xi1(xi,
-                                    alssm.A, alssm.C,
-                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    segment, alssm.A, alssm.C,
                                     y, v, beta)
             elif q == 0:
                 lfilter_cascade_xi0(xi,
-                                    alssm.A, alssm.C,
-                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    segment, alssm.A, alssm.C,
                                     y, v, beta)
             else:
                 raise ValueError("q value not supported: '{}'".format(q))
