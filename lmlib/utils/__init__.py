@@ -41,5 +41,5 @@ These function are used to generate synthetic signals. See :ref:`generator_catal
 
 from .check import *
 from .generator import *
-from .colors import NORD
 from . import profiling
+from .colors import NORD
