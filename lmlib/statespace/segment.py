@@ -1,6 +1,7 @@
 from typing import Union
 import warnings
 import numpy as np
+from numpy.linalg import inv, matrix_power
 
 __all__ = ['FW', 'FORWARD', 'BW', 'BACKWARD', 'Segment']
 
@@ -86,6 +87,8 @@ class Segment:
     def __init__(self, a:Union[int, float], b:Union[int, float], direction:str, g:int, delta:int=0, label:str=None, gamma:Union[int, float]=None):
         self._a = None
         self._b = None
+        self._fw_cache: dict = {}
+        self._bw_cache: dict = {}
         self.set_boundaries(a, b)
         self.direction = direction
         if gamma is not None:
@@ -166,6 +169,8 @@ class Segment:
     def delta(self, delta):
         assert isinstance(delta, int), 'Relative window shift delta is not of type integer.'
         self._delta = delta
+        self._fw_cache.clear()
+        self._bw_cache.clear()
 
     @property
     def label(self):
@@ -195,6 +200,8 @@ class Segment:
     def gamma(self, gamma):
         assert isinstance(gamma, float), 'Window decay factor gamma is not of type float.'
         self._gamma = gamma
+        self._fw_cache.clear()
+        self._bw_cache.clear()
 
     def set_boundaries(self, a, b):
         assert isinstance(a, int) or np.isinf(a), 'Left boundary is not of type integer or np.inf.'
@@ -202,6 +209,68 @@ class Segment:
         assert a < b, 'left boundary \'a\' must be smaller than the right boundary \'b\'.'
         self._a = a
         self._b = b
+        self._fw_cache.clear()
+        self._bw_cache.clear()
+
+    def fw_params(self, A, C):
+        """Return cached forward-cascade precomputed quantities for the given model matrices.
+
+        Computes on first call for a given (A, C) pair; returns cached result on subsequent calls.
+        Cache is invalidated automatically if any segment parameter changes.
+
+        Parameters
+        ----------
+        A : np.ndarray, shape=(N, N)
+        C : np.ndarray, shape=([L,] N)
+
+        Returns
+        -------
+        tuple : (gamma_inv, gamma_a, gamma_b, gAinvT, Aac, Abc, N)
+        """
+        C2d = np.atleast_2d(C)
+        key = (A.tobytes(), A.shape, C2d.tobytes(), C2d.shape)
+        if key not in self._fw_cache:
+            gamma_inv = 1 / self.gamma
+            gamma_a = self.gamma ** (self.a - 1 - self.delta)
+            gamma_b = self.gamma ** (self.b - self.delta)
+            A_inv = inv(A)
+            gAinvT = gamma_inv * A_inv.T
+            Aa = matrix_power(A, 0 if np.isinf(self.a) else self.a - 1)
+            Aac = np.dot(Aa.T, C2d.T)
+            Ab = matrix_power(A, self.b)
+            Abc = np.dot(Ab.T, C2d.T)
+            N = A.shape[1]
+            self._fw_cache[key] = (gamma_inv, gamma_a, gamma_b, gAinvT, Aac, Abc, N)
+        return self._fw_cache[key]
+
+    def bw_params(self, A, C):
+        """Return cached backward-cascade precomputed quantities for the given model matrices.
+
+        Computes on first call for a given (A, C) pair; returns cached result on subsequent calls.
+        Cache is invalidated automatically if any segment parameter changes.
+
+        Parameters
+        ----------
+        A : np.ndarray, shape=(N, N)
+        C : np.ndarray, shape=([L,] N)
+
+        Returns
+        -------
+        tuple : (gamma_a, gamma_b, gAT, Aac, Abc, N)
+        """
+        C2d = np.atleast_2d(C)
+        key = (A.tobytes(), A.shape, C2d.tobytes(), C2d.shape)
+        if key not in self._bw_cache:
+            gamma_a = self.gamma ** (self.a - self.delta)
+            gamma_b = self.gamma ** (self.b - self.delta + 1)
+            gAT = self.gamma * A.T
+            Aa = matrix_power(A, self.a)
+            Aac = np.dot(Aa.T, C2d.T)
+            Ab = matrix_power(A, 0 if np.isinf(self.b) else self.b + 1)
+            Abc = np.dot(Ab.T, C2d.T)
+            N = A.shape[1]
+            self._bw_cache[key] = (gamma_a, gamma_b, gAT, Aac, Abc, N)
+        return self._bw_cache[key]
 
     def _ab_range(self, thd=1e-6):
 
