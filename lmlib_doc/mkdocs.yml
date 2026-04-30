@@ -1,0 +1,47 @@
+site_name: Lmlib Documenation
+theme:
+  name: material
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue grey
+      accent: blue grey 
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: black
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - What is LMLib?: getting_started/whats_lmlib.md
+    - Installation: getting_started/installation.md
+    - State-Space Tutorial: getting_started/state-space-tutorial.md
+    - Bibliography: getting_started/bibliography.md
+  - Catalog:
+    - Biosignals: catalog/biosignals.md
+    - Generators: catalog/generators.md
+  - API: api/index.md
+  - About Us: about_us.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex
+
+plugins:
+  - search
