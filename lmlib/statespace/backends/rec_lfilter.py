@@ -136,7 +136,7 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
 
 # general backward cascade
 def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
-    """-
+    """
     IIR backward calculation of xi
 
     Due to generalization, different input parameter shapes are possible.
