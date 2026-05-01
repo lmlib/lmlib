@@ -1,9 +1,3 @@
-"""
-Recursive Least Square Alssm Classes to solve Alssm Cost Functions
-
-
-"""
-
 import sys
 from typing import Union
 
@@ -22,6 +16,88 @@ __all__ = ['RLSAlssm']
 
 
 class RLSAlssm:
+    r"""
+    Recursive Least Square Alssm Class to solve Alssm Cost Functions.
+
+    This class uses either a :class:`CostSegment`, :class:`CompositeCost` or :class:`NDCompositeCost` and defines the functions to solve it recursively. 
+    :math:`W_k`, :math:`\xi_k`, :math:`\kappa_k` and :math:`\nu_k` can be computed either as a forward or as a backward recursion as defined in Eq. (22-25) [Wildhaber2018]_.
+    :math:`W_k` is the Gram matrix defined by the ALSSM (:math:`A`, :math:`c`, :math:`\alpha` and :math:`w`). :math:`\mathrm{vec}(W_k)=\xi^{(2)}(k,y)=\xi^{(2)}(k,\mathbf{1})` (with :math:`\mathbf{1}` the all ones vector) Eq. (21) [Baeriswyl2025]_.
+    :math:`\xi_k` (:math:`=\xi^{(1)}(k,y)` Eq. (20) [Baeriswyl2025]_) is the projection of the signal to the ALSSM subspace.
+    :math:`\kappa_k` gives the energy of a signal weighted under :math:`\alpha` and :math:`w`. :math:`\kappa_k=\xi^{(0)}(k,y)` Eq. (19) [Baeriswyl2025]_.
+    Additionally, :math:`\nu_k` is introduced which is the number of weighted samples in the window.
+
+    The cost function is (Eq. (20) [Wildhaber2018]_):
+    .. math::
+        J_k(x) = \sum_{i=k+a}^{k+b} \alpha^{k+\delta}(i) w_i \big(y_i - CA^{i-k}x\big)^2
+
+    .. seealso:: 
+        [Wildhaber2018]_ [Wildhaber2019]_ 
+        For the definition of the :math:`\xi^{(q)}(k,y)` terms see Eq. (19-21) [Baeriswyl2025]_
+
+    Parameters
+    ----------
+    cost_terms : CostSegment, CompositeCost, NDCompositeCost
+        Cost function to be minimized recursively. See :class:`CostSegment`, :class:`CompositeCost` or :class:`NDCompositeCost`.
+    steady_state : bool, optional
+        Defines if the ALSSM is steady state (not time-varying, e.g. LTI). If so, :math:`W_k` reduces to :math:`W`. Default: True.
+
+        .. todo:: Clarify whether ``steady_state=True`` strictly requires LTI conditions
+            (:math:`w_k = w`, :math:`\gamma_k = \gamma`), or whether it refers to the
+            asymptotic convergence of :math:`W_k` for long signals (see Sec. III-I.2 [Wildhaber2018]_).
+            Setting this incorrectly may produce silently wrong results.
+    calc_W : bool, optional
+        If True, computes the Gram matrix :math:`W_k` (:math:`\xi^{(2)}`).
+        Required for :meth:`minimize_v`, :meth:`minimize_x`, and :meth:`eval_errors`. Default: True.
+    calc_xi : bool, optional
+        If True, computes the signal projection :math:`\xi_k = \xi^{(1)}(k, y)`.
+        Required for :meth:`minimize_v`, :meth:`minimize_x`, and :meth:`eval_errors`. Default: True.
+    calc_kappa : bool, optional
+        If True, computes the signal energy :math:`\kappa_k = \xi^{(0)}(k, y)`.
+        Required for :meth:`eval_errors`. Can be set to False when only the minimizer is needed. Default: True.
+    calc_nu : bool, optional
+        If True, computes :math:`\nu_k`, the number of weighted samples in the window.
+        Not yet implemented. Default: False.
+    filter_form : str, optional
+        Controls the internal block structure of the recursive filter.
+
+        - ``'cascade'`` : cascade block form (default)
+        - ``'parallel'`` : parallel block form
+
+    backend : str, optional
+        Selects the computational backend for the state-space recursions.
+        If ``None``, the globally configured backend is used (see :func:`set_backend`).
+
+        - ``'numpy'`` : pure NumPy implementation (default)
+        - ``'lfilter'`` : transfer-function backend using :func:`scipy.signal.lfilter`
+        - ``'jit'`` : Numba JIT-compiled backend (requires ``numba`` package)
+
+    Notes
+    -----
+    Setting ``steady_state=True`` (default) assumes the window defined by the cost segments
+    does not change over time (LTI case), which allows :math:`W_k` to be precomputed once
+    as a constant :math:`W`. Set ``steady_state=False`` for time-varying windows
+    (e.g. near signal boundaries or with sample-dependent weights), at the cost of
+    a full :math:`W_k` recursion at every sample.
+
+    Examples
+    --------
+    Fit a polynomial of degree 2 to a signal using a left-sided window:
+
+    >>> import numpy as np
+    >>> import lmlib as lm
+    >>> from lmlib.utils.generator import gen_rect
+    >>> K = 500
+    >>> y = gen_rect(K, 200, 100)
+    >>> alssm = lm.AlssmPoly(poly_degree=2)
+    >>> seg = lm.Segment(a=-20, b=0, direction=lm.FORWARD, g=10)
+    >>> rls = lm.RLSAlssm(lm.CostSegment(alssm, seg))
+    >>> y_hat = rls.fit(y)
+
+    To save computation when only the signal estimate is needed, disable :math:`\kappa`:
+
+    >>> rls = lm.RLSAlssm(lm.CostSegment(alssm, seg), calc_kappa=False)
+    >>> y_hat = rls.fit(y)
+    """
 
     def __init__(self, cost_terms, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=False, filter_form='cascade',
                  backend=None):
@@ -76,6 +152,38 @@ class RLSAlssm:
         raise NotImplementedError("nu calculation is not yet implemented.")
 
     def filter(self, y, sample_weights=None, dim_order=None):
+        """
+        Calculates the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` and :math:`\nu_k` based on an input signal :math:`y`.
+
+        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
+
+        Parameters
+        ----------
+        y : array_like of shape (K, [Q])
+            Input signal. The Q dimension is the ALSSM output dimension, and for scalar ALSSMs (Q=0) a 1D array is also accepted.
+        sample_weights : array_like of shape (K,), optional
+            Per-sample weights :math:`w_i \in \[0,1\]`. Default: all ones.
+        dim_order : array_like of int, optional
+            Has no effect for :class:`CostSegment` and :class:`CompositeCost`. The order in which ND dimensions are reduced in the recursion for :class:`NDCompositeCost`. Default: np.arange(L) with L number of dimensions.
+
+        Notes
+        -----
+        When `steady_state=True`, :math:`W_k` is precomputed once as a constant :math:`W` regardless of `calc_W`. This is valid when all window parameters are independent of :math:k (i.e., :math:`w_k = w` and :math:\gamma_k = \gamma), in which case the :math:`W_k` recursion converges to a steady state satisfying a Lyapunov equation (see Section III-I.2 in [Wildhaber2018]_).
+        The code uses :math:`Q=0` to mean a :math:`1\times1` scalar, not zero-dimensional.
+
+        Returns
+        -------
+        None
+            Results are stored in-place and accessed via :attr:`W`, :attr:`xi`, and :attr:`kappa`.
+
+        Raises
+        ------
+        ValueError
+            If `y` has wrong shape.
+            If `sample_weights` has wrong shape.
+        AssertionError
+            If `dim_order` has wrong length.
+        """
 
         # -------- check dimension order --------
         L = self._cost_terms.get_number_of_dimensions()
@@ -133,7 +241,7 @@ class RLSAlssm:
 
             self._xi2 = xi_prev
 
-        # -------- calc x1 --------
+        # -------- calc xi1 --------
         if self._calc_xi:
             q = 1
 
@@ -146,7 +254,7 @@ class RLSAlssm:
 
             self._xi1 = xi_prev
 
-        # -------- calc x0 --------
+        # -------- calc xi0 --------
         if self._calc_kappa:
             q = 0
 
