@@ -19,6 +19,7 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
   features:
+    - content.code.copy
     - navigation.tabs
     - navigation.sections
     - toc.integrate
@@ -27,21 +28,66 @@ nav:
   - Home: index.md
   - Getting Started:
     - What is LMLib?: getting_started/whats_lmlib.md
-    - Installation: getting_started/installation.md
     - State-Space Tutorial: getting_started/state-space-tutorial.md
-    - Bibliography: getting_started/bibliography.md
-  - Catalog:
-    - Biosignals: catalog/biosignals.md
-    - Generators: catalog/generators.md
-  - API: api/index.md
+    - Coding Examples:
+      - Windowed State Space Filters: coding/_generated_galleries/10-windowed-state-space-filters-basic/index.md
+      - Backend: coding/_generated_galleries/13-backend/index.md
+      - Polynome: coding/_generated_galleries/20-polynomials-basics/index.md
+  - Installation: getting_started/installation.md
+  #- Catalog:
+  #  - Biosignals: catalog/_generated_galleries/biosignals/index.md
+  #   - Generators: catalog/_generated_galleries/index.md
+  - Examples: 
+    - Detection: examples/_generated_galleries/10-detection/index.md
+    - Filtering: examples/_generated_galleries/12-filtering/index.md
+    - Polynomials Calculus: examples/_generated_galleries/21-polynomials-calculus/index.md
+    - APP Changepoint Detection: examples/_generated_galleries/40-app-changepoint-detection/index.md
+    - Convolution: examples/_generated_galleries/50-convolution/index.md
+    - Localized Polynpmials: examples/_generated_galleries/70-localized-polynomials/index.md
+    - N Dimensional: examples/_generated_galleries/80-nDimensional/index.md
+  - API:
+    #- Overview: api/index.md
+    #- lmlib: api/lmlib-root.md
+    #- Polynomial: api/lmlib-polynomial.md
+    #- Statespace: api/lmlib-statespace.md
+    #- Utils: api/lmlib-utils.md
+    - Statespace Submodules:
+    #  - Model: api/lmlib-statespace-model.md
+    #  - Cost: api/lmlib-statespace-cost.md
+    #  - RLS: api/lmlib-statespace-rls.md
+    #  - Window: api/lmlib-statespace-window.md
+    #  - Segment: api/lmlib-statespace-segment.md
+    #  - Trajectory: api/lmlib-statespace-trajectory.md
+      - Applications: api/lmlib-statespace-applications.md
+    #  - Backend: api/lmlib-statespace-backend.md
   - About Us: about_us.md
-
-markdown_extensions:
-  - admonition
-  - codehilite
-  - toc:
-      permalink: true
-  - pymdownx.arithmatex
 
 plugins:
   - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_root_heading: true
+            show_source: false 
+            members_order: alphabetical
+            heading_level: 2
+            separate_signature: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+
+# --- Math rendering ---
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+
+# --- MathJax loader ---
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

@@ -1,5 +1,6 @@
 # Generator Catalog {#generator_catalog}
 
+<!--
 mlib provides some synthetic signal generators to work with. The signals
 are configured in sample based manner, which allows fast forward
 implementation.
@@ -69,3 +70,5 @@ static/generator_func_plots_src/gen_rand_pulse_plot.py
 ::: {.plot include-source=""}
 static/generator_func_plots_src/gen_convolve_plot.py
 :::
+
+-->

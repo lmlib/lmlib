@@ -1,4 +1,4 @@
-# What is lmlib? {#whats_lmlib}
+# What is lmlib? 
 
 ## State Space Module
 

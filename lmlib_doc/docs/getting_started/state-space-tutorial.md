@@ -93,9 +93,11 @@ alssm_poly.update() ## still needed?
 print(alssm_poly)
 ```
 
+<!-->
 ::: parsed-literal
 AlssmPoly(A=\[\[1,1\],\[0,1\]\], C=\[1,0\], label=n/a)
 :::
+<!-->
 
 ### 3. Setting up segments and defining the window shape
 
@@ -209,6 +211,8 @@ cost = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F)
 print(cost)
 ```
 
+
+<!-->
 ::: parsed-literal
 
 CompositeCost(label=n/a)
@@ -218,6 +222,7 @@ CompositeCost(label=n/a)
     label=n/a)\', \'Segment(a=1, b=300, direction=bw, g=20, delta=0,
     label=n/a)\'\]
 :::
+<!-->
 
 As you can see by printing the output of this method, all the parameters
 chosen in our model are summarized in this variable.
