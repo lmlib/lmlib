@@ -156,6 +156,8 @@ class RLSAlssm:
         Calculates the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` and :math:`\nu_k` based on an input signal :math:`y`.
 
         The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
+        This function validates if every parameter has the right dimensions and redirects to each :math:`q`. It also coordinates the recursion steps across dimensions: :meth:`_nd_xi_q_recursion()` for the first dimension, :meth:`_nd_xi_q_asterisk_l_recursion()` for the subsequent ones.
+        TODO: calculate :math:`\nu_k`.
 
         Parameters
         ----------
@@ -365,6 +367,53 @@ class RLSAlssm:
         return tuple(out_dict[_] for _ in _output)
 
     def _nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
+        """
+        Defines the recursion to calculate the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for a given :math:`q \in \{0,1,2\}` based on an input signal :math:`y`.
+
+        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
+        This function subdivides the calculation into cost segments (for-loop).
+
+        Parameters
+        ----------
+        q : int
+            Order of the cost parameter. Must be 0, 1, or 2, corresponding to
+            :math:`\kappa_k` (signal energy), :math:`\xi_k` (signal projection), and
+            :math:`W_k` (Gram matrix), respectively.
+            Determines the trailing size of the output: :math:`N_l^q`, where :math:`N_l`
+            is the model order of the sub-cost associated with ``model_dimension``.
+        y : array_like of shape (\*Ks, Q)
+            Input signal, where ``Ks`` are the signal length dimensions (one per ND axis)
+            and ``Q`` is the ALSSM output dimension. For scalar ALSSMs ``Q=0`` after
+            preprocessing in :meth:`filter`.
+        sample_weights : array_like of shape (\*Ks,)
+            Per-sample weights :math:`w_i \in [0,1]`.
+        model_dimension : int
+            Index of the signal axis along which the 1-D state-space recursion is applied.
+            All other signal axes are flattened into a batch and iterated over
+            sequentially (one slice at a time via an inner loop).
+            For a 1-D signal (``CostSegment`` / ``CompositeCost``) this is always 0.
+            For an ND signal (``NDCompositeCost``) each axis is processed in a separate call.
+
+        Notes
+        -----
+        The difference between this function and :meth:`_nd_xi_q_asterisk_l_recursion()` is
+        that this function is the **first** recursion step: it reads directly from the input
+        signal `y` and initialises :math:`\xi^{(q)}` from scratch with shape
+        ``(*Ks, N_l**q)``.
+
+        :meth:`_nd_xi_q_asterisk_l_recursion()` is used for every **subsequent** dimension:
+        it takes the accumulated ``xi_prev`` (shape ``(*Ks, Nq_prev)``) from the previous step
+        and extends the trailing axis to ``Nq_prev * N_l**q``, realising the tensor-product
+        (Kronecker) structure over ND dimensions. After processing all L dimensions the
+        trailing axis has size :math:`(N_0 \cdots N_{L-1})^q = N_\mathrm{total}^q`.
+
+        Returns
+        -------
+        xi_curr : :class:`~numpy.ndarray` of shape (\*Ks, N_l**q)
+            :math:`\xi^{(q)}(k,y)` cost parameter with the same leading shape as `y`
+            (all signal dimensions) and a trailing axis of size :math:`N_l^q`, where
+            :math:`N_l` is the model order of the sub-cost for ``model_dimension``.
+        """
 
         sub_cost = self._cost_terms._get_sub_cost_term(model_dimension)
         N = sub_cost.get_alssm_order()
@@ -394,6 +443,54 @@ class RLSAlssm:
         return xi_curr
 
     def _nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, sample_weights, model_dimension):
+        """
+        Defines the recursion to calculate the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for a given :math:`q \in \{0,1,2\}` based on an input signal :math:`y`.
+
+        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
+        This function subdivides the calculation into cost segments (for-loop).
+
+        Parameters
+        ----------
+        xi_prev : :class:`~numpy.ndarray` of shape (\*Ks, Nq_prev)
+            Accumulated cost parameter from the previous dimension step, where
+            ``Nq_prev`` is the trailing size built up so far (e.g. ``N_0**q`` after
+            the first step, ``N_0**q * N_1**q`` after the second, etc.).
+        q : int
+            Order of the cost parameter. Must be 0, 1, or 2, corresponding to
+            :math:`\kappa_k` (signal energy), :math:`\xi_k` (signal projection), and
+            :math:`W_k` (Gram matrix), respectively.
+            The trailing axis of the output grows by a factor :math:`N_l^q`, where
+            :math:`N_l` is the model order of the sub-cost for ``model_dimension``.
+        y : array_like of shape (\*Ks, Q)
+            Input signal. Only used to determine the leading shape ``Ks``; the
+            actual values are not read (the signal information enters via ``xi_prev``).
+        sample_weights : array_like of shape (\*Ks,)
+            Per-sample weights :math:`w_i \in [0,1]`.
+        model_dimension : int
+            Index of the signal axis along which the 1-D state-space recursion is applied.
+            All other signal axes are moved to the front and iterated over
+            sequentially (one slice at a time via the backend call).
+            For an ND signal (``NDCompositeCost``) each axis is processed in a separate call.
+
+        Notes
+        -----
+        The difference between this function and :meth:`_nd_xi_q_recursion()` is
+        that this function defines every **subsequent** recursion step after the first:
+        it reads from the accumulated ``xi_prev`` (shape ``(*Ks, Nq_prev)``) and
+        extends the trailing axis to ``Nq_prev * N_l**q``, realising the tensor-product
+        (Kronecker) structure over ND dimensions. After processing all L dimensions the
+        trailing axis has size :math:`(N_0 \cdots N_{L-1})^q = N_\mathrm{total}^q`.
+
+        :meth:`_nd_xi_q_recursion()` is used for the **first** dimension:
+        it reads directly from the input signal `y` and initialises :math:`\xi^{(q)}`
+        from scratch with shape ``(*Ks, N_0**q)``.
+
+        Returns
+        -------
+        xi_curr : :class:`~numpy.ndarray` of shape (\*Ks, Nq_prev \* N_l**q)
+            Extended cost parameter. The leading shape matches `y`; the trailing axis
+            is the product of all accumulated sub-cost orders raised to :math:`q`.
+        """
 
         sub_cost = self._cost_terms._get_sub_cost_term(model_dimension)
         N = sub_cost.get_alssm_order()
