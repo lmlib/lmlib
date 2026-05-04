@@ -40,11 +40,8 @@ class RLSAlssm:
         Cost function to be minimized recursively. See :class:`CostSegment`, :class:`CompositeCost` or :class:`NDCompositeCost`.
     steady_state : bool, optional
         Defines if the ALSSM is steady state (not time-varying, e.g. LTI). If so, :math:`W_k` reduces to :math:`W`. Default: True.
-
-        .. todo:: Clarify whether ``steady_state=True`` strictly requires LTI conditions
-            (:math:`w_k = w`, :math:`\gamma_k = \gamma`), or whether it refers to the
-            asymptotic convergence of :math:`W_k` for long signals (see Sec. III-I.2 [Wildhaber2018]_).
-            Setting this incorrectly may produce silently wrong results.
+        This happens in case :math:`w_k = w`, :math:`\gamma_k = \gamma` (see Sec. III-I.2 [Wildhaber2018]_).
+        Setting this incorrectly may produce silently wrong results.
     calc_W : bool, optional
         If True, computes the Gram matrix :math:`W_k` (:math:`\xi^{(2)}`).
         Required for :meth:`minimize_v`, :meth:`minimize_x`, and :meth:`eval_errors`. Default: True.
