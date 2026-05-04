@@ -149,7 +149,7 @@ class RLSAlssm:
         raise NotImplementedError("nu calculation is not yet implemented.")
 
     def filter(self, y, sample_weights=None, dim_order=None):
-        """
+        r"""
         Calculates the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` and :math:`\nu_k` based on an input signal :math:`y`.
 
         The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
@@ -270,6 +270,65 @@ class RLSAlssm:
         # TODO
 
     def minimize_v(self, H=None, h=None):
+        r"""
+        Minimizes the cost :math:`J_k(x)` subject to a linear constraint on the state vector,
+        returning the reduced-dimensional free parameter :math:`v`.
+
+        The state vector :math:`x` is constrained to the affine subspace
+
+        .. math::
+            x = Hv + h,
+
+        with known :math:`H \in \mathbb{R}^{N \times M}` and :math:`h \in \mathbb{R}^N`, and
+        unknown :math:`v \in \mathbb{R}^M`. Substituting into the cost function (Eq. (21)
+        [Wildhaber2018]_) and minimizing over :math:`v` yields the closed-form solution
+        (Eq. (69) [Wildhaber2018]_):
+
+        .. math::
+            \hat{v}_k = (H^T W_k H)^{-1} H^T (\xi_k - W_k h).
+
+        When ``H=None`` and ``h=None`` (defaults), the constraint reduces to :math:`x = v`
+        (unconstrained minimization), so :math:`\hat{v}_k = W_k^{-1} \xi_k`.
+
+        Parameters
+        ----------
+        H : array_like of shape (N, M), optional
+            Constraint matrix mapping the free parameter :math:`v \in \mathbb{R}^M` to the
+            state space :math:`\mathbb{R}^N`. If ``None``, defaults to the identity matrix
+            :math:`I_N` (unconstrained, :math:`M = N`).
+        h : array_like of shape (N,), optional
+            Constraint offset vector :math:`h \in \mathbb{R}^N`. If ``None``, defaults to
+            the zero vector (no offset).
+
+        Notes
+        -----
+        The distinction between :meth:`minimize_v` and :meth:`minimize_x` is:
+
+        - :meth:`minimize_v` returns :math:`v \in \mathbb{R}^M` (the free parameter, dimension M).
+        - :meth:`minimize_x` returns :math:`x = Hv + h \in \mathbb{R}^N` (the full state vector,
+          dimension N).
+
+        When ``H=None``, both methods return the same result since :math:`x = v`.
+
+        When ``steady_state=True``, :math:`W_k = W` is constant, so :math:`H^T W H` is
+        inverted once. When ``steady_state=False``, samples where :math:`H^T W_k H` is
+        ill-conditioned (singular to machine precision) are left as ``NaN``.
+
+        Returns
+        -------
+        v : :class:`~numpy.ndarray` of shape (..., M)
+            Free parameter :math:`\hat{v}_k` minimizing :math:`J_k(Hv + h)`. The leading
+            dimensions match the signal length and any parallel dimensions of the input.
+            Entries are ``NaN`` where :math:`H^T W_k H` is ill-conditioned
+            (only possible when ``steady_state=False``).
+
+        Raises
+        ------
+        AssertionError
+            If ``H`` does not have ``N`` rows.
+            If ``h`` does not have length ``N``.
+            If ``H.T @ W @ H`` is not invertible (only when ``steady_state=True``).
+        """
 
         _H = np.eye(self._N) if H is None else np.asarray(H)
         _h = np.zeros(self._N) if h is None else np.asarray(h)
@@ -298,6 +357,55 @@ class RLSAlssm:
         return v
 
     def minimize_x(self, H=None, h=None):
+        r"""
+        Minimizes the cost :math:`J_k(x)` subject to a linear constraint on the state vector,
+        returning the full N-dimensional state vector :math:`x`.
+
+        Internally calls :meth:`minimize_v` to obtain :math:`\hat{v}_k`, then reconstructs
+        the state vector via the constraint (Eq. (66) [Wildhaber2018]_):
+
+        .. math::
+            \hat{x}_k = H \hat{v}_k + h.
+
+        When ``H=None`` and ``h=None`` (defaults), the constraint reduces to :math:`x = v`,
+        so :math:`\hat{x}_k = W_k^{-1} \xi_k` (Table V row 1, [Wildhaber2018]_).
+
+        Parameters
+        ----------
+        H : array_like of shape (N, M), optional
+            Constraint matrix mapping the free parameter :math:`v \in \mathbb{R}^M` to the
+            state space :math:`\mathbb{R}^N`. If ``None``, defaults to the identity matrix
+            :math:`I_N` (unconstrained, :math:`M = N`).
+        h : array_like of shape (N,), optional
+            Constraint offset vector :math:`h \in \mathbb{R}^N`. If ``None``, defaults to
+            the zero vector (no offset).
+
+        Notes
+        -----
+        The distinction between :meth:`minimize_v` and :meth:`minimize_x` is:
+
+        - :meth:`minimize_v` returns :math:`v \in \mathbb{R}^M` (the free parameter, dimension M).
+        - :meth:`minimize_x` returns :math:`x = Hv + h \in \mathbb{R}^N` (the full state vector,
+          dimension N).
+
+        When ``H=None``, both methods return the same result since :math:`x = v`.
+
+        Returns
+        -------
+        x : :class:`~numpy.ndarray` of shape (..., N)
+            Optimal state vector :math:`\hat{x}_k = H\hat{v}_k + h`. The leading dimensions
+            match the signal length and any parallel dimensions of the input.
+            Entries are ``NaN`` where :math:`H^T W_k H` is ill-conditioned
+            (only possible when ``steady_state=False``).
+
+        Raises
+        ------
+        AssertionError
+            Propagated from :meth:`minimize_v`: 
+            If ``H`` does not have ``N`` rows.
+            If ``h`` does not have length ``N``.
+            If ``H.T @ W @ H`` is not invertible (only when ``steady_state=True``).
+        """
 
         v = self.minimize_v(H, h)
 
@@ -312,6 +420,36 @@ class RLSAlssm:
         return x
 
     def eval_errors(self, xs):
+        r"""
+        Evaluates the cost function :math:`J_k(x)` at given state vectors `xs`.
+
+        Using the expanded form of the cost (Eq. (21) [Wildhaber2018]_):
+
+        .. math::
+            J_k(x) = x^T W_k x - 2 x^T \xi_k + \kappa_k,
+
+        this method computes the scalar cost for each provided state vector without
+        performing any minimization. It is useful for comparing the fit quality of
+        different candidate state vectors, e.g. for computing error ratios or
+        log-cost ratios (LCR) as in Section III.F [Wildhaber2018]_.
+
+        Requires :attr:`W`, :attr:`xi`, and :attr:`kappa` to be available, i.e.
+        :meth:`filter` must have been called with ``calc_W=True``, ``calc_xi=True``,
+        and ``calc_kappa=True`` (all defaults).
+
+        Parameters
+        ----------
+        xs : array_like of shape (..., N)
+            State vector(s) at which to evaluate the cost. The last dimension must
+            be the state dimension N. Leading dimensions are broadcast over the
+            signal samples.
+
+        Returns
+        -------
+        J : :class:`~numpy.ndarray` of shape (...)
+            Cost :math:`J_k(x)` evaluated at each state vector in `xs`. Same shape
+            as `xs` with the last axis removed.
+        """
 
         if self._steady_state:
             J = np.einsum('...n, ...n', xs, np.einsum('nm, ...m->...n', self.W, xs))
@@ -321,6 +459,83 @@ class RLSAlssm:
         return J - 2 * np.einsum('...n, ...n', self.xi, xs) + self.kappa
 
     def fit(self, y, output='y_hat', sample_weights=None, dim_order=None, H=None, h=None, eval_alssm_weights=None):
+        r"""
+        Method that chains :meth:`filter`, :meth:`minimize_v`, and signal
+        reconstruction into a single call.
+
+        Executes the following steps in order:
+
+        1. :meth:`filter` — computes the recursive filter quantities :math:`W_k`,
+           :math:`\xi_k`, :math:`\kappa_k` from the input signal `y`.
+        2. :meth:`minimize_v` — solves the constrained minimization
+           :math:`\hat{v}_k = (H^T W_k H)^{-1} H^T (\xi_k - W_k h)`.
+        3. Reconstruction — builds :math:`\hat{x}_k = H\hat{v}_k + h` and/or the
+           signal estimate :math:`\hat{y}_k = C A^j \hat{x}_k` depending on `output`.
+
+        Parameters
+        ----------
+        y : array_like of shape (K, [Q])
+            Input signal. See :meth:`filter` for shape details.
+        output : str or tuple of str, optional
+            Selects what is returned. One or more of:
+
+            - ``'y_hat'`` *(default)* — signal estimate :math:`\hat{y}_k = CA^j\hat{x}_k`
+              evaluated via :class:`~lmlib.statespace.model.AlssmSum`.
+            - ``'x'`` — full state vector :math:`\hat{x}_k = H\hat{v}_k + h`,
+              shape ``(..., N)``.
+            - ``'v'`` — free parameter :math:`\hat{v}_k`, shape ``(..., M)``.
+
+            Pass a tuple to return multiple outputs, e.g. ``output=('x', 'y_hat')``.
+        sample_weights : array_like of shape (K,), optional
+            Per-sample weights :math:`w_i \in [0,1]`. Passed to :meth:`filter`.
+            Default: all ones.
+        dim_order : array_like of int, optional
+            Dimension processing order for :class:`~lmlib.statespace.cost.NDCompositeCost`.
+            Passed to :meth:`filter`. Default: ``np.arange(L)``.
+        H : array_like of shape (N, M), optional
+            Constraint matrix. Passed to :meth:`minimize_v`. Default: identity (unconstrained).
+        h : array_like of shape (N,), optional
+            Constraint offset. Passed to :meth:`minimize_v`. Default: zero vector.
+        eval_alssm_weights : array_like, optional
+            Per-ALSSM output weights used when evaluating :math:`\hat{y}` from a
+            :class:`~lmlib.statespace.cost.CompositeCost` with multiple models.
+            Passed to :class:`~lmlib.statespace.model.AlssmSum`. If ``None``, all
+            models contribute equally.
+
+        Returns
+        -------
+        result : ndarray or tuple of ndarray
+            If `output` is a single string, returns the corresponding array directly.
+            If `output` is a tuple, returns a tuple of arrays in the same order.
+
+            - ``'y_hat'``: shape ``(K, [Q])`` — signal estimate at every time step.
+            - ``'x'``: shape ``(..., N)`` — optimal state vector.
+            - ``'v'``: shape ``(..., M)`` — optimal free parameter.
+
+        Raises
+        ------
+        AssertionError
+            If `output` is empty or contains unknown entries.
+            Propagated from :meth:`minimize_v` if ``H`` / ``h`` have wrong shape or
+            ``H.T @ W @ H`` is not invertible (when ``steady_state=True``).
+
+        Examples
+        --------
+        Fit a degree-2 polynomial and return the signal estimate:
+
+        >>> import numpy as np
+        >>> import lmlib as lm
+        >>> K = 200
+        >>> y = np.random.randn(K)
+        >>> alssm = lm.AlssmPoly(poly_degree=2)
+        >>> seg = lm.Segment(a=-20, b=0, direction=lm.FORWARD, g=10)
+        >>> rls = lm.RLSAlssm(lm.CostSegment(alssm, seg))
+        >>> y_hat = rls.fit(y)
+
+        Return both the state vector and the signal estimate:
+
+        >>> x, y_hat = rls.fit(y, output=('x', 'y_hat'))
+        """
 
         # ----------- check output parameter -----------
         if isinstance(output, str):
@@ -364,7 +579,7 @@ class RLSAlssm:
         return tuple(out_dict[_] for _ in _output)
 
     def _nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
-        """
+        r"""
         Defines the recursion to calculate the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for a given :math:`q \in \{0,1,2\}` based on an input signal :math:`y`.
 
         The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
@@ -440,7 +655,7 @@ class RLSAlssm:
         return xi_curr
 
     def _nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, sample_weights, model_dimension):
-        """
+        r"""
         Defines the recursion to calculate the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for a given :math:`q \in \{0,1,2\}` based on an input signal :math:`y`.
 
         The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
