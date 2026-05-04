@@ -1,3 +1,0 @@
-Calculus and Cost Functions
----------------------------
-

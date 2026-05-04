@@ -127,8 +127,8 @@ class TSLM(ABC):
         >>> ccost = lm.TSLM.create_cost( ab=(-15, 30), gs=(50, 50) )
         >>> print(ccost)
         CompositeCost(label=TSLM)
-        └- ['AlssmPoly(A=[[1,1],[0,1]], C=[1,0], label=left line model)', 'AlssmPoly(A=[[1,1],[0,1]], C=[1,0], label=right line model)'],
-        └- ['Segment(a=-15, b=-1, direction=fw, g=50, delta=0, label=left segment)', 'Segment(a=0, b=30, direction=bw, g=50, delta=0, label=right segment)']
+        ['AlssmPoly(A=[[1,1],[0,1]], C=[1,0], label=left line model)', 'AlssmPoly(A=[[1,1],[0,1]], C=[1,0], label=right line model)'],
+        ['Segment(a=-15, b=-1, direction=fw, g=50, delta=0, label=left segment)', 'Segment(a=0, b=30, direction=bw, g=50, delta=0, label=right segment)']
         
         """
         return CompositeCost([AlssmPoly(1, label='left line model'), AlssmPoly(1, label='right line model')],

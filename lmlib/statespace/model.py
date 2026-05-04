@@ -76,7 +76,7 @@ class ModelBase(ABC):
 
     @property
     def C(self) -> npt.NDArray:
-        """:class:`~numpy.ndarray`, shape=([Q,] N) : Output matrix :math:`C \\in \\mathbb{R}^{Q \\times N}`"""
+        r""":class:`~numpy.ndarray`, shape=([Q,] N) : Output matrix :math:`C \\in \\mathbb{R}^{Q \\times N}`"""
         return self._C
 
     @C.setter
