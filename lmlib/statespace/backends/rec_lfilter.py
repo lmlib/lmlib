@@ -6,6 +6,65 @@ from warnings import warn
 
 # xi2 lfilter cascade
 def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, v, beta):
+    r"""
+    Computes the second-order cost parameter :math:`\xi^{(2)}(k, \mathbf{1})` in-place,
+    which equals the vectorized Gram matrix :math:`\mathrm{vec}(W_k)`.
+
+    :math:`W_k \in \mathbb{R}^{N \times N}` is independent of the signal `y` (it depends
+    only on the model and window), so `y` is replaced by an all-ones array internally.
+    The Kronecker product identity
+
+    .. math::
+        \mathrm{vec}(A^T c^T c A) = (A \otimes A)^T \mathrm{vec}(c^T c)
+
+    allows the :math:`W_k` recursion to be recast as a standard :math:`\xi^{(1)}` recursion
+    with substitutions :math:`A \to A \otimes A` and :math:`C \to C \otimes C`.
+    The result is stored in `xi2` as a flat vector of length :math:`N^2`
+    (i.e. :math:`\mathrm{vec}(W_k)`).
+
+    See also [Wildhaber2018]_ Eq. (22) and [Baeriswyl2025]_ Table I.
+
+    Parameters
+    ----------
+    xi2 : np.ndarray, shape=(K, N**2, [S])
+        Output array, modified in-place. Stores :math:`\mathrm{vec}(W_k)` for each
+        time step k. Reshaped to ``(K, N, N)`` by the caller to recover :math:`W_k`.
+    A : np.ndarray, shape=(N, N)
+        State-transition matrix of the ALSSM.
+    C : np.ndarray, shape=([L,] N)
+        Output matrix of the ALSSM.
+    a : int or np.inf
+        Left boundary of the segment interval.
+    b : int or np.inf
+        Right boundary of the segment interval.
+    direction : str
+        Recursion direction: ``'fw'`` for forward, ``'bw'`` for backward.
+    delta : int
+        Window normalization shift (window equals 1 at relative index ``delta``).
+    gamma : float
+        Window decay factor :math:`\gamma`.
+    y : np.ndarray, shape=(K, [L], [S]) or scalar
+        Input signal. Only the shape is used (values are replaced by 1); `y` is
+        passed solely to determine the number of time steps K.
+    v : np.ndarray, shape=(K,) or scalar
+        Per-sample weights :math:`w_i`.
+    beta : float
+        Cost segment weight :math:`\beta`.
+
+    Notes
+    -----
+    The underlying :func:`lfilter_forward_cascade_xi` /
+    :func:`lfilter_backward_cascade_xi` implement the recursion as a **cascade of
+    1-D IIR filters**: each state dimension ``n`` is solved by one :func:`scipy.signal.lfilter`
+    call, and its output is fed forward into the next dimension ``n+1``. This is possible
+    because ``A`` must be upper-triangular, so the state equations are lower-dimensional and
+    can be solved in order.
+
+    Raises
+    ------
+    ValueError
+        If `direction` is not ``'fw'`` or ``'bw'``.
+    """
     _A = np.kron(A, A)
     _C = np.kron(C, C)
     _y = np.broadcast_to(1., np.shape(y))  # create an array of shape Ks, but contains only a single 1.0 in memory
@@ -20,6 +79,55 @@ def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, v, beta):
 
 # xi1 lfilter cascade
 def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, v, beta):
+    r"""
+    Computes the first-order cost parameter :math:`\xi^{(1)}(k, y)` in-place,
+    which equals the signal projection vector :math:`\xi_k`.
+
+    :math:`\xi_k \in \mathbb{R}^{N}` depends on the signal `y` and is computed
+    directly using the ALSSM matrices ``A`` and ``C`` without any substitution.
+    The result is stored in `xi1` as a vector of length :math:`N`.
+
+    See also [Wildhaber2018]_ Eq. (23) and [Baeriswyl2025]_ Table I.
+
+    Parameters
+    ----------
+    xi1 : np.ndarray, shape=(K, N, [S])
+        Output array, modified in-place. Stores :math:`\xi_k` for each time step k.
+    A : np.ndarray, shape=(N, N)
+        State-transition matrix of the ALSSM.
+    C : np.ndarray, shape=([L,] N)
+        Output matrix of the ALSSM.
+    a : int or np.inf
+        Left boundary of the segment interval.
+    b : int or np.inf
+        Right boundary of the segment interval.
+    direction : str
+        Recursion direction: ``'fw'`` for forward, ``'bw'`` for backward.
+    delta : int
+        Window normalization shift (window equals 1 at relative index ``delta``).
+    gamma : float
+        Window decay factor :math:`\gamma`.
+    y : np.ndarray, shape=(K, [L], [S]) or scalar
+        Input signal. Signal values are used directly in the recursion.
+    v : np.ndarray, shape=(K,) or scalar
+        Per-sample weights :math:`w_i`.
+    beta : float
+        Cost segment weight :math:`\beta`.
+
+    Notes
+    -----
+    The underlying :func:`lfilter_forward_cascade_xi` /
+    :func:`lfilter_backward_cascade_xi` implement the recursion as a **cascade of
+    1-D IIR filters**: each state dimension ``n`` is solved by one :func:`scipy.signal.lfilter`
+    call, and its output is fed forward into the next dimension ``n+1``. This is possible
+    because ``A`` must be upper-triangular, so the state equations are lower-dimensional and
+    can be solved in order.
+
+    Raises
+    ------
+    ValueError
+        If `direction` is not ``'fw'`` or ``'bw'``.
+    """
     if direction == 'fw':
         lfilter_forward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, v, beta)
     elif direction == 'bw':
@@ -30,6 +138,55 @@ def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, v, beta):
 
 # xi0 lfilter cascade
 def lfilter_cascade_xi0(xi0, A, C, a, b, direction, delta, gamma, y, v, beta):
+    r"""
+    Computes the zeroth-order cost parameter :math:`\xi^{(0)}(k, y)` in-place,
+    which equals the weighted signal energy :math:`\kappa_k`.
+
+    :math:`\kappa_k \in \mathbb{R}` is a scalar representing the accumulated weighted
+    energy of the signal `y` within the window. It is computed by reducing the recursion
+    to a scalar IIR filter via the substitutions
+
+    .. math::
+        A \to [[1]], \quad C \to [[1]], \quad y \to y^2
+
+    so that the standard :math:`\xi^{(1)}` recursion accumulates
+    :math:`\kappa_k = \sum_i w_i \, y_i^2`.
+    The result is stored in `xi0` with shape ``(K, 1, [S])``.
+
+    Parameters ``A`` and ``C`` are accepted for interface consistency but are not used.
+
+    See also [Wildhaber2018]_ Eq. (24) and [Baeriswyl2025]_ Table I.
+
+    Parameters
+    ----------
+    xi0 : np.ndarray, shape=(K, 1, [S])
+        Output array, modified in-place. Stores :math:`\kappa_k` for each time step k.
+    A : np.ndarray, shape=(N, N)
+        State-transition matrix of the ALSSM. Not used; accepted for interface consistency.
+    C : np.ndarray, shape=([L,] N)
+        Output matrix of the ALSSM. Not used; accepted for interface consistency.
+    a : int or np.inf
+        Left boundary of the segment interval.
+    b : int or np.inf
+        Right boundary of the segment interval.
+    direction : str
+        Recursion direction: ``'fw'`` for forward, ``'bw'`` for backward.
+    delta : int
+        Window normalization shift (window equals 1 at relative index ``delta``).
+    gamma : float
+        Window decay factor :math:`\gamma`.
+    y : np.ndarray, shape=(K, [L], [S]) or scalar
+        Input signal. Values are squared internally (``_y = y**2``) before the recursion.
+    v : np.ndarray, shape=(K,) or scalar
+        Per-sample weights :math:`w_i`.
+    beta : float
+        Cost segment weight :math:`\beta`.
+
+    Raises
+    ------
+    ValueError
+        If `direction` is not ``'fw'`` or ``'bw'``.
+    """
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = y**2
