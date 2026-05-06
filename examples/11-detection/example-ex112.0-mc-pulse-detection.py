@@ -36,7 +36,7 @@ g_sp = 5000
 len_sp = spike_length
 len_bl = int(1.5 * spike_length)
 segment_left = lm.Segment(a=-len_bl, b=-1, direction=lm.FORWARD, g=g_bl, delta=-1)
-segment_middle = lm.Segment(a=0, b=len_sp, direction=lm.BACKWARD, g=g_sp)
+segment_middle = lm.Segment(a=0, b=len_sp, direction=lm.FORWARD, g=g_sp)
 segment_right = lm.Segment(a=len_sp + 1, b=len_sp + 1 + len_bl, direction=lm.BACKWARD, g=g_bl, delta=len_sp)
 
 # Cost
@@ -86,10 +86,10 @@ axs[1].legend(('true spikes',), loc=1)
 # Signals
 OFFSETS = np.array([0, 2, 4])
 axs[2].set(ylabel='$y_k$')
-axs[2].plot(range(K), y + OFFSETS, c='tab:gray', lw=1)
-axs[2].plot(range(K), trajs_pulse + OFFSETS, color='b', lw=1.5, linestyle="-")
-axs[2].plot(range(K), trajs_baseline + OFFSETS, color='k', lw=1.5, linestyle="-")
-axs[2].legend(('$y$', '_', '_', '"pulses"', '_', '_', '"baseline"', '_', '_',), loc=1)
+l1=axs[2].plot(range(K), y + OFFSETS, c='tab:gray', lw=1)
+l2=axs[2].plot(range(K), trajs_pulse + OFFSETS, color='b', lw=1.5, linestyle="-")
+l3=axs[2].plot(range(K), trajs_baseline + OFFSETS, color='k', lw=1.5, linestyle="-")
+axs[2].legend([l1[0], l2[0], l3[0]], ['$y$', '"pulses"', '"baseline"'], loc=1)
 
 # LCR
 axs[3].set(ylabel='LCR', ylim=[0, 0.15])

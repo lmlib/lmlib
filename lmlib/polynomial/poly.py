@@ -203,9 +203,9 @@ class _PolyBase(ABC):
 
         """
 
-        _check_input_variables(variables, self.variable_count)
 
-        variables = np.asarray(variables)
+        _check_input_variables(variables, self.variable_count)
+        variables = np.array([np.asarray(v, dtype=float) for v in variables])  # <-- fix
         out = np.empty_like(variables[0], dtype=float)
         it = np.nditer(out, flags=['multi_index'])
         while not it.finished:
@@ -217,7 +217,7 @@ class _PolyBase(ABC):
         kron_var_expo = 1
         for variable, expo in zip(variables, self._expos):
             kron_var_expo = np.kron(kron_var_expo, np.power(variable, expo))
-        return np.dot(self.coefs, kron_var_expo)
+        return np.dot(self.coefs[0], kron_var_expo)  # <-- [0] here
 
 
 
@@ -361,7 +361,9 @@ class Poly(_PolyBase):
             Output of evaluated polynomial.
             Shape is identical as a dependent variable
         """
-        return super(Poly, self).eval((variable,))
+        #return super(Poly, self).eval(np.asarray(variable))
+        #return super(Poly, self).eval((np.asarray(variable),))
+        return super(Poly, self).eval((np.asarray(variable, dtype=float),))
 
 
 def poly_sum(polys):

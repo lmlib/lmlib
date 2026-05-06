@@ -54,7 +54,8 @@ alssm = lm.AlssmPoly(poly_degree=Q - 1)
 segment_right = lm.Segment(a=-ab_half, b=ab_half, direction=lm.BW, g=50, delta=ab_half)
 cost = lm.CostSegment(alssm, segment_right)
 rls = lm.RLSAlssm(cost, backend="numpy")
-xs = rls.filter_minimize_x(y)
+rls.filter(y)
+xs = rls.minimize_x()
 
 # generate template
 dilate_factor = 1.456
@@ -63,7 +64,8 @@ y_template = amplitude_factor * np.column_stack(
     [np.interp(np.linspace(0, K, int(K * dilate_factor)), np.arange(K), y0) for y0 in y.T])
 
 rls_tmpl = lm.RLSAlssm(cost, backend="numpy")
-xs_tmpl = rls_tmpl.filter_minimize_x(y_template)
+rls_tmpl.filter(y_template)
+xs_tmpl = rls_tmpl.minimize_x()
 alphas = xs_tmpl[(ks_alpha * dilate_factor).astype(int)]
 
 A, B, C, q, Mq = time_amplitude_scaling(Q, a=-ab_half, b=ab_half)
@@ -109,9 +111,10 @@ ab_half_ext = int(ab_half * 1.15)
 segment_right = lm.Segment(a=-ab_half_ext, b=ab_half_ext, direction=lm.BW, g=50, delta=ab_half_ext)
 cost_ext = lm.CostSegment(alssm, segment_right)
 
-trajs_obs = lm.map_trajectories(cost.trajectories(xs[ks_alpha]), ks_alpha, K, True, True)
-trajs_tmpl_hat = lm.map_trajectories(cost.trajectories(alphas_hat), [k_min], K, True, True)
-trajs_obs_ext = lm.map_trajectories(cost_ext.trajectories(xs[ks_alpha]), ks_alpha, K, True, True)
+trajs_obs      = lm.Trajectory.eval_y(cost, xs[ks_alpha], ks_alpha, K)
+trajs_tmpl_hat = lm.Trajectory.eval_y(cost, alphas_hat, k_min, K)
+trajs_obs_ext  = lm.Trajectory.eval_y(cost, xs[ks_alpha], ks_alpha, K)
+
 
 segment_k, trajs_tmpl = cost.trajectories(alphas)[0][0]
 ax1.plot(segment_k, trajs_tmpl + offset_channels, lw=1, c='r', label=r'$\alpha^T z^q$')

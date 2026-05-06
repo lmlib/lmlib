@@ -25,8 +25,8 @@ k = range(K)
 # -- 1. Polynomial ALSSM model for later signal approximation --
 a = -60  # length of shape to correlate with, i.e., uses samples {K_REF+a, ..., K_REF+b} as the correlation template
 b = 60
-N = 4  # polynomial order (number of coefficients) 
-alssm = lm.AlssmPolyJordan(poly_degree=N, label='Alssm')
+pd = 4  # polynomial order (number of coefficients) 
+alssm = lm.AlssmPolyJordan(poly_degree=pd, label='Alssm')
 segment = lm.Segment(a=a, b=b, direction=lm.BACKWARD, g=400)
 cost = lm.CostSegment(alssm, segment)
 
@@ -41,7 +41,7 @@ y_hat = cost.eval_alssm_output(xs_hat)  # signal reconstruction using ALSSM appr
 
 # -- 3a. Get ALSSM Template of Matched filter
 Ryy = np.cov(y_mc.T)
-xs_h_matched = np.matmul(np.linalg.inv(Ryy), xs_h)
+xs_h_matched = np.linalg.inv(Ryy) @ xs_h
 # additionally, we may scale (normalize) the filter, such that E(noise) = 1. 
 # alpha = 1/np.sqrt(np.sum(np.matmul(xs_h, np.matmul(np.linalg.inv(Ryy), xs_h_matched.T)), axis=(0,1)))
 # xs_h_matched = alpha * xs_h_matched 
@@ -50,7 +50,7 @@ xs_h_matched = np.matmul(np.linalg.inv(Ryy), xs_h)
 # -- 3b. Get Template of Matched filter in Sample Space (for comparison only)
 h_mc = y_mc[K_REF + a:K_REF + b + 1, :]
 Ryy = np.cov(y_mc.T)
-h_mc_matched = np.matmul(np.linalg.inv(Ryy), h_mc.T).T
+h_mc_matched = (np.linalg.inv(Ryy) @ h_mc.T).T
 # additionally, we may scale (normalize) the filter, such that E(noise) = 1. 
 # alpha = 1/np.sqrt(np.sum(np.matmul(h_mc,np.matmul(np.linalg.inv(Ryy),h_mc_matched.T)),axis=(0,1)))
 # h_mc_matched =  alpha * h_mc_matched 
@@ -64,7 +64,7 @@ start = time.process_time()  # start timer for speed comparison
 
 corr_alssm = np.zeros(K)
 for j in range(NOFCH):
-    corr_alssm = corr_alssm + np.matmul(rls_y.xi[:, j], xs_h_matched[j])
+    corr_alssm = corr_alssm + rls_y.xi[:, j] @ xs_h_matched[j]
 
 print("Duration of correlation (or convolution) in ALSSM feature space (w/o mapping time): {:10.3f}ms".format(
     (time.process_time() - start) * 1e3))
@@ -80,8 +80,7 @@ print("Duration of correlation (or convolution) in sample space.                
     (time.process_time() - start) * 1e3))
 
 # -- 5.  Plotting --
-template_trajectory = lm.map_trajectories(cost.trajectories([xs_h, ]), [K_REF, ], K,
-                                          merge_ks=True, merge_seg=True)
+template_trajectory = lm.Trajectory.eval_y(cost, xs_h, K_REF, K)
 
 _, axs = plt.subplots(2, 1, figsize=(7, 5), gridspec_kw={'height_ratios': [2, 1]}, sharex='all')
 nax = 0
@@ -111,5 +110,5 @@ axs[nax].set(ylabel='Correlation')
 
 axs[nax].set_xlim(100, K - 100)
 
-plt.suptitle('Matched Filter in Low-Dimensional ALSSM Feature Space of \n Polynomials of Order $N=' + str(N) + '$')
+plt.suptitle('Matched Filter in Low-Dimensional ALSSM Feature Space of \n Polynomials of degree $' + str(pd) + '$')
 plt.show()

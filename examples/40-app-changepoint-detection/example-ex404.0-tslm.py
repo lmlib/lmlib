@@ -50,7 +50,7 @@ for H0, H1, c0, name0, name1 in zip(H0s, H1s, colors0,  H0s_Labels, H1s_Labels):
     ks_max = ks_range[[np.nanargmax(LCR)]]
 
     trajs_0 = lm.Trajectory.eval_y(cost, xs_0, ks_max, K, True, True)
-    trajs_1 = lm.map_trajectories(cost.trajectories(xs_1[ks_max]), ks_max, K, True, True)
+    trajs_1 = lm.Trajectory.eval_y(cost, xs_1[ks_max], ks_max, K)
 
     # add spacer between subplots   
     if i>0:

@@ -5,28 +5,39 @@ Recursive Least Square Alssm Classes to solve Alssm Cost Functions
 """
 
 import sys
-from typing import Union
-
 import numpy as np
-from numpy.core.numeric import moveaxis
-from numpy.linalg import inv, cond
+from numpy.linalg import inv, cond, matrix_power
+from scipy.signal import ss2tf
 
 from lmlib.statespace.backend import get_backend
 from lmlib.statespace.cost import CompositeCost, CostSegment, NDCompositeCost
 from lmlib.statespace.model import AlssmSum
 from lmlib.utils.check import *
 from lmlib.statespace.backends.rec import *
+import warnings
 
 
-__all__ = ['RLSAlssm']
+__all__ = ['RLSAlssm', 'create_rls']
+
+
+def create_rls(cost, multi_channel_set=False, steady_state=False, kappa_diag=True, steady_state_method='closed_form', **kwargs):
+    """Deprecated: instantiate RLS classes directly instead."""
+    warnings.warn(
+        "create_rls() is deprecated and will be removed in a future version. "
+        "Instantiate RLSAlssm object directly with e.g. rls = lm.RLSAlssm(cost)",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return RLSAlssm(cost, steady_state=steady_state, **kwargs)
+    
 
 
 class RLSAlssm:
 
     def __init__(self, cost_terms, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=False, filter_form='cascade',
-                 backend=None):
+                 backend=None, numdenom=None, supress_pzinstruction=False):
         self._cost_terms = cost_terms
-        assert all(isinstance(_, bool) for _ in (steady_state, calc_W, calc_xi, calc_kappa, calc_nu)), \
+        assert all(isinstance(_, bool) for _ in (steady_state, calc_W, calc_xi, calc_kappa, calc_nu, supress_pzinstruction)), \
             'steady_state, calc_W, calc_xi, calc_kappa and calc_nu must be boolean.'
 
         self._steady_state = steady_state
@@ -34,16 +45,96 @@ class RLSAlssm:
         self._calc_xi = calc_xi
         self._calc_kappa = calc_kappa
         self._calc_nu = calc_nu
-
-        self._filter_form = filter_form
-        self._backend = backend if backend is not None else get_backend()
-
+        
         self._N = self._cost_terms.get_alssm_order()
 
         self._xi0 = None
         self._xi1 = None
         self._xi2 = None
         self._nu = None
+        
+        self._backend = backend if backend is not None else get_backend()
+        self._filter_form = filter_form  
+        
+        #check if filter form is valid for all segments
+        if self._backend=='lfilter' and self._filter_form=='cascade':
+            #iterate over all cost terms
+            for ct in cost_terms._get_sub_cost_term():
+                #extract large A matrix for all segments
+                for l, cs in enumerate(ct._get_cost_segments()):  # use enumerate
+                    Atilde = cs.alssm.A
+                    if not np.allclose(Atilde, np.triu(Atilde)):
+                        self._filter_form = 'parallel'       
+                        print("State-Space Matrix A is not upper triangular, cascade version can't be used. Defaulting to filter_form='parallel' .")
+         
+        
+        self._numdenom = [[None] * len(list(ct._get_cost_segments())) for ct in cost_terms._get_sub_cost_term()]
+        
+        if self._filter_form=='parallel' and self._backend=='lfilter' and numdenom==None:    
+            #iterate over cost terms
+            l=0
+            for ct in cost_terms._get_sub_cost_term():
+                # iterate over CostSegments
+                for cs in ct._get_cost_segments():  # use enumerate
+                    alssm=cs.alssm
+                    A = cs.alssm.A
+                    C = cs.alssm.C
+                    a = cs.segment.a
+                    b = cs.segment.b
+                    gamma=cs.segment.gamma
+                    
+                    # state space pre-calculation separated into matrix
+                    if cs.segment.direction == 'fw':
+                        gamma_inv = 1 / gamma
+                        A_inv = inv(A)
+                        gAT = gamma_inv * A_inv.T
+                        Aa = matrix_power(A, 0 if np.isinf(a) else a - 1)
+                        Aac = np.dot(Aa.T, C.T)
+                        Ab = matrix_power(A, b)
+                        Abc = np.dot(Ab.T, C.T)
+                    else:
+                        if cs.segment.direction == 'bw':
+                            gAT = gamma * A.T
+                            Ab = matrix_power(A, 0 if np.isinf(b) else b + 1)
+                            Aa = matrix_power(A, a)
+                            Aac = np.dot(Aa.T, C.T)
+                            Abc = np.dot(Ab.T, C.T)
+                        else:
+                            raise NotImplementedError("Segment direction must be fw or bw")
+                        
+                    if np.allclose(gAT, np.tril(gAT)):
+                        print("State-Space Matrix A is upper triangular, cascade version can be used, offers better numerical accuracy. Try filter_form='cascade' ")
+                    
+                    #extract numerator and denom (using ss2tf, has high numerical error)
+                    num_b, denom = ss2tf(gAT, Abc[:,np.newaxis], np.eye(alssm.N), np.zeros((alssm.N,1)))
+                    num_a, _     = ss2tf(gAT, Aac[:,np.newaxis], np.eye(alssm.N), np.zeros((alssm.N,1)))
+                    self._numdenom[l] = [denom, num_b, num_a]
+                    if not supress_pzinstruction:
+                        print("Scipy's ss2tf has inexact filter coefficient calculation.  ")
+                        print(f"Calculated the following denominator and numerators for segment {l}:")
+                        print(f"Denominator: {denom} ")
+                        print(f"Numerator boundary a: {num_a} ")
+                        print(f"Numerator boundary b: {num_b} ")
+                        print("If you wish to calculate more exact, we recommend using matlab to extract the poles and zeros and use SoS stages. Run the following code in matlab:")
+                        print("Then, use the poles and zeros as an argument in the initialization of the RLS instance.")
+                        print("To supress this instruction, set 'supress_pzinstruction=True' when initialising the RLS instance.")
+                l+=1 #increase index variable
+        if filter_form=='parallel' and backend=='lfilter' and not numdenom==None:
+            print("Imported Poles and Zeros.")
+            self._numdenom=numdenom 
+        
+        
+    @property
+    def xi2(self):
+        return self.W
+    
+    @property
+    def xi1(self):
+        return self.xi
+    
+    @property
+    def xi0(self):
+        return self.kappa        
 
     @property
     def W(self):
@@ -84,6 +175,7 @@ class RLSAlssm:
         assert len(dim_order) == L, f'dim_order has wrong length, {info_str_found_shape(dim_order)}'
         if L > 1:
             assert self._steady_state, "for multidimensional ALSSMs steady_state=True has to be used"
+            
         # -------- broadcast and check y --------
         Q = self._cost_terms.get_alssm_output_dimension()
         y = np.asarray(y)
@@ -276,13 +368,13 @@ class RLSAlssm:
         _sample_weights = np.reshape(_sample_weights, (-1, *_sample_weights.shape[-1:]))
 
         # iterate over CostSegments
-        for cs in sub_cost._get_cost_segments(force_MC=True):
+        for l,cs in enumerate(sub_cost._get_cost_segments(force_MC=True)):
             # backend recursion
             for i in range(_y.shape[0]):
                 xi_q_recursion(_xi_curr[i], q,
                                cs.alssm, cs.segment,
                                _y[i], _sample_weights[i],
-                               cs.beta, self._backend, self._filter_form)
+                               cs.beta, self._backend, self._filter_form, self._numdenom[l])
 
         return xi_curr
 
@@ -301,11 +393,10 @@ class RLSAlssm:
 
         # cost segments
         # iterate over CostSegments
-        for cs in sub_cost._get_cost_segments(force_MC=True):
-
+        for l,cs in enumerate(sub_cost._get_cost_segments(force_MC=True)):
             xi_q_asterisk_l_recursion(_xi_curr, q,
                                       cs.alssm, cs.segment,
                                       _xi_prev, _sample_weights,
-                                      cs.beta, self._backend, self._filter_form)
+                                      cs.beta, self._backend, self._filter_form,self._numdenom[l])
         return xi_curr
 

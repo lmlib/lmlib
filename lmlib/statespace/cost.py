@@ -410,6 +410,17 @@ class CompositeCost(BaseCost, BaseCost1d):
             cost_segment = CostSegment(alssm, segment, self.betas[p], self.label + '-' + str(p))
             cost_segments.append(cost_segment)
         return cost_segments
+    
+    def _get_cost_segments_with_ALSSMs_as_list(self, F=None, force_MC=False):
+        """Returns list of the updated CostSegments (modified by F if provided)."""
+        F_ = self.F if F is None else np.asarray(F)
+        cost_segments = []
+        alssms =  []
+        for p, segment in enumerate(self.segments):
+            alssm = self.alssms, F_[:, p]
+            cost_segment = CostSegment(None, segment, self.betas[p], self.label + '-' + str(p))
+            cost_segments.append(cost_segment)
+        return cost_segments
 
     def _get_sub_cost_term(self, dim=None, seg=None):
         """Returns a specific CostSegment by segment index."""

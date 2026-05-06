@@ -10,11 +10,6 @@ import lmlib as lm
 # import lmlib_multivar_V_2_0_4 as lmmulti
 import copy
 import matplotlib
-from PIL import Image, ImageDraw, ImageFont
-import random
-from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backends
-
-from lmlib import RLSAlssm
 
 # # import colorcet as cc
 #
@@ -122,11 +117,11 @@ segment_right = lm.Segment(a=0, b=l_side, direction=lm.BW, g=g)
 F = [[1, 0],  # mixing matrix, turning on and off models per segment (1=on, 0=off)
      [0, 1]]
 
-# filter signal in first dimension
-cost = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
-
-nd_cost = lm.NDCompositeCost([cost, cost])
-nd_rls = lm.RLSAlssm(nd_cost, steady_state=True, backend='lfilter')
+# filter signal 
+cost_d1 = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
+cost_d2 = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
+nd_cost = lm.NDCompositeCost([cost_d1, cost_d2])
+nd_rls = lm.RLSAlssm(nd_cost, backend='lfilter')
 nd_rls.filter(Y)
 
 xs_H1 = nd_rls.minimize_x()

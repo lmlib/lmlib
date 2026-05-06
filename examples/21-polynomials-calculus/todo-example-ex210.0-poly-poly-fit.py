@@ -26,7 +26,7 @@ alssm_poly_Q = lm.AlssmPoly(poly_degree=Q-1)  # Q-1 polynomial degree
 
 # Segment (Exponential Window starting at a ends at b-1, the decay is given by g (area) direction defines the
 # computation direction)
-segment_right = lm.Segment(a=-100, b=100, direction=lm.BACKWARD, g=200)
+segment_right = lm.Segment(a=-100, b=100, direction=lm.FORWARD, g=200)
 
 # Cost Segment connects ALSSM model with Segment
 costs_Q = lm.CostSegment(alssm_poly_Q, segment_right)

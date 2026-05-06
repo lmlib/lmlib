@@ -923,10 +923,10 @@ class AlssmSum(ModelBase):
 
     """
 
-    def __init__(self, alssms, deltas=None, **kwargs):
+    def __init__(self, alssms, lambdas=None, **kwargs):
         super().__init__(**kwargs)
         self.alssms = alssms
-        self.deltas = deltas
+        self.lambdas = lambdas
         self.update()
 
     def update(self):
@@ -934,7 +934,7 @@ class AlssmSum(ModelBase):
             alssm.update()
         assert common_C_dim(self.alssms), "Alssms has not same output dimensions."
         A = block_diag(*[alssm.A for alssm in self.alssms])
-        C = np.hstack([g * alssm.C for g, alssm in zip(self.deltas, self.alssms)])
+        C = np.hstack([g * alssm.C for g, alssm in zip(self.lambdas, self.alssms)])
         self.A = A
         self.C = C
         self._init_state_var_labels()
@@ -997,10 +997,10 @@ class AlssmProd(ModelBase):
 
     """
 
-    def __init__(self, alssms, deltas=None, **kwargs):
+    def __init__(self, alssms, lambdas=None, **kwargs):
         super().__init__(**kwargs)
         self.alssms = alssms
-        self.deltas = deltas
+        self.lambdas = lambdas
         self.update()
 
     def update(self):
@@ -1008,7 +1008,7 @@ class AlssmProd(ModelBase):
             alssm.update()
         A = [1]
         C = [1]
-        for alssm, delta in zip(self.alssms, self.deltas):
+        for alssm, delta in zip(self.alssms, self.lambdas):
             A = np.kron(A, alssm.A)
             C = np.kron(C, delta * alssm.C)
         self.A = A

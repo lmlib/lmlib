@@ -5,7 +5,7 @@ import sys
 
 __all__ = ['set_backend', 'is_backend_available', 'get_backend', 'BACKEND_TYPES', 'available_backends']
 
-_backend = 'numpy' # current backend selection (global)
+_backend = 'lfilter' # current backend selection (global)
 
 BACKEND_TYPES = ('jit', 'numpy', 'lfilter') # known backends
 available_backends = ('numpy', 'lfilter') # available backends
