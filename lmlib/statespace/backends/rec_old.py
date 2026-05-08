@@ -107,14 +107,11 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, numd
             elif q == 1:
                 lfilter_parallel_xi1(xi,
                                     numdenom[0], numdenom[1], numdenom[2],
-                                    numdenom[3], numdenom[4],
                                     segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                     y, v, beta)
             elif q == 0:
-                # lfilter_parallel_xi0 delegates to the cascade implementation
-                # internally and does not use numdenom at all.
                 lfilter_parallel_xi0(xi,
-                                    None, None, None,
+                                    numdenom[0], numdenom[1], numdenom[2],
                                     segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                     y, v, beta)
             else:

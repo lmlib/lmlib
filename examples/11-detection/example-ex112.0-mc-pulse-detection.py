@@ -36,7 +36,7 @@ g_sp = 5000
 len_sp = spike_length
 len_bl = int(1.5 * spike_length)
 segment_left = lm.Segment(a=-len_bl, b=-1, direction=lm.FORWARD, g=g_bl, delta=-1)
-segment_middle = lm.Segment(a=0, b=len_sp, direction=lm.FORWARD, g=g_sp)
+segment_middle = lm.Segment(a=0, b=len_sp, direction=lm.BACKWARD, g=g_sp)
 segment_right = lm.Segment(a=len_sp + 1, b=len_sp + 1 + len_bl, direction=lm.BACKWARD, g=g_bl, delta=len_sp)
 
 # Cost

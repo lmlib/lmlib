@@ -137,15 +137,14 @@ H_A[0, 0] = 1
 h_A = xs_ref.copy()
 h_A[0] = 0
 xs_H2 = nd_rls.minimize_x(H_A, h_A)
-J_A = nd_rls.eval_errors(xs_H2)  # get SE (squared error) for hypothesi# s 1
+J_A = nd_rls.eval_errors(xs_H2)  # get SE (squared error) for hypothesis 1
 cr = J_B / J_A
 
 
 # ------------ Plotting -------------------------------
 plot_ref = False
 if plot_ref:
-
-    mappedtraj = nd_cost.two_dim_map_trajectory(nd_cost.two_dim_trajectory(xs_ref), k0=(K1_REF, K2_REF), Ks=(K1, K2))
+    mappedtraj = lm.Trajectory.eval_y(nd_cost, xs_ref, (K1_REF,K2_REF), (K1,K2))
 
     width, height = 40, 40 # image cut-outsize
 

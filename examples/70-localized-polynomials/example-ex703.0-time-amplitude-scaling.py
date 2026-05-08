@@ -115,12 +115,14 @@ trajs_obs      = lm.Trajectory.eval_y(cost, xs[ks_alpha], ks_alpha, K)
 trajs_tmpl_hat = lm.Trajectory.eval_y(cost, alphas_hat, k_min, K)
 trajs_obs_ext  = lm.Trajectory.eval_y(cost, xs[ks_alpha], ks_alpha, K)
 
+k_tmpl, trajs_tmpl = zip(*lm.Trajectory.eval(cost, alphas, merged_ks=True,merged_seg=True))
+k_tmpl = np.array(k_tmpl[0])   # all ranges identical, take first
+trajs_tmpl = np.array(trajs_tmpl).T #have K in first dimension
 
-segment_k, trajs_tmpl = cost.trajectories(alphas)[0][0]
-ax1.plot(segment_k, trajs_tmpl + offset_channels, lw=1, c='r', label=r'$\alpha^T z^q$')
+ax1.plot(k_tmpl, trajs_tmpl + offset_channels, lw=1, c='r', label=r'$\alpha^T z^q$')
 
-ax1.set_xlim([min(segment_k), max(segment_k)])
-ax1.set_xticks([max(segment_k)])
+ax1.set_xlim([min(k_tmpl), max(k_tmpl)])
+ax1.set_xticks([max(k_tmpl)])
 ax1.set_xticklabels(['1'])
 ax1.legend([Line2D([0], [0], color='r', lw=1)], [r'$\alpha^T z^q$'], loc=1, fontsize=8)
 

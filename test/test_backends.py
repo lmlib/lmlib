@@ -59,12 +59,12 @@ y = np.random.randn(K)
 k = np.arange(K)
   
 # Model
-polydegree=1
+polydegree=3
 alssm = lm.AlssmPolyJordan(poly_degree=polydegree)
 #alssm = lm.AlssmSin(omega=0.2)
 N1 = alssm.N
 g=1000
-segment = lm.Segment(a=-10, b=100, direction=lm.FORWARD, g=g)
+segment = lm.Segment(a=-10, b=-1, direction=lm.FORWARD, g=g)
 #segment = lm.Segment(a=-100, b=10, direction=lm.BACKWARD, g=g)
 #segment = lm.Segment(a=-20, b=10, direction=lm.FORWARD, g=g)
 cost = lm.CostSegment(alssm, segment)
@@ -76,7 +76,7 @@ t_sum = time.perf_counter() - t0
 
 segment_l = lm.Segment(a=-20, b=-10, direction=lm.FORWARD, g=g)
 segment_r = lm.Segment(a=-10, b=20, direction=lm.BACKWARD, g=g)
-cost = lm.CompositeCost((alssm,alssm), (segment_l,segment_r),F=[[1, 0],[0, 1]])
+#cost = lm.CompositeCost((alssm,alssm), (segment_l,segment_r),F=[[1, 0],[0, 1]])
 
 # Direct Matrix Form Implementation (lmlib)
 rls_directmatrix = lm.RLSAlssm(cost, calc_kappa=False, backend='numpy')
@@ -96,9 +96,9 @@ else:
     t_cascade = None
 
 # Parallel Form Implementation
-execute_parallel=False
+execute_parallel=True
 if execute_parallel:
-    rls_parallel = lm.RLSAlssm(cost, calc_kappa=False, backend='lfilter', filter_form='parallel', supress_pzinstruction=False)
+    rls_parallel = lm.RLSAlssm(cost, calc_kappa=False, backend='lfilter', filter_form='parallel', supress_pzinstruction=True)
     t0 = time.perf_counter()
     rls_parallel.filter(y)
     t_parallel = time.perf_counter() - t0

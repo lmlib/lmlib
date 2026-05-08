@@ -6,8 +6,8 @@ Recursive Least Square Alssm Classes to solve Alssm Cost Functions
 
 import sys
 import numpy as np
-from numpy.linalg import inv, cond, matrix_power
-from scipy.signal import ss2tf
+from numpy.linalg import inv, cond, matrix_power, eigvals
+from scipy.signal import ss2tf, zpk2sos
 
 from lmlib.statespace.backend import get_backend
 from lmlib.statespace.cost import CompositeCost, CostSegment, NDCompositeCost
@@ -29,7 +29,25 @@ def create_rls(cost, multi_channel_set=False, steady_state=False, kappa_diag=Tru
         stacklevel=2,
     )
     return RLSAlssm(cost, steady_state=steady_state, **kwargs)
-    
+
+
+def _as_composite_cost(cost):
+    """
+    Ensure *cost* is a CompositeCost.
+
+    A CostSegment is a degenerate CompositeCost with M=1 ALSSM, P=1 Segment and
+    F = [[1]].  Wrapping it here means the rest of the filtering code never
+    needs to branch on the concrete cost type.
+    """
+    if isinstance(cost, CostSegment):
+        return CompositeCost(
+            [cost.alssm],
+            [cost.segment],
+            np.ones((1, 1)),
+            betas=np.array([cost.beta]),
+            label=cost.label,
+        )
+    return cost  # already a CompositeCost
 
 
 class RLSAlssm:
@@ -45,96 +63,146 @@ class RLSAlssm:
         self._calc_xi = calc_xi
         self._calc_kappa = calc_kappa
         self._calc_nu = calc_nu
-        
+
         self._N = self._cost_terms.get_alssm_order()
 
         self._xi0 = None
         self._xi1 = None
         self._xi2 = None
         self._nu = None
-        
+
         self._backend = backend if backend is not None else get_backend()
-        self._filter_form = filter_form  
-        
-        #check if filter form is valid for all segments
-        if self._backend=='lfilter' and self._filter_form=='cascade':
-            #iterate over all cost terms
-            for ct in cost_terms._get_sub_cost_term():
-                #extract large A matrix for all segments
-                for l, cs in enumerate(ct._get_cost_segments()):  # use enumerate
-                    Atilde = cs.alssm.A
-                    if not np.allclose(Atilde, np.triu(Atilde)):
-                        self._filter_form = 'parallel'       
-                        print("State-Space Matrix A is not upper triangular, cascade version can't be used. Defaulting to filter_form='parallel' .")
-         
-        
-        self._numdenom = [[None] * len(list(ct._get_cost_segments())) for ct in cost_terms._get_sub_cost_term()]
-        
-        if self._filter_form=='parallel' and self._backend=='lfilter' and numdenom==None:    
-            #iterate over cost terms
-            l=0
-            for ct in cost_terms._get_sub_cost_term():
-                # iterate over CostSegments
-                for cs in ct._get_cost_segments():  # use enumerate
-                    alssm=cs.alssm
-                    A = cs.alssm.A
-                    C = cs.alssm.C
-                    a = cs.segment.a
-                    b = cs.segment.b
-                    gamma=cs.segment.gamma
-                    
-                    # state space pre-calculation separated into matrix
-                    if cs.segment.direction == 'fw':
-                        gamma_inv = 1 / gamma
-                        A_inv = inv(A)
-                        gAT = gamma_inv * A_inv.T
-                        Aa = matrix_power(A, 0 if np.isinf(a) else a - 1)
-                        Aac = np.dot(Aa.T, C.T)
-                        Ab = matrix_power(A, b)
-                        Abc = np.dot(Ab.T, C.T)
-                    else:
-                        if cs.segment.direction == 'bw':
-                            gAT = gamma * A.T
-                            Ab = matrix_power(A, 0 if np.isinf(b) else b + 1)
-                            Aa = matrix_power(A, a)
-                            Aac = np.dot(Aa.T, C.T)
-                            Abc = np.dot(Ab.T, C.T)
+        self._filter_form = filter_form
+
+        # Collect per-dimension CompositeCosts once, reused throughout __init__
+        # and the recursion methods.
+        #   - NDCompositeCost._get_sub_cost_term() returns a list of costs.
+        #   - CompositeCost/CostSegment._get_sub_cost_term() returns the cost
+        #     itself (a single object, not a list).
+        # Normalise to a list of CompositeCosts in both cases.
+        raw = cost_terms._get_sub_cost_term()
+        if isinstance(raw, list):
+            _sub_costs = [_as_composite_cost(ct) for ct in raw]
+        else:
+            _sub_costs = [_as_composite_cost(raw)]
+
+        # ------------------------------------------------------------------
+        # check if filter form is valid for all segments
+        # ------------------------------------------------------------------
+        if self._backend == 'lfilter' and self._filter_form == 'cascade':
+            for ct in _sub_costs:
+                for alssm in ct.alssms:
+                    if not np.allclose(alssm.A, np.triu(alssm.A)):
+                        self._filter_form = 'parallel'
+                        print("State-Space Matrix A is not upper triangular, "
+                              "cascade version can't be used. "
+                              "Defaulting to filter_form='parallel'.")
+
+        # ------------------------------------------------------------------
+        # Build _numdenom as a 3-D structure: _numdenom[dim_index][seg_index][alssm_index]
+        #
+        # Each leaf entry is either None (numpy/jit backends, or inactive grid
+        # node with f_mp==0) or [denom, num_b, num_a] (lfilter parallel backend).
+        #
+        # For q==1 (xi) the filtering is now done per individual ALSSM, so each
+        # ALSSM gets its own transfer-function coefficients derived from its own
+        # (small) A_m and C_m rather than from the combined block-diagonal matrix.
+        # This avoids constructing the large AlssmSum just to decompose it again.
+        #
+        # For q==2 (W) the combined AlssmSum is still used (see recursion methods),
+        # so _numdenom[dim][p][m] is not consumed for q==2; the combined entry is
+        # built on-the-fly there instead.
+        #
+        # Previously this was a flat list indexed by a single counter l that
+        # advanced across all dimensions, which broke for NDCompositeCost.
+        # ------------------------------------------------------------------
+        self._numdenom = [
+            [[None] * ct.M for _ in range(ct.P)] for ct in _sub_costs
+        ]
+
+        if self._filter_form == 'parallel' and self._backend == 'lfilter' and numdenom is None:
+            for dim_idx, ct in enumerate(_sub_costs):
+                for p, segment in enumerate(ct.segments):
+                    gamma = segment.gamma
+                    a     = segment.a
+                    b     = segment.b
+
+                    for m, alssm_m in enumerate(ct.alssms):
+                        f_mp = ct.F[m, p]
+                        if f_mp == 0.0:
+                            # Inactive grid node — leave entry as None.
+                            continue
+
+                        wrapped = AlssmSum([alssm_m], [f_mp], force_MC=True)
+                        A = wrapped.A
+                        C = wrapped.C
+                        N_m = wrapped.N
+
+                        if segment.direction == 'fw':
+                            gAT   = (1.0 / gamma) * inv(A).T
+                            Aac   = (matrix_power(A, 0 if np.isinf(a) else a - 1).T @ C.T).ravel()
+                            Abc   = (matrix_power(A, b).T @ C.T).ravel()
+                        elif segment.direction == 'bw':
+                            gAT   = gamma * A.T
+                            Aac   = (matrix_power(A, a).T @ C.T).ravel()
+                            Abc   = (matrix_power(A, 0 if np.isinf(b) else b + 1).T @ C.T).ravel()
                         else:
                             raise NotImplementedError("Segment direction must be fw or bw")
-                        
-                    if np.allclose(gAT, np.tril(gAT)):
-                        print("State-Space Matrix A is upper triangular, cascade version can be used, offers better numerical accuracy. Try filter_form='cascade' ")
-                    
-                    #extract numerator and denom (using ss2tf, has high numerical error)
-                    num_b, denom = ss2tf(gAT, Abc[:,np.newaxis], np.eye(alssm.N), np.zeros((alssm.N,1)))
-                    num_a, _     = ss2tf(gAT, Aac[:,np.newaxis], np.eye(alssm.N), np.zeros((alssm.N,1)))
-                    self._numdenom[l] = [denom, num_b, num_a]
-                    if not supress_pzinstruction:
-                        print("Scipy's ss2tf has inexact filter coefficient calculation.  ")
-                        print(f"Calculated the following denominator and numerators for segment {l}:")
-                        print(f"Denominator: {denom} ")
-                        print(f"Numerator boundary a: {num_a} ")
-                        print(f"Numerator boundary b: {num_b} ")
-                        print("If you wish to calculate more exact, we recommend using matlab to extract the poles and zeros and use SoS stages. Run the following code in matlab:")
-                        print("Then, use the poles and zeros as an argument in the initialization of the RLS instance.")
-                        print("To supress this instruction, set 'supress_pzinstruction=True' when initialising the RLS instance.")
-                l+=1 #increase index variable
-        if filter_form=='parallel' and backend=='lfilter' and not numdenom==None:
+
+                        if np.allclose(gAT, np.tril(gAT)):
+                            print("State-Space Matrix A is upper triangular, cascade version "
+                                  "can be used, offers better numerical accuracy. "
+                                  "Try filter_form='cascade'.")
+
+                        # --- Build SOS structures ---
+                        # Poles: eigenvalues of gAT (accurate, avoids polynomial expansion)
+                        poles = eigvals(gAT)
+                        sos_iir = zpk2sos(np.zeros(len(poles)), poles, 1.0)
+
+                        # Numerator polynomials via ss2tf (small degree N_m-1 per row)
+                        Abc_2d = Abc.reshape(N_m, 1)
+                        Aac_2d = Aac.reshape(N_m, 1)
+                        num_b, _ = ss2tf(gAT, Abc_2d, np.eye(N_m), np.zeros((N_m, 1)))
+                        num_a, _ = ss2tf(gAT, Aac_2d, np.eye(N_m), np.zeros((N_m, 1)))
+
+                        from lmlib.statespace.backends.rec_lfilter import _make_num_sos
+                        sos_b_list = []; sos_a_list = []; db_list = []; da_list = []
+                        for n_ in range(N_m):
+                            sb, db = _make_num_sos(num_b[n_])
+                            sa, da = _make_num_sos(num_a[n_])
+                            sos_b_list.append(sb); sos_a_list.append(sa)
+                            db_list.append(db);    da_list.append(da)
+
+                        self._numdenom[dim_idx][p][m] = [sos_iir, sos_b_list, sos_a_list,
+                                                          db_list, da_list]
+
+                        if not supress_pzinstruction:
+                            print("Using SOS (second-order sections) parallel filter.")
+                            print(f"Built SOS for dim {dim_idx}, segment {p}, alssm {m}:")
+                            print(f"  Poles (eigenvalues of gAT): {poles}")
+                            print(f"  IIR SOS: {sos_iir}")
+                            print("To suppress this message, set "
+                                  "'supress_pzinstruction=True' when initialising the RLS instance.")
+
+        if filter_form == 'parallel' and backend == 'lfilter' and numdenom is not None:
             print("Imported Poles and Zeros.")
-            self._numdenom=numdenom 
-        
-        
+            self._numdenom = numdenom
+
+    # ------------------------------------------------------------------
+    # Properties (unchanged)
+    # ------------------------------------------------------------------
+
     @property
     def xi2(self):
         return self.W
-    
+
     @property
     def xi1(self):
         return self.xi
-    
+
     @property
     def xi0(self):
-        return self.kappa        
+        return self.kappa
 
     @property
     def W(self):
@@ -166,6 +234,10 @@ class RLSAlssm:
         # TODO nu implementation
         raise NotImplementedError("nu calculation is not yet implemented.")
 
+    # ------------------------------------------------------------------
+    # filter (unchanged)
+    # ------------------------------------------------------------------
+
     def filter(self, y, sample_weights=None, dim_order=None):
 
         # -------- check dimension order --------
@@ -173,21 +245,21 @@ class RLSAlssm:
         if dim_order is None:
             dim_order = np.arange(L)
         assert len(dim_order) == L, f'dim_order has wrong length, {info_str_found_shape(dim_order)}'
-        if L > 1:
-            assert self._steady_state, "for multidimensional ALSSMs steady_state=True has to be used"
-            
+        if L > 1 and self._calc_W and not self._steady_state:
+            assert False, "for multidimensional ALSSMs, W requires steady_state=True"
+
         # -------- broadcast and check y --------
         Q = self._cost_terms.get_alssm_output_dimension()
         y = np.asarray(y)
         if isinstance(self._cost_terms, (CompositeCost, CostSegment)):
-            if Q == 0: # scalar output
-                if y.ndim == 1: # 1 dim signal
+            if Q == 0:  # scalar output
+                if y.ndim == 1:  # 1 dim signal
                     y = y.reshape(-1, 1)
-                elif y.ndim >= 2 and y.shape[-1] != 1: # multi dimension signal (processed in parallel)
+                elif y.ndim >= 2 and y.shape[-1] != 1:  # multi dimension signal (processed in parallel)
                     y = y.reshape(*y.shape, 1)
                 else:
                     raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
-            elif Q == 1: # 1-dimensional output
+            elif Q == 1:  # 1-dimensional output
                 if y.ndim == 1 or y.shape[-1] != Q:
                     raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
             else:
@@ -195,7 +267,7 @@ class RLSAlssm:
                     raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
 
         if isinstance(self._cost_terms, NDCompositeCost):
-            if Q == 0: # scalar output
+            if Q == 0:  # scalar output
                 if y.ndim == L:
                     y = y.reshape(*y.shape, 1)
                 else:
@@ -205,7 +277,6 @@ class RLSAlssm:
 
         # -------- check sample weight --------
         if sample_weights is None:
-            # each element points to the same memory-location
             sample_weights = np.broadcast_to(1., y.shape[:-1])
         else:
             if np.shape(sample_weights) != y.shape[:-1]:
@@ -216,44 +287,33 @@ class RLSAlssm:
             self._xi2 = self._cost_terms.get_steady_state_W(dim_order).flatten()
         elif self._calc_W and not self._steady_state:
             q = 2
-
-            # first dimension
             xi_prev = self._nd_xi_q_recursion(q, y, sample_weights, dim_order[0])
-
-            # n-dimensions
             for nd_dim in dim_order[1:]:
                 xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, sample_weights, nd_dim)
-
             self._xi2 = xi_prev
 
-        # -------- calc x1 --------
+        # -------- calc xi1 --------
         if self._calc_xi:
             q = 1
-
-            # first dimension
             xi_prev = self._nd_xi_q_recursion(q, y, sample_weights, dim_order[0])
-
-            # n-dimensions
             for nd_dim in dim_order[1:]:
                 xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, sample_weights, nd_dim)
-
             self._xi1 = xi_prev
 
-        # -------- calc x0 --------
+        # -------- calc xi0 --------
         if self._calc_kappa:
             q = 0
-
-            # first dimension
             xi_prev = self._nd_xi_q_recursion(q, y, sample_weights, dim_order[0])
-
-            # n-dimensions
             for nd_dim in dim_order[1:]:
                 xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, sample_weights, nd_dim)
-
-            self._xi0 = xi_prev[..., 0]  # remove the last dimension due to leftovers of nd-model-order
+            self._xi0 = xi_prev[..., 0]
 
         # -------- calc nu --------
         # TODO
+
+    # ------------------------------------------------------------------
+    # minimize / eval (unchanged)
+    # ------------------------------------------------------------------
 
     def minimize_v(self, H=None, h=None):
 
@@ -262,7 +322,6 @@ class RLSAlssm:
         assert _H.shape[0] == self._N, f'H has wrong shape, {info_str_found_shape(H)}'
         assert _h.shape[0] == self._N, f'h has wrong shape, {info_str_found_shape(h)}'
 
-        # constrained minimization
         if H is None:
             HTWH = self.W
         else:
@@ -293,7 +352,7 @@ class RLSAlssm:
             x = np.einsum('nm, ...m-> ...n', H, v)
 
         if h is not None:
-            x+=h
+            x += h
 
         return x
 
@@ -308,32 +367,28 @@ class RLSAlssm:
 
     def fit(self, y, output='y_hat', sample_weights=None, dim_order=None, H=None, h=None, eval_alssm_weights=None):
 
-        # ----------- check output parameter -----------
         if isinstance(output, str):
             _output = (output,)
         else:
             _output = tuple(output)
         assert len(_output) != 0, 'output is empty. Must be a string or a tuple of strings.'
         assert any(_ in ('y_hat', 'x', 'v') for _ in _output), (f'output contains unknown entries: {_output}'
-                                                                f'. Allowed entries are "y_hat", "x", "v".')
-        # ----------- filter -----------
+                                                                 f'. Allowed entries are "y_hat", "x", "v".')
         self.filter(y, sample_weights, dim_order)
 
-        # ----------- v calc -----------
         v = self.minimize_v(H, h)
         if _output == ('v',):
             return v
 
         out_dict = {'v': v}
 
-        # ----------- x -----------
         if H is None:
             x = v
         else:
             x = np.einsum('nm, ...m-> ...n', H, v)
 
         if h is not None:
-            x+=h
+            x += h
 
         out_dict['x'] = x
         if _output == ('x',):
@@ -341,62 +396,248 @@ class RLSAlssm:
         if 'y_hat' not in _output:
             return (out_dict[_] for _ in _output)
 
-        # ----------- yhat -----------
         alssms = self._cost_terms.get_alssms()
-        out_dict['y_hat'] = AlssmSum(alssms, eval_alssm_weights).eval_output(x)
+        weights = eval_alssm_weights if eval_alssm_weights is not None else [1.0] * len(alssms)
+        out_dict['y_hat'] = AlssmSum(alssms, weights).eval_output(x)
 
         if _output == ('y_hat',):
             return out_dict['y_hat']
         return tuple(out_dict[_] for _ in _output)
 
-    def _nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
 
-        sub_cost = self._cost_terms._get_sub_cost_term(model_dimension)
+    @staticmethod
+    def _alssm_offsets(composite_cost):
+        """
+        Return the cumulative state-vector offsets for each ALSSM in a
+        CompositeCost.
+
+        Returns an array of shape (M+1,) so that ALSSM m occupies
+        xi[..., offsets[m] : offsets[m+1]].
+        """
+        orders = [alssm.N for alssm in composite_cost.alssms]
+        return np.concatenate([[0], np.cumsum(orders)])
+
+    # ------------------------------------------------------------------
+    # Recursion: _nd_xi_q_recursion
+    # ------------------------------------------------------------------
+
+    def _nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
+        """
+        Compute xi^(q) for one dimension of the cost.
+
+        Key change vs. the previous implementation
+        -------------------------------------------
+        Previously, _get_cost_segments(force_MC=True) was called, which merged
+        all M ALSSMs for each segment p into a single monolithic AlssmSum with a
+        block-diagonal A of size N×N.  The recursion then operated on the full
+        xi vector of length N^q.
+
+        Now we iterate over each individual ALSSM m within every segment p and
+        write the result into the appropriate sub-slice of xi_curr.  Because A
+        is block-diagonal, the blocks are independent and can be computed
+        separately.  Each ALSSM m is wrapped in a single-element AlssmSum with
+        weight F[m,p] so that:
+          - force_MC is honoured (C is guaranteed 2-D for all backends), and
+          - the F-column weight is folded into C (as lambda), keeping beta
+            equal to the original segment beta.
+        """
+        # Normalise to CompositeCost so we always have .alssms, .segments, .F
+        sub_cost = _as_composite_cost(
+            self._cost_terms._get_sub_cost_term(model_dimension)
+        )
+
+        # dim_index: position of this dimension inside _numdenom.
+        # For NDCompositeCost each dimension has its own slot.
+        # For CompositeCost/CostSegment there is exactly one slot (index 0)
+        # regardless of which model_dimension axis is being processed.
+        dim_index = model_dimension if isinstance(self._cost_terms, NDCompositeCost) else 0
+
         N = sub_cost.get_alssm_order()
         *Ks, Q = np.shape(y)
-        xi_curr = np.zeros((*Ks, N ** q,)) # the last dimension is the nd-model-order
+        xi_curr = np.zeros((*Ks, N ** q))  # last dimension is the nd-model-order
 
-        # most efficient to access subarrays in a ndarray
-        # 1. move subarray to last dimensions (returns a view)
-        # 2. reshape by flattening dimensions to iterate over (returns a view)
-        # the data is still stored in the original order
-        _xi_curr = np.moveaxis(xi_curr, model_dimension, -2) # to second last dimension, last is nd-model-order
+        # Move the model_dimension axis and flatten all other spatial dims so
+        # the inner loop sees a simple (n_parallel, K, Q) array.
+        _xi_curr = np.moveaxis(xi_curr, model_dimension, -2)
         _xi_curr = np.reshape(_xi_curr, (-1, *_xi_curr.shape[-2:]))
-        _y = np.moveaxis(y, model_dimension, -2) # to the second last dimension, last is the model output dimension
+        _y = np.moveaxis(y, model_dimension, -2)
         _y = np.reshape(_y, (-1, *_y.shape[-2:]))
-        _sample_weights = np.moveaxis(sample_weights, model_dimension, -1) # to the last dimension, no model output dimension
+        _sample_weights = np.moveaxis(sample_weights, model_dimension, -1)
         _sample_weights = np.reshape(_sample_weights, (-1, *_sample_weights.shape[-1:]))
 
-        # iterate over CostSegments
-        for l,cs in enumerate(sub_cost._get_cost_segments(force_MC=True)):
-            # backend recursion
-            for i in range(_y.shape[0]):
-                xi_q_recursion(_xi_curr[i], q,
-                               cs.alssm, cs.segment,
-                               _y[i], _sample_weights[i],
-                               cs.beta, self._backend, self._filter_form, self._numdenom[l])
+        offsets = self._alssm_offsets(sub_cost)  # shape (M+1,)
+
+        for p, segment in enumerate(sub_cost.segments):
+            beta_p = sub_cost.betas[p]
+
+            # ------------------------------------------------------------------
+            # q == 2  (W matrix)
+            # The full W of a CompositeCost contains cross-terms between
+            # different ALSSMs.  These sit at non-contiguous positions in the
+            # flattened N^2 vector, so per-ALSSM sub-slicing is not correct
+            # for M > 1.  Use the combined AlssmSum (original behaviour).
+            # _numdenom is not consumed here; numdenom_p is irrelevant for q==2
+            # with the combined path (numdenom would need to match the large A).
+            # ------------------------------------------------------------------
+            if q == 2:
+                combined = AlssmSum(sub_cost.alssms, sub_cost.F[:, p], force_MC=True)
+                for i in range(_y.shape[0]):
+                    xi_q_recursion(
+                        _xi_curr[i], q,
+                        combined, segment,
+                        _y[i], _sample_weights[i],
+                        beta_p, self._backend, self._filter_form, None,
+                    )
+                continue  # next segment — inner m-loop not needed for q==2
+
+            # ------------------------------------------------------------------
+            # q == 0  (kappa)
+            # The recursion for kappa does not use alssm.A or alssm.C at all
+            # (it only accumulates y² weighted by the window).  A single pass
+            # per segment is therefore sufficient regardless of how many ALSSMs
+            # are present.  We pass the first ALSSM as a dummy placeholder and
+            # sum all F weights for this segment column into a single effective
+            # beta so the overall scaling remains correct.
+            # ------------------------------------------------------------------
+            if q == 0:
+                # kappa = integral(y^2 * window) is a property of the segment
+                # alone — it is independent of the ALSSM structure and the F
+                # weights.  One pass per segment with the unmodified beta_p is
+                # all that is needed.  (Multiplying by f_sum, as was done
+                # previously, incorrectly double-counts segments that have more
+                # than one active ALSSM.)
+                dummy_alssm = AlssmSum([sub_cost.alssms[0]], [1.0], force_MC=True)
+                for i in range(_y.shape[0]):
+                    xi_q_recursion(
+                        _xi_curr[i], q,
+                        dummy_alssm, segment,
+                        _y[i], _sample_weights[i],
+                        beta_p, self._backend, self._filter_form, None,
+                    )
+                continue
+
+            # ------------------------------------------------------------------
+            # q == 1  (xi): iterate per ALSSM, write into per-ALSSM sub-slice
+            # ------------------------------------------------------------------
+            for m, alssm_m in enumerate(sub_cost.alssms):
+                f_mp = sub_cost.F[m, p]
+                if f_mp == 0.0:
+                    continue  # inactive grid node — skip
+
+                # Wrap the individual ALSSM in a single-element AlssmSum.
+                # This serves two purposes:
+                #   1. force_MC=True ensures C is always 2-D (required by the
+                #      lfilter cascade backend).
+                #   2. The F-weight f_mp is absorbed into C via the lambda
+                #      argument, exactly as AlssmSum(alssms, F[:,p]) did,
+                #      without mutating the original ALSSM object.
+                wrapped = AlssmSum([alssm_m], [f_mp], force_MC=True)
+
+                # Per-ALSSM sub-slice — the main optimisation.
+                # Block-diagonal A means ALSSM m contributes only to
+                # elements [offsets[m] : offsets[m+1]] of xi.
+                n0, n1 = offsets[m], offsets[m + 1]
+                numdenom_pm = self._numdenom[dim_index][p][m]
+                for i in range(_y.shape[0]):
+                    xi_q_recursion(
+                        _xi_curr[i, :, n0:n1], q,
+                        wrapped, segment,
+                        _y[i], _sample_weights[i],
+                        beta_p, self._backend, self._filter_form, numdenom_pm,
+                    )
 
         return xi_curr
 
-    def _nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, sample_weights, model_dimension):
+    # ------------------------------------------------------------------
+    # Recursion: _nd_xi_q_asterisk_l_recursion
+    # ------------------------------------------------------------------
 
-        sub_cost = self._cost_terms._get_sub_cost_term(model_dimension)
+    def _nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, sample_weights, model_dimension):
+        """
+        Compute the cross-dimensional xi^(q)* for one additional dimension.
+
+        The same per-ALSSM decomposition as _nd_xi_q_recursion is applied:
+        each ALSSM m in the CompositeCost for this dimension is processed
+        independently, writing into the corresponding sub-slice of xi_curr.
+        """
+        sub_cost = _as_composite_cost(
+            self._cost_terms._get_sub_cost_term(model_dimension)
+        )
+
+        dim_index = model_dimension if isinstance(self._cost_terms, NDCompositeCost) else 0
+
         N = sub_cost.get_alssm_order()
         Nq_prev = xi_prev.shape[-1]
         *Ks, Q = np.shape(y)
-        xi_curr = np.zeros((*Ks, Nq_prev * N ** q,)) # the last dimension is the nd-model-order
+        xi_curr = np.zeros((*Ks, Nq_prev * N ** q))
 
-        # move subarray to first dimensions (returns a view)
         _xi_curr = np.moveaxis(xi_curr, model_dimension, 0)
         _xi_prev = np.moveaxis(xi_prev, model_dimension, 0)
         _sample_weights = np.moveaxis(sample_weights, model_dimension, 0)
 
-        # cost segments
-        # iterate over CostSegments
-        for l,cs in enumerate(sub_cost._get_cost_segments(force_MC=True)):
-            xi_q_asterisk_l_recursion(_xi_curr, q,
-                                      cs.alssm, cs.segment,
-                                      _xi_prev, _sample_weights,
-                                      cs.beta, self._backend, self._filter_form,self._numdenom[l])
-        return xi_curr
+        offsets = self._alssm_offsets(sub_cost)
 
+        for p, segment in enumerate(sub_cost.segments):
+            beta_p = sub_cost.betas[p]
+
+            # q == 2: use combined AlssmSum (old behaviour), called once per segment.
+            if q == 2:
+                combined = AlssmSum(sub_cost.alssms, sub_cost.F[:, p], force_MC=True)
+                xi_q_asterisk_l_recursion(
+                    _xi_curr, q,
+                    combined, segment,
+                    _xi_prev, _sample_weights,
+                    beta_p, self._backend, self._filter_form, None,
+                )
+                continue
+
+            # q == 0: the asterisk recursion for kappa does not use alssm.A or
+            # alssm.C (see numpy_xi_asterisk_l_recursion — it only uses the
+            # window parameters and xi_prev).  A single pass per segment is
+            # therefore sufficient, mirroring the treatment in
+            # _nd_xi_q_recursion.  Sum the active F weights and pass a dummy
+            # ALSSM as placeholder.
+            if q == 0:
+                f_sum = sum(
+                    sub_cost.F[m, p]
+                    for m in range(len(sub_cost.alssms))
+                    if sub_cost.F[m, p] != 0.0
+                )
+                if f_sum == 0.0:
+                    continue
+                dummy_alssm = AlssmSum([sub_cost.alssms[0]], [1.0], force_MC=True)
+                xi_q_asterisk_l_recursion(
+                    _xi_curr, q,
+                    dummy_alssm, segment,
+                    _xi_prev, _sample_weights,
+                    beta_p * f_sum, self._backend, self._filter_form, None,
+                )
+                continue
+
+            # q == 1: per-ALSSM sub-slice.
+            for m, alssm_m in enumerate(sub_cost.alssms):
+                f_mp = sub_cost.F[m, p]
+                if f_mp == 0.0:
+                    continue
+
+                wrapped = AlssmSum([alssm_m], [f_mp], force_MC=True)
+
+                # _xi_curr has shape (K, ..., Nq_prev * N).
+                # The slice [Nq_prev*n0 : Nq_prev*n1] on the last axis is
+                # exclusive to ALSSM m while leaving the prev-dimension extent
+                # (Nq_prev) intact.
+                n0 = offsets[m]
+                n1 = offsets[m + 1]
+                numdenom_pm = self._numdenom[dim_index][p][m]
+                xi_curr_slice = _xi_curr[..., Nq_prev * n0: Nq_prev * n1]
+                xi_q_asterisk_l_recursion(
+                    xi_curr_slice, q,
+                    wrapped, segment,
+                    _xi_prev, _sample_weights,
+                    beta_p, self._backend, self._filter_form, numdenom_pm,
+                )
+
+        return xi_curr

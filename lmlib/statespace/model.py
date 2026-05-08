@@ -926,7 +926,7 @@ class AlssmSum(ModelBase):
     def __init__(self, alssms, lambdas=None, **kwargs):
         super().__init__(**kwargs)
         self.alssms = alssms
-        self.lambdas = lambdas
+        self.lambdas = lambdas if lambdas is not None else [1.0] * len(self.alssms)
         self.update()
 
     def update(self):

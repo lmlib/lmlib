@@ -1,6 +1,6 @@
 import numpy as np
-from numpy.linalg import inv, matrix_power, eigvals
-from scipy.signal import lfilter, convolve, zpk2sos, sosfilt, ss2tf
+from numpy.linalg import inv, matrix_power
+from scipy.signal import lfilter, convolve
 
 
 # xi2 lfilter cascade
@@ -106,10 +106,7 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights, 
 
     # shift signal
     # insert the shifted signal: since b > a (by definition), the recursion starts with signal b only.
-    if not np.isinf(a):
-        K_append  = b-a+1 #this is the length of the window
-    else:
-        K_append = 0
+    K_append  = b-a+1 #this is the length of the window
     y_delayed_b = np.zeros((K + K_append, *yweighted.shape[1:]))
     y_delayed_b[0:K] = yweighted
     y_diff = np.einsum('kl, nl->kn', y_delayed_b, gamma_b * Abc)
@@ -192,10 +189,7 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights,
     
     # shift signal
     # insert the shifted signal: since a < b (by definition), the backward recursion starts with signal a only.
-    if not np.isinf(b):
-        K_append  = b-a+1 #this is the length of the window
-    else:
-        K_append = 0
+    K_append  = b-a+1 #this is the length of the window
     y_delayed_a = np.zeros((K + K_append, *yweighted_flipped.shape[1:]))
     y_delayed_a[0:K] = yweighted_flipped
     y_diff = np.einsum('kl, nl->kn', y_delayed_a, gamma_a * Aac)
@@ -238,14 +232,11 @@ def lfilter_parallel_xi2(xi2, denom, num_b, num_a, a, b, direction, delta, gamma
 
 
 # xi1 lfilter parallel
-def lfilter_parallel_xi1(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
-                          a, b, direction, delta, gamma, y, sampleweights, beta):
+def lfilter_parallel_xi1(xi1, denom, num_b, num_a, a, b, direction, delta, gamma, y, sampleweights, beta):
     if direction == 'fw':
-        lfilter_forward_parallel_xi(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
-                                     a, b, delta, gamma, y, sampleweights, beta)
+        lfilter_forward_parallel_xi(xi1,denom, num_b, num_a, a, b, delta, gamma, y, sampleweights, beta)
     elif direction == 'bw':
-        lfilter_backward_parallel_xi(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
-                                      a, b, delta, gamma, y, sampleweights, beta)
+        lfilter_backward_parallel_xi(xi1,denom, num_b, num_a,a, b, delta, gamma, y, sampleweights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
@@ -277,140 +268,83 @@ def lfilter_parallel_nu(nu, A, C, a, b, direction, delta, gamma, y, sampleweight
         raise ValueError('direction must be either "forward" or "backward"')
     
 
-def _make_num_sos(num_row):
-    """Build a numerator-only SOS from a single row of ss2tf output.
+def lfilter_forward_parallel_xi(xi, denom, num_b, num_a, a, b, delta, gamma, y, sampleweights, beta):   
 
-    ss2tf always inserts a leading zero in each numerator row (the z^{-1}
-    normalisation).  This helper strips that leading zero, finds any further
-    leading zeros (extra delay factors), extracts the finite zeros with
-    np.roots and returns a zpk2sos filter together with the extra delay count.
-
-    Returns
-    -------
-    sos : ndarray, shape (n_sections, 6)  or  None  (all-zero numerator)
-    extra_delay : int  (number of additional z^{-1} factors beyond the one
-                        already stripped)
-    """
-    poly = num_row[1:]          # strip the ss2tf z^{-1}
-    nz = np.argmax(np.abs(poly) > 1e-300)
-    if np.abs(poly[nz]) < 1e-300:
-        return None, 0          # numerically zero – contributes nothing
-    extra_delay = nz
-    poly_trimmed = poly[nz:]
-    gain = poly_trimmed[0]
-    zeros_finite = np.roots(poly_trimmed / gain) if len(poly_trimmed) > 1 else np.array([])
-    zeros_at_zero = np.zeros(extra_delay)
-    zeros = np.concatenate([zeros_finite, zeros_at_zero])
-    if len(zeros) > 0:
-        sos = zpk2sos(zeros, np.zeros(len(zeros)), gain)
-    else:
-        sos = np.array([[gain, 0., 0., 1., 0., 0.]])
-    return sos, extra_delay
-
-
-def _apply_fir(sos, extra_delay, y_sig, Lout):
-    """Apply a numerator SOS filter with an additional integer delay.
-
-    The output array always has length *Lout*.  Any samples beyond the
-    filter's natural output are zero-padded; samples that would fall before
-    index 0 are silently dropped.
-    """
-    result = np.zeros(Lout)
-    if sos is None:
-        return result
-    filtered = sosfilt(sos, y_sig)          # length == len(y_sig)
-    end = min(extra_delay + len(filtered), Lout)
-    result[extra_delay:end] = filtered[:end - extra_delay]
-    return result
-
-
-def lfilter_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
-                                 a, b, delta, gamma, y, sampleweights, beta):
-    """SOS-based forward parallel xi filter – supports all boundary combinations.
-
-    Parameters are the SOS structures built once in RLSAlssm._numdenom.
-
-    Signal construction (cascade style, length K+Ka):
-      y_db[:K]         = y * gamma_b   (boundary-b contribution)
-      y_da[Ka:K+Ka]    = y * gamma_a   (boundary-a contribution, zero if a==-inf)
-
-    Output slice (replicates cascade forward slicing):
-      b >= 0:  iir[b : b+K]
-      b  < 0:  iir[0 : K+b]  (with leading zeros at xi[-b:])
-    """
+    if not (a < 0 and b <= 0):
+        raise NotImplementedError('BACKEND: a and b has to be lower then zero for forward calculated segments.')
+    
+    # gamma precalculation
     gamma_a = gamma ** (a - 1 - delta)
     gamma_b = gamma ** (b - delta)
-    yw = (y * sampleweights[:, None]).ravel()
-    K = len(yw)
-    N = xi.shape[1]
+
+    #observation weighting with individual sample weights        
+    yweighted = y*sampleweights[:, None]
+    yweighted = yweighted.ravel()
+
+    # shift signal
+    K = yweighted.shape[0]
+    y_delayed_b = np.empty_like(yweighted)
+    y_delayed_b[:-b] = 0
+    y_delayed_b[-b:] = yweighted[:K+b] * gamma_b 
+
     if not np.isinf(a):
-        K_append  = b-a+1 #this is the length of the window
-    else:
-        K_append = 0
-    L = K + K_append
-
-    y_db = np.zeros(L)
-    y_db[:K] = yw * gamma_b
-
-    y_da = np.zeros(L)
-    if not np.isinf(a):
-        y_da[K_append:K + K_append] = yw * gamma_a
-
+        y_delayed_a = np.empty_like(yweighted)
+        y_delayed_a[:-a+1] = 0
+        y_delayed_a[-a+1:] = yweighted[:K+a-1] * gamma_a 
+  
+    N = xi.shape[1]      
+    allpass = np.zeros_like(denom)
+    allpass[0] = 1
+    
     for n_ in range(N):
-        Lout = L + max(db_list[n_], da_list[n_]) + 1
-        fb = _apply_fir(sos_b_list[n_], db_list[n_], y_db, Lout)
-        fa = _apply_fir(sos_a_list[n_], da_list[n_], y_da, Lout)
-        iir = sosfilt(sos_iir, fb - fa)
-        if b >= 0:
-            xi[:, n_] += iir[b:b + K]
-        else:
-            xi[-b:, n_] += iir[0:K + b]
+        #FIR part
+        #FIRdiff = scipy.signal.lfilter(num_b[n_], allpass , y_delayed_b) - scipy.signal.lfilter(num_a[n_], allpass, y_delayed_a)        
+        FIRdiff = convolve(y_delayed_b, num_b[n_], mode='full') - convolve(y_delayed_a, num_a[n_], mode='full')
+        
+        #IIR part    
+        # Parallel version has one delay more (due to unit delay normalization of filter coefficients)
+        # Therefore, the result is shifted by 1 sample to the left
+        xi[:,n_] += lfilter(allpass, denom, FIRdiff)[1:K+1]    #recursion: iir part
+        
+    
+def lfilter_backward_parallel_xi(xi, denom, num_b, num_a, a, b, delta, gamma, y, sampleweights, beta):
+    
+    if not (a >= 0 and b > 0):
+        raise NotImplementedError('BACKEND: a and b has to be higher than zero for backward calculated segments.')
 
-    if beta != 1:
-        xi *= beta
-
-
-def lfilter_backward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
-                                  a, b, delta, gamma, y, sampleweights, beta):
-    """SOS-based backward parallel xi filter – supports all boundary combinations.
-
-    Signal construction (cascade style, length K+Ka, time-reversed):
-      y_da[:K]         = y[::-1] * gamma_a   (boundary-a contribution)
-      y_db[Ka:K+Ka]    = y[::-1] * gamma_b   (boundary-b contribution, zero if b==+inf)
-
-    Output accumulation (replicates cascade backward slicing, no explicit flip):
-      a >= 0:  xi[0:K-a] += iir[0:K-a][::-1]
-      a  < 0:  xi[:]     += iir[-a:K-a][::-1]
-    """
+    # gamma pre-calculation
     gamma_a = gamma ** (a - delta)
     gamma_b = gamma ** (b - delta + 1)
-    yw = (y * sampleweights[:, None]).ravel()
-    K = len(yw)
-    N = xi.shape[1]
-    if not np.isinf(a):
-        K_append  = b-a+1 #this is the length of the window
-    else:
-        K_append = 0
-    L = K + K_append
-    yw_r = yw[::-1]
 
-    y_da = np.zeros(L)
-    y_da[:K] = yw_r * gamma_a
+    #observation weighting with individual sample weights        
+    yweighted = y*sampleweights[:, None]
+    yweighted = yweighted.ravel()
 
-    y_db = np.zeros(L)
+    # shift signal
+    K = yweighted.shape[0]
+    y_delayed_a = np.empty_like(yweighted)
+    y_delayed_a[-a:] = 0
+    y_delayed_a[:K-a]     = yweighted[a:] * gamma_a  
+
     if not np.isinf(b):
-        y_db[K_append:K + K_append] = yw_r * gamma_b
-
+        y_delayed_b = np.empty_like(yweighted)
+        y_delayed_b[-b-1:] = 0
+        y_delayed_b[:K-b-1]       = yweighted[b+1:] * gamma_b  
+  
+    N = xi.shape[1]      
+    xi_flipped = np.zeros_like(xi)
+    allpass = np.zeros_like(denom)
+    allpass[0] = 1
+    
+    
     for n_ in range(N):
-        Lout = L + max(db_list[n_], da_list[n_]) + 1
-        fa = _apply_fir(sos_a_list[n_], da_list[n_], y_da, Lout)
-        fb = _apply_fir(sos_b_list[n_], db_list[n_], y_db, Lout)
-        iir = sosfilt(sos_iir, fa - fb)
-        if a >= 0:
-            xi[:K - a, n_] += iir[0:K - a][::-1]
-        else:
-            xi[:, n_] += iir[-a:K - a][::-1]
-
-    if beta != 1:
-        xi *= beta
+        #FIR part
+        #FIRdiff = scipy.signal.lfilter(num_b[n_], allpass , y_delayed_b) - scipy.signal.lfilter(num_a[n_], allpass, y_delayed_a)        
+        FIRdiff = convolve(y_delayed_a[::-1], num_a[n_], mode='full') - convolve(y_delayed_b[::-1], num_b[n_], mode='full')
+        
+        #IIR part    
+        # Parallel version has one delay more (due to unit delay normalization of filter coefficients)
+        # Therefore, the result is shifted by 1 sample to the left 
+        xi_flipped[:,n_] += lfilter(allpass, denom, FIRdiff)[1:K+1]    #recursion: iir part
+    xi += xi_flipped[::-1]    
         

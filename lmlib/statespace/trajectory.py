@@ -1,5 +1,5 @@
 import numpy as np
-from lmlib.statespace.cost import CostSegment, CompositeCost
+from lmlib.statespace.cost import CostSegment, CompositeCost, NDCompositeCost
 
 import warnings
 
@@ -10,7 +10,7 @@ __all__ = ['Trajectory']
 class Trajectory:
 
     @staticmethod
-    def eval(cost, xs, F=None, thd=1e-6):
+    def eval(cost, xs, F=None, thd=1e-6, merged_ks=True, merged_seg=True):
         """
         Evaluates the trajectories for given state vectors `xs` over the specified `cost`.
 
@@ -43,10 +43,18 @@ class Trajectory:
             ab_range = cs.segment._ab_range(thd)
             for idx in np.ndindex(XS):
                 out[p][idx] = ab_range, cs.alssm.eval_output(xs[idx], ab_range)
+        
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            if merged_ks:
+                out = np.nanmax(out, axis=1)
+            if merged_seg:
+                out = np.nanmax(out, axis=0)
+                
         return out
 
     @staticmethod
-    def eval_y(cost, xs, ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan):
+    def eval_y(cost, xs, ks, K, F=None, thd=1e-6, merged_ks=True, merged_seg=True, fill_value=np.nan):
         """
         Evaluates the trajectories for given state vectors `xs` over the specified `cost` and
         maps trajectories at indices `ks` into a common target output vector of length `K`.
@@ -96,40 +104,52 @@ class Trajectory:
         TODO
 
         """
-
-        # return an empty array if ks is empty
-        if isinstance(ks, int):
-            ks = np.array([ks])
-            xs = np.asarray([xs])
-
-        if len(ks) == 0:
-            print('Warning: ks is empty. Returned empty array of size K.')
-            return np.full(K, fill_value=fill_value)
-
-        if len(xs) == len(ks):
-            trajs = Trajectory.eval(cost, xs, F, thd)
-        elif len(xs) == K:
-            trajs = Trajectory.eval(cost, xs[ks], F, thd)
+        if isinstance(cost, NDCompositeCost):
+            #TODO implement
+            raise NotImplementedError("ND trajectory not implemented")
+            
         else:
-            raise ValueError('Length of xs must match length of ks or is equal to K.')
-
-        P, xs_dim, *multi_dim = trajs.shape
-
-        out = np.full((P, xs_dim, K, *multi_dim), fill_value=fill_value)
-        for p, xs_idx, *multi_idx in np.ndindex(trajs.shape):
-            ab_range, traj = trajs[(p, xs_idx, *multi_idx)]
-            ks_indexes = ks[xs_idx] + np.array(ab_range)
-            mask = (ks_indexes >= 0) & (ks_indexes < K)
-            out[(p, xs_idx, ...,  ks_indexes[mask], *multi_idx)] = traj[mask]
-
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=RuntimeWarning)
-            if merged_ks:
-                out = np.nanmax(out, axis=1)
-            if merged_seg:
-                out = np.nanmax(out, axis=0)
-
-        return out
+            # Accept a bare integer or numpy scalar for ks (single-peak convenience).
+            # xs may be a single state vector of shape (N,) or a full array of
+            # shape (K, N); both are handled correctly by the length checks below.
+            if np.ndim(ks) == 0:
+                ks = np.array([int(ks)])
+                xs = np.asarray(xs)
+                if xs.ndim == 1:          # shape (N,) → (1, N)
+                    xs = xs[np.newaxis, :]
+                else:
+                    if xs.ndim == 2 and xs.shape[1] > 1:      # is multi channel 
+                        xs = xs[np.newaxis, :]
+            
+            # return an empty array if ks is empty
+            if len(ks) == 0:
+                print('Warning: ks is empty. Returned empty array of size K.')
+                return np.full(K, fill_value=fill_value)
+    
+            if len(xs) == len(ks):
+                trajs = Trajectory.eval(cost, xs, F, thd, merged_ks=False, merged_seg=False)
+            elif len(xs) == K:
+                trajs = Trajectory.eval(cost, xs[ks], F, thd, merged_ks=False, merged_seg=False)
+            else:
+                raise ValueError('Length of xs must match length of ks or is equal to K.')
+    
+            P, xs_dim, *multi_dim = trajs.shape
+    
+            out = np.full((P, xs_dim, K, *multi_dim), fill_value=fill_value)
+            for p, xs_idx, *multi_idx in np.ndindex(trajs.shape):
+                ab_range, traj = trajs[(p, xs_idx, *multi_idx)]
+                ks_indexes = ks[xs_idx] + np.array(ab_range)
+                mask = (ks_indexes >= 0) & (ks_indexes < K)
+                out[(p, xs_idx, ...,  ks_indexes[mask], *multi_idx)] = traj[mask]
+    
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=RuntimeWarning)
+                if merged_ks:
+                    out = np.nanmax(out, axis=1)
+                if merged_seg:
+                    out = np.nanmax(out, axis=0)
+    
+            return out
 
     @staticmethod
     def plot(ax, trajs, **kwargs):
