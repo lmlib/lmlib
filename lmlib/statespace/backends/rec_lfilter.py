@@ -223,7 +223,7 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights,
     if a >= 0:
         xi_add[0:K-a] += xi0_flipped[-(K-a):] 
     if a < 0: 
-        xi_add += xi0_flipped[b+1:K+b+1] #TODO WHY DOES THIS WORK? WHY DO WE USE b HERE?
+        xi_add += xi0_flipped[b+1:K+b+1] 
         
     xi += xi_add
 
