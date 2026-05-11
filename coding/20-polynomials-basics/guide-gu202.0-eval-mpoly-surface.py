@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # Author: Waldmann Frédéric, Wildhaber Reto
 """
-Surface Plot of Multivariate Polynomials [ex202.0]
+Surface Plot of Multivariate Polynomials [gu202.0]
 ==================================================
 
-This example generates a multivariate polynomial using the :class:`MPoly` class. The polynomial is shown in a 3-D
+This guide script generates a multivariate polynomial using the :class:`MPoly` class. The polynomial is shown in a 3-D
 surface plot. plot.
 
 """

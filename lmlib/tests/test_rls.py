@@ -2,6 +2,16 @@ import unittest
 import lmlib as lm
 import numpy as np
 
+
+# ── JIT availability ──────────────────────────────────────────────────────────
+try:
+    from numba import jit as _numba_jit   # noqa: F401
+    JIT_AVAILABLE = True
+except ImportError:
+    JIT_AVAILABLE = False
+
+skip_no_jit = unittest.skipUnless(JIT_AVAILABLE, "numba not installed — JIT backend unavailable")
+
 __all__ = ["TestRLSAlssm"]
 
 class TestRLSAlssm(unittest.TestCase):
@@ -67,6 +77,7 @@ class TestRLSAlssm(unittest.TestCase):
                  0.00175143, 0.00078396]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    @skip_no_jit
     def test_eval_error_single_output_jit(self):
         y = np.sin(np.linspace(0, 2 * np.pi, 20))
         alssm = lm.AlssmPoly(poly_degree=2)
@@ -82,6 +93,7 @@ class TestRLSAlssm(unittest.TestCase):
                  0.00175143, 0.00078396]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    @skip_no_jit
     def test_eval_error_multi_output_jit(self):
         y = np.sin(np.linspace(0, 2 * np.pi, 20))[:, None]
         alssm = lm.AlssmPoly(poly_degree=2, force_MC=True)
@@ -158,6 +170,7 @@ class TestRLSAlssm(unittest.TestCase):
                  0.17659045, 0.09217478]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    @skip_no_jit
     def test_eval_error_single_output_steady_state_jit(self):
         y = np.sin(np.linspace(0, 2 * np.pi, 20))
         alssm = lm.AlssmPoly(poly_degree=2)
@@ -173,6 +186,7 @@ class TestRLSAlssm(unittest.TestCase):
                  0.17659045, 0.09217478]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    @skip_no_jit
     def test_eval_error_multi_output_steady_state_jit(self):
         y = np.sin(np.linspace(0, 2 * np.pi, 20))[:, None]
         alssm = lm.AlssmPoly(poly_degree=2, force_MC=True)
@@ -376,6 +390,7 @@ class TestRLSAlssm(unittest.TestCase):
           6.107149384831354, 4.474868635321705, 3.155341055304806, 2.511868913181077, 2.32563905801209]]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    @skip_no_jit
     def test_eval_error_ndim_output_steady_state_jit(self):
         y = np.sin(np.linspace(0, 2 * np.pi, 20))
         Y = np.repeat([y], 20, axis=0)
@@ -603,6 +618,7 @@ class TestRLSAlssm(unittest.TestCase):
             [0.00078396, 0.00198539]]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    @skip_no_jit
     def test_eval_error_set_single_output_jit(self):
         y = np.column_stack([np.sin(np.linspace(0, 2 * np.pi, 20)),
                              1.5 * np.cos(np.linspace(0, 2 * np.pi, 20))])
@@ -636,6 +652,7 @@ class TestRLSAlssm(unittest.TestCase):
             [0.00078396, 0.00198539]]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    @skip_no_jit
     def test_eval_error_set_multi_output_jit(self):
         y = np.column_stack([np.sin(np.linspace(0, 2 * np.pi, 20)),
                        1.5 * np.cos(np.linspace(0, 2 * np.pi, 20))])[..., None]
@@ -803,6 +820,7 @@ class TestRLSAlssm(unittest.TestCase):
                 , [0.09217478, 1.79342604]]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    @skip_no_jit
     def test_eval_error_set_single_output_steady_state_jit(self):
         y = np.column_stack([np.sin(np.linspace(0, 2 * np.pi, 20)),
                              1.5 * np.cos(np.linspace(0, 2 * np.pi, 20))])
@@ -836,6 +854,7 @@ class TestRLSAlssm(unittest.TestCase):
                 , [0.09217478, 1.79342604]]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    @skip_no_jit
     def test_eval_error_set_multi_output_steady_state_jit(self):
         y = np.column_stack([np.sin(np.linspace(0, 2 * np.pi, 20)),
                        1.5 * np.cos(np.linspace(0, 2 * np.pi, 20))])[..., None]
@@ -1059,6 +1078,7 @@ class TestRLSAlssm(unittest.TestCase):
           6.107149384831354, 4.474868635321705, 3.155341055304806, 2.511868913181077, 2.32563905801209]]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    @skip_no_jit
     def test_eval_error_ndim_multi_output_steady_state_jit(self):
         y = np.sin(np.linspace(0, 2 * np.pi, 20))
         Y = np.repeat([y], 20, axis=0)

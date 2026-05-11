@@ -1,5 +1,5 @@
 """
-Multi-Segment (Composite) Models: Windows and Trajectories [ex104.0]
+Multi-Segment (Composite) Models: Windows and Trajectories [gu104.0]
 ====================================================================
 
 Defines a Composite Cost, consisting of two stacked ALSSM models,
@@ -31,7 +31,7 @@ F = [[0, 1, 0],
 costs = lm.CompositeCost((alssm_pulse, alssm_baseline), (semgent_left, semgent_center, semgent_right), F)
 x0 = [2, 3, 0.02, -0.0002] # initial states of alssm_pulse [0:1] and of alssm_baseline [1:4]
 
-windows = costs.windows(segment_indices=[0,1,2], thd=0.01)
+windows = lm.Window.eval(costs,thd=0.01)
 
 
 F_baseline_only = [[0, 0, 0],
@@ -39,9 +39,10 @@ F_baseline_only = [[0, 0, 0],
 F_pulse_only    = [[0, 1, 0],
                    [0, 0, 0]]
 
-trajecotries_baseline = costs.trajectories([x0], F_baseline_only, thd=0.01)
-trajecotries_pulse = costs.trajectories([x0], F_pulse_only, thd=0.01)
-trajecotries = costs.trajectories([x0], F, thd=0.01)
+# Trajectories
+trajectories_baseline = lm.Trajectory.eval(costs, x0, F_baseline_only, thd=0.01,merged_seg=False)
+trajectories_pulse = lm.Trajectory.eval(costs,x0, F_pulse_only, thd=0.01,merged_seg=False)
+trajectories = lm.Trajectory.eval(costs,x0, F, thd=0.01,merged_seg=False)
 
 fig, axs = plt.subplots(4, sharex='all')
 
@@ -55,7 +56,7 @@ axs[0].legend(fontsize=9)
 
 
 # Plot Trajectory Pulse
-for (js, trajs), loc, c in zip(trajecotries_pulse[0], ('0', '1', '2'), ('blue','darkblue','dodgerblue')):
+for (js, trajs), loc, c in zip(trajectories_pulse, ('0', '1', '2'), ('blue','darkblue','dodgerblue')):
     axs[1].plot(js, trajs, lw=1.5, c=c, label=f'segment {loc}')
 axs[1].axvline(0, color="black", linestyle="--", lw=0.5)    
 axs[1].set_ylabel('Trajectory\n Pulse')
@@ -63,14 +64,14 @@ axs[1].set_ylim([-1, 8.0])
 axs[1].legend(fontsize=9)
 
 # Plot Trajectory Baseline
-for (js, trajs), loc, c in zip(trajecotries_baseline[0], ('0', '1', '2'), ('blue','darkblue','dodgerblue')):
+for (js, trajs), loc, c in zip(trajectories_baseline, ('0', '1', '2'), ('blue','darkblue','dodgerblue')):
     axs[2].plot(js, trajs, lw=1.5, c=c)
 axs[2].axvline(0, color="black", linestyle="--", lw=0.5)    
 axs[2].set_ylabel('Trajectory\n Baseline')
 axs[2].set_ylim([-1, 8.0])
 
 # Plot Trajectory Pulse+Baseline
-for (js, trajs), loc, c in zip(trajecotries[0], ('0', '1', '2'),  ('blue','darkblue','dodgerblue')):
+for (js, trajs), loc, c in zip(trajectories, ('0', '1', '2'),  ('blue','darkblue','dodgerblue')):
     axs[3].plot(js, trajs, lw=1.5, c=c)
 
 axs[3].axvline(0, color="black", linestyle="--", lw=0.5)    

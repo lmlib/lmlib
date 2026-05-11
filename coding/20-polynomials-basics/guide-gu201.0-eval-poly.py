@@ -1,5 +1,5 @@
 """
-Structure and Evaluation of Univariate Polynomials [ex201.1]
+Structure and Evaluation of Univariate Polynomials [gu201.1]
 ============================================================
 
 """

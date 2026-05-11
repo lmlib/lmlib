@@ -54,8 +54,8 @@ xs_bl = rls.minimize_x(H_bl)
 # Error
 J = rls.eval_errors(xs_sp)
 J_bl = rls.eval_errors(xs_bl)
-J_sum = np.sum(J, axis=-1)
-J_bl_sum = np.sum(J_bl, axis=-1)
+J_sum = np.sum(J, axis=-1) if J.ndim > 1 else J
+J_bl_sum = np.sum(J_bl, axis=-1) if J.ndim > 1 else J_bl
 
 lcr = -0.5 * np.log(J_sum / J_bl_sum)
 
@@ -84,7 +84,7 @@ axs[1].set_ylim(-0.5, 2)
 axs[1].legend(('true spikes',), loc=1)
 
 # Signals
-OFFSETS = np.array([0, 2, 4])
+OFFSETS = np.arange(L) * 2
 axs[2].set(ylabel='$y_k$')
 l1=axs[2].plot(range(K), y + OFFSETS, c='tab:gray', lw=1)
 l2=axs[2].plot(range(K), trajs_pulse + OFFSETS, color='b', lw=1.5, linestyle="-")

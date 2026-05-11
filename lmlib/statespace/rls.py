@@ -13,6 +13,11 @@ from lmlib.statespace.backend import get_backend
 from lmlib.statespace.cost import CompositeCost, CostSegment, NDCompositeCost
 from lmlib.statespace.model import AlssmSum
 from lmlib.utils.check import *
+from lmlib.statespace.sos_matlab import (
+    print_matlab_sos_script as _print_matlab_sos_script,
+    sos_from_matlab,
+    sos_from_matlab_multi,
+)
 from lmlib.statespace.backends.rec import *
 import warnings
 
@@ -53,9 +58,9 @@ def _as_composite_cost(cost):
 class RLSAlssm:
 
     def __init__(self, cost_terms, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=False, filter_form='cascade',
-                 backend=None, numdenom=None, supress_pzinstruction=False):
+                 backend=None, numdenom=None, show_pzinstruction=False):
         self._cost_terms = cost_terms
-        assert all(isinstance(_, bool) for _ in (steady_state, calc_W, calc_xi, calc_kappa, calc_nu, supress_pzinstruction)), \
+        assert all(isinstance(_, bool) for _ in (steady_state, calc_W, calc_xi, calc_kappa, calc_nu, show_pzinstruction)), \
             'steady_state, calc_W, calc_xi, calc_kappa and calc_nu must be boolean.'
 
         self._steady_state = steady_state
@@ -71,7 +76,8 @@ class RLSAlssm:
         self._xi2 = None
         self._nu = None
 
-        self._backend = backend if backend is not None else get_backend()
+        self._backend = backend if backend is not None else get_backend(cost_terms)
+        
         self._filter_form = filter_form
 
         # Collect per-dimension CompositeCosts once, reused throughout __init__
@@ -113,14 +119,18 @@ class RLSAlssm:
         # so _numdenom[dim][p][m] is not consumed for q==2; the combined entry is
         # built on-the-fly there instead.
         #
-        # Previously this was a flat list indexed by a single counter l that
-        # advanced across all dimensions, which broke for NDCompositeCost.
         # ------------------------------------------------------------------
         self._numdenom = [
             [[None] * ct.M for _ in range(ct.P)] for ct in _sub_costs
         ]
 
         if self._filter_form == 'parallel' and self._backend == 'lfilter' and numdenom is None:
+            if show_pzinstruction:
+                print("Using SOS (second-order sections) parallel filter.")
+            else:
+                print("Scipy SOS coefficients may be imprecise for large systems.\n"
+                      "For higher accuracy, generate coefficients in MATLAB. \n"
+                      "For instructions, set show_pzinstruction=True when creating the RLS instance.")
             for dim_idx, ct in enumerate(_sub_costs):
                 for p, segment in enumerate(ct.segments):
                     gamma = segment.gamma
@@ -149,11 +159,6 @@ class RLSAlssm:
                         else:
                             raise NotImplementedError("Segment direction must be fw or bw")
 
-                        if np.allclose(gAT, np.tril(gAT)):
-                            print("State-Space Matrix A is upper triangular, cascade version "
-                                  "can be used, offers better numerical accuracy. "
-                                  "Try filter_form='cascade'.")
-
                         # --- Build SOS structures ---
                         # Poles: eigenvalues of gAT (accurate, avoids polynomial expansion)
                         poles = eigvals(gAT)
@@ -176,20 +181,21 @@ class RLSAlssm:
                         self._numdenom[dim_idx][p][m] = [sos_iir, sos_b_list, sos_a_list,
                                                           db_list, da_list]
 
-                        if not supress_pzinstruction:
-                            print("Using SOS (second-order sections) parallel filter.")
-                            print(f"Built SOS for dim {dim_idx}, segment {p}, alssm {m}:")
-                            print(f"  Poles (eigenvalues of gAT): {poles}")
-                            print(f"  IIR SOS: {sos_iir}")
-                            print("To suppress this message, set "
-                                  "'supress_pzinstruction=True' when initialising the RLS instance.")
+                        if show_pzinstruction:
+                            _print_matlab_sos_script(ct, dim_index=dim_idx)
+            if show_pzinstruction: 
+                print(
+                "\nPaste the printed dict into your Python source, then pass it as:\n"
+                "  rls = RLSAlssm(cost, ..., numdenom=lm.sos_from_matlab(cost, d),\n"
+            )
+
 
         if filter_form == 'parallel' and backend == 'lfilter' and numdenom is not None:
-            print("Imported Poles and Zeros.")
+            print("Using user-supplied SOS coefficients (numdenom).")
             self._numdenom = numdenom
 
     # ------------------------------------------------------------------
-    # Properties (unchanged)
+    # Properties 
     # ------------------------------------------------------------------
 
     @property
@@ -235,7 +241,7 @@ class RLSAlssm:
         raise NotImplementedError("nu calculation is not yet implemented.")
 
     # ------------------------------------------------------------------
-    # filter (unchanged)
+    # filter 
     # ------------------------------------------------------------------
 
     def filter(self, y, sample_weights=None, dim_order=None):
@@ -255,8 +261,13 @@ class RLSAlssm:
             if Q == 0:  # scalar output
                 if y.ndim == 1:  # 1 dim signal
                     y = y.reshape(-1, 1)
-                elif y.ndim >= 2 and y.shape[-1] != 1:  # multi dimension signal (processed in parallel)
-                    y = y.reshape(*y.shape, 1)
+                elif y.ndim >= 2:
+                    if y.shape[1] == 1:
+                        pass #already has correct dimension
+                    elif y.shape[-1] != 1:  # multi dimension signal (processed in parallel)
+                        y = y.reshape(*y.shape, 1)
+                    else:
+                        raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')    
                 else:
                     raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
             elif Q == 1:  # 1-dimensional output
@@ -312,7 +323,7 @@ class RLSAlssm:
         # TODO
 
     # ------------------------------------------------------------------
-    # minimize / eval (unchanged)
+    # minimize / eval 
     # ------------------------------------------------------------------
 
     def minimize_v(self, H=None, h=None):
@@ -594,50 +605,75 @@ class RLSAlssm:
                 )
                 continue
 
-            # q == 0: the asterisk recursion for kappa does not use alssm.A or
-            # alssm.C (see numpy_xi_asterisk_l_recursion — it only uses the
-            # window parameters and xi_prev).  A single pass per segment is
-            # therefore sufficient, mirroring the treatment in
-            # _nd_xi_q_recursion.  Sum the active F weights and pass a dummy
-            # ALSSM as placeholder.
+            # q == 0: kappa asterisk — independent of ALSSM structure and F.
+            # One pass per segment with the unmodified beta_p is sufficient.
             if q == 0:
-                f_sum = sum(
-                    sub_cost.F[m, p]
-                    for m in range(len(sub_cost.alssms))
-                    if sub_cost.F[m, p] != 0.0
-                )
-                if f_sum == 0.0:
-                    continue
+                if all(sub_cost.F[m, p] == 0.0
+                       for m in range(len(sub_cost.alssms))):
+                    continue  # segment fully inactive — skip
                 dummy_alssm = AlssmSum([sub_cost.alssms[0]], [1.0], force_MC=True)
                 xi_q_asterisk_l_recursion(
                     _xi_curr, q,
                     dummy_alssm, segment,
                     _xi_prev, _sample_weights,
-                    beta_p * f_sum, self._backend, self._filter_form, None,
+                    beta_p, self._backend, self._filter_form, None,
                 )
                 continue
 
-            # q == 1: per-ALSSM sub-slice.
-            for m, alssm_m in enumerate(sub_cost.alssms):
-                f_mp = sub_cost.F[m, p]
-                if f_mp == 0.0:
+            # q == 1: per-ALSSM-pair asterisk recursion.
+            #
+            # The output xi_2d must follow the Kronecker layout
+            # xi_2d[n_prev * N_curr + n_curr], matching W = W_dim0 ⊗ W_dim1.
+            # A naive per-ALSSM split (grouping by the dim-1/current-pass ALSSM)
+            # would produce the block-transposed ordering and yield J < 0.
+            #
+            # The correct approach exploits block-diagonality by processing each
+            # (m_prev, m_curr) ALSSM pair independently:
+            #   1. Slice xi_prev to only the m_prev states (last-axis sub-slice).
+            #   2. Call the recursion with the m_curr wrapped ALSSM on that slice.
+            #      INq = eye(N_prev_m) so the kron gives N_prev_m * N_curr_m output.
+            #   3. Write the result into the correct (n_prev, n_curr) sub-block of
+            #      xi_curr viewed as a (... N_total, N_total) matrix.
+            #
+            # This gives O(M^2) calls each operating on small (N_m × N_m) systems
+            # instead of one call on the full (N_total × N_total) system, while
+            # producing exactly the same result.
+            for m_curr, (curr_n0, curr_n1) in enumerate(
+                    zip(offsets[:-1], offsets[1:])):
+                f_curr = sub_cost.F[m_curr, p]
+                if f_curr == 0.0:
                     continue
+                wrapped_curr = AlssmSum(
+                    [sub_cost.alssms[m_curr]], [f_curr], force_MC=True)
 
-                wrapped = AlssmSum([alssm_m], [f_mp], force_MC=True)
+                for m_prev, (prev_n0, prev_n1) in enumerate(
+                        zip(offsets[:-1], offsets[1:])):
+                    N_prev_m = prev_n1 - prev_n0
+                    N_curr_m = curr_n1 - curr_n0
 
-                # _xi_curr has shape (K, ..., Nq_prev * N).
-                # The slice [Nq_prev*n0 : Nq_prev*n1] on the last axis is
-                # exclusive to ALSSM m while leaving the prev-dimension extent
-                # (Nq_prev) intact.
-                n0 = offsets[m]
-                n1 = offsets[m + 1]
-                numdenom_pm = self._numdenom[dim_index][p][m]
-                xi_curr_slice = _xi_curr[..., Nq_prev * n0: Nq_prev * n1]
-                xi_q_asterisk_l_recursion(
-                    xi_curr_slice, q,
-                    wrapped, segment,
-                    _xi_prev, _sample_weights,
-                    beta_p, self._backend, self._filter_form, numdenom_pm,
-                )
+                    # Sub-slice of xi_prev for m_prev states (last axis, contiguous)
+                    xi_prev_slice = _xi_prev[..., prev_n0:prev_n1]
+
+                    # Temporary output: (..., N_prev_m * N_curr_m)
+                    xi_tmp = np.zeros(
+                        (*_xi_prev.shape[:-1], N_prev_m * N_curr_m))
+
+                    xi_q_asterisk_l_recursion(
+                        xi_tmp, q,
+                        wrapped_curr, segment,
+                        xi_prev_slice, _sample_weights,
+                        beta_p, self._backend, self._filter_form, None,
+                    )
+
+                    # Write into the flat xi_curr at the correct strided positions.
+                    # The flat layout is xi[..., n_prev * N_curr + n_curr], so
+                    # the (m_prev, m_curr) block occupies a strided sub-tensor.
+                    xi_tmp_mat = xi_tmp.reshape(
+                        *_xi_prev.shape[:-1], N_prev_m, N_curr_m)
+                    for i_prev in range(N_prev_m):
+                        for i_curr in range(N_curr_m):
+                            n_prev = prev_n0 + i_prev
+                            n_curr = curr_n0 + i_curr
+                            _xi_curr[..., n_prev * Nq_prev + n_curr] += xi_tmp_mat[..., i_prev, i_curr]
 
         return xi_curr

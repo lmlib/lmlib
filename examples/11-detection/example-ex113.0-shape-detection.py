@@ -53,7 +53,7 @@ cost = lm.CompositeCost((alssm_pulse, alssm_baseline), (segmentL, segmentC, segm
 print(cost)
 
 # filter signal
-rls = lm.RLSAlssm(cost, steady_state=False, backend='numpy')
+rls = lm.RLSAlssm(cost, steady_state=False, backend='lfilter')
 rls.filter(y)  # run recursions
 
 xs = rls.minimize_x()  # unconstrained minimization

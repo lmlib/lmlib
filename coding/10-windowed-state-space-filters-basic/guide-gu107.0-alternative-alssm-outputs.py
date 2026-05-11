@@ -1,9 +1,9 @@
 """
-Alternative ALSSM Outputs [ex107.0]
+Alternative ALSSM Outputs [gu107.0]
 ===================================
 
 lmlib offers different possibilities to generate an ALSSM output from estimates.
-This example shows different methods.
+This guide script shows different methods.
 
 """
 import numpy as np
@@ -25,33 +25,14 @@ cost = lm.CompositeCost(alssms, segments, F)
 
 # filter and minimize
 rls = lm.RLSAlssm(cost, backend='numpy')
-xs = rls.filter_minimize_x(ys)
+rls.filter(ys)
+xs = rls.minimize_x()
 
 # ------------------------------
 # normal output defined by the model
-
-# output by cost model
 ys_hat_normal = cost.eval_alssm_output(xs)
 
-# output by RLSAlssm*
-ys_hat_normal = rls.filter_minimize_yhat(ys)
-
-# ------------------------------s
+# ------------------------------
 # alternative outputs with alssm weights parameter
-
-# output by cost model
 ys_hat_aw = cost.eval_alssm_output(xs, alssm_weights=(0, 1))
 
-# output by RLSAlssm*
-ys_hat_aw = rls.filter_minimize_yhat(ys, alssm_weights=(0, 1))
-
-# ------------------------------
-# alternative outputs with c0 parameter
-
-# output by cost model
-ys_hat_c0 = cost.eval_alssm_output(xs, c0s=([0, 1], [0, 1]))
-ys_hat_c0 = cost.eval_alssm_output(xs, c0s=[1, 0, 1, 0])
-ys_hat_c0 = cost.eval_alssm_output(xs, c0s=None)
-
-# output by RLSAlssm*
-ys_hat_c0 = rls.filter_minimize_yhat(ys, c0s=([0, 1], None))

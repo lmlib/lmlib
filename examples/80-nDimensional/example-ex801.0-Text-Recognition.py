@@ -121,7 +121,7 @@ F = [[1, 0],  # mixing matrix, turning on and off models per segment (1=on, 0=of
 cost_d1 = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
 cost_d2 = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
 nd_cost = lm.NDCompositeCost([cost_d1, cost_d2])
-nd_rls = lm.RLSAlssm(nd_cost, backend='lfilter')
+nd_rls = lm.RLSAlssm(nd_cost)
 nd_rls.filter(Y)
 
 xs_H1 = nd_rls.minimize_x()

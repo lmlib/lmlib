@@ -1,5 +1,5 @@
 """
-Structure and Evaluation of Multivariate Polynomials [ex201.1]
+Structure and Evaluation of Multivariate Polynomials [gu201.1]
 ==============================================================
 
 """

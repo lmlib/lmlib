@@ -34,7 +34,14 @@ class Trajectory:
         --------
         TODO
         """
+        
         xs = np.asarray(xs)
+        if xs.ndim == 1:          # shape (N,) → (1, N)
+            xs = xs[np.newaxis, :]
+        # else:
+        #     if xs.ndim == 2 and xs.shape[1] > 1:      # is multi channel 
+        #         xs = xs[np.newaxis, :]        
+
         cost_segments = cost._get_cost_segments(F)
         XS = xs.shape[:-1]
 

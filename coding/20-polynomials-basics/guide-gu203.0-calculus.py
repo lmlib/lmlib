@@ -1,8 +1,8 @@
 """
-Calculus with Polynomials [ex203.0]
+Calculus with Polynomials [gu203.0]
 ===================================
 
-This example demonstrates the use of arithmetic manipulations on polynomials.
+This guide script demonstrates the use of arithmetic manipulations on polynomials.
 
 **Arithmetic Operations**
 

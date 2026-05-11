@@ -1,8 +1,8 @@
 """
-Basic ALSSM Coding [ex101.0]
+Basic ALSSM Coding [gu101.0]
 ============================
 
-This example demonstrates how to set up an autonomous linear state space model ALSSM.
+This guide script demonstrates how to set up an autonomous linear state space model ALSSM.
 
 """
 import lmlib as lm

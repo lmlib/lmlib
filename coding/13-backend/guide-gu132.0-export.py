@@ -1,8 +1,8 @@
 """
-Export of Transfer-Function Coefficients [ex132.0]
+Export of Transfer-Function Coefficients [gu132.0]
 ==================================================
 
-Export of Transfer-Function Coefficients and example implementation for filtering
+Export of Transfer-Function Coefficients and guide script implementation for filtering
 """
 import numpy as np
 from scipy.signal import ss2tf, lfilter
@@ -24,8 +24,8 @@ def export_solver_task(cost, filter_from=None):
     if not isinstance(cost, lm.CostSegment):
         raise TypeError("Cost must be a lm.CostSegment")
 
-    alssm = cost.alssms[0]
-    segment = cost.segments[0]
+    alssm = cost.alssm
+    segment = cost.segment
 
     A = alssm.A
     C = alssm.C

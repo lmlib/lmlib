@@ -5,22 +5,20 @@ import lmlib as lm
 from numpy.linalg import matrix_power as mpow
 import time
 
-def xi_sum(alssm, segment_left, y):
+def xi_sum(alssm, seg, y):
     K = y.shape[0]
     dt = y.dtype
-    xi_sum = np.zeros((K, alssm.N), dtype=dt)
-
-    # Ensure gamma is in correct dtype (works for scalar or array)
-    gamma = np.array(segment_left.gamma, dtype=dt)
+    xi_sum = np.zeros((K, alssm.N))
+    gamma=seg.gamma
 
     # Pre-cast matrices
     A = alssm.A.astype(dt)
     C_T = alssm.C.astype(dt).T
 
     for k_ in range(K):
-        for i in range(segment_left.a, segment_left.b + 1):
+        for i in range(seg.a, seg.b + 1):
             if 0 <= i + k_ < K:
-                gamma_i = (gamma ** i).astype(dt)  # stays in dt
+                gamma_i = (gamma ** i) 
                 A_i = mpow(A, i).astype(dt)
 
                 contrib = (
@@ -32,23 +30,6 @@ def xi_sum(alssm, segment_left, y):
 
     return xi_sum
 
-
-#xi decomposition
-#Question: Can the elements of xi be computed per ALSSM, or do they influence each other?
-# J = \sum_a^b [s_i(x1) + s_i(x2) - y_{i+k}]^2 
-#   = \sum_a^b [s_i(x1)^2 + 2*s_i(x1)s_i(x2) + s_i(x2)^2]
-#    -2 \sum_a^b [ s_i(x1)y  + s_i(x2)y]
-#    +kappa
-
-
-#   = \sun_a^b (c1A1x1  + c2A2x2) y = \sum_a^b cAxy
-#with c = [c1 c2]
-#A = diag(A1, A2)
-#x = [x1 x2]
-
-#\sum cAxy = \sum  ycAx = \sum  y(cAx)^T = \sum  x^T c^T A^T y = x^T \sum   * xi
-# ->> x1^\T xi1 + x2^\T xi2
-#xi can be stacked and computed separately (independent of F!)
 
 
 # Signal
@@ -64,19 +45,20 @@ alssm = lm.AlssmPolyJordan(poly_degree=polydegree)
 #alssm = lm.AlssmSin(omega=0.2)
 N1 = alssm.N
 g=1000
-segment = lm.Segment(a=-10, b=-1, direction=lm.FORWARD, g=g)
-#segment = lm.Segment(a=-100, b=10, direction=lm.BACKWARD, g=g)
-#segment = lm.Segment(a=-20, b=10, direction=lm.FORWARD, g=g)
-cost = lm.CostSegment(alssm, segment)
+segment='costsegment'
+if segment=='costsegment':
+    segment = lm.Segment(a=-10, b=5, direction=lm.FORWARD, g=g)
+    cost = lm.CostSegment(alssm, segment)
+    
+    # Reference Implementation (without recursion)
+    t0 = time.perf_counter()
+    xi_ref = xi_sum(alssm,segment,y)
+    t_sum = time.perf_counter() - t0
 
-# Reference Implementation (without recursion)
-t0 = time.perf_counter()
-#xi_ref = xi_sum(alssm,segment,y)
-t_sum = time.perf_counter() - t0
-
-segment_l = lm.Segment(a=-20, b=-10, direction=lm.FORWARD, g=g)
-segment_r = lm.Segment(a=-10, b=20, direction=lm.BACKWARD, g=g)
-#cost = lm.CompositeCost((alssm,alssm), (segment_l,segment_r),F=[[1, 0],[0, 1]])
+if segment=='compositecost':
+    segment_l = lm.Segment(a=-20, b=-10, direction=lm.FORWARD, g=g)
+    segment_r = lm.Segment(a=-10, b=20, direction=lm.BACKWARD, g=g)
+    cost = lm.CompositeCost((alssm,alssm), (segment_l,segment_r),F=[[1, 0],[0, 1]])
 
 # Direct Matrix Form Implementation (lmlib)
 rls_directmatrix = lm.RLSAlssm(cost, calc_kappa=False, backend='numpy')
@@ -98,7 +80,7 @@ else:
 # Parallel Form Implementation
 execute_parallel=True
 if execute_parallel:
-    rls_parallel = lm.RLSAlssm(cost, calc_kappa=False, backend='lfilter', filter_form='parallel', supress_pzinstruction=True)
+    rls_parallel = lm.RLSAlssm(cost, calc_kappa=False, backend='lfilter', filter_form='parallel', show_pzinstruction=False)
     t0 = time.perf_counter()
     rls_parallel.filter(y)
     t_parallel = time.perf_counter() - t0
@@ -106,10 +88,8 @@ else:
     rls_parallel=None
     t_parallel = None
 
-
-
-
-xi_ref = rls_directmatrix.xi
+if segment=='compositecost':
+    xi_ref = rls_directmatrix.xi
 
 
 # Print timing results

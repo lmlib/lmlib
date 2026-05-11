@@ -1,5 +1,5 @@
 """
-ALSSM Trajectory [ex102.0]
+ALSSM Trajectory [gu102.0]
 ==========================
 
 Evaluation of a ALSSM over a time range with a given initial state.
@@ -33,9 +33,9 @@ print("--DUMP--\n", alssm.dump_tree())
 print("--PRINT--\n", alssm)
 
 # plot
-plt.plot(js, sx0_d1, '.-', lw=.5, label=r'$x_0 = ' + str(x0_d1) + '^\mathrm{T}$')
-plt.plot(js, sx0_d2, '.-', lw=.5, label=r'$x_0 = ' + str(x0_d2) + '^\mathrm{T}$')
-plt.plot(js, sx0_d3, '.-', lw=.5, label=r'$x_0 = ' + str(x0_d3) + '^\mathrm{T}$')
+plt.plot(js, sx0_d1, '.-', lw=.5, label=r'$x_0 = ' + str(x0_d1) + r'^\mathrm{T}$')
+plt.plot(js, sx0_d2, '.-', lw=.5, label=r'$x_0 = ' + str(x0_d2) + r'^\mathrm{T}$')
+plt.plot(js, sx0_d3, '.-', lw=.5, label=r'$x_0 = ' + str(x0_d3) + r'^\mathrm{T}$')
 plt.xlabel('Evaluation index $j$')
 plt.ylabel('$s_j(x_0)$')
 plt.title('Polynomial ALSSM Evaluation $s_j(x_0)$')

@@ -1,5 +1,5 @@
 """
-Local Signal Approximation and Trajectories [ex105.0]
+Local Signal Approximation and Trajectories [gu105.0]
 =====================================================
 
 Local Signal Approximation and Trajectories using :class:`~lmlib.statespace.model.PolyAlssm`.
@@ -13,16 +13,17 @@ K = 2100
 y = gen_rect(K, 570, 200) + gen_wgn(K, 0.01)
 
 cost = lm.CostSegment(lm.AlssmPoly(poly_degree=4),
-                      lm.Segment(0, 220, lm.BW, 300))
+                      lm.Segment(0, 220, lm.BW, 500))
 cost_wide = lm.CostSegment(lm.AlssmPoly(poly_degree=4),
-                           lm.Segment(0 - 20, 220 + 20, lm.BW, 300))
+                           lm.Segment(0 - 20, 220 + 20, lm.BW, 500))
 
-rls = lm.RLSAlssm(cost)  # Using steady state leads to faster computation and increased numerical stability
-xs = rls.filter_minimize_x(y)
+rls = lm.RLSAlssm(cost) 
+rls.filter(y)
+xs = rls.minimize_x()
 
 K_refs = [500, 1130, 1800]
-trajs = lm.map_trajectories(cost.trajectories(xs[K_refs], thd=0.01), K_refs, K, merge_ks=True, merge_seg=True)
-trajs_wide = lm.map_trajectories(cost_wide.trajectories(xs[K_refs], thd=0.01), K_refs, K, merge_ks=True, merge_seg=True)
+trajs = lm.Trajectory.eval_y(cost, xs[K_refs], K_refs, K, thd=0.01, merged_ks=True, merged_seg=True)
+trajs_wide =lm.Trajectory.eval_y(cost_wide,xs[K_refs], K_refs, K, thd=0.01,merged_ks=True, merged_seg=True)
 
 plt.title('Local Signal Approximation: RLSAlssm.filter_minimize_x(y)')
 plt.plot(y, lw=0.3, c='k', label='y')

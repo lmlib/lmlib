@@ -210,14 +210,14 @@ class Segment:
                 a_lim = max(np.log(thd) / np.log(self.gamma) - 1 + self.delta, self.a)
             else:
                 a_lim = max(np.log(thd) / np.log(1 / self.gamma) - 1 + self.delta, self.a)
-            return range(int(a_lim), self.b + 1)
+            return np.arange(int(a_lim), self.b + 1)
 
         if self.direction is BW:
             if self.gamma < 1:
                 b_lim = min(np.log(thd) / np.log(self.gamma) + 1 + self.delta, self.b)
             else:
                 b_lim = min(np.log(thd) / np.log(1 / self.gamma) + 1 + self.delta, self.b)
-            return range(self.a, int(b_lim) + 1)
+            return np.arange(self.a, int(b_lim) + 1)
 
         return None
 
