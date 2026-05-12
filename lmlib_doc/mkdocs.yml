@@ -20,9 +20,11 @@ theme:
         name: Switch to light mode
   features:
     - content.code.copy
-    - navigation.tabs
-    - navigation.sections
-    - toc.integrate
+    - navigation.tabs       # Top tabs for categories
+    - navigation.sections   # Sections in sidebar
+    - navigation.tracking   # Highlights active section
+    - toc.integrate         # Integrates Table of Contents
+    - navigation.top        # Back to top button
 
 nav:
   - Home: index.md
@@ -34,11 +36,11 @@ nav:
       - Backend: coding/_generated_galleries/13-backend/index.md
       - Polynome: coding/_generated_galleries/20-polynomials-basics/index.md
   - Installation: getting_started/installation.md
-  #- Catalog:
-  #  - Biosignals: catalog/_generated_galleries/biosignals/index.md
-  #   - Generators: catalog/_generated_galleries/index.md
+  - Catalog:
+    - Biosignals: catalog/_generated_galleries/biosignals/index.md
+    - Generators: catalog/_generated_galleries/index.md
   - Examples: 
-    - Detection: examples/_generated_galleries/10-detection/index.md
+    - Detection: examples/_generated_galleries/11-detection/index.md
     - Filtering: examples/_generated_galleries/12-filtering/index.md
     - Polynomials Calculus: examples/_generated_galleries/21-polynomials-calculus/index.md
     - APP Changepoint Detection: examples/_generated_galleries/40-app-changepoint-detection/index.md
@@ -69,6 +71,7 @@ plugins:
         python:
           options:
             docstring_style: numpy
+            filters: ["!^\\|.*\\|$"]
             show_root_heading: true
             show_source: false 
             members_order: alphabetical

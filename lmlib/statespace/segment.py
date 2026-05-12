@@ -178,7 +178,7 @@ class Segment:
 
     @property
     def gamma(self):
-        r"""float : Window decay factor :math:`\gamma`
+        r"""float : Window decay factor \gamma
 
         Window decay factor :math:`\gamma` is set internally on the initialization of a new segment object
         and is derived from the *effective number of samples* :attr:`Segment.g` as follows:

@@ -517,17 +517,12 @@ class AlssmPolyJordan(ModelBase):
     Parameters
     ----------
     poly_degree : int
-       Polynomial degree. Corresponds to the highest exponent of the polynomial. `N = poly_degree+1`.
+        Polynomial degree. Corresponds to the highest exponent of the polynomial. `N = poly_degree+1`.
     C : array_like, shape=(L, N), optional
         Output Matrix.
         If C is not set, C is initialized to `[[..., 0, 1]]` of shape `(1, N)`. (default: C=None)
     **kwargs
         Forwarded to :class:`.ModelBase`
-
-
-    |def_N|
-    |def_Q|
-
 
     Examples
     --------
@@ -895,10 +890,6 @@ class AlssmSum(ModelBase):
     **kwargs
         Forwarded to :class:`.ModelBase`
 
-
-
-    |def_M|
-
     Examples
     --------
 
@@ -971,9 +962,6 @@ class AlssmProd(ModelBase):
         (default: deltas = None, i.e., all scalars are set to 1)
     **kwargs
         Forwarded to :class:`.ModelBase`
-
-
-    |def_M|
 
     Examples
     --------

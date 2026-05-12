@@ -83,22 +83,22 @@ def extract_title_and_description(docstring):
     return title, description, description_flat
 
 def process_folder(folder_path, folder_parent: str):
+    # --- Helper for Truncation ---
+    def truncate_words(text, max_words=10):
+        if not text:
+            return ""
+        words = text.split()
+        if len(words) <= max_words:
+            return text
+        return " ".join(words[:max_words]) + "..."
+
     folder_name = folder_path.name
-    # Determine output directory based on parent type
     target_output_dir = DOC_DIR / folder_parent / "_generated_galleries"
-        
     output_folder = target_output_dir / folder_name
     output_folder.mkdir(parents=True, exist_ok=True)
     
-    # List for gallery entries
     gallery_entries = []
-    
-    # Determine file pattern based on type
-    # Coding: example-ex101.0.py (hyphen)
-    # Catalog: example_eecg_baseline.py (underscore)
     pattern = "example-*.py"
-    
-    # FIX: glob.glob() returns strings, convert to Path
     py_files = [Path(f) for f in sorted(glob.glob(str(folder_path / pattern)))]
     
     if not py_files:
@@ -107,50 +107,47 @@ def process_folder(folder_path, folder_parent: str):
 
     md_content = f"# {folder_name.replace('-', ' ').replace('_', ' ').title()}\n\n"
     
-    # Insert README.md if it exists
+    # Insert README if exists
     readme_path = folder_path / "README.md"
     if readme_path.exists():
         with open(readme_path, 'r', encoding='utf-8') as f:
-            md_content += f.read()
-            md_content += "\n\n---\n\n"
-    
-    # Table headers
-    md_content += "| Example | Plot |\n"
-    md_content += "| :--- | :--- |\n"
+            md_content += f.read() + "\n\n---\n\n"
+
+    # --- Standard Markdown Table ---
+    # Custom CSS.
+    md_content += """
+<style>
+.md-typeset table th:nth-child(1),
+.md-typeset table td:nth-child(1) { width: 30%; }
+.md-typeset table th:nth-child(2),
+.md-typeset table td:nth-child(2) { width: 70%; }
+</style>
+
+| Example | Plot |
+| :--- | :--- |
+"""
     
     for py_file in py_files:
         file_name = py_file.name
-        # Normalize base_name: remove extension and replace hyphens/underscores if needed for consistency
         base_name = file_name.replace('.py', '')
-        
-        # 1. Plot generation setup
         plot_filename = f"{base_name}.png"
         plot_path = output_folder / plot_filename
         
-        # Set backend to Agg to enforce headless rendering
         env = os.environ.copy()
         env['MPLBACKEND'] = 'Agg'
         
         with open(py_file, 'r', encoding='utf-8') as f:
             code = f.read()
         
-        # Check if plt.show() exists
         has_show = 'plt.show()' in code
         has_plot_import = 'import matplotlib' in code or 'import pyplot' in code
-        
         modified_code = code
         
         if has_show:
-            # Replace plt.show() with plt.savefig and plt.close()
             modified_code = code.replace('plt.show()', f'plt.savefig(r"{plot_path}", dpi=150, bbox_inches="tight"); plt.close()')
         elif has_plot_import:
-            # If no show() but import exists, try to save anyway
             modified_code = code + f'\nplt.savefig(r"{plot_path}", dpi=150, bbox_inches="tight"); plt.close()'
-        else:
-            # No plot import found, skip image generation completely
-            pass
-
-        # Write temporary file
+        
         temp_file = output_folder / f"_temp_{base_name}.py"
         with open(temp_file, 'w', encoding='utf-8') as f:
             f.write(modified_code)
@@ -159,100 +156,56 @@ def process_folder(folder_path, folder_parent: str):
         console_output = ""
         
         try:
-            # Execute with capture_output=True to get print statements
-            result = subprocess.run(
-                [sys.executable, str(temp_file)], 
-                check=True, 
-                env=env, 
-                cwd=str(output_folder), 
-                capture_output=True, 
-                text=True
-            )
-            
-            # Capture standard output (print statements)
-            if result.stdout:
-                console_output = result.stdout.strip()
-            
-            # Capture standard error (warnings/errors) if any
+            result = subprocess.run([sys.executable, str(temp_file)], check=True, env=env, cwd=str(output_folder), capture_output=True, text=True)
+            if result.stdout: console_output = result.stdout.strip()
             if result.stderr:
-                if console_output:
-                    console_output += "\n\n" + result.stderr.strip()
-                else:
-                    console_output = result.stderr.strip()
-
-            if plot_path.exists():
-                plot_generated = True
-            else:
-                pass
-                
+                console_output = (console_output + "\n\n" + result.stderr.strip()) if console_output else result.stderr.strip()
+            if plot_path.exists(): plot_generated = True
         except subprocess.CalledProcessError as e:
-            stderr_msg = e.stderr if e.stderr else "Unknown error"
-            print(f"Error executing {file_name}: {stderr_msg.strip()}")
-            # Capture output even on error
-            if e.stdout:
-                console_output = e.stdout.strip()
-            if e.stderr:
-                if console_output:
-                    console_output += "\n\n" + e.stderr.strip()
-                else:
-                    console_output = e.stderr.strip()
+            print(f"Error executing {file_name}: {e.stderr.strip() if e.stderr else 'Unknown'}")
+            if e.stdout: console_output = e.stdout.strip()
+            if e.stderr: console_output = (console_output + "\n\n" + e.stderr.strip()) if console_output else e.stderr.strip()
         except Exception as e:
             print(f"Unexpected error with {file_name}: {e}")
         finally:
-            # Cleanup temporary file regardless of success/failure
-            if temp_file.exists():
-                temp_file.unlink()
+            if temp_file.exists(): temp_file.unlink()
 
-        # Extract Title and Description
+        # Extract & Truncate
         docstring_match = re.search(r'"""(.*?)"""', code, re.DOTALL)
         docstring = docstring_match.group(1) if docstring_match else ""
         title, description, description_flat = extract_title_and_description(docstring)
+        truncated_desc = truncate_words(description_flat, 10)
+        safe_description = truncated_desc.replace("|", "&#124;")
         
-        # --- Create Gallery Entry for Index ---
-        # Use flat description for the table cell
-        safe_description = description_flat.replace("|", "&#124;")
-        table_entry = f"{title}<br><small>{safe_description}</small>"
+        # Build Cell Content
+        cell_content = f"{title}<br><small>{safe_description}</small>"
         
         if plot_generated:
-            md_content += f"| [{table_entry}]({base_name}.md) | ![Plot]({plot_filename}) |\n"
+            # Using HTML img tag inside Markdown cell to control size (e.g., width=300px)
+            plot_cell = f'<img src="{plot_filename}" alt="Plot" width="100%">'
         else:
-            md_content += f"| [{table_entry}]({base_name}.md) | *No Plot* |\n"
+            plot_cell = "*No Plot*"
             
-        # --- Create Detailed Page ---
-        # Order: Title → Description → Code → Console Output → Plot
+        md_content += f"| [{cell_content}]({base_name}.md) | {plot_cell} |\n"
+            
+        # --- Create Detailed Page (Plot -> Console -> Code) ---
+        detail_md = f"# {title}\n\n{description}\n\n"
         
-        detail_md = f"# {title}\n\n"
-        
-        # 1. Description (full formatted version with lists and bold)
-        detail_md += f"{description}\n\n"
-        
-        # 2. Code
-        detail_md += "## Code\n\n"
-        detail_md += "```python\n"
-        detail_md += code
-        detail_md += "\n```\n\n"
-        
-        # 3. Console Output (if any print statements or errors occurred)
-        if console_output:
-            detail_md += "## Console Output\n\n"
-            detail_md += "```text\n"
-            detail_md += console_output
-            detail_md += "\n```\n\n"
-        
-        # 4. Plot (if available)
         if plot_generated:
-            detail_md += "## Plot\n\n"
-            detail_md += f"![Plot]({plot_filename})\n\n"
+            detail_md += f"## Plot\n\n![Plot]({plot_filename})\n\n"
         else:
-            detail_md += "> **Note:** This example does not generate a graphical output.\n\n"
+            detail_md += "> **Note:** No graphical output.\n\n"
+            
+        if console_output:
+            detail_md += f"## Console Output\n\n```text\n{console_output}\n```\n\n"
+            
+        detail_md += f"## Code\n\n```python\n{code}\n```\n"
         
-        detail_file = output_folder / f"{base_name}.md"
-        with open(detail_file, 'w', encoding='utf-8') as f:
+        with open(output_folder / f"{base_name}.md", 'w', encoding='utf-8') as f:
             f.write(detail_md)
             
         gallery_entries.append((title, base_name))
 
-        
     index_file = output_folder / "index.md"
     with open(index_file, 'w', encoding='utf-8') as f:
         f.write(md_content)
@@ -265,8 +218,8 @@ if __name__ == "__main__":
     # Define paths explicitly
     coding_folders = [
         DOC_DIR / "coding" / "10-windowed-state-space-filters-basic",
-        #DOC_DIR / "coding" / "13-backend",
-        #DOC_DIR / "coding" / "20-polynomials-basics",
+        DOC_DIR / "coding" / "13-backend",
+        DOC_DIR / "coding" / "20-polynomials-basics",
     ]
     
     catalog_folders = [

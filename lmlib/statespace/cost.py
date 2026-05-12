@@ -339,11 +339,6 @@ class CompositeCost(BaseCost, BaseCost1d):
     label : str, optional
         Label of ALSSM, default: 'n/a'
 
-
-    |def_M|
-    |def_P|
-
-
     Examples
     --------
     >>> import lmlib as lm

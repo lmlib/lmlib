@@ -19,15 +19,16 @@ def set_backend(backend):
     Parameters
     ----------
     backend : str ("jit", "py", "python", "numpy", "lfilter")
-        
-          - "numpy" : for State Space Backend in Python (default)
-          - "lfilter" : for Transfer Function Backend in Python
-          - "jit": Just-in-Time compilation (if available)
-          - "python" or "py" : Deprecated. (same as numpy)
- 
+        - "numpy" : for State Space Backend in Python (default)
+        - "lfilter" : for Transfer Function Backend in Python
+        - "jit": Just-in-Time compilation (if available)
+        - "python" or "py" : Deprecated. (same as numpy)
     
-    If the selected backend is not available, an assert is risen. 
-    Use :meth:`is_backend_available` to check availability first. 
+    Raises
+    ------
+    AssertionError
+        If the selected backend is not available, an assert is risen. 
+        Use :meth:`is_backend_available` to check availability first. 
     """    
     backend = backend.lower()
     global _backend

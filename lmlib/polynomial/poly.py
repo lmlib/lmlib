@@ -311,10 +311,6 @@ class Poly(_PolyBase):
     expo : array_like, shape=(Q)
         Exponent vector
 
-
-    |def_Q|
-
-
     Examples
     --------
     >>> import lmlib as lm
@@ -2301,13 +2297,12 @@ def mpoly_transformation_expos(q):
 
 
 def mpoly_extend_coef_L(expos, pos, sparse=False):
-    """Extends the polynomial by variables without changing its result
+    r"""Extends the polynomial by variables without changing its result
 
     Basis expansion
 
-    .. math::
 
-        \alpha^\mathsf{T}x^q = (\Lambda\alpha)^\mathsf{T}(x^q \otimes y\^r \otimes ... \otimes z^s)
+    \alpha^\mathsf{T}x^q = (\Lambda\alpha)^\mathsf{T}(x^q \otimes y\^r \otimes ... \otimes z^s)
 
     for $s = [0, 1]$
 
