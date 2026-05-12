@@ -4,59 +4,59 @@ from scipy.signal import lfilter, convolve, zpk2sos, sosfilt, ss2tf
 
 
 # xi2 lfilter cascade
-def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sampleweights, beta):
+def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
     _A = np.kron(A, A)
     _C = np.kron(C, C)
     _y = np.broadcast_to(1., np.shape(y))  # create an array of shape Ks, but contains only a single 1.0 in memory
 
     if direction == 'fw':
-        lfilter_forward_cascade_xi(xi2, _A, _C, a, b, delta, gamma, _y, sampleweights, beta)
+        lfilter_forward_cascade_xi(xi2, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi2, _A, _C, a, b, delta, gamma, _y, sampleweights, beta)
+        lfilter_backward_cascade_xi(xi2, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 
 # xi1 lfilter cascade
-def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sampleweights, beta):
+def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
     if direction == 'fw':
-        lfilter_forward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, sampleweights, beta)
+        lfilter_forward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, sample_weights, beta)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, sampleweights, beta)
+        lfilter_backward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 
 # xi0 lfilter cascade
-def lfilter_cascade_xi0(xi0, A, C, a, b, direction, delta, gamma, y, sampleweights, beta):
+def lfilter_cascade_xi0(xi0, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = y**2
 
     if direction == 'fw':
-        lfilter_forward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sampleweights, beta)
+        lfilter_forward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sampleweights, beta)
+        lfilter_backward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 
 # nu lfilter cascade
-def lfilter_cascade_nu(nu, A, C, a, b, direction, delta, gamma, y, sampleweights, beta):
+def lfilter_cascade_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = np.broadcast_to(1., np.shape(y))  # create an array of shape Ks, but contains only a single 1.0 in memory
 
     if direction == 'fw':
-        lfilter_forward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sampleweights, beta)
+        lfilter_forward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sampleweights, beta)
+        lfilter_backward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 
 # general forward cascade
-def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights, beta):
+def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights, beta):
     """
     IIR forward calculation of xi
 
@@ -78,7 +78,7 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights, 
     gamma : float
     y : np.ndarray, scalar
         shape=(K, [L], [S]) or 1
-    sampleweights : np.ndarray
+    sample_weights : np.ndarray
         shape=(K,) or 1
     beta : float, SE Segment weight
     einsum_path : str (see RLSALssm)
@@ -101,7 +101,7 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights, 
     if not np.allclose(gAinvT, np.tril(gAinvT)):
         raise "State-Space Matrix A needs to be upper triangular for cascaded version"
 
-    yweighted = y*sampleweights[:, None]
+    yweighted = y*sample_weights[:, None]
     K = yweighted.shape[0]
 
     # shift signal
@@ -142,13 +142,13 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights, 
         xi *= beta
 
 # general backward cascade
-def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights, beta):
+def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights, beta):
     """-
     IIR backward calculation of xi
 
     Due to generalization, different input parameter shapes are possible.
     The input parameter shapes are used to enhance the performance of the function (avoidance of matrix multiplication and memory allocation).
-    Therefore, A, C, y, sampleweights can be scalar or nd-arrays.
+    Therefore, A, C, y, sample_weights can be scalar or nd-arrays.
 
     Parameters
     ----------
@@ -164,7 +164,7 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights,
     gamma : float
     y : np.ndarray, scalar
         shape=(K, [L], [S]) or 1
-    sampleweights : np.ndarray
+    sample_weights : np.ndarray
         shape=(K,) or 1
     beta : float, SE Segment weight
     einsum_path : str (see RLSALssm)
@@ -185,7 +185,7 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights,
         raise "State-Space Matrix A needs to be upper triangular for cascaded version"
 
     K = len(xi)
-    yweighted = y*sampleweights[:, None]
+    yweighted = y*sample_weights[:, None]
 
     #time-reverse observation for backward recursion
     yweighted_flipped = yweighted[::-1]
@@ -233,46 +233,46 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sampleweights,
         
         
 # xi2 lfilter parallel
-def lfilter_parallel_xi2(xi2, denom, num_b, num_a, a, b, direction, delta, gamma, y, sampleweights, beta):
+def lfilter_parallel_xi2(xi2, denom, num_b, num_a, a, b, direction, delta, gamma, y, sample_weights, beta):
     raise NotImplementedError("lfilter_parallel_xi2 not implemented yet.")
 
 
 # xi1 lfilter parallel
 def lfilter_parallel_xi1(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
-                          a, b, direction, delta, gamma, y, sampleweights, beta):
+                          a, b, direction, delta, gamma, y, sample_weights, beta):
     if direction == 'fw':
         lfilter_forward_parallel_xi(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
-                                     a, b, delta, gamma, y, sampleweights, beta)
+                                     a, b, delta, gamma, y, sample_weights, beta)
     elif direction == 'bw':
         lfilter_backward_parallel_xi(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
-                                      a, b, delta, gamma, y, sampleweights, beta)
+                                      a, b, delta, gamma, y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 
 # xi0 lfilter parallel
-def lfilter_parallel_xi0(xi0, denom, num_b, num_a, a, b, direction, delta, gamma, y, sampleweights, beta, kappa_diag=True):
+def lfilter_parallel_xi0(xi0, denom, num_b, num_a, a, b, direction, delta, gamma, y, sample_weights, beta, kappa_diag=True):
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = y**2
 
     if direction == 'fw':
-        lfilter_forward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sampleweights, beta)
+        lfilter_forward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sampleweights, beta)
+        lfilter_backward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
 # nu lfilter parallel
-def lfilter_parallel_nu(nu, A, C, a, b, direction, delta, gamma, y, sampleweights, beta):
+def lfilter_parallel_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = np.broadcast_to(1., np.shape(y))  # create an array of shape Ks, but contains only a single 1.0 in memory
 
     if direction == 'fw':
-        lfilter_forward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sampleweights, beta)
+        lfilter_forward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sampleweights, beta)
+        lfilter_backward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
     
@@ -325,7 +325,7 @@ def _apply_fir(sos, extra_delay, y_sig, Lout):
 
 
 def lfilter_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
-                                 a, b, delta, gamma, y, sampleweights, beta):
+                                 a, b, delta, gamma, y, sample_weights, beta):
     """SOS-based forward parallel xi filter – supports all boundary combinations.
 
     Parameters are the SOS structures built once in RLSAlssm._numdenom.
@@ -340,7 +340,7 @@ def lfilter_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da
     """
     gamma_a = gamma ** (a - 1 - delta)
     gamma_b = gamma ** (b - delta)
-    yw = (y * sampleweights[:, None]).ravel()
+    yw = (y * sample_weights[:, None]).ravel()
     K = len(yw)
     N = xi.shape[1]
     if not np.isinf(a):
@@ -371,7 +371,7 @@ def lfilter_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da
 
 
 def lfilter_backward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
-                                  a, b, delta, gamma, y, sampleweights, beta):
+                                  a, b, delta, gamma, y, sample_weights, beta):
     """SOS-based backward parallel xi filter – supports all boundary combinations.
 
     Signal construction (cascade style, length K+Ka, time-reversed):
@@ -384,7 +384,7 @@ def lfilter_backward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, d
     """
     gamma_a = gamma ** (a - delta)
     gamma_b = gamma ** (b - delta + 1)
-    yw = (y * sampleweights[:, None]).ravel()
+    yw = (y * sample_weights[:, None]).ravel()
     K = len(yw)
     N = xi.shape[1]
     if not np.isinf(a):
