@@ -101,8 +101,8 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
     if not np.allclose(gAinvT, np.tril(gAinvT)):
         raise "State-Space Matrix A needs to be upper triangular for cascaded version"
 
-    yweighted = y*sample_weights[:, None]
-    K = yweighted.shape[0]
+    y_weighted = y*sample_weights[:, None]
+    K = y_weighted.shape[0]
 
     # shift signal
     # insert the shifted signal: since b > a (by definition), the recursion starts with signal b only.
@@ -110,14 +110,14 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
         K_append  = b-a+1 #this is the length of the window
     else:
         K_append = 0
-    y_delayed_b = np.zeros((K + K_append, *yweighted.shape[1:]))
-    y_delayed_b[0:K] = yweighted
+    y_delayed_b = np.zeros((K + K_append, *y_weighted.shape[1:]))
+    y_delayed_b[0:K] = y_weighted
     y_diff = np.einsum('kl, nl->kn', y_delayed_b, gamma_b * Abc)
 
     if not np.isinf(a):
         # insert the shifted signal: a is inserted after K_append (length of the window).
-        y_delayed_a = np.zeros((K + K_append, *yweighted.shape[1:]))
-        y_delayed_a[K_append:] = yweighted
+        y_delayed_a = np.zeros((K + K_append, *y_weighted.shape[1:]))
+        y_delayed_a[K_append:] = y_weighted
         y_diff -= np.einsum('kl, nl->kn', y_delayed_a, gamma_a * Aac)
 
     # iterating through ALSSM (xi) elements
@@ -185,10 +185,10 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights
         raise "State-Space Matrix A needs to be upper triangular for cascaded version"
 
     K = len(xi)
-    yweighted = y*sample_weights[:, None]
+    y_weighted = y*sample_weights[:, None]
 
     #time-reverse observation for backward recursion
-    yweighted_flipped = yweighted[::-1]
+    y_weighted_flipped = y_weighted[::-1]
     
     # shift signal
     # insert the shifted signal: since a < b (by definition), the backward recursion starts with signal a only.
@@ -196,14 +196,14 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights
         K_append  = b-a+1 #this is the length of the window
     else:
         K_append = 0
-    y_delayed_a = np.zeros((K + K_append, *yweighted_flipped.shape[1:]))
-    y_delayed_a[0:K] = yweighted_flipped
+    y_delayed_a = np.zeros((K + K_append, *y_weighted_flipped.shape[1:]))
+    y_delayed_a[0:K] = y_weighted_flipped
     y_diff = np.einsum('kl, nl->kn', y_delayed_a, gamma_a * Aac)
 
     if not np.isinf(b):
         # insert the shifted signal: b is inserted after K_append (length of the window).
-        y_delayed_b = np.zeros((K + K_append, *yweighted_flipped.shape[1:]))
-        y_delayed_b[K_append:] = yweighted_flipped
+        y_delayed_b = np.zeros((K + K_append, *y_weighted_flipped.shape[1:]))
+        y_delayed_b[K_append:] = y_weighted_flipped
         y_diff -= np.einsum('kl, nl->kn', y_delayed_b, gamma_b * Abc)
 
     # iterating through dimensions
