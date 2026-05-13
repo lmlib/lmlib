@@ -105,11 +105,20 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, numd
                                     segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                     y, v, beta)
             elif q == 1:
+                # numdenom[5] and [6] carry per-row reduced IIR SOS lists from QZ-based
+                # PZ cancellation; numdenom[7] and [8] carry the corresponding pole counts
+                # for the gamma-shift IIR (Strategy A).  All present only when the QZ path
+                # was used; absent for user-supplied numdenom dicts (5-element format).
+                _iir_b = numdenom[5] if len(numdenom) > 5 else None
+                _iir_a = numdenom[6] if len(numdenom) > 6 else None
+                _np_b  = numdenom[7] if len(numdenom) > 7 else None
+                _np_a  = numdenom[8] if len(numdenom) > 8 else None
                 lfilter_parallel_xi1(xi,
                                     numdenom[0], numdenom[1], numdenom[2],
                                     numdenom[3], numdenom[4],
                                     segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                    y, v, beta)
+                                    y, v, beta,
+                                    _iir_b, _iir_a, _np_b, _np_a)
             elif q == 0:
                 # lfilter_parallel_xi0 delegates to the cascade implementation
                 # internally and does not use numdenom at all.

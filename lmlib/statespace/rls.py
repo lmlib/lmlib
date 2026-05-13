@@ -7,17 +7,12 @@ Recursive Least Square Alssm Classes to solve Alssm Cost Functions
 import sys
 import numpy as np
 from numpy.linalg import inv, cond, matrix_power, eigvals
-from scipy.signal import ss2tf, zpk2sos
+from scipy.signal import zpk2sos
 
 from lmlib.statespace.backend import get_backend
 from lmlib.statespace.cost import CompositeCost, CostSegment, NDCompositeCost
 from lmlib.statespace.model import AlssmSum
 from lmlib.utils.check import *
-from lmlib.statespace.sos_matlab import (
-    print_matlab_sos_script as _print_matlab_sos_script,
-    sos_from_matlab,
-    sos_from_matlab_multi,
-)
 from lmlib.statespace.backends.rec import *
 import warnings
 
@@ -58,9 +53,9 @@ def _as_composite_cost(cost):
 class RLSAlssm:
 
     def __init__(self, cost_terms, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=False, filter_form='cascade',
-                 backend=None, numdenom=None, show_pzinstruction=False):
+                 backend=None, numdenom=None):
         self._cost_terms = cost_terms
-        assert all(isinstance(_, bool) for _ in (steady_state, calc_W, calc_xi, calc_kappa, calc_nu, show_pzinstruction)), \
+        assert all(isinstance(_, bool) for _ in (steady_state, calc_W, calc_xi, calc_kappa, calc_nu)), \
             'steady_state, calc_W, calc_xi, calc_kappa and calc_nu must be boolean.'
 
         self._steady_state = steady_state
@@ -125,12 +120,9 @@ class RLSAlssm:
         ]
 
         if self._filter_form == 'parallel' and self._backend == 'lfilter' and numdenom is None:
-            if show_pzinstruction:
-                print("Using SOS (second-order sections) parallel filter.")
-            else:
-                print("Scipy SOS coefficients may be imprecise for large systems.\n"
-                      "For higher accuracy, generate coefficients in MATLAB. \n"
-                      "For instructions, set show_pzinstruction=True when creating the RLS instance.")
+            from lmlib.statespace.backends.statespace_tools import ss2zpk_qz
+            from lmlib.statespace.backends.rec_lfilter import (
+                _zpk_cancel_and_build_sos, _count_poles_in_sos)
             for dim_idx, ct in enumerate(_sub_costs):
                 for p, segment in enumerate(ct.segments):
                     gamma = segment.gamma
@@ -160,34 +152,66 @@ class RLSAlssm:
                             raise NotImplementedError("Segment direction must be fw or bw")
 
                         # --- Build SOS structures ---
-                        # Poles: eigenvalues of gAT (accurate, avoids polynomial expansion)
+                        # Poles = eigenvalues of gAT (avoids polynomial expansion).
+                        # A shared sos_iir is stored at index [0] for backward
+                        # compatibility with user-supplied numdenom dicts.
                         poles = eigvals(gAT)
-                        sos_iir = zpk2sos(np.zeros(len(poles)), poles, 1.0)
+                        sos_iir_shared = zpk2sos(np.zeros(len(poles)), poles, 1.0)
 
-                        # Numerator polynomials via ss2tf (small degree N_m-1 per row)
-                        Abc_2d = Abc.reshape(N_m, 1)
-                        Aac_2d = Aac.reshape(N_m, 1)
-                        num_b, _ = ss2tf(gAT, Abc_2d, np.eye(N_m), np.zeros((N_m, 1)))
-                        num_a, _ = ss2tf(gAT, Aac_2d, np.eye(N_m), np.zeros((N_m, 1)))
-
-                        from lmlib.statespace.backends.rec_lfilter import _make_num_sos
+                        # Zeros via QZ (Rosenbrock pencil + generalised Schur
+                        # decomposition): avoids the Faddeev-LeVerrier polynomial
+                        # round-trip of scipy ss2tf / ss2zpk, giving exact zeros for
+                        # cancellable rows and near-MATLAB accuracy for the rest.
+                        # PZ cancellation reduces each row to the minimal-order IIR.
+                        # _numdenom layout:
+                        #   [0] sos_iir_shared  – full-order IIR (legacy compat)
+                        #   [1] sos_b_list      – per-row FIR SOS, boundary b
+                        #   [2] sos_a_list      – per-row FIR SOS, boundary a
+                        #   [3] db_list         – per-row FIR delay, boundary b
+                        #   [4] da_list         – per-row FIR delay, boundary a
+                        #   [5] sos_iir_b_list  – per-row reduced IIR SOS, boundary b
+                        #   [6] sos_iir_a_list  – per-row reduced IIR SOS, boundary a
+                        #   [7] n_poles_b_list  – pole count per row, boundary b
+                        #   [8] n_poles_a_list  – pole count per row, boundary a
+                        #   [9] advance_b_list  – backward slice advance, boundary b
+                        #   [10] advance_a_list – backward slice advance, boundary a
+                        #
+                        # advance_*_list[n_] = 1 when the boundary vector component
+                        # boundary_vec[n_] = 0, which causes the IIR slice alignment
+                        # to be off by 1 sample in the backward filter.  This happens
+                        # because the QZ transfer function H_n for row n_ has the
+                        # correct mathematical form but the IIR slice includes one
+                        # extra "warmup" sample that must be dropped.
+                        # For the forward filter the analogous issue (huge spurious
+                        # zero from QZ) is corrected in _zpk_cancel_and_build_sos.
+                        Abc_col = Abc.reshape(N_m, 1)
+                        Aac_col = Aac.reshape(N_m, 1)
                         sos_b_list = []; sos_a_list = []; db_list = []; da_list = []
+                        sos_iir_b_list = []; sos_iir_a_list = []
+                        n_poles_b_list = []; n_poles_a_list = []
+                        advance_b_list = []; advance_a_list = []
                         for n_ in range(N_m):
-                            sb, db = _make_num_sos(num_b[n_])
-                            sa, da = _make_num_sos(num_a[n_])
+                            C_row = np.zeros((1, N_m)); C_row[0, n_] = 1.0
+                            z_b, _, k_b, n_inf_b = ss2zpk_qz(gAT, Abc_col, C_row)
+                            z_a, _, k_a, n_inf_a = ss2zpk_qz(gAT, Aac_col, C_row)
+                            sb, db, si_b = _zpk_cancel_and_build_sos(z_b, k_b, poles, n_inf_zeros=n_inf_b)
+                            sa, da, si_a = _zpk_cancel_and_build_sos(z_a, k_a, poles, n_inf_zeros=n_inf_a)
                             sos_b_list.append(sb); sos_a_list.append(sa)
                             db_list.append(db);    da_list.append(da)
+                            sos_iir_b_list.append(si_b); sos_iir_a_list.append(si_a)
+                            n_poles_b_list.append(_count_poles_in_sos(si_b))
+                            n_poles_a_list.append(_count_poles_in_sos(si_a))
+                            # Advance = 1 when the boundary vector component at row
+                            # n_ is zero.  Only the backward filter uses this.
+                            advance_b_list.append(1 if abs(float(Abc[n_])) < 1e-10 else 0)
+                            advance_a_list.append(1 if abs(float(Aac[n_])) < 1e-10 else 0)
 
-                        self._numdenom[dim_idx][p][m] = [sos_iir, sos_b_list, sos_a_list,
-                                                          db_list, da_list]
+                        self._numdenom[dim_idx][p][m] = [sos_iir_shared, sos_b_list,
+                                                          sos_a_list, db_list, da_list,
+                                                          sos_iir_b_list, sos_iir_a_list,
+                                                          n_poles_b_list, n_poles_a_list,
+                                                          advance_b_list, advance_a_list]
 
-                        if show_pzinstruction:
-                            _print_matlab_sos_script(ct, dim_index=dim_idx)
-            if show_pzinstruction: 
-                print(
-                "\nPaste the printed dict into your Python source, then pass it as:\n"
-                "  rls = RLSAlssm(cost, ..., numdenom=lm.sos_from_matlab(cost, d),\n"
-            )
 
 
         if filter_form == 'parallel' and backend == 'lfilter' and numdenom is not None:

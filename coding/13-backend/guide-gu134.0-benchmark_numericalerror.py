@@ -1,9 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 import lmlib as lm
 from numpy.linalg import matrix_power as mpow
 import time
+
+GOLDEN_REF_PATH = os.path.join(os.path.dirname(__file__), 'golden_ref.npz')
 
 def xi_sum(alssm, seg, y):
     K = y.shape[0]
@@ -18,7 +21,7 @@ def xi_sum(alssm, seg, y):
     for k_ in range(K):
         for i in range(seg.a, seg.b + 1):
             if 0 <= i + k_ < K:
-                gamma_i = (gamma ** i) 
+                gamma_i = (gamma ** i)
                 A_i = mpow(A, i).astype(dt)
 
                 contrib = (
@@ -29,6 +32,66 @@ def xi_sum(alssm, seg, y):
                 xi_sum[k_, :] += contrib.astype(dt)
 
     return xi_sum
+
+
+def xi_sum_mp(alssm, seg, y, dps=50):
+    """High-precision golden reference via mpmath (dps decimal places).
+
+    Precomputes v_i = gamma^i * (A^i)^T @ C^T for each boundary index i
+    using mpmath, then performs the final convolution in float64.
+    Stores the result in GOLDEN_REF_PATH for later reuse.
+    """
+    import mpmath as mp
+    mp.mp.dps = dps
+    K, N = y.shape[0], alssm.N
+    a, b = seg.a, seg.b
+
+    gamma_mp = mp.mpf(seg.gamma)
+    A_mp = mp.matrix(alssm.A.tolist())
+    C_mp = mp.matrix(alssm.C.ravel().tolist())  # row vector (1 x N) → treated as (N,)
+
+    # Precompute v_i = gamma^i * (A^i)^T @ C^T  (shape N)
+    V = np.empty((b - a + 1, N), dtype=np.float64)
+    for idx, i in enumerate(range(a, b + 1)):
+        if i >= 0:
+            Ai = A_mp ** i
+        else:
+            Ai = mp.inverse(A_mp ** (-i))
+        AiT = Ai.T
+        gamma_i = gamma_mp ** i
+        for n in range(N):
+            s = mp.mpf(0)
+            for j in range(N):
+                s += AiT[n, j] * C_mp[j]
+            V[idx, n] = float(gamma_i * s)
+
+    # Convolution (float64 — only b-a+1 terms so accumulation error ~(b-a+1)*eps)
+    xi = np.zeros((K, N), dtype=np.float64)
+    for idx, i in enumerate(range(a, b + 1)):
+        k0 = max(0, -i)
+        k1 = min(K, K - i)
+        if k0 >= k1:
+            continue
+        xi[k0:k1, :] += y[i + k0: i + k1, np.newaxis] * V[idx]
+
+    np.savez(GOLDEN_REF_PATH, xi=xi, y=y, a=a, b=b, gamma=seg.gamma,
+             A=alssm.A, C=alssm.C, dps=dps)
+    print(f"Golden reference saved to {GOLDEN_REF_PATH}  (dps={dps})")
+    return xi
+
+
+def load_golden_ref(alssm, seg, y):
+    """Load precomputed golden reference if parameters match, else return None."""
+    if not os.path.exists(GOLDEN_REF_PATH):
+        return None
+    d = np.load(GOLDEN_REF_PATH)
+    if (np.array_equal(d['y'], y) and int(d['a']) == seg.a and int(d['b']) == seg.b
+            and float(d['gamma']) == seg.gamma
+            and np.array_equal(d['A'], alssm.A)
+            and np.array_equal(d['C'], alssm.C)):
+        print(f"Loaded golden reference from {GOLDEN_REF_PATH}  (dps={int(d['dps'])})")
+        return d['xi']
+    return None
 
 
 
@@ -49,11 +112,16 @@ segment='costsegment'
 if segment=='costsegment':
     segment = lm.Segment(a=-10, b=5, direction=lm.FORWARD, g=g)
     cost = lm.CostSegment(alssm, segment)
-    
-    # Reference Implementation (without recursion)
-    t0 = time.perf_counter()
-    xi_ref = xi_sum(alssm,segment,y)
-    t_sum = time.perf_counter() - t0
+
+    # Golden reference: load from disk if available, else compute with mpmath
+    xi_ref = load_golden_ref(alssm, segment, y)
+    if xi_ref is None:
+        print("Computing high-precision golden reference with mpmath (dps=50)…")
+        t0 = time.perf_counter()
+        xi_ref = xi_sum_mp(alssm, segment, y, dps=50)
+        t_sum = time.perf_counter() - t0
+    else:
+        t_sum = 0.0
 
 if segment=='compositecost':
     segment_l = lm.Segment(a=-20, b=-10, direction=lm.FORWARD, g=g)
@@ -94,7 +162,7 @@ if segment=='compositecost':
 
 # Print timing results
 print("\n=== Timing ===")
-print(f"Sum (w.o. Recursion) : {t_sum*1e3:.2f} ms")
+print(f"Golden Ref (mpmath)  : {t_sum*1e3:.2f} ms" if t_sum > 0 else "Golden Ref (mpmath)  : loaded from disk")
 print(f"Direct Matrix        : {t_directmatrix*1e3:.2f} ms")
 print(f"Cascade              : {t_cascade*1e3:.2f} ms" if t_cascade is not None else "Cascade       : N/A")
 print(f"Parallel             : {t_parallel*1e3:.2f} ms" if t_parallel is not None else "Parallel       : N/A")
@@ -126,8 +194,8 @@ for n in range(alssm.N):
 
 # ------------------ plotting --------------------------------------------
 plt.close('all')
-plot_error=True
-plot_xi=True
+plot_error=False
+plot_xi=False
 dpi = 300 
 
 if plot_xi:
