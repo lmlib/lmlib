@@ -35,7 +35,7 @@ alssm_baseline = lm.AlssmPoly(poly_degree=2, label="offset-model-baseline")
 
 # Defining segments with a left-resp. right-sided decaying window and a center segment with nearly rectangular window
 segmentL = lm.Segment(a=-np.inf, b=-1, direction=lm.FORWARD, g=g_bl)
-segmentC = lm.Segment(a=0, b=len_pulse, direction=lm.FORWARD, g=g_sp)
+segmentC = lm.Segment(a=0, b=len_pulse, direction=lm.BACKWARD, g=g_sp)
 segmentR = lm.Segment(a=len_pulse+1, b=np.inf, direction=lm.BACKWARD, g=g_bl, delta=len_pulse)
 
 # Defining the final cost function (a so-called composite cost = CCost)
