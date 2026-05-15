@@ -82,7 +82,7 @@ def extract_title_and_description(docstring):
     
     return title, description, description_flat
 
-def process_folder(folder_path, folder_parent: str):
+def process_folder(folder_path, folder_parent: str, starting_pattern: str):
     # --- Helper for Truncation ---
     def truncate_words(text, max_words=10):
         if not text:
@@ -98,7 +98,7 @@ def process_folder(folder_path, folder_parent: str):
     output_folder.mkdir(parents=True, exist_ok=True)
     
     gallery_entries = []
-    pattern = "example-*.py"
+    pattern = starting_pattern+"*.py"
     py_files = [Path(f) for f in sorted(glob.glob(str(folder_path / pattern)))]
     
     if not py_files:
@@ -241,7 +241,7 @@ if __name__ == "__main__":
     for folder in coding_folders:
         if folder.exists():
             print(f"Processing Coding: {folder}")
-            process_folder(folder, "coding")
+            process_folder(folder, "coding", "guide-")
         else:
             print(f"Folder not found: {folder}")
             
@@ -249,14 +249,14 @@ if __name__ == "__main__":
     for folder in catalog_folders:
         if folder.exists():
             print(f"Processing Catalog: {folder}")
-            process_folder(folder, "catalog")
+            process_folder(folder, "catalog", "example-")
         else:
             print(f"Folder not found: {folder}")
 
     for folder in examples_folders:
         if folder.exists():
             print(f"Processing Examples: {folder}")
-            process_folder(folder, "examples")
+            process_folder(folder, "examples", "example-")
         else:
             print(f"Folder not found: {folder}")
             

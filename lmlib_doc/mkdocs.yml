@@ -38,7 +38,7 @@ nav:
   - Installation: getting_started/installation.md
   - Catalog:
     - Biosignals: catalog/_generated_galleries/biosignals/index.md
-    - Generators: catalog/_generated_galleries/index.md
+    - Generators: catalog/_generated_galleries/generators/index.md
   - Examples: 
     - Detection: examples/_generated_galleries/11-detection/index.md
     - Filtering: examples/_generated_galleries/12-filtering/index.md
