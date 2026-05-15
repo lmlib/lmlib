@@ -1,21 +1,36 @@
 """
-Pre-optimization implementations of the lfilter cascade and RLS recursion.
+Baseline ("before") implementations used by the ex133 benchmark notebooks.
 
-These replicate the behaviour of lmlib *before* the F-order / in-place
-optimisation was applied:
+**``nd_xi_q_recursion``** — before state for the RLS pipeline:
+    Production code from Christof's develop branch with the *only* difference
+    being that ``xi_curr`` is allocated in default C-order instead of F-order.
+    Used in ex133.3 (full-pipeline before/after benchmark) by monkey-patching
+    it onto ``lm.RLSAlssm._nd_xi_q_recursion``.
 
-  - C-order scratch buffer ``xi0``       (instead of pre-allocated F-order)
-  - Accumulation via ``xi += xi0`` copy  (instead of in-place fill)
-  - Shared ``xi_curr`` across segments   (instead of per-segment ``_xi_seg``)
+**``lfilter_forward_cascade_xi`` / ``lfilter_backward_cascade_xi``** — before
+    state for the cascade inner loop:
+    Same logic as the production versions in ``rec_lfilter.py`` but with
+    ``xi0 = np.zeros_like(xi)`` (C-order, same shape as ``xi``) instead of the
+    F-order ``(K + K_append, N)`` buffer introduced by Christof.  Used by:
+
+    * ex133.0 — line-by-line profiling baseline (``inspect.getsource()`` must work)
+    * ex133.1 — N=2 before/after cascade benchmark (called via ``variant_before``)
+    * ex133.2 — multi-N before/after cascade benchmark (called via ``make_variants``)
+
+    In ex133.3 only ``nd_xi_q_recursion`` is monkey-patched; the cascade functions
+    there always use the current production versions.
 
 Kept as a standalone module so that ``inspect.getsource()`` works correctly
-when the functions are registered with ``line_profiler.LineProfiler``.
+when functions are registered with ``line_profiler.LineProfiler``.
 """
 
 import numpy as np
 from numpy.linalg import inv as _inv, matrix_power as _mpow
 from scipy.signal import lfilter as _lfilter
 from lmlib.statespace.backends.rec import xi_q_recursion as _xi_q_recursion
+from lmlib.statespace.rls import _as_composite_cost
+from lmlib.statespace.cost import NDCompositeCost
+from lmlib.statespace.model import AlssmSum
 
 
 def lfilter_forward_cascade_xi(xi, A, C, a, b, delta, gamma, y, v, beta):
@@ -89,30 +104,57 @@ def lfilter_backward_cascade_xi(xi, A, C, a, b, delta, gamma, y, v, beta):
 
 
 def nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
+    """Before: xi_curr allocated in default C-order (no order='F').
+    This is the production code from Christof's develop branch minus the
+    order='F' change — used to isolate that change's effect in ex133.3.
+    """
+    sub_cost = _as_composite_cost(
+        self._cost_terms._get_sub_cost_term(model_dimension)
+    )
+    dim_index = model_dimension if isinstance(self._cost_terms, NDCompositeCost) else 0
 
-    sub_cost = self._cost_terms._get_sub_cost_term(model_dimension)
     N = sub_cost.get_alssm_order()
     *Ks, Q = np.shape(y)
-    xi_curr = np.zeros((*Ks, N ** q,)) # the last dimension is the nd-model-order
+    xi_curr = np.zeros((*Ks, N ** q))  # <- C-order (before Christof's order='F' change)
 
-    # most efficient to access subarrays in a ndarray
-    # 1. move subarray to last dimensions (returns a view)
-    # 2. reshape by flattening dimensions to iterate over (returns a view)
-    # the data is still stored in the original order
-    _xi_curr = np.moveaxis(xi_curr, model_dimension, -2) # to second last dimension, last is nd-model-order
+    _xi_curr = np.moveaxis(xi_curr, model_dimension, -2)
     _xi_curr = np.reshape(_xi_curr, (-1, *_xi_curr.shape[-2:]))
-    _y = np.moveaxis(y, model_dimension, -2) # to the second last dimension, last is the model output dimension
+    _y = np.moveaxis(y, model_dimension, -2)
     _y = np.reshape(_y, (-1, *_y.shape[-2:]))
-    _sample_weights = np.moveaxis(sample_weights, model_dimension, -1) # to the last dimension, no model output dimension
+    _sample_weights = np.moveaxis(sample_weights, model_dimension, -1)
     _sample_weights = np.reshape(_sample_weights, (-1, *_sample_weights.shape[-1:]))
 
-    # iterate over CostSegments
-    for cs in sub_cost._get_cost_segments(force_MC=True):
-        # backend recursion
-        for i in range(_y.shape[0]):
-            _xi_q_recursion(_xi_curr[i], q,
-                            cs.alssm, cs.segment,
-                            _y[i], _sample_weights[i],
-                            cs.beta, self._backend, self._filter_form)
+    offsets = self._alssm_offsets(sub_cost)
+
+    for p, segment in enumerate(sub_cost.segments):
+        beta_p = sub_cost.betas[p]
+
+        if q == 2:
+            combined = AlssmSum(sub_cost.alssms, sub_cost.F[:, p], force_MC=True)
+            for i in range(_y.shape[0]):
+                _xi_q_recursion(_xi_curr[i], q, combined, segment,
+                                _y[i], _sample_weights[i],
+                                beta_p, self._backend, self._filter_form, None)
+            continue
+
+        if q == 0:
+            dummy_alssm = AlssmSum([sub_cost.alssms[0]], [1.0], force_MC=True)
+            for i in range(_y.shape[0]):
+                _xi_q_recursion(_xi_curr[i], q, dummy_alssm, segment,
+                                _y[i], _sample_weights[i],
+                                beta_p, self._backend, self._filter_form, None)
+            continue
+
+        for m, alssm_m in enumerate(sub_cost.alssms):
+            f_mp = sub_cost.F[m, p]
+            if f_mp == 0.0:
+                continue
+            wrapped = AlssmSum([alssm_m], [f_mp], force_MC=True)
+            n0, n1 = offsets[m], offsets[m + 1]
+            numdenom_pm = self._numdenom[dim_index][p][m]
+            for i in range(_y.shape[0]):
+                _xi_q_recursion(_xi_curr[i, :, n0:n1], q, wrapped, segment,
+                                _y[i], _sample_weights[i],
+                                beta_p, self._backend, self._filter_form, numdenom_pm)
 
     return xi_curr

@@ -2,10 +2,11 @@
 
 import importlib.util
 import sys
+from lmlib.statespace.cost import NDCompositeCost
 
 __all__ = ['set_backend', 'is_backend_available', 'get_backend', 'BACKEND_TYPES', 'available_backends']
 
-_backend = 'numpy' # current backend selection (global)
+_backend = 'lfilter' # current backend selection (global)
 
 BACKEND_TYPES = ('jit', 'numpy', 'lfilter') # known backends
 available_backends = ('numpy', 'lfilter') # available backends
@@ -59,7 +60,7 @@ def is_backend_available(backend):
     
     return backend in available_backends
 
-def get_backend():
+def get_backend(cost_term):
     """
     Returns the name of the currently selected backend.
 
@@ -68,10 +69,13 @@ def get_backend():
     ----------
     output : str
              for a list of valid backends, see :meth:`set_backend`
-    """    
+    """
         
     global _backend
-    return _backend
+    if isinstance(cost_term,NDCompositeCost):
+        return 'numpy' #backend unspecified, selecting 'numpy' for ND
+    else: 
+        return _backend
 
 # check if numba is installed, when yes import and add to available_backends.
 if (spec := importlib.util.find_spec('numba')) is not None:

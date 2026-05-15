@@ -5,13 +5,13 @@ from .rec_numpy import *
 from .rec_lfilter import *
 if 'jit' in available_backends:
     from .rec_jit import *
-
+import warnings
 from .statespace_tools import kron_q
 
 __all__ = ['xi_q_recursion', 'xi_q_asterisk_l_recursion']
 
 
-def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, backend, filter_form):
+def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, backend, filter_form, numdenom):
     # Equation 47 in Baeriswyl2025
 
     Nq_prev = xi_prev.shape[-1]
@@ -19,6 +19,12 @@ def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, back
     A = kron_q(alssm.A, q)
     C = kron_q(alssm.C, q)
 
+    if backend in ('jit', 'lfilter'):
+        warnings.warn(
+            "nD costs currently only support numpy backend. Defaulting to numpy.",
+            SyntaxWarning,
+            stacklevel=2,
+        )
     if backend in ('numpy', 'jit', 'lfilter'):
         numpy_xi_asterisk_l_recursion(xi_curr, A, C,
                                       segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
@@ -28,7 +34,7 @@ def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, back
         raise ValueError("unknown backend: '{}'".format(backend))
 
 
-def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form):
+def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, numdenom):
     # Equation 18 in Baeriswyl2025
 
     if backend == 'numpy':
@@ -95,17 +101,20 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form):
         elif filter_form == 'parallel':
             if q == 2:
                 lfilter_parallel_xi2(xi,
-                                    alssm.A, alssm.C,
+                                    numdenom[0], numdenom[1], numdenom[2],
                                     segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                     y, v, beta)
             elif q == 1:
                 lfilter_parallel_xi1(xi,
-                                    alssm.A, alssm.C,
+                                    numdenom[0], numdenom[1], numdenom[2],
+                                    numdenom[3], numdenom[4],
                                     segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                     y, v, beta)
             elif q == 0:
+                # lfilter_parallel_xi0 delegates to the cascade implementation
+                # internally and does not use numdenom at all.
                 lfilter_parallel_xi0(xi,
-                                    alssm.A, alssm.C,
+                                    None, None, None,
                                     segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                     y, v, beta)
             else:

@@ -410,7 +410,7 @@ class CompositeCost(BaseCost, BaseCost1d):
             cost_segment = CostSegment(alssm, segment, self.betas[p], self.label + '-' + str(p))
             cost_segments.append(cost_segment)
         return cost_segments
-
+    
     def _get_sub_cost_term(self, dim=None, seg=None):
         """Returns a specific CostSegment by segment index."""
         if seg is None:
