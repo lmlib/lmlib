@@ -26,5 +26,5 @@ Direct Links to:
 ## Developer Info
 
 Installation via:
-* **pip (dev-mode): ```pip install -e lmlib ```**
+* **pip (dev-mode): ```pip install -e . ```**
 * **[Git Workflow Guide](https://nvie.com/posts/a-successful-git-branching-model/)**
