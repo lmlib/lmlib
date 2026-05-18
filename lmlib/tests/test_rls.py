@@ -1174,5 +1174,46 @@ class TestRLSAlssm(unittest.TestCase):
           6.107149384831354, 4.474868635321705, 3.155341055304806, 2.511868913181077, 2.32563905801209]]
         self.assertTrue(np.isclose(rls.eval_errors(xs), error).all())
 
+    # segment order invariance — BW before FW must give the same result as FW before BW
+    def test_segment_order_invariance_numpy(self):
+        """CompositeCost([FW, BW]) and CompositeCost([BW, FW]) must produce identical results."""
+        y = np.sin(np.linspace(0, 2 * np.pi, 20))
+        alssm = lm.AlssmPoly(poly_degree=2)
+        segment_fw = lm.Segment(a=-5, b=-1, direction=lm.FW, g=10, delta=0)
+        segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
+
+        cost_fw_bw = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
+        rls_fw_bw = lm.RLSAlssm(cost_fw_bw, steady_state=False, backend='numpy')
+        rls_fw_bw.filter(y)
+        xs_fw_bw = rls_fw_bw.minimize_x()
+
+        cost_bw_fw = lm.CompositeCost([alssm], [segment_bw, segment_fw], F=[[1, 1]])
+        rls_bw_fw = lm.RLSAlssm(cost_bw_fw, steady_state=False, backend='numpy')
+        rls_bw_fw.filter(y)
+        xs_bw_fw = rls_bw_fw.minimize_x()
+
+        self.assertTrue(np.allclose(rls_fw_bw.eval_errors(xs_fw_bw),
+                                    rls_bw_fw.eval_errors(xs_bw_fw)))
+
+    def test_segment_order_invariance_lfilter(self):
+        """CompositeCost([FW, BW]) and CompositeCost([BW, FW]) must produce identical results."""
+        y = np.sin(np.linspace(0, 2 * np.pi, 20))
+        alssm = lm.AlssmPoly(poly_degree=2)
+        segment_fw = lm.Segment(a=-5, b=-1, direction=lm.FW, g=10, delta=0)
+        segment_bw = lm.Segment(a=0, b=5, direction=lm.BW, g=10, delta=0)
+
+        cost_fw_bw = lm.CompositeCost([alssm], [segment_fw, segment_bw], F=[[1, 1]])
+        rls_fw_bw = lm.RLSAlssm(cost_fw_bw, steady_state=False, backend='lfilter')
+        rls_fw_bw.filter(y)
+        xs_fw_bw = rls_fw_bw.minimize_x()
+
+        cost_bw_fw = lm.CompositeCost([alssm], [segment_bw, segment_fw], F=[[1, 1]])
+        rls_bw_fw = lm.RLSAlssm(cost_bw_fw, steady_state=False, backend='lfilter')
+        rls_bw_fw.filter(y)
+        xs_bw_fw = rls_bw_fw.minimize_x()
+
+        self.assertTrue(np.allclose(rls_fw_bw.eval_errors(xs_fw_bw),
+                                    rls_bw_fw.eval_errors(xs_bw_fw)))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

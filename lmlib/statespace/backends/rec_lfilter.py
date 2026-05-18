@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.linalg import inv, matrix_power, eigvals
 from scipy.signal import lfilter, convolve, zpk2sos, sosfilt, ss2tf
+from lmlib.utils.profiling import profile
 
 
 # xi2 lfilter cascade
@@ -56,6 +57,10 @@ def lfilter_cascade_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weight
 
 
 # general forward cascade
+# @profile is intentional on this production function: the decorator is a
+# transparent pass-through when lm.profiling.enable() has not been called
+# (overhead is a single bool check per call). See lmlib/utils/profiling.py.
+@profile
 def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights, beta):
     """
     IIR forward calculation of xi
@@ -99,7 +104,7 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
     N = np.shape(A)[1]
 
     if not np.allclose(gAinvT, np.tril(gAinvT)):
-        raise "State-Space Matrix A needs to be upper triangular for cascaded version"
+        raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
 
     y_weighted = y*sample_weights[:, None]
     K = y_weighted.shape[0]
@@ -122,7 +127,7 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
 
     # iterating through ALSSM (xi) elements
     y_diff = np.swapaxes(y_diff, 0, 1)  # convenient for later indexing
-    xi0 = np.zeros((K + K_append, *xi.shape[1:]))
+    xi0 = np.zeros((K + K_append, *xi.shape[1:]), order='F')
     n_ = 0
     xi0[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
     for n_ in range(1, N):
@@ -133,15 +138,16 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
     if b >= 0:
         xi += xi0[b:b+K]
     #  if b < 0, first few elements of xi need to be 0 (both boundaries negative)
-    if b < 0: 
-        xi[-b:] += xi0[0:K+b] 
-
+    if b < 0:
+        xi[-b:] += xi0[0:K+b]
 
     # SE weight for this cost segment
     if beta != 1:
         xi *= beta
 
 # general backward cascade
+# @profile is intentional on this production function (see forward cascade comment above).
+@profile
 def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights, beta):
     """-
     IIR backward calculation of xi
@@ -182,7 +188,7 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights
     N = np.shape(A)[1]
 
     if not np.allclose(gAT, np.tril(gAT)):
-        raise "State-Space Matrix A needs to be upper triangular for cascaded version"
+        raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
 
     K = len(xi)
     y_weighted = y*sample_weights[:, None]
@@ -208,7 +214,7 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights
 
     # iterating through dimensions
     y_diff = np.swapaxes(y_diff, 0, 1)  # convenient for later indexing
-    xi0 = np.zeros((K + K_append, *xi.shape[1:]))
+    xi0 = np.zeros((K + K_append, *xi.shape[1:]), order='F')
     n_ = 0
     xi0[:, n_] = lfilter([1, 0], [1, -gamma], y_diff[n_].T).T
     for n_ in range(1, N):
@@ -217,21 +223,17 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights
     
     #xi needs to be correctly inserted. since the signal y_delayed_a had an actual delay of 0, 
     #we need to shift xi0 by a.
-    xi0_flipped=xi0[::-1]
-    xi_add=np.zeros_like(xi)
-    #  if a >= 0, last elements of xi need to be 0 (both boundaries positive)
+    xi0_flipped = xi0[::-1]
     if a >= 0:
-        xi_add[0:K-a] += xi0_flipped[-(K-a):] 
-    if a < 0: 
-        xi_add += xi0_flipped[b+1:K+b+1] 
-        
-    xi += xi_add
+        xi[0:K-a] += xi0_flipped[-(K-a):]
+    if a < 0:
+        xi += xi0_flipped[b+1:K+b+1]
 
     # SE weight for this cost segment
     if beta != 1:
         xi *= beta
-        
-        
+
+
 # xi2 lfilter parallel
 def lfilter_parallel_xi2(xi2, denom, num_b, num_a, a, b, direction, delta, gamma, y, sample_weights, beta):
     raise NotImplementedError("lfilter_parallel_xi2 not implemented yet.")

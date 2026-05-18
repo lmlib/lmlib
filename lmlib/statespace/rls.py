@@ -492,7 +492,7 @@ class RLSAlssm:
 
         N = sub_cost.get_alssm_order()
         *Ks, Q = np.shape(y)
-        xi_curr = np.zeros((*Ks, N ** q))  # last dimension is the nd-model-order
+        xi_curr = np.zeros((*Ks, N ** q), order='F')  # last dimension is the nd-model-order
 
         # Move the model_dimension axis and flatten all other spatial dims so
         # the inner loop sees a simple (n_parallel, K, Q) array.
@@ -513,9 +513,9 @@ class RLSAlssm:
             # The full W of a CompositeCost contains cross-terms between
             # different ALSSMs.  These sit at non-contiguous positions in the
             # flattened N^2 vector, so per-ALSSM sub-slicing is not correct
-            # for M > 1.  Use the combined AlssmSum (original behaviour).
-            # _numdenom is not consumed here; numdenom_p is irrelevant for q==2
-            # with the combined path (numdenom would need to match the large A).
+            # for M > 1 (more than 1 model). Use the combined AlssmSum (original behaviour). 
+            # _numdenom is not consumed here; numdenom_p is irrelevant for q==2 with 
+            # the combined path (numdenom would need to match the large A).
             # ------------------------------------------------------------------
             if q == 2:
                 combined = AlssmSum(sub_cost.alssms, sub_cost.F[:, p], force_MC=True)
@@ -533,7 +533,10 @@ class RLSAlssm:
             # The recursion for kappa does not use alssm.A or alssm.C at all
             # (it only accumulates y² weighted by the window).  A single pass
             # per segment is therefore sufficient regardless of how many ALSSMs
-            # are present.  We pass the first ALSSM as a dummy placeholder and
+            # are present.  We pass the first ALSSM as a dummy placeholder 
+            # 
+            # TODO: is following wrong? It seems to contradict with the documentation after if q == 0
+            # and
             # sum all F weights for this segment column into a single effective
             # beta so the overall scaling remains correct.
             # ------------------------------------------------------------------
@@ -607,7 +610,7 @@ class RLSAlssm:
         N = sub_cost.get_alssm_order()
         Nq_prev = xi_prev.shape[-1]
         *Ks, Q = np.shape(y)
-        xi_curr = np.zeros((*Ks, Nq_prev * N ** q))
+        xi_curr = np.zeros((*Ks, Nq_prev * N ** q), order='F')
 
         _xi_curr = np.moveaxis(xi_curr, model_dimension, 0)
         _xi_prev = np.moveaxis(xi_prev, model_dimension, 0)
