@@ -518,8 +518,8 @@ def lfilter_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da
     gamma_a   = gamma ** (a - 1 - delta)
     gamma_b   = gamma ** (b - delta)
     gamma_inv = 1.0 / gamma
-    yw = (y * sample_weights[:, None]).ravel()
-    K = len(yw)
+    y_weighted = (y * sample_weights[:, None]).ravel()
+    K = len(y_weighted)
     N = xi.shape[1]
     if not np.isinf(a):
         K_append  = b-a+1 #this is the length of the window
@@ -528,11 +528,11 @@ def lfilter_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da
     L = K + K_append
 
     y_db = np.zeros(L)
-    y_db[:K] = yw * gamma_b
+    y_db[:K] = y_weighted * gamma_b
 
     y_da = np.zeros(L)
     if not np.isinf(a):
-        y_da[K_append:K + K_append] = yw * gamma_a
+        y_da[K_append:K + K_append] = y_weighted * gamma_a
 
     use_per_row_iir  = (sos_iir_b_list is not None and sos_iir_a_list is not None)
     use_gamma_shift  = (n_poles_b_list  is not None and n_poles_a_list  is not None)
@@ -589,22 +589,22 @@ def lfilter_backward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, d
     gamma_a   = gamma ** (a - delta)
     gamma_b   = gamma ** (b - delta + 1)
     gamma_inv = 1.0 / gamma
-    yw = (y * sample_weights[:, None]).ravel()
-    K = len(yw)
+    y_weighted = (y * sample_weights[:, None]).ravel()
+    K = len(y_weighted)
     N = xi.shape[1]
     if not np.isinf(a):
         K_append  = b-a+1 #this is the length of the window
     else:
         K_append = 0
     L = K + K_append
-    yw_r = yw[::-1]
+    y_weighted_flipped = y_weighted[::-1]
 
     y_da = np.zeros(L)
-    y_da[:K] = yw_r * gamma_a
+    y_da[:K] = y_weighted_flipped * gamma_a
 
     y_db = np.zeros(L)
     if not np.isinf(b):
-        y_db[K_append:K + K_append] = yw_r * gamma_b
+        y_db[K_append:K + K_append] = y_weighted_flipped * gamma_b
 
     use_per_row_iir  = (sos_iir_b_list is not None and sos_iir_a_list is not None)
     use_gamma_shift  = (n_poles_b_list  is not None and n_poles_a_list  is not None)
