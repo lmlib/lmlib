@@ -11,7 +11,7 @@ from .statespace_tools import kron_q
 __all__ = ['xi_q_recursion', 'xi_q_asterisk_l_recursion']
 
 
-def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, backend, filter_form, numdenom):
+def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, backend, filter_form, numdenom, cascade_params=None):
     # Equation 47 in Baeriswyl2025
 
     Nq_prev = xi_prev.shape[-1]
@@ -34,7 +34,7 @@ def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, back
         raise ValueError("unknown backend: '{}'".format(backend))
 
 
-def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, numdenom):
+def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, numdenom, cascade_params=None):
     # Equation 18 in Baeriswyl2025
 
     if backend == 'numpy':
@@ -87,7 +87,7 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, numd
                 lfilter_cascade_xi1(xi,
                                     alssm.A, alssm.C,
                                     segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                    y, v, beta)
+                                    y, v, beta, cascade_params)
             elif q == 0:
                 lfilter_cascade_xi0(xi,
                                     alssm.A, alssm.C,

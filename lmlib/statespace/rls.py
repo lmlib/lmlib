@@ -100,6 +100,61 @@ class RLSAlssm:
                               "Defaulting to filter_form='parallel'.")
 
         # ------------------------------------------------------------------
+        # Build _cascade_params as a 3-D structure: _cascade_params[dim_index][seg_index][alssm_index]
+        #
+        # Each leaf entry is either None (numpy/jit backends, parallel filter form,
+        # or inactive grid node with f_mp==0) or a dict of precomputed scalars and
+        # matrices for the lfilter cascade backend. The dict keys depend on the
+        # segment direction:
+        #   fw: gamma_inv, gamma_a, gamma_b, gAinvT, Aac, Abc, N
+        #   bw: gamma_a, gamma_b, gAT, Aac, Abc, N
+        #
+        # For q==1 (xi) the filtering is done per individual ALSSM, so each
+        # ALSSM gets its own pre-calculated parameters derived from its own
+        # (small) A_m and C_m rather than from the combined block-diagonal matrix.
+        # This avoids constructing the large AlssmSum just to decompose it again.
+        #
+        # For q==2 (W) the combined AlssmSum is still used (see recursion methods),
+        # so _cascade_params[dim][p][m] is not consumed for q==2; the combined entry is
+        # built on-the-fly there instead.
+        #
+        # ------------------------------------------------------------------
+
+        self._cascade_params = [
+            [[None] * ct.M for _ in range(ct.P)] for ct in _sub_costs
+            ]
+
+        if self._filter_form == 'cascade' and self._backend == 'lfilter':
+            for dim_idx, ct in enumerate(_sub_costs):
+                for p, segment in enumerate(ct.segments):
+                    a, b, delta, gamma = segment.a, segment.b, segment.delta, segment.gamma
+                    for m, alssm_m in enumerate(ct.alssms):
+                        if ct.F[m, p] == 0.0:
+                            continue
+                        wrapped = AlssmSum([alssm_m], [ct.F[m, p]], force_MC=True)
+                        A, C = wrapped.A, wrapped.C
+                        if segment.direction == 'fw':
+                            gamma_inv = 1 / gamma
+                            A_inv = inv(A)
+                            self._cascade_params[dim_idx][p][m] = {
+                                'gamma_inv': gamma_inv,
+                                'gamma_a':   gamma ** (a - 1 - delta),
+                                'gamma_b':   gamma ** (b - delta),
+                                'gAinvT':    gamma_inv * A_inv.T,
+                                'Aac':       np.dot(matrix_power(A, 0 if np.isinf(a) else a-1).T, C.T),
+                                'Abc':       np.dot(matrix_power(A, b).T, C.T),
+                            }
+                        elif segment.direction == 'bw':
+                            self._cascade_params[dim_idx][p][m] = {
+                                'gamma_a': gamma ** (a - delta),
+                                'gamma_b': gamma ** (b - delta + 1),
+                                'gAT':     gamma * A.T,
+                                'Aac':     np.dot(matrix_power(A, a).T, C.T),
+                                'Abc':     np.dot(matrix_power(A, 0 if np.isinf(b) else b+1).T, C.T),
+                            }
+                        self._cascade_params[dim_idx][p][m]['N'] = A.shape[1]
+
+        # ------------------------------------------------------------------
         # Build _numdenom as a 3-D structure: _numdenom[dim_index][seg_index][alssm_index]
         #
         # Each leaf entry is either None (numpy/jit backends, or inactive grid
@@ -584,7 +639,7 @@ class RLSAlssm:
                         _xi_curr[i, :, n0:n1], q,
                         wrapped, segment,
                         _y[i], _sample_weights[i],
-                        beta_p, self._backend, self._filter_form, numdenom_pm,
+                        beta_p, self._backend, self._filter_form, numdenom_pm, self._cascade_params[dim_index][p][m]
                     )
 
         return xi_curr
@@ -689,7 +744,7 @@ class RLSAlssm:
                         xi_tmp, q,
                         wrapped_curr, segment,
                         xi_prev_slice, _sample_weights,
-                        beta_p, self._backend, self._filter_form, None,
+                        beta_p, self._backend, self._filter_form, None, None
                     )
 
                     # Write into the flat xi_curr at the correct strided positions.

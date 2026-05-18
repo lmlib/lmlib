@@ -19,11 +19,11 @@ def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sample_weig
 
 
 # xi1 lfilter cascade
-def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
+def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weights, beta, cascade_params=None):
     if direction == 'fw':
-        lfilter_forward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, sample_weights, beta)
+        lfilter_forward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, sample_weights, beta, cascade_params)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, sample_weights, beta)
+        lfilter_backward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, sample_weights, beta, cascade_params)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
@@ -61,7 +61,7 @@ def lfilter_cascade_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weight
 # transparent pass-through when lm.profiling.enable() has not been called
 # (overhead is a single bool check per call). See lmlib/utils/profiling.py.
 @profile
-def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights, beta):
+def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights, beta, cascade_params=None):
     """
     IIR forward calculation of xi
 
@@ -89,19 +89,32 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
     einsum_path : str (see RLSALssm)
     """
 
-    # gamma pre-calculation
-    gamma_inv = 1 / gamma
-    gamma_a = gamma ** (a - 1 - delta)
-    gamma_b = gamma ** (b - delta)
+    if cascade_params is not None:
+        # gamma pre-calculation
+        gamma_inv = cascade_params['gamma_inv']
+        gamma_a = cascade_params['gamma_a']
+        gamma_b = cascade_params['gamma_b']
 
-    # state space pre-calculation separated into matrix
-    A_inv = inv(A)
-    gAinvT = gamma_inv * A_inv.T
-    Aa = matrix_power(A, 0 if np.isinf(a) else a - 1)
-    Aac = np.dot(Aa.T, C.T)
-    Ab = matrix_power(A, b)
-    Abc = np.dot(Ab.T, C.T)
-    N = np.shape(A)[1]
+        # state space pre-calculation separated into matrix
+        gAinvT = cascade_params['gAinvT']
+        Aac = cascade_params['Aac']
+        Abc = cascade_params['Abc']
+        N = cascade_params['N']
+            
+    else:
+        # gamma pre-calculation
+        gamma_inv = 1 / gamma
+        gamma_a = gamma ** (a - 1 - delta)
+        gamma_b = gamma ** (b - delta)
+
+        # state space pre-calculation separated into matrix
+        A_inv = inv(A)
+        gAinvT = gamma_inv * A_inv.T
+        Aa = matrix_power(A, 0 if np.isinf(a) else a - 1)
+        Aac = np.dot(Aa.T, C.T)
+        Ab = matrix_power(A, b)
+        Abc = np.dot(Ab.T, C.T)
+        N = np.shape(A)[1]
 
     if not np.allclose(gAinvT, np.tril(gAinvT)):
         raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
@@ -148,7 +161,7 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
 # general backward cascade
 # @profile is intentional on this production function (see forward cascade comment above).
 @profile
-def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights, beta):
+def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights, beta, cascade_params=None):
     """-
     IIR backward calculation of xi
 
@@ -175,17 +188,30 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights
     beta : float, SE Segment weight
     einsum_path : str (see RLSALssm)
     """
-    # gamma pre-calculation
-    gamma_a = gamma ** (a - delta)
-    gamma_b = gamma ** (b - delta + 1)
 
-    # state space pre-calculation separated into scalar and matrix
-    gAT = gamma * A.T
-    Aa = matrix_power(A, a)
-    Aac = np.dot(Aa.T, C.T)
-    Ab = matrix_power(A, 0 if np.isinf(b) else b + 1)
-    Abc = np.dot(Ab.T, C.T)
-    N = np.shape(A)[1]
+    if cascade_params is not None:
+        # gamma pre-calculation
+        gamma_a = cascade_params['gamma_a']
+        gamma_b = cascade_params['gamma_b']
+
+        # state space pre-calculation separated into matrix
+        gAT = cascade_params['gAT']
+        Aac = cascade_params['Aac']
+        Abc = cascade_params['Abc']
+        N = cascade_params['N']
+            
+    else:
+        # gamma pre-calculation
+        gamma_a = gamma ** (a - delta)
+        gamma_b = gamma ** (b - delta + 1)
+
+        # state space pre-calculation separated into scalar and matrix
+        gAT = gamma * A.T
+        Aa = matrix_power(A, a)
+        Aac = np.dot(Aa.T, C.T)
+        Ab = matrix_power(A, 0 if np.isinf(b) else b + 1)
+        Abc = np.dot(Ab.T, C.T)
+        N = np.shape(A)[1]
 
     if not np.allclose(gAT, np.tril(gAT)):
         raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
