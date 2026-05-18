@@ -7,9 +7,9 @@ Text Recognition Ex.801
 import numpy as np
 import matplotlib.pyplot as plt
 import lmlib as lm
-# import lmlib_multivar_V_2_0_4 as lmmulti
 import copy
 import matplotlib
+import os
 
 # # import colorcet as cc
 #
@@ -83,9 +83,9 @@ import matplotlib
 # Y_nonoise = np.array(synthetic_image)[:, :, 3] * 1.0
 # Y_nonoise = Y_nonoise / np.nanmax(Y_nonoise)
 
-
-
-Y_nonoise = np.load('image_letters.npy')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+npy_file_letters = os.path.join(SCRIPT_DIR, "image_letters.npy")
+Y_nonoise = np.load(npy_file_letters)
 
 
 # Y_image_gaussian = np.copy(Y_nonoise)
@@ -98,7 +98,9 @@ Y_nonoise = np.load('image_letters.npy')
 #     Y_image_gaussian[i] = np.clip(Y_image_gaussian[i] + noise, 0, 1)
 
 # Y = Y_image_gaussian.copy()
-Y = np.load('image_letters_noise.npy')
+npy_file_letters_noise = os.path.join(SCRIPT_DIR, "image_letters_noise.npy")
+
+Y = np.load(npy_file_letters_noise)
 K1_REF = 55  # letter pixel position, x
 K2_REF = 47  # letter pixel position, y
 

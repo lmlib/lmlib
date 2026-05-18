@@ -13,8 +13,8 @@ lm.WARNING_NOT_STEADY_STATE = False
 
 n_exe = 2  # number of filter executions
 
-# setting all recursions to JIT backend default
-backends =  'numpy', 'jit', 'lfilter'
+backends =   ['numpy', 'lfilter' ]
+if lm.is_backend_available('jit'): backends.append('jit')
 color_codes = 'k', 'b', 'g'
 mspsecs_dict = {k: [] for k in backends}
 

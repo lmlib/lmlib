@@ -10,6 +10,7 @@ Middle Plot: `s` show the local time delay estimate of corresponding local polyn
 
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 import lmlib as lm
 from lmlib.utils import load_csv_mc
@@ -66,7 +67,9 @@ def poly_newton(alphaD, qD, alphaDD, qDD, x0, min_step):
     return cur_x
 
 
-y = load_csv_mc('shift_estimation_data.csv')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+csv_file = os.path.join(SCRIPT_DIR, "shift_estimation_data.csv")
+y = load_csv_mc(csv_file)
 true_shift = .52e-3  # seconds
 fs = 44100
 K = len(y)

@@ -12,9 +12,10 @@ from lmlib.utils.generator import gen_wgn, gen_rect
 K = 2100
 y = gen_rect(K, 570, 200) + gen_wgn(K, 0.01)
 
-cost = lm.CostSegment(lm.AlssmPoly(poly_degree=4),
-                      lm.Segment(0, 220, lm.BW, 500))
-cost_wide = lm.CostSegment(lm.AlssmPoly(poly_degree=4),
+pd=3
+cost = lm.CostSegment(lm.AlssmPoly(poly_degree=pd),
+                      lm.Segment(0, 200, lm.BW, 500))
+cost_wide = lm.CostSegment(lm.AlssmPoly(poly_degree=pd),
                            lm.Segment(0 - 20, 220 + 20, lm.BW, 500))
 
 rls = lm.RLSAlssm(cost) 

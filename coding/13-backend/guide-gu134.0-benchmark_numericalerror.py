@@ -148,7 +148,7 @@ else:
 # Parallel Form Implementation
 execute_parallel=True
 if execute_parallel:
-    rls_parallel = lm.RLSAlssm(cost, calc_kappa=False, backend='lfilter', filter_form='parallel', show_pzinstruction=False)
+    rls_parallel = lm.RLSAlssm(cost, calc_kappa=False, backend='lfilter', filter_form='parallel')
     t0 = time.perf_counter()
     rls_parallel.filter(y)
     t_parallel = time.perf_counter() - t0
@@ -174,7 +174,7 @@ for n in range(alssm.N):
         (rls_directmatrix.xi, 'Direct Matrix'),
     ]
     if rls_parallel is not None:
-        tests.append((rls_parallel.xi, 'Parallel      '))
+        tests.append((rls_parallel.xi, 'Parallel     '))
     if rls_cascade is not None:
         tests.append((rls_cascade.xi, 'Cascade      '))
 
