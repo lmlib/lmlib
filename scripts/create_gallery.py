@@ -12,7 +12,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # Adjust paths
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).parent.parent
 DOC_DIR = BASE_DIR / "docs" 
 OUTPUT_DIR = DOC_DIR / "generated_galleries"
 

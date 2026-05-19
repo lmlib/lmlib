@@ -55,62 +55,55 @@ combinations and multiplications of those.
 
 The output sequence of an ALSSM is given, for an initial state $x_0$:
 
-$$
 \begin{equation}
-    s_k(x_0) = c A^kx_0,       
+  s_k(x_0) = c A^kx_0,       
 \end{equation}
 
-where 
+where $s_k(x_0)$ in $\mathbb{R}$
+is the output at time index $c$ in $\mathbb{R}^{1 times N}$ is the output vector
+$A$ in $\mathbb{R}^{N times N}$ is the state-transition matrix, 
+and $x_k = A^kx_0$ in $\mathbb{R}^N$
+is the state space vector (independent variable).
 
-\begin{equation}
-s_k(x_0) \in \mathbb{R} 
-\end{equation}
-
-is the output at time index  
-
-\begin{equation} 
-  c in bb{R}^{1 times N}
-\end{equation}
-
-is the output vector
-
-\begin{equation} 
-A in mathbb{R}^{N times N}
-\end{equation}
-
-is the state-transition matrix, and
-
-\begin{equation} 
-x_k = A^kx_0 in mathbb{R}^N
-\end{equation} 
-is the state space vector (independent variable);
-$$
 
 #### Application:
 
 We assume here that the signal can be approximated by a 3th order
 polynomial. Such a model corresponds to the following state-transition
-matrix and output vector: `\begin{equation}
-A = \begin{bmatrix}1 & 1 & 1 & 1\\ 0 & 1 & 2 & 3 \\ 0 & 0 & 1 & 3\\ 0 & 0 &0 &1\end{bmatrix}
-\end{equation}`{.interpreted-text role="raw-latex"}
+matrix and output vector: 
 
-and `\begin{equation}
-c=\begin{bmatrix}1 & 0 & 0 & 0\end{bmatrix}.
-\end{equation}`{.interpreted-text role="raw-latex"}
+\begin{equation}
+  A =
+  \begin{bmatrix} 
+    1 & 1 & 1 & 1\\ 
+    0 & 1 & 2 & 3\\ 
+    0 & 0 & 1 & 3\\ 
+    0 & 0 & 0 & 1 
+  \end{bmatrix}
+\end{equation}
+
+and 
+
+\begin{equation}
+  c =
+  \begin{bmatrix}
+    1 & 0 & 0 & 0
+  \end{bmatrix}
+\end{equation}
 
 Using the lmlib library, this can be simply generated with the following
 
-``` ipython3
+```python
 alssm_poly = lm.AlssmPoly(poly_degree=1)
 alssm_poly.update() ## still needed?
 print(alssm_poly)
 ```
 
-<!-->
+<!--
 ::: parsed-literal
 AlssmPoly(A=\[\[1,1\],\[0,1\]\], C=\[1,0\], label=n/a)
 :::
-<!-->
+-->
 
 ### 3. Setting up segments and defining the window shape
 
@@ -132,7 +125,7 @@ Let us generate two segments - a left-sided segment where the window
 weight lower as we go lef, and a right-sided segment where the window
 weight lowe as we go right.
 
-``` ipython3
+```python
 a = -300
 b = 300
 segment_left = lm.Segment(a=a, b=0, direction=lm.FORWARD, g=20)
@@ -141,17 +134,17 @@ segment_right = lm.Segment(a=1, b=b, direction=lm.BACKWARD, g=20)
 
 #### Visualization of the window shape
 
-``` ipython3
+```python
 # choice of the reference time indices (for visualization purposes only):
 k0 = [10000, 11000]
 ```
 
-``` ipython3
+```python
 # define the window shape at these time indices
 win_lr= lm.map_windows([segment_left.window(), segment_right.window()], k0, K, merge_ks=True)
 ```
 
-``` ipython3
+```python
 # plotting segments and signal
 _, axs = plt.subplots(2, 1, sharex='all')
 axs[0].plot(k, win_lr[0], label="left-sided segment")
@@ -174,14 +167,15 @@ instance, if we have data that we would like to represent with a
 combination of 2 models (M1, M2) over 3 segments (left, middle, right).
 Assuming that the left and right segments can be modeled with M1, while
 the middle segment is a composite model made of M1 and M2, the mapping
-matrix will have this shape: `\begin{equation}
-F = \begin{bmatrix} 0 & 1 \\ 1 & 1 \\ 0 & 1 \end{bmatrix} \ ,
-\end{equation}`{.interpreted-text role="raw-latex"} where the columns
-refer to the models and the row to the segments.
+matrix will have this shape: 
+\begin{equation}
+  F = \begin{bmatrix} 0 & 1 \\ 1 & 1 \\ 0 & 1 \end{bmatrix} \ ,
+\end{equation}
+where the columns refer to the models and the row to the segments.
 
 In our case, we assign the same model to both segment, as follows:
 
-``` ipython3
+```python
 F = [[1, 1]]
 ```
 
@@ -197,18 +191,20 @@ The cost function is obtained by computing the squared error between the
 model output ($s_{j-k}(x_k)$) and the signal, over the window
 ($w_{j-k}$) defined over the segment boundaries (a,b):
 
-`\begin{equation}
-    J_a^b(k,x_k) = \sum_{j=k+a}^{k+b} w_{j-k}(y_j - cA^{j-k}x_k)^2,
-\end{equation}`{.interpreted-text role="raw-latex"} where `x_k` is the
+\begin{equation}
+  J_a^b(k,x_k) = \sum_{j=k+a}^{k+b} w_{j-k}(y_j - cA^{j-k}x_k)^2,
+\end{equation}
+where `x_k` is the
 state vector containg the parameters that need to be tuned to minimize
 the cost function. The value of this state vector can be different for
 every time index k.
 
 This cost function is for one segment only. In case of multiple
 segments, we define the *composite cost*, where `p` runs over the number
-of segments: `\begin{equation}
-    J_P(k, x_k) = \sum_{p=1}^P J_{a_p}^{b_p} (k,x_k).
-\end{equation}`{.interpreted-text role="raw-latex"}
+of segments: 
+\begin{equation}
+  J_P(k, x_k) = \sum_{p=1}^P J_{a_p}^{b_p} (k,x_k).
+\end{equation}
 
 Within the lmlib library, setting up the cost function is done in two
 steps. We first define the part that contain all the model and window
@@ -219,13 +215,13 @@ signal itself.
 The model and window parameters can be called in the method
 CompositeCost:
 
-``` ipython3
+```python
 cost = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F)
 print(cost)
 ```
 
 
-<!-->
+<!--
 ::: parsed-literal
 
 CompositeCost(label=n/a)
@@ -235,7 +231,7 @@ CompositeCost(label=n/a)
     label=n/a)\', \'Segment(a=1, b=300, direction=bw, g=20, delta=0,
     label=n/a)\'\]
 :::
-<!-->
+-->
 
 As you can see by printing the output of this method, all the parameters
 chosen in our model are summarized in this variable.
@@ -246,7 +242,7 @@ and calling the method filter from the lmlib library. The method
 filter(y) stores internal variables that will be needed later on to
 minimize the cost function:
 
-``` ipython3
+```python
 rls = lm.RLSAlssm(cost)
 rls.filter(y)
 ```
@@ -259,16 +255,16 @@ cost function. These parameters form the initial state of the ALSSM
 
 Here we use the output of the filter method to find the optimal $x_0$,
 whose parameters minimize the cost function. This is done by using e.g.,
-minimize_x().
+`minimize_x()`.
 
-``` ipython3
+```python
 xs = rls.minimize_x()
 ```
 
 #### Visualize the result of the fit
 
-``` ipython3
-#plot the trajectories at specific time indices
+```python
+# plot the trajectories at specific time indices
 trajs = lm.map_trajectories(cost.trajectories(xs[k0]), k0, K, True, True)
 _, axs = plt.subplots(1, 1, sharex='all')
 axs.plot(k, y, c='grey', lw=0.3, label="data")
@@ -284,7 +280,7 @@ plt.show()
 -->
 
 
-``` ipython3
+```python
 #plot the full estimate
 _, axs = plt.subplots(1, 1, sharex='all')
 axs.plot(k, y, c='grey', lw=0.3, label="data")

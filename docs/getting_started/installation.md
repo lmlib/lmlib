@@ -44,11 +44,3 @@ conda install pip
 ``` console
 /anaconda/envs/venv/bin/pip install lmlib
 ```
-
-## Documentation Generation
-
-Dependency install:
-
-``` console
-pip install /doc/requirements.txt
-```

@@ -28,3 +28,27 @@ Direct Links to:
 Installation via:
 * **pip (dev-mode): ```pip install -e lmlib ```**
 * **[Git Workflow Guide](https://nvie.com/posts/a-successful-git-branching-model/)**
+
+
+## How to build documenation
+```bash
+python3.14 -m venv venv
+```
+```bash
+source venv/bin/activate
+```
+```bash
+pip install -r requirements.txt
+```
+* create gallery
+```bash
+python scripts/create_gallery.py
+```
+* build doc
+```bash
+mkdocs build -c
+```
+* livereload
+```bash
+mkdocs serve --livereload -c
+```
