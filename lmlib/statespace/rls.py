@@ -788,7 +788,8 @@ class RLSAlssm:
         r"""
         Defines the recursion to calculate the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for a given :math:`q \in \{0,1,2\}` based on an input signal :math:`y`.
 
-        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
+        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. 
+        They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
         We iterate over each individual ALSSM m within every segment p and write the result into the appropriate sub-slice of xi_curr.  
         Because A is block-diagonal, the blocks are independent and can be computed separately. 
         Each ALSSM m is wrapped in a single-element AlssmSum with weight F[m,p] so that:
@@ -946,7 +947,8 @@ class RLSAlssm:
         r"""
         Defines the recursion for one additional dimension to calculate the ALSSM cost parameters :math:`\xi^{(q)*}(k,y)` for a given :math:`q \in \{0,1,2\}` based on an input signal :math:`y`.
 
-        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
+        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. 
+        They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
         This function subdivides the calculation into cost segments (for-loop). The same per-ALSSM decomposition as _nd_xi_q_recursion is applied:
         each ALSSM m in the CompositeCost for this dimension is processed independently, writing into the corresponding sub-slice of xi_curr.
 
