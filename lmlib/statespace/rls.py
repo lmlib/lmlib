@@ -838,7 +838,17 @@ class RLSAlssm:
             :math:`N_l` is the model order of the sub-cost for ``model_dimension``.
         """
 
-        sub_cost = self._cost_terms._get_sub_cost_term(model_dimension)
+        # Normalise to CompositeCost so we always have .alssms, .segments, .F
+        sub_cost = _as_composite_cost(
+            self._cost_terms._get_sub_cost_term(model_dimension)
+        )
+
+        # dim_index: position of this dimension inside _numdenom.
+        # For NDCompositeCost each dimension has its own slot.
+        # For CompositeCost/CostSegment there is exactly one slot (index 0)
+        # regardless of which model_dimension axis is being processed.
+        dim_index = model_dimension if isinstance(self._cost_terms, NDCompositeCost) else 0
+        
         N = sub_cost.get_alssm_order()
         *Ks, Q = np.shape(y)
         xi_curr = np.zeros((*Ks, N ** q), order='F')  # last dimension is the nd-model-order
