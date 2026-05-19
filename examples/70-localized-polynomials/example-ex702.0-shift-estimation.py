@@ -10,6 +10,7 @@ Middle Plot: `s` show the local time delay estimate of corresponding local polyn
 
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 import lmlib as lm
 from lmlib.utils import load_csv_mc
@@ -66,7 +67,9 @@ def poly_newton(alphaD, qD, alphaDD, qDD, x0, min_step):
     return cur_x
 
 
-y = load_csv_mc('shift_estimation_data.csv')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+csv_file = os.path.join(SCRIPT_DIR, "shift_estimation_data.csv")
+y = load_csv_mc(csv_file)
 true_shift = .52e-3  # seconds
 fs = 44100
 K = len(y)
@@ -80,7 +83,8 @@ segment_left = lm.Segment(a=-80, b=-1, direction=lm.FW, g=600)
 segment_right = lm.Segment(a=0, b=80 - 1, direction=lm.BW, g=600)
 cost = lm.CompositeCost([alssm], [segment_left, segment_right], F=[[1, 1]])
 rls = lm.RLSAlssm(cost)
-xs = rls.filter_minimize_x(y)
+rls.filter(y)
+xs = rls.minimize_x()
 
 # boundaries cost function
 a = segment_left.a * 0.8
@@ -136,7 +140,7 @@ for k0 in range(K):
 # -------- plot ------------
 
 ks = [2997]  # index of trajectories
-trajs = lm.map_trajectories(cost.trajectories(xs[ks]), ks, K, True, True)
+trajs = lm.Trajectory.eval_y(cost, xs[ks], ks, K)
 
 fig, (ax1, ax2, ax3) = plt.subplots(3, sharex='all')
 ax1.plot(y[:, 0], '-', c=(0.3,) * 3, lw=.8, label='L')
@@ -152,9 +156,9 @@ if False:  # plotting of shift-corrected signals
     print(np.median(shifts_hat), np.median(shifts_hat) / fs)
     k_corr_ch1 = np.clip(np.arange(K) - int(np.median(shifts_hat) / 2), 0, K - 1)
     k_corr_ch2 = np.clip(np.arange(K) + int(np.median(shifts_hat) / 2), 0, K - 1)
-    ax11.plot(y[k_corr_ch1, 0], c='b', ls='--', lw=1, label='# 1')
-    ax11.plot(y[k_corr_ch2, 1], c='r', ls='--', lw=1, label='# 2')
-    ax11.legend(loc=1, fontsize=8)
+    ax1.plot(y[k_corr_ch1, 0], c='b', ls='--', lw=1, label='# 1')
+    ax1.plot(y[k_corr_ch2, 1], c='r', ls='--', lw=1, label='# 2')
+    ax1.legend(loc=1, fontsize=8)
 
 ax2.axhline(-true_shift * 1000, c='k', ls='--', lw=0.8, label='expected shift')
 ax2.plot(shifts_hat / fs * 1000, c='gray', lw=0.5, label=r'shift est. $\hat{s}_k$')
@@ -166,6 +170,6 @@ ax2.set_ylim(-0.7, 0.1)
 ax3.plot(Js, c='gray', lw=0.5, label=r'$J(\hat{s}_k)$')
 ax3.plot(Js_MA, c='blue', lw=0.75, label=r'$J(\bar{s}_k)$')
 ax3.legend(loc=1, fontsize=8)
-ax3.set_xlabel(f'k')
+ax3.set_xlabel('k')
 ax3.set(ylabel='SE fit error')
 plt.show()

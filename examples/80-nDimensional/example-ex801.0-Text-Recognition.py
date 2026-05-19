@@ -7,14 +7,9 @@ Text Recognition Ex.801
 import numpy as np
 import matplotlib.pyplot as plt
 import lmlib as lm
-# import lmlib_multivar_V_2_0_4 as lmmulti
 import copy
 import matplotlib
-from PIL import Image, ImageDraw, ImageFont
-import random
-from lmlib.statespace.backend import get_backend, BACKEND_TYPES, available_backends
-
-from lmlib import RLSAlssm
+import os
 
 # # import colorcet as cc
 #
@@ -88,9 +83,9 @@ from lmlib import RLSAlssm
 # Y_nonoise = np.array(synthetic_image)[:, :, 3] * 1.0
 # Y_nonoise = Y_nonoise / np.nanmax(Y_nonoise)
 
-
-
-Y_nonoise = np.load('image_letters.npy')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+npy_file_letters = os.path.join(SCRIPT_DIR, "image_letters.npy")
+Y_nonoise = np.load(npy_file_letters)
 
 
 # Y_image_gaussian = np.copy(Y_nonoise)
@@ -103,7 +98,9 @@ Y_nonoise = np.load('image_letters.npy')
 #     Y_image_gaussian[i] = np.clip(Y_image_gaussian[i] + noise, 0, 1)
 
 # Y = Y_image_gaussian.copy()
-Y = np.load('image_letters_noise.npy')
+npy_file_letters_noise = os.path.join(SCRIPT_DIR, "image_letters_noise.npy")
+
+Y = np.load(npy_file_letters_noise)
 K1_REF = 55  # letter pixel position, x
 K2_REF = 47  # letter pixel position, y
 
@@ -122,11 +119,12 @@ segment_right = lm.Segment(a=0, b=l_side, direction=lm.BW, g=g)
 F = [[1, 0],  # mixing matrix, turning on and off models per segment (1=on, 0=off)
      [0, 1]]
 
-# filter signal in first dimension
-cost = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
-
-nd_cost = lm.NDCompositeCost([cost, cost])
-nd_rls = lm.RLSAlssm(nd_cost, steady_state=True, backend='numpy')
+# filter signal 
+cost_d1 = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
+cost_d2 = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
+nd_cost = lm.NDCompositeCost([cost_d1, cost_d2])
+#nd_rls = lm.RLSAlssm(nd_cost, steady_state=True)
+nd_rls = lm.RLSAlssm(nd_cost, steady_state=True, backend='lfilter')
 nd_rls.filter(Y)
 
 xs_H1 = nd_rls.minimize_x()
@@ -142,15 +140,14 @@ H_A[0, 0] = 1
 h_A = xs_ref.copy()
 h_A[0] = 0
 xs_H2 = nd_rls.minimize_x(H_A, h_A)
-J_A = nd_rls.eval_errors(xs_H2)  # get SE (squared error) for hypothesi# s 1
+J_A = nd_rls.eval_errors(xs_H2)  # get SE (squared error) for hypothesis 1
 cr = J_B / J_A
 
 
 # ------------ Plotting -------------------------------
-plot_ref = True
+plot_ref = False
 if plot_ref:
-
-    mappedtraj = nd_cost.two_dim_map_trajectory(nd_cost.two_dim_trajectory(xs_ref), k0=(K1_REF, K2_REF), Ks=(K1, K2))
+    mappedtraj = lm.Trajectory.eval_y(nd_cost, xs_ref, (K1_REF,K2_REF), (K1,K2))
 
     width, height = 40, 40 # image cut-outsize
 

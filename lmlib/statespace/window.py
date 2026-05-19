@@ -20,9 +20,14 @@ class Window:
         return out
 
     @staticmethod
-    def eval_y(cost, ks, K, merged_ks=True, merged_seg=True, segment_indices=None, thd=1e-6, fill_value=0):
+    def eval_y(cost, ks, K, merged_ks=True, merged_seg=True, segment_indices=None, thd=1e-6, fill_value=0.0):
 
         # return an empty array if ks is empty
+        
+        
+        if np.ndim(ks) == 0:
+            ks = np.array([int(ks)])
+        
         if len(ks) == 0:
             print('Warning: ks is empty. Returned empty array of size K.')
             return np.full(K, fill_value=fill_value)
