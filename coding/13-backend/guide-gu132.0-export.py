@@ -101,7 +101,7 @@ def filter_direct_form(q_a, q_b, p, gamma, shift_a, shift_b):
         return out
 
     FIR_b = shift_signal(FIR_filter(q_b, y * gamma**shift_b), shift_b)
-    FIR_a = shift_signal(FIR_filter(q_a, y * gamma**shift_a), shift_b)
+    FIR_a = shift_signal(FIR_filter(q_a, y * gamma**shift_a), shift_a)
     FIR_diff = FIR_b - FIR_a
     xi = IIR_filter(p, FIR_diff)
     return xi

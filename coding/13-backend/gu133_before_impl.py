@@ -1,10 +1,10 @@
 """
-Baseline ("before") implementations used by the ex133 benchmark notebooks.
+Baseline ("before") implementations used by the gu133 benchmark notebooks.
 
 **``nd_xi_q_recursion``** — before state for the RLS pipeline:
     Production code from Christof's develop branch with the *only* difference
     being that ``xi_curr`` is allocated in default C-order instead of F-order.
-    Used in ex133.3 (full-pipeline before/after benchmark) by monkey-patching
+    Used in gu133.3 (full-pipeline before/after benchmark) by monkey-patching
     it onto ``lm.RLSAlssm._nd_xi_q_recursion``.
 
 **``lfilter_forward_cascade_xi`` / ``lfilter_backward_cascade_xi``** — before
@@ -13,11 +13,11 @@ Baseline ("before") implementations used by the ex133 benchmark notebooks.
     ``xi0 = np.zeros_like(xi)`` (C-order, same shape as ``xi``) instead of the
     F-order ``(K + K_append, N)`` buffer introduced by Christof.  Used by:
 
-    * ex133.0 — line-by-line profiling baseline (``inspect.getsource()`` must work)
-    * ex133.1 — N=2 before/after cascade benchmark (called via ``variant_before``)
-    * ex133.2 — multi-N before/after cascade benchmark (called via ``make_variants``)
+    * gu133.0 — line-by-line profiling baseline (``inspect.getsource()`` must work)
+    * gu133.1 — N=2 before/after cascade benchmark (called via ``variant_before``)
+    * gu133.2 — multi-N before/after cascade benchmark (called via ``make_variants``)
 
-    In ex133.3 only ``nd_xi_q_recursion`` is monkey-patched; the cascade functions
+    In gu133.3 only ``nd_xi_q_recursion`` is monkey-patched; the cascade functions
     there always use the current production versions.
 
 Kept as a standalone module so that ``inspect.getsource()`` works correctly
@@ -106,7 +106,7 @@ def lfilter_backward_cascade_xi(xi, A, C, a, b, delta, gamma, y, v, beta):
 def nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
     """Before: xi_curr allocated in default C-order (no order='F').
     This is the production code from Christof's develop branch minus the
-    order='F' change — used to isolate that change's effect in ex133.3.
+    order='F' change — used to isolate that change's effect in gu133.3.
     """
     sub_cost = _as_composite_cost(
         self._cost_terms._get_sub_cost_term(model_dimension)
