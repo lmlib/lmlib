@@ -5,7 +5,7 @@ processing library lmlib.
 
 To start, [install lmlib](installation.md) .
 
-``` ipython3
+``` python
 import numpy as np
 import matplotlib.pyplot as plt
 import lmlib as lm
@@ -30,7 +30,7 @@ We use an exemplary electrocardiogram (ECG) signal, provided by lmlib;
 the function `load_lib_csv` returns such an ECG sniped in a
 1-dimensional numpy array.
 
-``` ipython3
+``` python
 y = load_lib_csv('EECG_FILT_1CH_10S_FS2400HZ.csv')
 K = len(y)  # read number of samples
 k = np.arange(K)  # generate discrete-time index array
@@ -55,23 +55,36 @@ combinations and multiplications of those.
 
 The output sequence of an ALSSM is given, for an initial state $x_0$:
 
-`\begin{equation*}
-    s_k(x_0) = c A^kx_0 \ ,       
-\end{equation*}`{.interpreted-text role="raw-latex"}
+$$
+\begin{equation}
+    s_k(x_0) = c A^kx_0,       
+\end{equation}
 
-where `` \begin{equation}
+where 
+
+\begin{equation}
 s_k(x_0) \in \mathbb{R} 
-\end{equation}`is the output at time index  ``{.interpreted-text
-role="raw-latex"}[k]{.title-ref}\`;
+\end{equation}
 
-:raw-latex:\`begin{equation} c in mathbb{R}\^{1 times N}
-end{equation}\`is the output vector;
+is the output at time index  
 
-:raw-latex:\`begin{equation} A in mathbb{R}\^{N times N}
-end{equation}\`is the state-transition matrix, and
+\begin{equation} 
+  c in bb{R}^{1 times N}
+\end{equation}
 
-:raw-latex:\`begin{equation} x_k = A\^kx_0 in mathbb{R}\^N
-end{equation}\`is the state space vector (independent variable);
+is the output vector
+
+\begin{equation} 
+A in mathbb{R}^{N times N}
+\end{equation}
+
+is the state-transition matrix, and
+
+\begin{equation} 
+x_k = A^kx_0 in mathbb{R}^N
+\end{equation} 
+is the state space vector (independent variable);
+$$
 
 #### Application:
 

@@ -939,34 +939,38 @@ class AlssmProd(ModelBase):
     r"""
     Joins multiple ALSSMs generating the output product.
 
-    Creating a joined ALSSM generating the product of all output signals of :math:`M` ALSSMs, e.g., on the example of :math:`M=2`,
+    Creating a joined ALSSM generating the product of all output signals of $M$ ALSSMs, e.g., on the example of $M = 2$,
 
-    .. math::
+    $$
+    \begin{aligned}
+    \tilde{s}_k (\tilde{x}) = s_k^{(1)}(x_1) \cdot s_k^{(2)}(x_2) &= (C_1 A_1^k x_1)(C_2 A_2^k x_2)\\
+    &= (C_1 A_1^k x_1) \otimes (C_2 A_2^k x_2)\\
+    &= (C_1 \otimes C_2) (A_1^k \otimes A_2^k) (x_1 \otimes  x_2) \ ,
+    \end{aligned}
+    $$
 
-         \tilde{s}_k (\tilde{x}) = s_k^{(1)}(x_1) \cdot s_k^{(2)}(x_2) &= (C_1 A_1^k x_1)(C_2 A_2^k x_2)\\
-         &= (C_1 A_1^k x_1) \otimes (C_2 A_2^k x_2)\\
-         &= (C_1 \otimes C_2) (A_1^k \otimes A_2^k) (x_1 \otimes  x_2) \ ,
+    where $s_k^{(1)}(x_1) = C_1 A_1^k x_1$ is the first and $s_k^{(2)}(x_2) = C_2 A_2^k x_2$ the second ALSSM.
 
-    where :math:`s_k^{(1)}(x_1) = C_1 A_1^k x_1` is the first and :math:`s_k^{(2)}(x_2) = C_2 A_2^k x_2` the second ALSSM.
-
-    For more details, see also [Zalmai2017]_ [Proposition 2],  [Wildhaber2019]_ [Eq. 4.21].
+    For more details, see also [Zalmai2017](../bibliography.md#zalmai2017) [Proposition 2], [Wildhaber2019](../bibliography.md#wildhaber2019) [Eq. 4.21].
 
 
     Parameters
     ----------
-    alssms : tuple of shape=(M) of :class:`Alssm`
+    alssms : tuple of shape=(M) of [`Alssm`](lmlib.statespace.model.Alssm)
         Set of `M` autonomous linear state space models.
-        All ALSSMs need to have the same number of output channels, see :meth:`Alssm.output_count`
-    deltas: list of shape=(M) of floats, optional
+        All ALSSMs need to have the same number of output channels, 
+        see [`Alssm.output_count`](lmlib.statespace.model.Alssm.output_count).
+    lambdas : list of shape=(M) of floats, optional
         List of `M` scalar factors for each output matrix of the ALSSM in `alssms`.
-        (default: deltas = None, i.e., all scalars are set to 1)
+        (default: `lamdas = None`, i.e., all scalars are set to 1).
     **kwargs
-        Forwarded to :class:`.ModelBase`
+        Forwarded to [`ModelBase`](lmlib.statespace.model.ModelBase).
 
     Examples
     --------
     Multiply two ALSSMs
 
+    ```python
     >>> import lmlib as lm
     >>>
     >>> alssm_p = lm.AlssmPoly(poly_degree=2, label='poly')
@@ -982,7 +986,7 @@ class AlssmProd(ModelBase):
      [ 0.          0.          0.09588511  0.          0.          0.17551651]]
     C =
     [[1. 0. 0. 0. 0. 0.]]
-
+    ``` 
     """
 
     def __init__(self, alssms, lambdas=None, **kwargs):

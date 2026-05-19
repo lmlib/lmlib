@@ -50,8 +50,9 @@ def kron_sequence(arrays, sparse=False):
     r"""
     Kroneker product of a sequence of matrices
 
-    .. math::
-        B = A_0 \otimes A_1 \otimes A_2 \otimes A_3 \otimes \dots A_N
+    $$
+    B = A_0 \otimes A_1 \otimes A_2 \otimes A_3 \otimes \dots A_N
+    $$
 
     Parameters
     ----------
@@ -65,8 +66,9 @@ def kron_sequence(arrays, sparse=False):
     prod : array_like, int
         Kronecker product of sequence of matrices
 
-    Examples
-    --------
+    Example
+    -------
+    ```python
     >>> a1 = np.array([[2, 3, 4], [0, 1, 4]])
     >>> a2 = np.array([[9, 0], [1, 1]])
     >>> a3 = np.array([[0, 1, 2], [3, 4, 5], [6, 7, 8]])
@@ -84,6 +86,7 @@ def kron_sequence(arrays, sparse=False):
      [  0   0   0   0   0   0   0   1   2   0   1   2   0   4   8   0   4   8]
      [  0   0   0   0   0   0   3   4   5   3   4   5  12  16  20  12  16  20]
      [  0   0   0   0   0   0   6   7   8   6   7   8  24  28  32  24  28  32]]
+    ```
     """
 
     if len(arrays) == 0:
@@ -202,8 +205,6 @@ class _PolyBase(ABC):
         array([0.47925, 0.6035, 0.72775, 0.852])
 
         """
-
-
         _check_input_variables(variables, self.variable_count)
         variables = np.array([np.asarray(v, dtype=float) for v in variables])  # <-- fix
         out = np.empty_like(variables[0], dtype=float)
@@ -223,36 +224,38 @@ class _PolyBase(ABC):
 
 class MPoly(_PolyBase):
     r"""
-    Multivariate polynomials :math:`{\tilde{\alpha}}^\mathsf{T} (x^q \otimes y^r)`, or with *factorized* coefficient
-    vector  :math:`(\alpha \otimes \beta )^\mathsf{T} (x^q \otimes y^r)`.
+    Multivariate polynomials ${\tilde{\alpha}}^\mathsf{T} (x^q \otimes y^r)$, or with *factorized* coefficient
+    vector $(\alpha \otimes \beta )^\mathsf{T} (x^q \otimes y^r)$.
 
-    This polynomial class is for multivariate polynomials in vector exponent notation, see [Wildhaber2019]_, Chapter 6.
+    This polynomial class is for multivariate polynomials in vector exponent notation, 
+    see [Wildhaber2019](../bibliography.md#wildhaber2019), Chapter 6.
+
 
     Such a multivariate polynomial is in general given by
 
-    .. math::
+    $$
+    p(x) = \tilde{\alpha}^\mathsf{T}(x^q \otimes y^r) \ ,
+    $$
 
-        p(x) = \tilde{\alpha}^\mathsf{T}(x^q \otimes y^r) \ ,
-
-    where :math:`\tilde{\alpha} \in \mathbb{R}^{Q \times R}` is the coefficient vectors,
-    :math:`q \in \mathbb{Z}_{\geq 0}^Q` and :math:`r \in \mathbb{Z}_{\geq 0}^R` the exponent vectors,
-    and :math:`x \in \mathbb{R}` and :math:`y \in \mathbb{R}` the independent variables.
+    where $\tilde{\alpha} \in \mathbb{R}^{Q \times R}$ is the coefficient vectors,
+    $q \in \mathbb{Z}_{\geq 0}^Q$ and $r \in \mathbb{Z}_{\geq 0}^R$ the exponent vectors,
+    and $x \in \mathbb{R}$ and $y \in \mathbb{R}$ the independent variables.
 
     As a special case,
     if the coefficient vector is in the form of a Kronecker product, i.e.,
 
-    .. math::
+    $$
+    p(x) = (\alpha \otimes \beta)^\mathsf{T}(x^q \otimes y^r) \ ,
+    $$
 
-        p(x) = (\alpha \otimes \beta)^\mathsf{T}(x^q \otimes y^r) \ ,
-
-    where :math:`\alpha \in \mathbb{R}^Q` and :math:`\beta \in \mathbb{R}^R` are coefficient vectors,
+    where $\alpha \in \mathbb{R}^Q$ and $\beta \in \mathbb{R}^R$ are coefficient vectors,
     we denote a polynomial as **factorized**.
     This form often leads to algebraic simplifications (if it exists).
 
 
-    Examples
-    --------
-
+    Example
+    -------
+    ```python
     >>> # Bivariate (x,y) polynomial with factorized coefficients ([.2,.7],[-1.0,2.0,.1]) and terms x^1, x^2, y^1, y^2, y^3, and cross terms
     >>> l= MPoly(([.2,.7],[-1.0,2.0,.1]),([1,2],[1,2,3]))
     >>> l.coefs # gets coefficients
@@ -266,7 +269,7 @@ class MPoly(_PolyBase):
     >>> l= MPoly(([.2,.7,1.3,1.4,.2,-1.6],),([1,2],[1,2,3]))
     >>> l.eval([.3,.7])  # evaluating polynomial for x=.3 and y=.7
     array(0.326298)
-
+    ```
 
     Parameters
     ----------
@@ -278,9 +281,6 @@ class MPoly(_PolyBase):
     """
 
     def __init__(self, coefs, expos):
-        """
-        Constructor method
-        """
         coefs = tuple(np.asarray(coef) for coef in coefs)
         expos = tuple(np.asarray(expo) for expo in expos)
         super(MPoly, self).__init__(coefs, expos)
@@ -288,21 +288,26 @@ class MPoly(_PolyBase):
 
 class Poly(_PolyBase):
     r"""
-    Univariate polyonimial in vector exponent notation: :math:`\alpha^\mathsf{T} x^q`
+    Univariate polyonimial in vector exponent notation: $\alpha^\mathsf{T} x^q$
 
-    Polynomial class for uni-variate polynomials in vector exponent notation, [Wildhaber2019]_, see Chapter 6.
+    Polynomial class for uni-variate polynomials in vector exponent notation, 
+    [Wildhaber2019](../bibliography.md#wildhaber2019), see Chapter 6.
+
 
     Such a polynomial `p(x)` in `x` is defined as
 
-    .. math::
 
+    $$
+    \begin{aligned}
         p(x) &= \alpha^\mathsf{T}x^q = \begin{bmatrix}a_0& a_1& \cdots& a_{Q-1}\end{bmatrix}
              \begin{bmatrix}x^{q_0}\\ x^{q_1}\\ \vdots\\ x^{q_{Q-1}}\end{bmatrix}\\
              &= a_0 x^{q_0} + a_1 x^{q_1}+ \dots + a_{Q-1} x^{q_{Q-1}} \ ,
+    \end{aligned}
+    $$
 
-    with coefficient vector :math:`\alpha \in \mathbb{R}^Q`,
-    exponent vector :math:`q \in \mathbb{Z}_{\geq 0}^Q`,
-    and function variable :math:`x \in \mathbb{R}`.
+    with coefficient vector $\alpha \in \mathbb{R}^Q$,
+    exponent vector $q \in \mathbb{Z}_{\geq 0}^Q$,
+    and function variable $x \in \mathbb{R}$.
 
     Parameters
     ----------
@@ -311,11 +316,13 @@ class Poly(_PolyBase):
     expo : array_like, shape=(Q)
         Exponent vector
 
-    Examples
-    --------
+    Example
+    -------
+    ```python
     >>> import lmlib as lm
     >>> p = Poly([0, 0.2, 3], [0, 1, 2])
     >>> print(p)
+    ```
 
     """
 
@@ -363,26 +370,27 @@ class Poly(_PolyBase):
 
 
 def poly_sum(polys):
-    r""" :math:`\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}`
+    r""" 
+    $$
+    \alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}
+    $$
 
-    Sum of univariate polynomials ``Poly(alpha,q),... , Poly(beta,r)``, all of common variable *x*
-
-
+    Sum of univariate polynomials `Poly(alpha,q),... , Poly(beta,r)`, all of common variable *x*
 
     Parameters
     ----------
     polys : tuple of Poly
-        ``(Poly(alpha,q),... , Poly(beta,r))``, list of polynomials to be summed
+        `(Poly(alpha,q),... , Poly(beta,r))`, list of polynomials to be summed
 
 
     Returns
     -------
     out : Poly
-        ``Poly(alpha_tilde, q_tilde)``
+        `Poly(alpha_tilde, q_tilde)`
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.4)
+    [Wildhaber2019](../bibliography.md#wildhaber2019) (Eq. 6.4)
 
     """
     return Poly(poly_sum_coef(polys), poly_sum_expo([poly.expo for poly in polys]))
