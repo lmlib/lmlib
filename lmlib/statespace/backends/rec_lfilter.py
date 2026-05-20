@@ -269,7 +269,12 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
     # shift signal
     # insert the shifted signal: since b > a (by definition), the recursion starts with signal b only.
     if not np.isinf(a):
-        K_append  = b-a+1 #this is the length of the window
+        # K_append must satisfy two constraints:
+        #   1. The window width (b-a+1) sets the delay between the a- and b-boundary contributions.
+        #   2. The output extraction xi0[b:b+K] requires K_append >= b  (so that xi0 has b+K rows).
+        # When both a and b are positive (a > 0), constraint 2 is tighter than constraint 1.
+        window_width = b - a + 1
+        K_append = max(window_width, b + 1) if b >= 0 else window_width
     else:
         K_append = 0
     y_delayed_b = np.zeros((K + K_append, *y_weighted.shape[1:]))
@@ -277,9 +282,11 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
     y_diff = np.einsum('kl, nl->kn', y_delayed_b, gamma_b * Abc)
 
     if not np.isinf(a):
-        # insert the shifted signal: a is inserted after K_append (length of the window).
+        # The a-boundary signal is delayed by (b-a+1) positions relative to the b-boundary.
+        # This offset is always b-a+1 regardless of K_append (which may be larger).
+        a_offset = b - a + 1
         y_delayed_a = np.zeros((K + K_append, *y_weighted.shape[1:]))
-        y_delayed_a[K_append:] = y_weighted
+        y_delayed_a[a_offset:a_offset + K] = y_weighted
         y_diff -= np.einsum('kl, nl->kn', y_delayed_a, gamma_a * Aac)
 
     # iterating through ALSSM (xi) elements
