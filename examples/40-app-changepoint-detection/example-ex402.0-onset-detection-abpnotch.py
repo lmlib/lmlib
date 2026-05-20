@@ -139,8 +139,8 @@ _, axs = plt.subplots(2, 1, figsize=(5, 2.5), gridspec_kw={'height_ratios': [1.5
 nax = 0
 t = np.array(list(k)) / fs
 axs[nax].plot(t, y, lw=1.0, c='gray', label='$y$', zorder=0)
-axs[nax].plot(t, trajs_edge[0, :], c='k', lw=1.5, ls='-', zorder=1, label='$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
-axs[nax].plot(t, trajs_edge[1, :], c='b', lw=1.5, ls='-', zorder=1, label='$\overleftarrow{s}_{i-k}(\hat x_r)$')
+axs[nax].plot(t, trajs_edge[0, :], c='k', lw=1.5, ls='-', zorder=1, label=r'$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
+axs[nax].plot(t, trajs_edge[1, :], c='b', lw=1.5, ls='-', zorder=1, label=r'$\overleftarrow{s}_{i-k}(\hat x_r)$')
 axs[nax].scatter(peaks[0] / fs, x_hat_H1[peaks[0], 0], marker='.', c='k', s=20.0)
 
 # axs[nax].axhline(x=peaks, ymin=plt.ylim()[0], ymax=plt.ylim()[1])

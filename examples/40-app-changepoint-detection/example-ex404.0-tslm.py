@@ -23,7 +23,7 @@ H1s_Labels = ['"Horizontal""',           '"Straight"',         '"Horizontal"',  
 H1s        = [lm.TSLM.H_Horizontal,      lm.TSLM.H_Straight,   lm.TSLM.H_Horizontal, lm.TSLM.H_Horizontal,      lm.TSLM.H_Straight,  lm.TSLM.H_Straight]
 
 M = len(H0s_Labels)
-colors0 = plt.cm.get_cmap('tab20').colors[::2]
+colors0 = plt.colormaps['tab20'].colors[::2]
 
 a = -150
 b = 150

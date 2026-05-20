@@ -82,8 +82,8 @@ t = np.array(list(k)) / fs
 
 axs[nax].plot(t, y, lw=1.0, c='gray', label='$y$', zorder=0)
 if True:
-    axs[nax].plot(t, trajs_edge_A[0, :], c='k', lw=.75, ls='-', zorder=1, label='$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
-    axs[nax].plot(t, trajs_edge_A[1, :], c='b', lw=.75, ls='-', zorder=1, label='$\overleftarrow{s}_{i-k}(\hat x_r)$')
+    axs[nax].plot(t, trajs_edge_A[0, :], c='k', lw=.75, ls='-', zorder=1, label=r'$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
+    axs[nax].plot(t, trajs_edge_A[1, :], c='b', lw=.75, ls='-', zorder=1, label=r'$\overleftarrow{s}_{i-k}(\hat x_r)$')
     axs[nax].scatter(peaks_A[0] / fs, x_hat_H1_A[peaks_A[0], 0], marker='.', c='k', s=20.0)
 
 for xp in peaks_A / fs:
@@ -107,8 +107,8 @@ t = np.array(list(k)) / fs
 
 axs[nax].plot(t, y, lw=1.0, c='gray', label='$y$', zorder=0)
 if True:
-    axs[nax].plot(t, trajs_edge_B[0, :], c='k', lw=.75, ls='-', zorder=1, label='$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
-    axs[nax].plot(t, trajs_edge_B[1, :], c='b', lw=.75, ls='-', zorder=1, label='$\overleftarrow{s}_{i-k}(\hat x_r)$')
+    axs[nax].plot(t, trajs_edge_B[0, :], c='k', lw=.75, ls='-', zorder=1, label=r'$\overrightarrow{s}_{i-k}(\hat x_\ell)$')
+    axs[nax].plot(t, trajs_edge_B[1, :], c='b', lw=.75, ls='-', zorder=1, label=r'$\overleftarrow{s}_{i-k}(\hat x_r)$')
     axs[nax].scatter(peaks_B[1] / fs, x_hat_H1_B[peaks_B[1], 0], marker='.', c='k', s=20.0)
 
 for xp in peaks_B / fs:

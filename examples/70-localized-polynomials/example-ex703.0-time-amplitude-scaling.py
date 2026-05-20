@@ -53,9 +53,9 @@ ks_alpha = np.array([370])  # fixing template
 alssm = lm.AlssmPoly(poly_degree=Q - 1)
 segment_right = lm.Segment(a=-ab_half, b=ab_half, direction=lm.BW, g=50, delta=ab_half)
 cost = lm.CostSegment(alssm, segment_right)
-rls = lm.RLSAlssm(cost, backend="numpy")
+rls = lm.RLSAlssm(cost)
 rls.filter(y)
-xs = rls.minimize_x()
+xs = rls.minimize_x(solver='inv')
 
 # generate template
 dilate_factor = 1.456
@@ -63,9 +63,9 @@ amplitude_factor = 0.945
 y_template = amplitude_factor * np.column_stack(
     [np.interp(np.linspace(0, K, int(K * dilate_factor)), np.arange(K), y0) for y0 in y.T])
 
-rls_tmpl = lm.RLSAlssm(cost, backend="numpy")
+rls_tmpl = lm.RLSAlssm(cost)
 rls_tmpl.filter(y_template)
-xs_tmpl = rls_tmpl.minimize_x()
+xs_tmpl = rls_tmpl.minimize_x(solver='inv')
 alphas = xs_tmpl[(ks_alpha * dilate_factor).astype(int)]
 
 A, B, C, q, Mq = time_amplitude_scaling(Q, a=-ab_half, b=ab_half)
@@ -113,7 +113,7 @@ cost_ext = lm.CostSegment(alssm, segment_right)
 
 trajs_obs      = lm.Trajectory.eval_y(cost, xs[ks_alpha], ks_alpha, K)
 trajs_tmpl_hat = lm.Trajectory.eval_y(cost, alphas_hat, k_min, K)
-trajs_obs_ext  = lm.Trajectory.eval_y(cost, xs[ks_alpha], ks_alpha, K)
+trajs_obs_ext  = lm.Trajectory.eval_y(cost_ext, xs[ks_alpha], ks_alpha, K)
 
 k_tmpl, trajs_tmpl = zip(*lm.Trajectory.eval(cost, alphas, merged_ks=True,merged_seg=True))
 k_tmpl = np.array(k_tmpl[0])   # all ranges identical, take first

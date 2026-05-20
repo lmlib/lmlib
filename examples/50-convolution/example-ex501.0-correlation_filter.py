@@ -27,7 +27,7 @@ y_mc = np.outer(gen_rect(K, 500, 80) * .2, -gen_wgn(NOFCH, 1.0, seed=156789))  #
 a = -100  # length of shape to correlate with, i.e., uses samples {K_REF+a, ..., K_REF+b} as the correlation template
 b = 100
 pd = 4  # polynomial order (number of coefficients) 
-alssm = lm.AlssmPolyJordan(poly_degree=pd)
+alssm = lm.AlssmPolyLegendre(poly_degree=pd,a_seg=a,b_seg=b) #can also be lm.AlssmPolyJordan(poly_degree=pd)
 segment = lm.Segment(a=a, b=b, direction=lm.BACKWARD, g=400)
 cost = lm.CostSegment(alssm, segment)
 
