@@ -701,7 +701,7 @@ class AlssmPolyLegendre(ModelBase):
     """
 
     def __init__(self, poly_degree: int, a_seg: int = 0, b_seg: int = None,
-                 *, **kwargs):
+                 **kwargs):
         r"""
         Parameters
         ----------

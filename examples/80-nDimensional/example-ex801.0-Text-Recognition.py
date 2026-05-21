@@ -127,7 +127,7 @@ nd_cost = lm.NDCompositeCost([cost_d1, cost_d2])
 nd_rls = lm.RLSAlssm(nd_cost, steady_state=True, backend='lfilter')
 nd_rls.filter(Y)
 
-xs_H1 = nd_rls.minimize_x
+xs_H1 = nd_rls.minimize_x()
 xs_ref = xs_H1[K1_REF, K2_REF]  # store state variables as reference pulse shape
 J_B = nd_rls.eval_errors(xs_H1)
 
