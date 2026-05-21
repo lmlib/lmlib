@@ -87,7 +87,7 @@ nax = 0
 offsets = (np.arange(NOFCH, 0, -1) * .5)
 
 # Observation 
-axs[nax].set(xlabel='k', ylabel=r'$y$')
+axs[nax].set(xlabel='$k$', ylabel=r'$y$')
 axs[nax].plot(k, y_mc + offsets, c='b', lw=1, label=['$y$ (sample space)'] + [''] * (NOFCH - 1))
 axs[nax].plot(k, y_hat + offsets, c='k', linestyle="--", lw=1.2, label=[r'$\hat y$ (ALSSM space)'] + [''] * (NOFCH - 1))
 axs[nax].plot(k, template_trajectory + offsets, '-', c='tab:red', lw=2.0, label=['corr. template'] + [''] * (NOFCH - 1))

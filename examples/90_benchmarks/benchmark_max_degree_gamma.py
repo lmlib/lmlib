@@ -81,7 +81,7 @@ np.random.seed(0)
 for deg in DEGREES:
     row = f'{deg:4d}'
     for g_val in [None, 100, 30]:
-        alssm = lm.AlssmPolyLegendre(poly_degree=deg, window_size=W)
+        alssm = lm.AlssmPolyLegendre(poly_degree=deg, a_seg=0,b_seg=W-1)
         kw    = dict(g=g_val) if g_val else dict(g=None, gamma=1.0)
         seg   = lm.Segment(A_SEG, B_SEG, lm.BW, **kw)
         gamma = seg.gamma
@@ -115,7 +115,7 @@ for deg in DEGREES:
         if method == 'pascal':
             alssm = lm.AlssmPoly(poly_degree=deg)
         elif method == 'legendre':
-            alssm = lm.AlssmPolyLegendre(poly_degree=deg, window_size=W)
+            alssm = lm.AlssmPolyLegendre(poly_degree=deg, a_seg=0,b_seg=W-1)
         else:
             alssm = None  # scipy
 
@@ -217,7 +217,7 @@ for g_val, color, ls, lbl in [
 ]:
     rel_errs = []
     for deg in DEGREES:
-        alssm = lm.AlssmPolyLegendre(poly_degree=deg, window_size=W)
+        alssm = lm.AlssmPolyLegendre(poly_degree=deg, a_seg=0,b_seg=W-1)
         kw    = dict(g=g_val) if g_val else dict(g=None, gamma=1.0)
         seg   = lm.Segment(A_SEG, B_SEG, lm.BW, **kw)
         gamma = seg.gamma
