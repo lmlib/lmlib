@@ -1,12 +1,12 @@
 """
-run_all_examples.py
+run_all_guides.py
 ===================
 Recursively finds and executes every Python file under a given root folder,
 collects pass/fail results, and prints a summary.
 
 Usage
 -----
-    python run_all_examples.py <root_folder> [options]
+    python run_all_guides.py <root_folder> [options]
 
 Options
 -------
@@ -18,9 +18,9 @@ Options
 
 Examples
 --------
-    python run_all_examples.py ./examples
-    python run_all_examples.py ./examples --timeout 120 --ignore "*test*"
-    python run_all_examples.py ./examples --verbose
+    python run_all_guides.py ./coding
+    python run_all_guides.py ./coding --timeout 120 --ignore "*test*"
+    python run_all_guides.py ./coding --verbose
 """
 
 import argparse
@@ -140,11 +140,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="Recursively run all Python scripts in a folder and report results."
     )
-    parser.add_argument("root", nargs="?", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "examples"), help="Root folder to search (default: ../examples relative to this script)")
+    parser.add_argument("root", nargs="?", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "coding"), help="Root folder to search (default: ../coding relative to this script)")
     parser.add_argument("--no-save-figures", action="store_true",
                         help="Disable saving matplotlib figures as PNG files (saving is on by default)")
-    parser.add_argument("--timeout", type=int, default=120,
-                        help="Seconds before a script is killed (default: 120)")
+    parser.add_argument("--timeout", type=int, default=60,
+                        help="Seconds before a script is killed (default: 60)")
     parser.add_argument("--ignore", action="append", default=[],
                         metavar="GLOB",
                         help="Filename/path glob to skip (repeatable)")

@@ -26,7 +26,7 @@ k = range(K)
 a = -60  # length of shape to correlate with, i.e., uses samples {K_REF+a, ..., K_REF+b} as the correlation template
 b = 60
 pd = 4  # polynomial order (number of coefficients) 
-alssm = lm.AlssmPolyJordan(poly_degree=pd, label='Alssm')
+alssm = lm.AlssmPolyLegendre(poly_degree=pd, a_seg=a,b_seg=b) #can also be lm.AlssmPolyJordan(poly_degree=pd, label='Alssm')
 segment = lm.Segment(a=a, b=b, direction=lm.BACKWARD, g=400)
 cost = lm.CostSegment(alssm, segment)
 
@@ -87,9 +87,9 @@ nax = 0
 offsets = (np.arange(NOFCH, 0, -1) * .5)
 
 # Observation 
-axs[nax].set(xlabel='k', ylabel=r'$y$')
+axs[nax].set(xlabel='$k$', ylabel=r'$y$')
 axs[nax].plot(k, y_mc + offsets, c='b', lw=1, label=['$y$ (sample space)'] + [''] * (NOFCH - 1))
-axs[nax].plot(k, y_hat + offsets, c='k', linestyle="--", lw=1.2, label=['$\hat y$ (ALSSM space)'] + [''] * (NOFCH - 1))
+axs[nax].plot(k, y_hat + offsets, c='k', linestyle="--", lw=1.2, label=[r'$\hat y$ (ALSSM space)'] + [''] * (NOFCH - 1))
 axs[nax].plot(k, template_trajectory + offsets, '-', c='tab:red', lw=2.0, label=['corr. template'] + [''] * (NOFCH - 1))
 axs[nax].axvline(K_REF + a, color="black", linestyle="--", lw=0.5)
 axs[nax].axvline(K_REF + b, color="black", linestyle="--", lw=0.5)

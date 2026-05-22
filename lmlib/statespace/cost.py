@@ -247,12 +247,14 @@ class CostSegment(BaseCost, BaseCost1d):
     def get_alssm_output_dimension(self) -> int:
         return self.alssm.get_alssm_output_dimension()
 
-    def get_steady_state_W(self, dim_order=None, method='closed_form'):
+    def get_steady_state_W(self, dim_order=None, method='schur'):
         A, C = self.alssm.A, self.alssm.C
         gamma = self.segment.gamma
         a, b, delta = self.segment.a, self.segment.b, self.segment.delta
 
-        if method == 'closed_form':
+        if method == 'schur':
+            return covariance_matrix_schur(A, C, gamma, a, b, delta)
+        elif method == 'closed_form':
             return covariance_matrix_closed_form(A, C, gamma, a, b, delta)
         elif method == 'limited_sum':
             return covariance_matrix_limited_sum(A, C, gamma, a, b, delta)
@@ -464,7 +466,7 @@ class CompositeCost(BaseCost, BaseCost1d):
     def get_number_of_dimensions(self):
         return 1
 
-    def get_steady_state_W(self, dim_order=None, method='closed_form'):
+    def get_steady_state_W(self, dim_order=None, method='schur'):
         N = self.get_alssm_order()
         W = np.zeros((N, N))
 
@@ -530,7 +532,7 @@ class NDCompositeCost(BaseCost):
     def get_alssm_output_dimension(self):
         return self.cost_terms[0].get_alssm_output_dimension()
 
-    def get_steady_state_W(self, dim_order=None, method='closed_form'):
+    def get_steady_state_W(self, dim_order=None, method='schur'):
         if dim_order is None:
             dim_order = range(self.L)
 

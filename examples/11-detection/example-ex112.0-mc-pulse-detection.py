@@ -26,10 +26,6 @@ spike = gen_sine(spike_length, spike_length) * gen_exp(spike_length, spike_decay
 y_sp = gen_conv(gen_pulse(K, spike_locations), spike)
 y = np.column_stack([0.8 * y_sp + gen_wgn(K, sigma=0.2, seed=10000 - l) for l in range(L)]).reshape(K, L)
 
-# Model
-alssm_sp = lm.AlssmSin(k_period_to_omega(spike_length), spike_decay)
-alssm_bl = lm.AlssmPoly(poly_degree=3)
-
 # Segments
 g_bl = 500
 g_sp = 5000
@@ -38,6 +34,11 @@ len_bl = int(1.5 * spike_length)
 segment_left = lm.Segment(a=-len_bl, b=-1, direction=lm.FORWARD, g=g_bl, delta=-1)
 segment_middle = lm.Segment(a=0, b=len_sp, direction=lm.BACKWARD, g=g_sp)
 segment_right = lm.Segment(a=len_sp + 1, b=len_sp + 1 + len_bl, direction=lm.BACKWARD, g=g_bl, delta=len_sp)
+
+# Model
+alssm_sp = lm.AlssmSin(k_period_to_omega(spike_length), spike_decay)
+alssm_bl = lm.AlssmPolyLegendre(poly_degree=3,a_seg=-len_bl,b_seg=len_sp+len_bl+1)
+
 
 # Cost
 F = [[0, 1, 0],

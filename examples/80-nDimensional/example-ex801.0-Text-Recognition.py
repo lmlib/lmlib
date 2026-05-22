@@ -113,17 +113,17 @@ k2 = np.arange(K2)
 g = 100
 l_side = 35
 poly_degree = 2
-alssm_poly = lm.AlssmPolyJordan(poly_degree=poly_degree)
+alssm_poly_legendre_left = lm.AlssmPolyLegendre(poly_degree=poly_degree,a_seg=-l_side,b_seg=-1)
+alssm_poly_legendre_right = lm.AlssmPolyLegendre(poly_degree=poly_degree,a_seg=0,b_seg=l_side)
 segment_left = lm.Segment(a=-l_side, b=-1, direction=lm.FW, g=g)
 segment_right = lm.Segment(a=0, b=l_side, direction=lm.BW, g=g)
 F = [[1, 0],  # mixing matrix, turning on and off models per segment (1=on, 0=off)
      [0, 1]]
 
 # filter signal 
-cost_d1 = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
-cost_d2 = lm.CompositeCost([alssm_poly, alssm_poly], [segment_left, segment_right], F)
+cost_d1 = lm.CompositeCost([alssm_poly_legendre_left, alssm_poly_legendre_right], [segment_left, segment_right], F)
+cost_d2  = lm.CompositeCost([alssm_poly_legendre_left, alssm_poly_legendre_right], [segment_left, segment_right], F)
 nd_cost = lm.NDCompositeCost([cost_d1, cost_d2])
-#nd_rls = lm.RLSAlssm(nd_cost, steady_state=True)
 nd_rls = lm.RLSAlssm(nd_cost, steady_state=True, backend='lfilter')
 nd_rls.filter(Y)
 
@@ -131,18 +131,16 @@ xs_H1 = nd_rls.minimize_x()
 xs_ref = xs_H1[K1_REF, K2_REF]  # store state variables as reference pulse shape
 J_B = nd_rls.eval_errors(xs_H1)
 
-
 N = nd_cost.get_alssm_order()
 
 H_A = np.zeros((N, 1))
-H_A[0, 0] = 1
+H_A[0, 0] = 1 #allow fitting of coefficient 0 (offset)
 
-h_A = xs_ref.copy()
-h_A[0] = 0
+h_A = xs_ref.copy() #template
+h_A[0] = 0 #set offset of template to 0 (will be estimated by minimize_x)
 xs_H2 = nd_rls.minimize_x(H_A, h_A)
 J_A = nd_rls.eval_errors(xs_H2)  # get SE (squared error) for hypothesis 1
 cr = J_B / J_A
-
 
 # ------------ Plotting -------------------------------
 plot_ref = False

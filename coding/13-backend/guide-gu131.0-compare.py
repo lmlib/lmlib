@@ -2,7 +2,7 @@
 Benchmarking of Stace-Space vs. Transfer-Function Backend [gu131.0]
 ===================================================================
 
-This guide script demonstrates the usage of transfer-function (tf) backend in RLSAlssm* classes.
+This guide script demonstrates the usage of transfer-function (tf) backend in RLSAlssm* classes. Here we use 6 different channels instead of one.
 """
 import timeit
 import numpy as np
