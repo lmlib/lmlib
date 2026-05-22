@@ -271,7 +271,7 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
     if not np.isinf(a):
         # K_append must satisfy two constraints:
         #   1. The window width (b-a+1) sets the delay between the a- and b-boundary contributions.
-        #   2. The output extraction xi0[b:b+K] requires K_append >= b  (so that xi0 has b+K rows).
+        #   2. The output extraction xi_add[b:b+K] requires K_append >= b  (so that xi_add has b+K rows).
         # When both a and b are positive (a > 0), constraint 2 is tighter than constraint 1.
         window_width = b - a + 1
         K_append = max(window_width, b + 1) if b >= 0 else window_width
@@ -291,23 +291,26 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
 
     # iterating through ALSSM (xi) elements
     y_diff = np.swapaxes(y_diff, 0, 1)  # convenient for later indexing
-    xi0 = np.zeros((K + K_append, *xi.shape[1:]), order='F')
+    xi_add = np.zeros((K + K_append, *xi.shape[1:]), order='F')
     n_ = 0
-    xi0[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
+    xi_add[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
     for n_ in range(1, N):
-        y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi0[:-1], gAinvT[n_])
-        xi0[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
+        y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi_add[:-1], gAinvT[n_])
+        xi_add[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
+        
+    # SE weight for this cost segment 
+    if beta != 1:
+        xi_add *= beta    
+
     #xi needs to be correctly inserted. since the signal y_delayed_b had an actual delay of 0, 
     #we need to shift xi0 by b.
     if b >= 0:
-        xi += xi0[b:b+K]
+        xi += xi_add[b:b+K]
     #  if b < 0, first few elements of xi need to be 0 (both boundaries negative)
     if b < 0:
-        xi[-b:] += xi0[0:K+b]
+        xi[-b:] += xi_add[0:K+b]
 
-    # SE weight for this cost segment
-    if beta != 1:
-        xi *= beta
+
 
 # general backward cascade
 # @profile is intentional on this production function (see forward cascade comment above).
@@ -378,24 +381,26 @@ def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights
 
     # iterating through dimensions
     y_diff = np.swapaxes(y_diff, 0, 1)  # convenient for later indexing
-    xi0 = np.zeros((K + K_append, *xi.shape[1:]), order='F')
+    xi_add = np.zeros((K + K_append, *xi.shape[1:]), order='F')
     n_ = 0
-    xi0[:, n_] = lfilter([1, 0], [1, -gamma], y_diff[n_].T).T
+    xi_add[:, n_] = lfilter([1, 0], [1, -gamma], y_diff[n_].T).T
     for n_ in range(1, N):
-        y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi0[:-1], gAT[n_])
-        xi0[:, n_] = lfilter([1, 0], [1, -gamma], y_diff[n_].T).T
+        y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi_add[:-1], gAT[n_])
+        xi_add[:, n_] = lfilter([1, 0], [1, -gamma], y_diff[n_].T).T
+    
+    # SE weight for this cost segment
+    if beta != 1:
+        xi_add *= beta
     
     #xi needs to be correctly inserted. since the signal y_delayed_a had an actual delay of 0, 
     #we need to shift xi0 by a.
-    xi0_flipped = xi0[::-1]
+    xi0_flipped = xi_add[::-1]
     if a >= 0:
         xi[0:K-a] += xi0_flipped[-(K-a):]
     if a < 0:
         xi += xi0_flipped[b+1:K+b+1]
 
-    # SE weight for this cost segment
-    if beta != 1:
-        xi *= beta
+
 
 
 # xi2 lfilter parallel
@@ -720,13 +725,17 @@ def lfilter_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da
             iir = ib - ia
         else:
             iir = sosfilt(sos_iir, fb - fa)
+        
+        # SE weight for this cost segment
+        if beta != 1:
+            iir *= beta    
+            
         if b >= 0:
             xi[:, n_] += iir[b:b + K]
         else:
             xi[-b:, n_] += iir[0:K + b]
 
-    if beta != 1:
-        xi *= beta
+
 
 
 def lfilter_backward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
@@ -797,13 +806,14 @@ def lfilter_backward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, d
             iir = ia - ib
         else:
             iir = sosfilt(sos_iir, fa - fb)
+            
+        # SE weight for this cost segment
+        if beta != 1:
+            iir *= beta        
+            
         if a >= 0:
             end = K - a
             if end > 0:
                 xi[:end, n_] += iir[0:end][::-1]
         else:
             xi[:, n_] += iir[-a:K - a][::-1]
-
-    if beta != 1:
-        xi *= beta
-        

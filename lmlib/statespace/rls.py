@@ -128,7 +128,7 @@ class RLSAlssm:
     """
 
     def __init__(self, cost_terms, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=False, filter_form='cascade',
-                 backend=None, numdenom=None, steady_state_method='closed_form'):
+                 backend=None, numdenom=None, steady_state_method='schur'):
         self._cost_terms = cost_terms
         assert all(isinstance(_, bool) for _ in (steady_state, calc_W, calc_xi, calc_kappa, calc_nu)), \
             'steady_state, calc_W, calc_xi, calc_kappa and calc_nu must be boolean.'

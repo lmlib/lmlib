@@ -384,6 +384,7 @@ class CompositeCost(BaseCost, BaseCost1d):
 
         # set betas
         if betas is not None:
+            betas=np.array(betas)
             assert is_array_like(betas), 'betas is not array_like'
             assert betas.shape == (self.P,), f'betas has wrong shape, {info_str_found_shape(betas)}'
             for beta in betas:
@@ -471,7 +472,7 @@ class CompositeCost(BaseCost, BaseCost1d):
         W = np.zeros((N, N))
 
         for cost_segment in self:
-            W += cost_segment.get_steady_state_W(method=method)
+            W += cost_segment.get_steady_state_W(method=method) * cost_segment.beta
         return W
 
     def eval_alssm_output(self, xs, alssm_weights=None):

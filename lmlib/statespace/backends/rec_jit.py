@@ -64,10 +64,11 @@ def jit_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, AaccAa, Ab
             W0 += gamma_b * v[k + b] * AbccAb
 
         if 0 <= k <= K - 1:
-            W[k] += W0
-
-    if beta != 1:
-        W *= beta
+            if beta == 1:
+                W[k] += W0
+            else:
+                W[k] += W0 * beta
+    
 
 @jit(nopython=True)
 def jit_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, AaccAa, AbccAb, gamma_b):
@@ -89,10 +90,11 @@ def jit_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta, AaccAa, A
             W0 -= gamma_b * v[k + b + -1] * AbccAb
 
         if 2 <= k <= K + 1:
-            W[k-2] += W0
+            if beta == 1:
+                W[k-2] += W0
+            else:
+                W[k-2] += W0 * beta
 
-    if beta != 1:
-        W *= beta
 
 # xi1 recursions
 def jit_recursion_xi1(xi1, A, C, a, b, direction, delta, gamma, y, v, beta):
@@ -134,10 +136,11 @@ def jit_forward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Aa, gamm
             xi0 += gamma_b * v[k + b] * np.dot(Abc, y[k + b])
 
         if 0 <= k <= K - 1:
-            xi[k] += xi0
+            if beta == 1:
+                xi[k] += xi0
+            else:
+                xi[k] += xi0 * beta
 
-    if beta != 1:
-        xi *= beta
 
 @jit(nopython=True)
 def jit_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Ab, gamma_b):
@@ -164,10 +167,10 @@ def jit_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Ab, gam
             xi0 -= gamma_b * v[k + b + -1] * np.dot(Abc, y_slice)
 
         if 2 <= k <= K + 1:
-            xi[k - 2] += xi0
-
-    if beta != 1:
-        xi *= beta
+            if beta == 1:
+                xi[k - 2] += xi0
+            else:
+                xi[k - 2] += xi0 * beta
 
 
 # xi0 recursions
@@ -205,10 +208,12 @@ def jit_forward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, gamma_a):
             kappa0 += gamma_b * v[k + b] * np.dot(y_slice, y_slice)
 
         if 0 <= k <= K - 1:
-            kappa[k] += kappa0
+            if beta == 1:
+                kappa[k] += kappa0
+            else:
+                kappa[k] += kappa0 * beta
 
-    if beta != 1:
-        kappa *= beta
+
 
 @jit(nopython=True)
 def jit_backward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, gamma_b):
@@ -231,10 +236,12 @@ def jit_backward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta, gamma_b)
             kappa0 -= gamma_b * v[k + b + -1] * np.dot(y_slice, y_slice)
 
         if 2 <= k <= K + 1:
-            kappa[k - 2] += kappa0
+            if beta == 1:
+                kappa[k - 2] += kappa0
+            else:
+                kappa[k - 2] += kappa0 * beta
 
-    if beta != 1:
-        kappa *= beta
+
 
 
 # nu recursions
@@ -269,10 +276,11 @@ def jit_forward_recursion_nu(nu, a, b, delta, gamma, v, beta, gamma_a):
             nu0 += gamma_b * v[k + b]
 
         if 0 <= k <= K - 1:
-            nu[k] += nu0
+            if beta == 1:
+                nu[k] += nu0
+            else:
+                nu[k] += nu0 * beta
 
-    if beta != 1:
-        nu *= beta
 
 @jit(nopython=True)
 def jit_backward_recursion_nu(nu, a, b, delta, gamma, v, beta, gamma_b):
@@ -293,10 +301,9 @@ def jit_backward_recursion_nu(nu, a, b, delta, gamma, v, beta, gamma_b):
             nu0 -= gamma_b * v[k + b + -1]
 
         if 2 <= k <= K + 1:
-            nu[k - 2] += nu0
-
-    nu *= beta
-    if beta != 1:
-        nu *= beta
+            if beta == 1:
+                nu[k - 2] += nu
+            else:
+                nu[k - 2] += nu * beta
 
 

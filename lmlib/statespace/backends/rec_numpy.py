@@ -50,10 +50,10 @@ def numpy_forward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta):
             W0 += gamma_b * np.einsum('..., mn->...mn', v[k+b], AbccAb)
 
         if 0 <= k <= K - 1:
-            W[k] += W0
-
-    if beta != 1:
-        W *= beta
+            if beta == 1:
+                W[k] += W0
+            else:
+                W[k] += W0 * beta
 
 def numpy_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta):
     """Equation  (31)  in Wildhaber 2018"""
@@ -78,10 +78,11 @@ def numpy_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta):
             W0 -= gamma_b * np.einsum('..., mn->...mn', v[k+b+ -1], AbccAb)
 
         if 2 <= k <= K + 1:
-            W[k-2] += W0
-
-    if beta != 1:
-        W *= beta
+            if beta == 1:
+                W[k-2] += W0
+            else:
+                W[k-2] += W0 * beta
+                
 
 
 # xi1 recursions
@@ -123,10 +124,10 @@ def numpy_forward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
                                        )
 
         if 0 <= k <= K - 1:
-            xi[k] += xi0
-
-    if beta != 1:
-        xi *= beta
+            if beta == 1:
+                xi[k] += xi0
+            else:
+                xi[k] += xi0*beta
 
 def numpy_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
     """Equation  (32)  in Wildhaber 2018"""
@@ -158,10 +159,10 @@ def numpy_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta):
                                         )
 
         if 2 <= k <= K + 1:
-            xi[k - 2] += xi0
-
-    if beta != 1:
-        xi *= beta
+            if beta == 1:
+                xi[k - 2] += xi0
+            else:
+                xi[k - 2] += xi0 * beta
 
 
 # xi0 recursions
@@ -199,10 +200,11 @@ def numpy_forward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta):
                                            )
 
         if 0 <= k <= K - 1:
-            kappa[k] += kappa0
+            if beta == 1:
+                kappa[k] += kappa0
+            else:
+                kappa[k] += kappa0 * beta
 
-    if beta != 1:
-        kappa *= beta
 
 def numpy_backward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta):
     """Equation  (33)  in Wildhaber 2018"""
@@ -229,11 +231,10 @@ def numpy_backward_recursion_kappa(kappa, a, b, delta, gamma, y, v, beta):
                                           )
 
         if 2 <= k <= K + 1:
-            kappa[k - 2] += kappa0
-
-    if beta != 1:
-        kappa *= beta
-
+            if beta == 1:
+                kappa[k - 2] += kappa0
+            else:
+                kappa[k - 2] += kappa0 * beta
 
 # nu recursions
 def numpy_recursion_nu(nu, A, C, a, b, direction, delta, gamma, y, v, beta):
@@ -263,10 +264,10 @@ def numpy_forward_recursion_nu(nu, a, b, delta, gamma, v, beta):
             nu0 += gamma_b * v[k + b]
 
         if 0 <= k <= K - 1:
-            nu[k] += nu0
-
-    if beta != 1:
-        nu *= beta
+            if beta == 1:
+                nu[k] += nu0
+            else:
+                nu[k] += nu0 * beta
 
 def numpy_backward_recursion_nu(nu, a, b, delta, gamma, v, beta):
     """Equation  (34)  in Wildhaber 2018"""
@@ -287,11 +288,10 @@ def numpy_backward_recursion_nu(nu, a, b, delta, gamma, v, beta):
             nu0 -= gamma_b * v[k + b + -1]
 
         if 2 <= k <= K + 1:
-            nu[k - 2] += nu0
-
-    nu *= beta
-    if beta != 1:
-        nu *= beta
+            if beta == 1:
+                nu[k - 2] += nu0
+            else:
+                nu[k - 2] += nu0 * beta
 
 
 # xi asterisk l recursions
@@ -330,10 +330,10 @@ def numpy_xi_asterisk_l_forward_recursion(xi, A, C, a, b, delta, gamma, I_N, xi_
             _xi += np.einsum('mn,...n->...m', gIkcAbT, xi_N[k + b])
 
         if 0 <= k <= K - 1:
-            xi[k] += _xi
-
-    if beta != 1:
-        xi *= beta
+            if beta == 1:
+                xi[k] += _xi
+            else:
+                xi[k] += _xi * beta
 
 def numpy_xi_asterisk_l_backward_recursion(xi, A, C,  a, b, delta, gamma, I_N, xi_N, v, beta):
     gamma_a = gamma**(a - delta)
@@ -360,7 +360,7 @@ def numpy_xi_asterisk_l_backward_recursion(xi, A, C,  a, b, delta, gamma, I_N, x
             _xi -= np.einsum('mn,...n->...m', gIkcAbT , xi_N[k + b + -1])
 
         if 2 <= k <= K + 1:
-            xi[k-2] += _xi
-
-    if beta != 1:
-        xi *= beta
+            if beta == 1:
+                xi[k-2] += _xi
+            else:
+                xi[k-2] += _xi * beta
