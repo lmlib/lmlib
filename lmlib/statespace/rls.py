@@ -99,32 +99,82 @@ class RLSAlssm:
                               "cascade version can't be used. "
                               "Defaulting to filter_form='parallel'.")
 
-        # ------------------------------------------------------------------
-        # Build _cascade_params as a 3-D structure: _cascade_params[dim_index][seg_index][alssm_index]
-        #
-        # Each leaf entry is either None (numpy/jit backends, parallel filter form,
-        # or inactive grid node with f_mp==0) or a dict of precomputed scalars and
-        # matrices for the lfilter cascade backend. The dict keys depend on the
-        # segment direction:
-        #   fw: gamma_inv, gamma_a, gamma_b, gAinvT, Aac, Abc, N
-        #   bw: gamma_a, gamma_b, gAT, Aac, Abc, N
-        #
-        # For q==1 (xi) the filtering is done per individual ALSSM, so each
-        # ALSSM gets its own pre-calculated parameters derived from its own
-        # (small) A_m and C_m rather than from the combined block-diagonal matrix.
-        # This avoids constructing the large AlssmSum just to decompose it again.
-        #
-        # For q==2 (W) the combined AlssmSum is still used (see recursion methods),
-        # so _cascade_params[dim][p][m] is not consumed for q==2; the combined entry is
-        # built on-the-fly there instead.
-        #
-        # ------------------------------------------------------------------
+        self._build_cascade_params(_sub_costs)
 
+        self._build_numdenom(_sub_costs, numdenom)
+
+    # ------------------------------------------------------------------
+    # Properties 
+    # ------------------------------------------------------------------
+
+    @property
+    def xi2(self):
+        return self.W
+
+    @property
+    def xi1(self):
+        return self.xi
+
+    @property
+    def xi0(self):
+        return self.kappa
+
+    @property
+    def W(self):
+        """:class:`~numpy.ndarray` : Filter Parameter :math:`W`"""
+        if self._xi2 is None:
+            raise ValueError('xi2 has not been calculated. '
+                             'Please run the filter() method with calc_W=True before calling W.')
+        return self._xi2.reshape(self._xi2.shape[:-1] + (self._N, self._N))
+
+    @property
+    def xi(self):
+        """:class:`~numpy.ndarray` :  Filter Parameter :math:`\\xi`"""
+        if self._xi1 is None:
+            raise ValueError('xi1 has not been calculated. '
+                             'Please run the filter() method with calc_xi=True before calling xi.')
+        return self._xi1
+
+    @property
+    def kappa(self):
+        """:class:`~numpy.ndarray` : Filter Parameter :math:`\\kappa`"""
+        if self._xi0 is None:
+            raise ValueError('xi0 has not been calculated. '
+                             'Please run the filter() method with calc_kappa=True before calling kappa.')
+        return self._xi0
+
+    @property
+    def nu(self):
+        """:class:`~numpy.ndarray` : Filter Parameter :math:`\\nu`"""
+        # TODO nu implementation
+        raise NotImplementedError("nu calculation is not yet implemented.")
+    
+    def _build_cascade_params(self, _sub_costs):
+        r"""
+        Build _cascade_params as a 3-D structure: _cascade_params[dim_index][seg_index][alssm_index]
+        
+        Each leaf entry is either None (numpy/jit backends, parallel filter form,
+        or inactive grid node with f_mp==0) or a dict of precomputed scalars and
+        matrices for the lfilter cascade backend. The dict keys depend on the
+        segment direction:
+          fw: gamma_inv, gamma_a, gamma_b, gAinvT, Aac, Abc, N
+          bw: gamma,     gamma_a, gamma_b, gAT,    Aac, Abc, N
+        
+        For q==1 (xi) the filtering is done per individual ALSSM, so each
+        ALSSM gets its own pre-calculated parameters derived from its own
+        (small) A_m and C_m rather than from the combined block-diagonal matrix.
+        This avoids constructing the large AlssmSum just to decompose it again.
+        
+        For q==2 (W) the combined AlssmSum is still used (see recursion methods),
+        so _cascade_params[dim][p][m] is not consumed for q==2; the combined entry is
+        built on-the-fly there instead.
+        """
         self._cascade_params = [
             [[None] * ct.M for _ in range(ct.P)] for ct in _sub_costs
             ]
 
         if self._filter_form == 'cascade' and self._backend == 'lfilter':
+            from lmlib.statespace.backends.rec_lfilter import _compute_cascade_params
             for dim_idx, ct in enumerate(_sub_costs):
                 for p, segment in enumerate(ct.segments):
                     a, b, delta, gamma = segment.a, segment.b, segment.delta, segment.gamma
@@ -133,43 +183,27 @@ class RLSAlssm:
                             continue
                         wrapped = AlssmSum([alssm_m], [ct.F[m, p]], force_MC=True)
                         A, C = wrapped.A, wrapped.C
-                        if segment.direction == 'fw':
-                            gamma_inv = 1 / gamma
-                            A_inv = inv(A)
-                            self._cascade_params[dim_idx][p][m] = {
-                                'gamma_inv': gamma_inv,
-                                'gamma_a':   gamma ** (a - 1 - delta),
-                                'gamma_b':   gamma ** (b - delta),
-                                'gAinvT':    gamma_inv * A_inv.T,
-                                'Aac':       np.dot(matrix_power(A, 0 if np.isinf(a) else a-1).T, C.T),
-                                'Abc':       np.dot(matrix_power(A, b).T, C.T),
-                            }
-                        elif segment.direction == 'bw':
-                            self._cascade_params[dim_idx][p][m] = {
-                                'gamma_a': gamma ** (a - delta),
-                                'gamma_b': gamma ** (b - delta + 1),
-                                'gAT':     gamma * A.T,
-                                'Aac':     np.dot(matrix_power(A, a).T, C.T),
-                                'Abc':     np.dot(matrix_power(A, 0 if np.isinf(b) else b+1).T, C.T),
-                            }
-                        self._cascade_params[dim_idx][p][m]['N'] = A.shape[1]
+                        self._cascade_params[dim_idx][p][m] = _compute_cascade_params(
+                            A, C, a, b, delta, gamma, segment.direction
+                        )
 
-        # ------------------------------------------------------------------
-        # Build _numdenom as a 3-D structure: _numdenom[dim_index][seg_index][alssm_index]
-        #
-        # Each leaf entry is either None (numpy/jit backends, or inactive grid
-        # node with f_mp==0) or [denom, num_b, num_a] (lfilter parallel backend).
-        #
-        # For q==1 (xi) the filtering is now done per individual ALSSM, so each
-        # ALSSM gets its own transfer-function coefficients derived from its own
-        # (small) A_m and C_m rather than from the combined block-diagonal matrix.
-        # This avoids constructing the large AlssmSum just to decompose it again.
-        #
-        # For q==2 (W) the combined AlssmSum is still used (see recursion methods),
-        # so _numdenom[dim][p][m] is not consumed for q==2; the combined entry is
-        # built on-the-fly there instead.
-        #
-        # ------------------------------------------------------------------
+    
+    def _build_numdenom(self, _sub_costs, numdenom):
+        r"""
+        Build _numdenom as a 3-D structure: _numdenom[dim_index][seg_index][alssm_index]
+        
+        Each leaf entry is either None (numpy/jit backends, or inactive grid
+        node with f_mp==0) or [denom, num_b, num_a] (lfilter parallel backend).
+        
+        For q==1 (xi) the filtering is now done per individual ALSSM, so each
+        ALSSM gets its own transfer-function coefficients derived from its own
+        (small) A_m and C_m rather than from the combined block-diagonal matrix.
+        This avoids constructing the large AlssmSum just to decompose it again.
+        
+        For q==2 (W) the combined AlssmSum is still used (see recursion methods),
+        so _numdenom[dim][p][m] is not consumed for q==2; the combined entry is
+        built on-the-fly there instead.
+        """
         self._numdenom = [
             [[None] * ct.M for _ in range(ct.P)] for ct in _sub_costs
         ]
@@ -269,55 +303,10 @@ class RLSAlssm:
 
 
 
-        if filter_form == 'parallel' and backend == 'lfilter' and numdenom is not None:
+        if self._filter_form == 'parallel' and self._backend == 'lfilter' and numdenom is not None:
             print("Using user-supplied SOS coefficients (numdenom).")
             self._numdenom = numdenom
 
-    # ------------------------------------------------------------------
-    # Properties 
-    # ------------------------------------------------------------------
-
-    @property
-    def xi2(self):
-        return self.W
-
-    @property
-    def xi1(self):
-        return self.xi
-
-    @property
-    def xi0(self):
-        return self.kappa
-
-    @property
-    def W(self):
-        """:class:`~numpy.ndarray` : Filter Parameter :math:`W`"""
-        if self._xi2 is None:
-            raise ValueError('xi2 has not been calculated. '
-                             'Please run the filter() method with calc_W=True before calling W.')
-        return self._xi2.reshape(self._xi2.shape[:-1] + (self._N, self._N))
-
-    @property
-    def xi(self):
-        """:class:`~numpy.ndarray` :  Filter Parameter :math:`\\xi`"""
-        if self._xi1 is None:
-            raise ValueError('xi1 has not been calculated. '
-                             'Please run the filter() method with calc_xi=True before calling xi.')
-        return self._xi1
-
-    @property
-    def kappa(self):
-        """:class:`~numpy.ndarray` : Filter Parameter :math:`\\kappa`"""
-        if self._xi0 is None:
-            raise ValueError('xi0 has not been calculated. '
-                             'Please run the filter() method with calc_kappa=True before calling kappa.')
-        return self._xi0
-
-    @property
-    def nu(self):
-        """:class:`~numpy.ndarray` : Filter Parameter :math:`\\nu`"""
-        # TODO nu implementation
-        raise NotImplementedError("nu calculation is not yet implemented.")
 
     # ------------------------------------------------------------------
     # filter 
