@@ -4,6 +4,56 @@ from scipy.signal import lfilter, convolve, zpk2sos, sosfilt, ss2tf
 from lmlib.utils.profiling import profile
 
 
+def _compute_cascade_params(A, C, a, b, delta, gamma, direction):
+    r"""
+    Precompute all state-space and gamma scalars needed by the cascade IIR filters.
+
+    Called once per (ALSSM, segment) pair at RLSAlssm construction time and
+    stored in ``_cascade_params[dim][p][m]``.  The returned dict is then passed
+    directly to ``lfilter_forward_cascade_xi`` / ``lfilter_backward_cascade_xi``,
+    avoiding repeated ``inv``, ``matrix_power`` and ``np.dot`` calls inside the
+    filter loop.
+
+    Parameters
+    ----------
+    A : np.ndarray, shape (N, N)
+    C : np.ndarray, shape ([L,] N)
+    a, b : int or ±inf  — segment boundaries
+    delta : int          — segment offset
+    gamma : float        — decay factor
+    direction : str      — 'fw' or 'bw'
+
+    Returns
+    -------
+    dict with keys:
+        fw: gamma_inv, gamma_a, gamma_b, gAinvT, Aac, Abc, N
+        bw: gamma_a, gamma_b, gAT, Aac, Abc, N
+    """
+    N = A.shape[1]
+    if direction == 'fw':
+        gamma_inv = 1.0 / gamma
+        A_inv = inv(A)
+        return {
+            'gamma_inv': gamma_inv,
+            'gamma_a':   gamma ** (a - 1 - delta),
+            'gamma_b':   gamma ** (b - delta),
+            'gAinvT':    gamma_inv * A_inv.T,
+            'Aac':       np.dot(matrix_power(A, 0 if np.isinf(a) else a - 1).T, C.T),
+            'Abc':       np.dot(matrix_power(A, b).T, C.T),
+            'N':         N,
+        }
+    else:  # bw
+        return {
+            'gamma': gamma,
+            'gamma_a': gamma ** (a - delta),
+            'gamma_b': gamma ** (b - delta + 1),
+            'gAT':     gamma * A.T,
+            'Aac':     np.dot(matrix_power(A, a).T, C.T),
+            'Abc':     np.dot(matrix_power(A, 0 if np.isinf(b) else b + 1).T, C.T),
+            'N':       N,
+        }
+
+
 # xi2 lfilter cascade
 def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
     r"""
@@ -68,11 +118,11 @@ def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sample_weig
     _A = np.kron(A, A)
     _C = np.kron(C, C)
     _y = np.broadcast_to(1., np.shape(y))  # create an array of shape Ks, but contains only a single 1.0 in memory
-
+    cascade_params = _compute_cascade_params(_A, _C, a, b, delta, gamma, direction)
     if direction == 'fw':
-        lfilter_forward_cascade_xi(xi2, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
+        lfilter_forward_cascade_xi(xi2, cascade_params, a, b, _y, sample_weights, beta)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi2, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
+        lfilter_backward_cascade_xi(xi2, cascade_params, a, b, _y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
@@ -129,9 +179,9 @@ def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weig
         If `direction` is not ``'fw'`` or ``'bw'``.
     """
     if direction == 'fw':
-        lfilter_forward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, sample_weights, beta)
+        lfilter_forward_cascade_xi(xi1, cascade_params, a, b, y, sample_weights, beta)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi1, A, C, a, b, delta, gamma, y, sample_weights, beta)
+        lfilter_backward_cascade_xi(xi1, cascade_params, a, b, y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
@@ -190,11 +240,11 @@ def lfilter_cascade_xi0(xi0, A, C, a, b, direction, delta, gamma, y, sample_weig
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = y**2
-
+    cascade_params = _compute_cascade_params(_A, _C, a, b, delta, gamma, direction)
     if direction == 'fw':
-        lfilter_forward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
+        lfilter_forward_cascade_xi(xi0, cascade_params, a, b, _y, sample_weights, beta)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
+        lfilter_backward_cascade_xi(xi0, cascade_params, a, b, _y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
@@ -204,11 +254,11 @@ def lfilter_cascade_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weight
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = np.broadcast_to(1., np.shape(y))  # create an array of shape Ks, but contains only a single 1.0 in memory
-
+    cascade_params = _compute_cascade_params(_A, _C, a, b, delta, gamma, direction)
     if direction == 'fw':
-        lfilter_forward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
+        lfilter_forward_cascade_xi(nu, cascade_params, a, b, _y, sample_weights, beta)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
+        lfilter_backward_cascade_xi(nu, cascade_params, a, b, _y, sample_weights, beta)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
@@ -218,47 +268,41 @@ def lfilter_cascade_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weight
 # transparent pass-through when lm.profiling.enable() has not been called
 # (overhead is a single bool check per call). See lmlib/utils/profiling.py.
 @profile
-def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights, beta):
+def lfilter_forward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta):
     """
-    IIR forward calculation of xi
+    IIR forward calculation of xi.
 
-    Due to generalization, different input parameter shapes are possible.
-    The input parameter shapes are used to enhance the performance of the function (avoidance of matrix multiplication and memory allocation).
-    Therefore, A, C, y, v can be scalar or nd-arrays.
+    Precomputed state-space and gamma scalars are passed in via *cascade_params*
+    (built by ``_compute_cascade_params`` with ``direction='fw'``), so no matrix
+    inversion or power computation occurs inside this function.
 
     Parameters
     ----------
     xi : np.ndarray
-        shape=(K, N, [S])
-    A : np.ndarray, scalar
-        shape=(N, N)
-    C : np.ndarray, scalar
-        shape=([L,] N)
-    a : int, inf
-    b : int, inf
-    delta : int
-    gamma : float
-    y : np.ndarray, scalar
-        shape=(K, [L], [S]) or 1
+        shape=(K, N, [S]) — accumulation target, updated in-place.
+    cascade_params : dict
+        Precomputed parameters from ``_compute_cascade_params``.
+        Required keys: ``gamma_inv``, ``gamma_a``, ``gamma_b``, ``gAinvT``,
+        ``Aac``, ``Abc``, ``N``.
+    a : int or inf
+        Left segment boundary.
+    b : int or inf
+        Right segment boundary.
+    y : np.ndarray
+        shape=(K, [L], [S]) or scalar 1 — weighted observations.
     sample_weights : np.ndarray
-        shape=(K,) or 1
-    beta : float, SE Segment weight
-    einsum_path : str (see RLSALssm)
+        shape=(K,) or scalar 1.
+    beta : float
+        Segment weight (SE beta).
     """
 
-    # gamma pre-calculation
-    gamma_inv = 1 / gamma
-    gamma_a = gamma ** (a - 1 - delta)
-    gamma_b = gamma ** (b - delta)
-
-    # state space pre-calculation separated into matrix
-    A_inv = inv(A)
-    gAinvT = gamma_inv * A_inv.T
-    Aa = matrix_power(A, 0 if np.isinf(a) else a - 1)
-    Aac = np.dot(Aa.T, C.T)
-    Ab = matrix_power(A, b)
-    Abc = np.dot(Ab.T, C.T)
-    N = np.shape(A)[1]
+    gamma_inv = cascade_params['gamma_inv']
+    gamma_a = cascade_params['gamma_a']
+    gamma_b = cascade_params['gamma_b']
+    gAinvT = cascade_params['gAinvT']
+    Aac = cascade_params['Aac']
+    Abc = cascade_params['Abc']
+    N = cascade_params['N']
 
     if not np.allclose(gAinvT, np.tril(gAinvT)):
         raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
@@ -315,44 +359,41 @@ def lfilter_forward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights,
 # general backward cascade
 # @profile is intentional on this production function (see forward cascade comment above).
 @profile
-def lfilter_backward_cascade_xi(xi, A, C,  a, b, delta, gamma, y, sample_weights, beta):
+def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta):
     """
-    IIR backward calculation of xi
+    IIR backward calculation of xi.
 
-    Due to generalization, different input parameter shapes are possible.
-    The input parameter shapes are used to enhance the performance of the function (avoidance of matrix multiplication and memory allocation).
-    Therefore, A, C, y, sample_weights can be scalar or nd-arrays.
+    Precomputed state-space and gamma scalars are passed in via *cascade_params*
+    (built by ``_compute_cascade_params`` with ``direction='bw'``), so no matrix
+    power computation occurs inside this function.
 
     Parameters
     ----------
     xi : np.ndarray
-        shape=(K, N, [S])
-    A : np.ndarray, scalar
-        shape=(N, N)
-    C : np.ndarray, scalar
-        shape=([L,] N)
-    a : int, inf
-    b : int, inf
-    delta : int
-    gamma : float
-    y : np.ndarray, scalar
-        shape=(K, [L], [S]) or 1
+        shape=(K, N, [S]) — accumulation target, updated in-place.
+    cascade_params : dict
+        Precomputed parameters from ``_compute_cascade_params``.
+        Required keys: ``gamma``, ``gamma_a``, ``gamma_b``, ``gAT``,
+        ``Aac``, ``Abc``, ``N``.
+    a : int or inf
+        Left segment boundary.
+    b : int or inf
+        Right segment boundary.
+    y : np.ndarray
+        shape=(K, [L], [S]) or scalar 1 — weighted observations.
     sample_weights : np.ndarray
-        shape=(K,) or 1
-    beta : float, SE Segment weight
-    einsum_path : str (see RLSALssm)
+        shape=(K,) or scalar 1.
+    beta : float
+        Segment weight (SE beta).
     """
-    # gamma pre-calculation
-    gamma_a = gamma ** (a - delta)
-    gamma_b = gamma ** (b - delta + 1)
 
-    # state space pre-calculation separated into scalar and matrix
-    gAT = gamma * A.T
-    Aa = matrix_power(A, a)
-    Aac = np.dot(Aa.T, C.T)
-    Ab = matrix_power(A, 0 if np.isinf(b) else b + 1)
-    Abc = np.dot(Ab.T, C.T)
-    N = np.shape(A)[1]
+    gamma = cascade_params['gamma']
+    gamma_a = cascade_params['gamma_a']
+    gamma_b = cascade_params['gamma_b']
+    gAT = cascade_params['gAT']
+    Aac = cascade_params['Aac']
+    Abc = cascade_params['Abc']
+    N = cascade_params['N']
 
     if not np.allclose(gAT, np.tril(gAT)):
         raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
@@ -434,11 +475,11 @@ def lfilter_parallel_xi0(xi0, denom, num_b, num_a, a, b, direction, delta, gamma
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = y**2
-
+    _params = _compute_cascade_params(_A, _C, a, b, delta, gamma, direction)
     if direction == 'fw':
-        lfilter_forward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
+        lfilter_forward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta, _params)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
+        lfilter_backward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta, _params)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
@@ -447,11 +488,11 @@ def lfilter_parallel_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weigh
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = np.broadcast_to(1., np.shape(y))  # create an array of shape Ks, but contains only a single 1.0 in memory
-
+    _params = _compute_cascade_params(_A, _C, a, b, delta, gamma, direction)
     if direction == 'fw':
-        lfilter_forward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
+        lfilter_forward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta, _params)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta)
+        lfilter_backward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta, _params)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
     
