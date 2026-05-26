@@ -128,7 +128,7 @@ def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sample_weig
 
 
 # xi1 lfilter cascade
-def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
+def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weights, beta, cascade_params):
     r"""
     Computes the first-order cost parameter :math:`\xi^{(1)}(k, y)` in-place,
     which equals the signal projection vector :math:`\xi_k`.
@@ -470,18 +470,12 @@ def lfilter_parallel_xi1(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
         raise ValueError('direction must be either "forward" or "backward"')
 
 
-# xi0 lfilter parallel
+# xi0 lfilter parallel (delegates to cascade implementation, since the ALSSM is not used for xi0 calculation)
 def lfilter_parallel_xi0(xi0, denom, num_b, num_a, a, b, direction, delta, gamma, y, sample_weights, beta, kappa_diag=True):
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
-    _y = y**2
-    _params = _compute_cascade_params(_A, _C, a, b, delta, gamma, direction)
-    if direction == 'fw':
-        lfilter_forward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta, _params)
-    elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi0, _A, _C, a, b, delta, gamma, _y, sample_weights, beta, _params)
-    else:
-        raise ValueError('direction must be either "forward" or "backward"')
+    lfilter_cascade_xi0(xi0,_A,_C,a,b,direction,delta,gamma,y,sample_weights,beta)
+
 
 # nu lfilter parallel
 def lfilter_parallel_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
