@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 project = 'lmlib'
-copyright = '2025, lmlib'
+copyright = '2026, lmlib'
 author = 'Reto Wildhaber, Frédéric Waldmann'
 release = '3.0.0'
 
@@ -80,7 +80,7 @@ html_sidebars = {
 html_theme_options = {
     "navbar_start": ["navbar-logo"],
     "navbar_center": ["navbar-nav"],
-    "navbar_end": ["navbar-icon-links"],
+    "navbar_end": ["theme-switcher",	"navbar-icon-links"], #added 26.05.2026 bwc1
     "navbar_persistent": ["search-button"],
     "logo": {
             "text": project + ' ' + release,

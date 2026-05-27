@@ -19,7 +19,7 @@ K = 10000  # number of samples to process
 y = load_lib_csv(file_name, K)
 
 # --------------- parameters of example -----------------------
-LCR_THD = 0.15  # minimum log-cost ratio to detect a pulse in noise
+LCR_THD = 0.21  # minimum log-cost ratio to detect a pulse in noise
 
 K_REF = 1865  # time index of reference shape
 
@@ -120,7 +120,7 @@ axs[3].legend(loc='upper right')
 axs[4].plot(k, lcr, lw=1.0, color='black', label=r"$LCR = -.5 ln(J(\hat{x}_A) / J(\hat{x}_0))$")
 axs[4].scatter(peaks, lcr[peaks], marker=7, c='b')
 axs[4].axhline(LCR_THD, color="black", linestyle="--", lw=1.0)
-axs[4].set_ylim(0.0, 0.4)
+axs[4].set_ylim(0.0, 0.45)
 axs[4].legend(loc='upper right')
 
 axs[5].plot(k, amp, lw=1.0, color='gray', label=r'$\hat{\lambda}_{k}$')

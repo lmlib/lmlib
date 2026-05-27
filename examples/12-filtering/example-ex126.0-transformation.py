@@ -45,7 +45,7 @@ y_hat_trans = rls_trans.fit(y)
 # --- Plotting ----
 fig, ax = plt.subplots(1, sharex='all', figsize=(8,3))
 
-ax.plot(k, y, lw=0.6, c='gray', label=rf'$y$')
+ax.plot(k, y, lw=0.6, c='gray', label=r'$y$')
 ax.plot(k, y_hat, lw=1, c='g', label=r'$\hat{y}_n$')
 ax.plot(k, y_hat_trans, lw=1, ls = '--', c='r', label=r'$\hat{y}_t$')
 ax.legend(loc='upper right')

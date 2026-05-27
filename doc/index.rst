@@ -36,7 +36,7 @@ a signal processing library to efficiently analyze single- and multi-channel tim
 
 .. rst-class:: maintext1
 
-   This library is optimized for fast processing using GOU and other.
+   This library is optimized for fast processing using GPU and other.
 
    This library is the essence of many years of `research <about>`_ documented in many publications (see :ref:`bibliography`).
 

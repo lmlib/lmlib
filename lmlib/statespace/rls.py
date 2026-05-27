@@ -8,6 +8,7 @@ from lmlib.statespace.cost import CompositeCost, CostSegment, NDCompositeCost
 from lmlib.statespace.model import AlssmSum
 from lmlib.utils.check import *
 from lmlib.statespace.backends.rec import *
+from lmlib._warnings import WConditionNumberWarning
 import warnings
 
 
@@ -629,9 +630,15 @@ class RLSAlssm:
         msk = cond(HTWH) < 1 / sys.float_info.epsilon
         if self._steady_state and not np.all(msk):
             if isinstance(self._cost_terms, CostSegment):
-                print (f'condition number of W from {type(self._cost_terms.alssm)} too high; results of minimization may be meaningless. Try using AlssmPolyLegendre.')
+                warnings.warn(
+                    f'condition number of W from {type(self._cost_terms.alssm)} too high; results of minimization may be meaningless.',
+                    WConditionNumberWarning, stacklevel=3,
+                )
             if isinstance(self._cost_terms, CompositeCost):
-                print (f'condition number of W from {([type(item) for item in self._cost_terms._alssms])} too high; results of minimization may be meaningless. Try using AlssmPolyLegendre.')
+                warnings.warn(
+                    f'condition number of W from {([type(item) for item in self._cost_terms._alssms])} too high; results of minimization may be meaningless.',
+                    WConditionNumberWarning, stacklevel=3,
+                )
         #     assert msk, 'H.T @ W @ H is not invertible.'
         #     np.einsum('nm, ...m-> ...n', inv(HTWH), HTxiWh, out=v)
         # else:

@@ -16,7 +16,7 @@ import numpy as np
 from typing import Iterable, Union, List
 from lmlib.utils.check import *
 
-from lmlib.statespace.model import ModelBase, AlssmSum, AlssmProd
+from lmlib.statespace.model import ModelBase, AlssmSum, AlssmProd, AlssmSin
 from lmlib.statespace.segment import Segment
 from lmlib.statespace.backends.steady_state import *
 
@@ -483,6 +483,189 @@ class CompositeCost(BaseCost, BaseCost1d):
 
     def get_alssms(self):
         return self.alssms
+
+    def spline_H(self, max_continuity: int, alssm_index: int = 0) -> np.ndarray:
+        r"""Build the spline continuity H-matrix for a two-ALSSM cost.
+
+        For a :class:`CompositeCost` with **exactly two ALSSMs** and mixing matrix
+        ``F = [[1,0],[0,1]]`` (one ALSSM per segment, independent states), the full
+        state vector is :math:`x = [x_L\;(N),\; x_R\;(N)]`.  The H-matrix returned
+        here reduces this to a lower-dimensional parameter vector :math:`v` by
+        imposing continuity constraints at the knot:
+
+        .. math::
+
+            x = H\,v, \qquad H \in \mathbb{R}^{2N \times (2N - m_c - 1)},
+
+        where :math:`m_c =` ``max_continuity`` and :math:`N` is the model order.
+
+        **Continuity constraints** are derived from the *k*-th forward difference
+        operator evaluated at the knot lag :math:`j = 0`:
+
+        .. math::
+
+            e_k = C\,(A - I)^k, \qquad k = 0, 1, \ldots
+
+        Constraint of order *k*:
+
+        .. math::
+
+            e_k\,(x_R - (-1)^k\,x_L) = 0
+
+        which encodes:
+
+        * :math:`k=0` — value continuity: :math:`C x_R = C x_L`.
+        * :math:`k=1` — first-derivative continuity: :math:`e_1(x_R + x_L) = 0`.
+        * etc.
+
+        The result is the unique minimum-rank H satisfying all constraints
+        :math:`k = 0, \ldots, m_c`, computed via a stable linear solve.
+
+        **Compatibility of the two ALSSMs**
+
+        For constraints of order :math:`k \geq 1`, both ALSSMs must share the same
+        :math:`A` and :math:`C` matrices (same basis functions).  If they differ and
+        ``max_continuity >= 1``, a :class:`UserWarning` is emitted because the
+        H-matrix will use the basis of ``alssm_index`` and impose it on both sides,
+        which is physically wrong for the other side.
+
+        For :class:`~lmlib.statespace.model.AlssmSin` pairs, in particular:
+
+        * ``max_continuity = 0`` (value match only) always works.
+        * ``max_continuity >= 1`` requires the same ``omega`` **and** ``rho = 1``
+          (undamped oscillation) on both sides; otherwise a warning is issued.
+
+        Parameters
+        ----------
+        max_continuity : int
+            Highest continuity order to impose.  ``-1`` returns the identity
+            (free, no constraint); ``0`` imposes :math:`C^0` (value match);
+            ``D`` (= ``poly_degree``) is the maximum possible (fully smooth).
+        alssm_index : int, optional
+            Index (0-based) into ``self.alssms`` of the reference ALSSM whose
+            :math:`A` and :math:`C` are used to build :math:`e_k`.  Relevant
+            only when the two ALSSMs differ.  Default: ``0``.
+
+        Returns
+        -------
+        H : ndarray of shape (2N, 2N - max_continuity - 1)
+            Linear constraint matrix.  Pass to
+            :meth:`~lmlib.statespace.rls.RLSAlssm.minimize_x` as ``H=``.
+
+        Raises
+        ------
+        ValueError
+            If the cost does not have exactly two ALSSMs.
+
+        Warns
+        -----
+        UserWarning
+            When ``max_continuity >= 1`` and the two ALSSMs have different
+            :math:`A` or :math:`C` matrices.
+
+        Examples
+        --------
+        Edge detection: test C^0 (offset-only) vs C^0+C^1 (slope join)::
+
+            alssm_L = lm.AlssmPolyMeixner(D, segment=segL)
+            alssm_R = lm.AlssmPolyMeixner(D, segment=segR)
+            cost    = lm.CompositeCost((alssm_L, alssm_R), (segL, segR), [[1,0],[0,1]])
+
+            rls.filter(y)
+            xs_free  = rls.minimize_x()                       # unconstrained
+            xs_cont  = rls.minimize_x(H=cost.spline_H(0))    # C^0 join
+            xs_peak  = rls.minimize_x(H=cost.spline_H(1))    # C^0+C^1 join
+            xs_full  = rls.minimize_x(H=cost.spline_H(D))    # fully smooth
+
+        Works equally for AlssmPoly, AlssmPolyJordan, AlssmPolyLegendre, AlssmSin.
+        For AlssmPoly(1):
+        ``spline_H(0)`` reproduces ``H_Continuous`` and
+        ``spline_H(1)`` reproduces ``H_Peak`` from the literature.
+        """
+        import warnings
+        from numpy.linalg import matrix_power, solve
+
+        if self.M != 2:
+            raise ValueError(
+                f"spline_H requires exactly 2 ALSSMs in the CompositeCost "
+                f"(got {self.M}).  Use alssm_index to select the reference ALSSM.")
+
+        # ── free case ────────────────────────────────────────────────────────────
+        if max_continuity < 0:
+            alssm_ref = self.alssms[alssm_index]
+            N = alssm_ref.N
+            return np.eye(2 * N)
+
+        # ── select reference ALSSM ───────────────────────────────────────────────
+        # For AlssmPolyMeixner TSLM the convention is (alssm_L[FW], alssm_R[BW]).
+        # The spline e_k vectors must use A_bw (the backward matrix), so if
+        # alssm_index points to a FW Meixner alssm, auto-select the BW one instead.
+        _ref_idx = alssm_index
+        from lmlib.statespace.model import AlssmPolyMeixner
+        if (isinstance(self.alssms[_ref_idx], AlssmPolyMeixner)
+                and getattr(self.alssms[_ref_idx], 'direction', 'bw') == 'fw'):
+            other_idx = 1 - _ref_idx
+            if (isinstance(self.alssms[other_idx], AlssmPolyMeixner)
+                    and getattr(self.alssms[other_idx], 'direction', 'bw') == 'bw'):
+                _ref_idx = other_idx
+
+        alssm_ref   = self.alssms[_ref_idx]
+        alssm_other = self.alssms[1 - _ref_idx]
+        A = np.asarray(alssm_ref.A)
+        C = np.asarray(alssm_ref.C).ravel()
+        N = A.shape[0]
+
+        # ── compatibility check ──────────────────────────────────────────────────
+        if max_continuity >= 1 and isinstance(alssm_ref, AlssmSin) and isinstance(alssm_other, AlssmSin):
+            same_A = np.allclose(alssm_ref.A, alssm_other.A, rtol=1e-6, atol=1e-10)
+            same_C = np.allclose(
+                np.asarray(alssm_ref.C).ravel(),
+                np.asarray(alssm_other.C).ravel(),
+                rtol=1e-6, atol=1e-10)
+            if not (same_A and same_C):
+                warnings.warn(
+                    f"spline_H(max_continuity={max_continuity}): the two ALSSMs have "
+                    f"different A or C matrices.  Constraints of order >= 1 use the "
+                    f"basis of alssm[{alssm_index}] and will be physically wrong for "
+                    f"alssm[{1-alssm_index}].  For C^0 (value match only), set "
+                    f"max_continuity=0.",
+                    UserWarning, stacklevel=2)
+
+        # ── build constraint vectors e_k = C (A-I)^k ────────────────────────────
+        nc = min(max_continuity + 1, N)
+        e = [C @ matrix_power(A - np.eye(N), k) for k in range(nc)]
+
+        # ── assemble and solve for constrained block AR_top (nc x N) ────────────
+        #
+        # Full state: x_full = [x_L (N), x_R (N)], free params v = [v_L (N), v_free (N-nc)]
+        # x_L = v_L
+        # x_R[0:nc]  = AR_top @ v_L + BR_top @ v_free   (constrained)
+        # x_R[nc:]   = v_free                             (free)
+        #
+        # Constraint k:  e_k @ x_R = (-1)^k * e_k @ x_L  for all (v_L, v_free)
+        # => (1) E_top @ AR_top = RHS          (coefficient of v_L)
+        # => (2) E_top @ BR_top + E_bot = 0    (coefficient of v_free)
+        #
+        # where E_top = E[:, :nc], E_bot = E[:, nc:], RHS[k,:] = (-1)^k * e_k.
+
+        E     = np.array([e[k]       for k in range(nc)])   # nc x N
+        RHS   = np.array([(-1)**k * e[k] for k in range(nc)])  # nc x N
+        E_top = E[:, :nc]   # nc x nc
+        E_bot = E[:, nc:]   # nc x (N-nc)
+
+        AR_top = solve(E_top, RHS)           # nc x N
+        BR_top = solve(E_top, -E_bot)        # nc x (N-nc)
+
+        # ── assemble H ───────────────────────────────────────────────────────────
+        nv = N + (N - nc)
+        H  = np.zeros((2 * N, nv))
+        H[:N, :N]         = np.eye(N)   # x_L = v_L
+        H[N:N+nc, :N]     = AR_top      # x_R[0:nc] from v_L
+        H[N:N+nc, N:]     = BR_top      # x_R[0:nc] from v_free
+        for j in range(N - nc):         # x_R[nc:] = v_free
+            H[N + nc + j, N + j] = 1.0
+        return H
+
 
 class NDCompositeCost(BaseCost):
 

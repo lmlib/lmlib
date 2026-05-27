@@ -67,7 +67,10 @@ def poly_newton(alphaD, qD, alphaDD, qDD, x0, min_step):
     return cur_x
 
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+try:
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+except NameError:
+    SCRIPT_DIR = os.getcwd()
 csv_file = os.path.join(SCRIPT_DIR, "shift_estimation_data.csv")
 y = load_csv_mc(csv_file)
 true_shift = .52e-3  # seconds

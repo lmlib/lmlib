@@ -21,9 +21,10 @@ from numpy.polynomial.legendre import legder as _legder
 
 from lmlib.utils import *
 from lmlib.statespace.backends.statespace_tools import *
+from lmlib.statespace.segment import Segment, FORWARD, BACKWARD
 
-__all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmPolyLegendre', 'AlssmSin',
-           'AlssmExp', 'AlssmStacked', 'AlssmSum', 'AlssmProd', 'ModelBase']
+__all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmPolyLegendre', 'AlssmPolyMeixner',
+           'AlssmSin', 'AlssmExp', 'AlssmStacked', 'AlssmSum', 'AlssmProd', 'ModelBase']
 
 
 class ModelBase(ABC):
@@ -42,7 +43,7 @@ class ModelBase(ABC):
 
     def __init__(self, label:str='n/a', C_init=None, force_MC:bool=False):
         self._alssms = list()
-        self._deltas = np.ndarray([])
+        self._lambdas = np.ndarray([])
         self._A = None
         self._C = None
         self.label = label
@@ -133,24 +134,24 @@ class ModelBase(ABC):
         self._alssms = list(alssms)
 
     @property
-    def deltas(self) -> npt.NDArray:
+    def lambdas(self) -> npt.NDArray:
         """:class:`np.ndarray` : Output scaling factors for each ALSSM in `alssms`"""
-        return self._deltas
+        return self._lambdas
 
-    @deltas.setter
-    def deltas(self, deltas):
+    @lambdas.setter
+    def lambdas(self, lambdas):
         _n = len(self.alssms)
-        if deltas is None:
-            deltas = [1] * _n
-        elif np.isscalar(deltas):
-            deltas = [deltas] * _n
+        if lambdas is None:
+            lambdas = [1] * _n
+        elif np.isscalar(lambdas):
+            lambdas = [lambdas] * _n
 
-        assert isinstance(deltas, Iterable), 'deltas is not iterable'
-        assert np.size(deltas) == _n, f'Output scaling factors deltas are not of length {_n}, ' \
-                                      f'{info_str_found_shape(deltas)}'
-        for delta in deltas:
-            assert np.isscalar(delta), 'element in deltas is not scalar'
-        self._deltas = np.asarray(deltas)
+        assert isinstance(lambdas, Iterable), 'lambdas is not iterable'
+        assert np.size(lambdas) == _n, f'Output scaling factors lambdas are not of length {_n}, ' \
+                                      f'{info_str_found_shape(lambdas)}'
+        for lambda_ in lambdas:
+            assert np.isscalar(lambda_), 'element in lambdas is not scalar'
+        self._lambdas = np.asarray(lambdas)
 
     @property
     def force_MC(self) -> bool:
@@ -317,6 +318,7 @@ class ModelBase(ABC):
         return []
 
     def get_alssm_output_dimension(self):
+        """int : Returns Alssm output dimension :math:`Q`"""
         return self.Q
 
     def _broadcast_C_to_multichannel(self):
@@ -891,6 +893,215 @@ class AlssmPolyLegendre(ModelBase):
         return L
 
 
+class AlssmPolyMeixner(ModelBase):
+    r"""
+    ALSSM whose output basis is the Meixner polynomials, orthogonal under the
+    geometric (exponential) weight :math:`\gamma^j` on :math:`j = 0, 1, 2, \ldots`
+
+    Unlike :class:`AlssmPoly` (Pascal/monomial basis), which suffers from Gram
+    matrix condition numbers of :math:`\mathcal{O}(g^{2D})`, and
+    :class:`AlssmPolyLegendre`, which requires a *finite* window specification,
+    :class:`AlssmPolyMeixner` is designed for **infinite or semi-infinite exponential
+    windows** and keeps the composite Gram matrix near the theoretical minimum.
+
+    **Mathematical background**
+
+    The Meixner polynomials :math:`M_n(j;\,1,\gamma)` satisfy
+
+    .. math::
+
+        \sum_{j=0}^{\infty} \gamma^j\, M_m(j)\, M_n(j) = W_{n}\,\delta_{mn},
+        \qquad W_n = g\!\left(\frac{g}{g-1}\right)^{\!n} = \frac{1}{(1-\gamma)\,\gamma^n},
+
+    where :math:`\gamma = (g-1)/g < 1` is the exponential decay of the backward
+    segment and :math:`g > 1` is its effective window length.  The norms
+    :math:`W_n` are **exact and closed-form**, growing by the constant factor
+    :math:`g/(g-1)` per degree. :math: `delta_{mn}` is the kronecker delta.
+
+    **Accepting a Segment**
+
+    The recommended constructor is ``AlssmPolyMeixner(poly_degree, segment)`` which
+    infers all parameters from the :class:`Segment`:
+
+    * ``segment.direction`` → selects :math:`A`:
+
+      * ``'bw'`` (backward): :math:`A = A_{\rm bw} = I - \tfrac{1}{g-1}\triu(\mathbf{1},1)`
+        — basis :math:`C A_{\rm bw}^j x = M_n(j;\gamma)` at lag :math:`j \ge 0`.
+
+      * ``'fw'`` (forward): :math:`A = A_{\rm fw} = A_{\rm bw}^{-1}`
+        — the forward filter's internal :math:`A^{-1} = A_{\rm bw}` step recovers
+        the decaying Meixner basis at lags :math:`j \le 0`.
+
+    * ``segment.a`` (backward) or ``segment.b`` (forward) → shifts :math:`C` so
+      that the Gram matrix remains :math:`W_{\rm ss}` (diagonal) even when the
+      segment does not start at :math:`j=0`:
+
+      * Backward :math:`[a, \infty)`:
+        :math:`C \leftarrow [1,\ldots,1]\,A_{\rm bw}^{-a}`
+        (makes :math:`C A^j x = M_n(j-a;\gamma)` for :math:`j \ge a`).
+
+      * Forward :math:`(-\infty, b]`:
+        :math:`C \leftarrow [1,\ldots,1]\,A_{\rm bw}^{-b}`
+        (makes the relative basis start at the boundary :math:`j=b`).
+
+    The :attr:`g` and :attr:`direction` attributes are always available.
+
+    **Condition number**
+
+    :math:`\kappa(W) = (g/(g-1))^D`, independent of the segment shift.
+
+
+    Notes
+    -----
+    The Meixner polynomials used here are the standard (monic normalisation)
+    :math:`M_n(x;\,1,\gamma) = {}_2F_1(-n,\,-x;\,1;\,1 - 1/\gamma)`.
+
+    """
+
+    def __init__(self, poly_degree: int, segment=None, **kwargs):
+        r"""
+        Parameters
+        ----------
+        poly_degree : int
+            Polynomial degree :math:`D \geq 0`.  The model order is :math:`N = D+1`.
+        segment : :class:`Segment`, optional
+            Target segment.  **Recommended.**  Encodes direction, :math:`g`, and
+            boundary shift in one object:
+
+            * ``segment.g`` → window size.
+            * ``segment.direction`` → ``'bw'`` selects :math:`A_{\rm bw}`;
+              ``'fw'`` selects :math:`A_{\rm fw} = A_{\rm bw}^{-1}`.
+            * ``segment.a`` (BW, if finite) or ``segment.b`` (FW, if finite)
+              → shifts :math:`C` to restore Gram matrix orthogonality when the
+              segment does not start at the canonical origin.
+
+            Either ``segment`` or ``g`` must be given (not both).
+        **kwargs
+            Forwarded to :class:`ModelBase`. """
+
+        super().__init__(**kwargs)
+        assert isinstance(poly_degree, int) and poly_degree >= 0, \
+            'poly_degree must be a non-negative int'
+        self._poly_degree = int(poly_degree)
+
+ 
+        assert isinstance(segment, Segment), \
+            "'segment' must be a lmlib.statespace.segment.Segment instance."
+        # ── Validate: Meixner orthogonality requires a semi-infinite segment ──
+        if segment.direction == BACKWARD and np.isfinite(segment.b):
+            raise ValueError(
+                f"AlssmPolyMeixner requires b=+inf for BACKWARD segments "
+                f"(got b={segment.b}). The Meixner polynomials are orthogonal only on "
+                f"a semi-infinite support. For finite windows use AlssmPoly or "
+                f"AlssmPolyLegendre instead.")
+        if segment.direction == FORWARD and np.isfinite(segment.a):
+            raise ValueError(
+                f"AlssmPolyMeixner requires a=-inf for FORWARD segments "
+                f"(got a={segment.a}). The Meixner polynomials are orthogonal only on "
+                f"a semi-infinite support. For finite windows use AlssmPoly or "
+                f"AlssmPolyLegendre instead.")
+        self._g = float(segment.g)
+        self._direction = segment.direction
+        # ── Determine C shift from the finite boundary ──────────────────────
+        #
+        # BACKWARD [a, ∞):
+        #   C ← [1..1] A_bw^{-a}  →  output at lag j = M_n(j-a; γ).
+        #   This keeps W = W_ss regardless of a (the Stein boundary term Q_b
+        #   = C^T C = ones at relative lag 0).
+        #
+        # FORWARD (-∞, b]:
+        #   A = A_fw = A_bw^{-1}.
+        #   C ← [1..1] A_bw^{-|b|} = [1..1] A_fw^{|b|}
+        #   This makes Q_b = outer([1..1],[1..1]) in the Stein equation,
+        #   keeping W = W_ss regardless of b (standard b=-1 → shift=1).
+        if segment.direction == BACKWARD:
+            self._shift = 0 if np.isinf(segment.a) else int(segment.a)
+        else:  # FORWARD
+            self._shift = 0 if np.isinf(segment.b) else int(abs(segment.b))
+
+        self.update()
+
+    # ------------------------------------------------------------------
+    # Public properties
+    # ------------------------------------------------------------------
+
+    @property
+    def poly_degree(self) -> int:
+        """int : Polynomial degree :math:'D'."""
+        return self._poly_degree
+
+    @poly_degree.setter
+    def poly_degree(self, v: int):
+        assert isinstance(v, int) and v >= 0, 'poly_degree must be a non-negative int'
+        self._poly_degree = v
+
+    @property
+    def g(self) -> float:
+        r"""float : Effective window size :math:`g`."""
+        return self._g
+
+    @g.setter
+    def g(self, v: float):
+        assert np.isscalar(v) and v > 1.0, 'g must be a scalar > 1'
+        self._g = float(v)
+
+    @property
+    def direction(self) -> str:
+        r"""str : Segment direction ``'bw'`` (backward) or ``'fw'`` (forward)."""
+        return self._direction
+
+    @property
+    def shift(self) -> int:
+        r"""int : Boundary shift applied to :math:`C`; 0 for the canonical origin."""
+        return self._shift
+
+    @property
+    def gamma(self) -> float:
+        r"""float : Exponential decay :math:`\gamma = (g-1)/g`."""
+        return (self._g - 1.0) / self._g
+
+    # ------------------------------------------------------------------
+    # ModelBase interface
+    # ------------------------------------------------------------------
+
+    def update(self):
+        r"""Recompute :math:`A` and :math:`C` from all stored parameters.
+
+        **Transition matrix** :math:`A`:
+
+        * direction ``'bw'``:
+          :math:`A = A_{\rm bw} = I_N - \tfrac{1}{g-1}\,\triu(\mathbf{1}_N, 1)`
+        * direction ``'fw'``:
+          :math:`A = A_{\rm fw} = A_{\rm bw}^{-1}`
+
+        **Output vector** :math:`C` (before shift):
+        :math:`C_{\rm base} = [1,\ldots,1]`.
+
+        **Shift** (when ``shift != 0``):
+        :math:`C \leftarrow C_{\rm base}\,A_{\rm bw}^{-\text{shift}}`.
+
+        This ensures that for a backward segment :math:`[a, \infty)` with
+        ``shift = a``, the output at absolute lag :math:`j` is
+        :math:`M_n(j - a;\,\gamma)` — orthogonal under the shifted window weight.
+        """
+        N = self._poly_degree + 1
+        A_bw = np.eye(N) - (1.0 / (self._g - 1.0)) * np.triu(np.ones((N, N)), 1)
+
+        if self._direction == 'fw':
+            self.A = np.linalg.inv(A_bw)
+        else:
+            self.A = A_bw
+
+        C_base = np.ones(N)
+        if self._shift != 0:
+            # C @ A_bw^{-shift}: matrix_power handles negative exponents via inverse.
+            C_base = C_base @ matrix_power(A_bw, -self._shift)
+        self.C = C_base
+
+        self._init_state_var_labels()
+        self._broadcast_C_to_multichannel()
+
+
 class AlssmSin(ModelBase):
     r"""
     ALSSM with a discrete-time (damped) sinusoidal output sequence.
@@ -1119,9 +1330,9 @@ class AlssmStacked(ModelBase):
     ----------
     alssms : tuple of ALSSMs
         Set of `M` autonomous linear state space models
-    deltas: list of floats, optional
+    lambdas: list of floats, optional
         List of `M` scalar factors for each output matrix of the ALSSM in `alssms`.
-        (default: deltas = None, i.e., all scalars are set to 1)
+        (default: lambdas = None, i.e., all scalars are set to 1)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
@@ -1155,17 +1366,17 @@ class AlssmStacked(ModelBase):
 
     """
 
-    def __init__(self, alssms, deltas=None, **kwargs):
+    def __init__(self, alssms, lambdas=None, **kwargs):
         super().__init__(**kwargs)
         self.alssms = alssms
-        self.deltas = deltas
+        self.lambdas = lambdas
         self.update()
 
     def update(self):
         for alssm in self.alssms:
             alssm.update()
         A = block_diag(*[alssm.A for alssm in self.alssms])
-        C = block_diag(*[g * alssm.C for g, alssm in zip(self.deltas, self.alssms)])
+        C = block_diag(*[g * alssm.C for g, alssm in zip(self.lambdas, self.alssms)])
         self.A = A
         self.C = C
         self._init_state_var_labels()
@@ -1204,9 +1415,9 @@ class AlssmSum(ModelBase):
     alssms : tuple of shape=(M) of :class:`Alssm`
         Set of `M` autonomous linear state space models.
         All ALSSMs need to have the same number of output channels, see :meth:`Alssm.output_count`
-    deltas: list of shape=(M) of floats, optional
+    lambdas: list of shape=(M) of floats, optional
         List of `M` scalar factors for each output matrix of the ALSSM in `alssms`.
-        (default: deltas = None, i.e., all scalars are set to 1)
+        (default: lambdas = None, i.e., all scalars are set to 1)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
@@ -1281,9 +1492,9 @@ class AlssmProd(ModelBase):
     alssms : tuple of shape=(M) of :class:`Alssm`
         Set of `M` autonomous linear state space models.
         All ALSSMs need to have the same number of output channels, see :meth:`Alssm.output_count`
-    deltas: list of shape=(M) of floats, optional
+    lambdas: list of shape=(M) of floats, optional
         List of `M` scalar factors for each output matrix of the ALSSM in `alssms`.
-        (default: deltas = None, i.e., all scalars are set to 1)
+        (default: lambdas = None, i.e., all scalars are set to 1)
     **kwargs
         Forwarded to :class:`.ModelBase`
 
@@ -1323,9 +1534,9 @@ class AlssmProd(ModelBase):
             alssm.update()
         A = [1]
         C = [1]
-        for alssm, delta in zip(self.alssms, self.lambdas):
+        for alssm, lambda_ in zip(self.alssms, self.lambdas):
             A = np.kron(A, alssm.A)
-            C = np.kron(C, delta * alssm.C)
+            C = np.kron(C, lambda_ * alssm.C)
         self.A = A
         self.C = C
         self._init_state_var_labels()

@@ -83,7 +83,10 @@ import os
 # Y_nonoise = np.array(synthetic_image)[:, :, 3] * 1.0
 # Y_nonoise = Y_nonoise / np.nanmax(Y_nonoise)
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+try:
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+except NameError:
+    SCRIPT_DIR = os.getcwd()
 npy_file_letters = os.path.join(SCRIPT_DIR, "image_letters.npy")
 Y_nonoise = np.load(npy_file_letters)
 

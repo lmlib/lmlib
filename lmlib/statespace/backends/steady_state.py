@@ -3,10 +3,14 @@ from numpy.linalg import matrix_power, cond, inv
 from numpy.polynomial.legendre import legvander as _legvander
 import scipy.linalg as _sp
 
+from lmlib._warnings import WConditionNumberWarning
+import warnings
+
 __all__ = [
     'covariance_matrix_closed_form',
     'covariance_matrix_schur',
     'covariance_matrix_legendre',
+    'covariance_matrix_meixner',
     'covariance_matrix_limited_sum',
 ]
 
@@ -62,6 +66,161 @@ def _is_legendre_shift(A, tol=1e-10):
         if not np.allclose(A[:, n], expected_col, atol=tol, rtol=1e-6):
             return False, None
     return True, h
+
+
+def _is_meixner_shift(A, tol=1e-10):
+    r"""Return ``(True, g)`` if *A* is a Meixner shift matrix, else ``(False, None)``.
+
+    A Meixner shift matrix for effective window size :math:`g` satisfies
+
+    .. math::
+
+        A = I_N - \frac{1}{g-1}\,\triu(\mathbf{1}_N,\,1),
+
+    i.e., it is upper-triangular with ones on the diagonal and a single constant
+    value :math:`-1/(g-1)` on every super-diagonal entry.
+
+    The test verifies the diagonal, the strict upper triangle, and the lower
+    triangle.
+    """
+    N = A.shape[0]
+    if N < 1:
+        return False, None
+    # Diagonal must be all ones
+    if not np.allclose(np.diag(A), 1.0, atol=tol):
+        return False, None
+    # Lower triangle must be zero
+    if not np.allclose(np.tril(A, -1), 0.0, atol=tol):
+        return False, None
+    if N == 1:
+        # Degree-0: A = [[1]], g is arbitrary — return True with g=None sentinel
+        return True, None
+    # All strict upper-triangle entries must be equal and negative
+    upper_vals = A[np.triu_indices(N, k=1)]
+    if not np.allclose(upper_vals, upper_vals[0], atol=tol):
+        return False, None
+    val = upper_vals[0]
+    if val >= 0.0:
+        return False, None
+    # Recover g: val = -1/(g-1)  =>  g = 1 - 1/val
+    g = 1.0 - 1.0 / val
+    if g <= 1.0:
+        return False, None
+    return True, g
+
+
+def covariance_matrix_meixner(A, C, gamma, a, b, delta):
+    r"""Exact steady-state Gram matrix for :class:`AlssmPolyMeixner`.
+
+    Exploits the closed-form orthogonality of the Meixner polynomials
+    :math:`M_n(j;\,1,\gamma)` under the geometric weight :math:`\gamma^j`:
+
+    .. math::
+
+        \sum_{j=a}^{b} \gamma^j\, M_m(j)\, M_n(j) = W_n\,\delta_{mn},
+        \qquad W_n = \frac{1}{(1-\gamma)\,\gamma^n}
+
+    for the **full semi-infinite** backward segment (:math:`a=0, b=\infty`).
+
+    For finite segments or forward infinite segments, the function falls back to a
+    direct Vandermonde sum using :func:`scipy.special.hyp2f1` to evaluate the
+    Meixner basis exactly.
+
+    Parameters
+    ----------
+    A, C, gamma, a, b, delta
+        Same as :func:`covariance_matrix_schur`.
+
+    Returns
+    -------
+    W : ndarray of shape (N, N)
+        Steady-state Gram matrix.
+    """
+    from scipy.special import hyp2f1
+
+    A = np.asarray(A, dtype=float)
+    is_m, g = _is_meixner_shift(A)
+    if not is_m:
+        raise ValueError('covariance_matrix_meixner requires a Meixner shift matrix A.')
+
+    N = A.shape[0]
+
+    # Degree-0 is trivially diagonal regardless of g
+    if N == 1 or g is None:
+        # W = C[0]^2 * sum_{j=a}^{b} gamma^j
+        # The C[0]^2 factor is required for any ALSSM whose output scalar C[0]
+        # differs from 1 (e.g. after a whitening/transformation step).
+        c_sq = float(np.atleast_1d(np.asarray(C, dtype=float)).ravel()[0]) ** 2
+        if np.isinf(a) and a < 0 and np.isinf(b) and b > 0:
+            val = 1.0 / (1.0 - gamma) + 1.0 / (1.0 / gamma - 1.0) - 1.0
+        elif np.isinf(b) and b > 0:
+            a_int = max(int(a), 0)
+            val = gamma ** a_int / (1.0 - gamma)
+        elif np.isinf(a) and a < 0:
+            b_int = int(b)
+            val = gamma ** b_int / (1.0 / gamma - 1.0) if gamma > 1 else 0.0
+            if gamma > 1:
+                val = gamma ** (-b_int - 1) / (gamma - 1.0)
+            else:
+                # forward segment: weight = gamma^{-j}, j = 1..inf, but gamma<1 means
+                # gamma^{-j} grows — use forward gamma = 1/gamma
+                fg = 1.0 / gamma
+                val = fg ** (-b_int) / (fg - 1.0) if fg > 1 else 0.0
+        else:
+            a_int, b_int = int(a), int(b)
+            js = np.arange(a_int, b_int + 1, dtype=float)
+            val = np.sum(gamma ** js)
+        return np.array([[float(gamma ** (-delta)) * c_sq * val]])
+
+    # ---------- Full semi-infinite backward segment (a=0, b=+inf or vice versa) ----------
+    # This is the canonical case for which the closed-form diagonal is exact.
+    if not np.isinf(a) and not np.isinf(b):
+        # Finite segment: direct Vandermonde sum
+        a_int, b_int = int(a), int(b)
+        js = np.arange(a_int, b_int + 1, dtype=float)
+        V = np.zeros((len(js), N))
+        for n in range(N):
+            c = np.zeros(N); c[n] = 1.0
+            V[:, n] = np.array([float(hyp2f1(-n, -j, 1, 1.0 - 1.0/gamma)) for j in js])
+        w = gamma ** js
+        return float(gamma ** (-delta)) * (V.T @ (w[:, None] * V))
+
+    # One or both bounds are infinite.
+    # For the backward semi-infinite case starting at a_int:
+    # W[n,n] = sum_{j=a_int}^{inf} gamma^j M_n(j)^2
+    #        = gamma^{a_int} * W_n_canonical  (by the shift property)
+    # The off-diagonal terms are zero by orthogonality.
+    #
+    # For forward infinite (a=-inf, b=b_int): mirror via gamma -> 1/gamma
+    # and adjust sign of delta.
+
+    if np.isinf(b) and b > 0:
+        # Backward semi-infinite: [a_int, +inf)
+        a_int = 0 if np.isinf(a) else int(a)
+        ns = np.arange(N, dtype=float)
+        # Shift the canonical formula: extra gamma^{a_int} factor from the sum start
+        diag_vals = (gamma ** (a_int - delta)) / ((1.0 - gamma) * gamma ** ns)
+        return np.diag(diag_vals)
+
+    if np.isinf(a) and a < 0:
+        # Forward semi-infinite: (-inf, b_int]
+        # Weights are gamma^{-j} for j = b_int, b_int-1, ..., -inf  (gamma > 1 here)
+        # OR equivalently: forward segment uses gamma_fw = g/(g-1) > 1, so
+        # the window decays as gamma_fw^{j-delta} going forward into the past.
+        # gamma passed in is the SEGMENT gamma, which for a forward segment is > 1.
+        # Canonical closed-form with gamma > 1:
+        # W[n,n] = sum_{j=-inf}^{b_int} gamma^j M_n(j; 1, gamma)^2
+        # = gamma^{b_int} / (gamma-1) / gamma^n  (analogous formula, mirrored)
+        b_int = int(b)
+        ns = np.arange(N, dtype=float)
+        diag_vals = (gamma ** (b_int - delta)) / ((gamma - 1.0) * gamma ** (-ns))
+        # double-check sign: for gamma>1, sum_{j=-inf}^{b} gamma^j = gamma^b/(gamma-1)
+        # and M_n orthog under gamma^j with gamma>1 has norm 1/((gamma-1)*gamma^{-n})
+        # = gamma^n / (gamma-1)
+        diag_vals = (gamma ** (b_int - delta)) * (gamma ** ns) / (gamma - 1.0)
+        return np.diag(diag_vals)
+
+    raise ValueError('Unexpected (a, b) combination in covariance_matrix_meixner.')
 
 
 def covariance_matrix_legendre(A, C, gamma, a, b, delta):
@@ -228,6 +387,15 @@ def covariance_matrix_schur(A, C, gamma, a, b, delta):
         if is_leg:
             return covariance_matrix_legendre(A, C, gamma, a, b, delta)
 
+    # ── Fast path: AlssmPolyMeixner ──────────────────────────────────────────────
+    # The Meixner basis is orthogonal under the geometric weight gamma^j, so the
+    # Gram matrix is exactly diagonal with closed-form entries. Avoids the N^2×N^2
+    # Stein equation entirely, giving exact results for any degree and segment type.
+    is_m, _ = _is_meixner_shift(A)
+    if is_m:
+        return covariance_matrix_meixner(A, C, gamma, a, b, delta)
+
+
     # ── General path: Stein equation in N^2 × N^2 ───────────────────────────
     N = int(np.shape(A)[0])
     N2 = N * N
@@ -244,13 +412,19 @@ def covariance_matrix_schur(A, C, gamma, a, b, delta):
 
     cond_coeff = cond(coeff)
     if cond_coeff > 1e15:
-        import warnings
+        # warnings.warn(
+        #     f'Badly conditioned Stein coefficient matrix (cond={cond_coeff:.2e}): '
+        #     'W may be inaccurate.  Consider using smaller segment boundaries or '
+        #     'a lower g value.',
+        #     WConditionNumberWarning, stacklevel=3,
+        # )
         warnings.warn(
-            f'Badly conditioned Stein coefficient matrix (cond={cond_coeff:.2e}): '
-            'W may be inaccurate.  Consider using smaller segment boundaries or '
-            'a lower g value.',
-            UserWarning, stacklevel=3,
-        )
+            'Badly conditioned Stein coefficient matrix: W may be inaccurate. '
+            'Consider using smaller segment boundaries or a lower g value.',
+            WConditionNumberWarning,
+            stacklevel=3,
+            )
+
 
     # Solve the linear system instead of forming an explicit inverse.
     # _sp.solve uses LU factorisation; backward error ~ u * kappa, not u * kappa^2.
@@ -275,13 +449,12 @@ def covariance_matrix_closed_form(A, C, gamma, a, b, delta):
         gATA_b = matrix_power(gATA, b) if ~(np.isinf(b)) else np.zeros_like(gATA, dtype=float)
         cond_coeff = cond(inv(gATA) - np.eye(N * N))
         if cond_coeff > 1e15:
-            import warnings
             warnings.warn(
-                f'Badly conditioned Steady State Matrix (cond={cond_coeff:.2e}): '
-                'W may be inaccurate. Consider using smaller segment boundaries or '
-                'a lower g value or use AlssmPolyLegendre',
-                UserWarning, stacklevel=3,
-            )
+                'Badly conditioned Stein coefficient matrix: W may be inaccurate. '
+                'Consider using smaller segment boundaries or a lower g value.',
+                WConditionNumberWarning,
+                stacklevel=3,
+                )
 
         return np.dot(gamma ** (-delta),
                       np.kron(np.eye(N), np.atleast_2d(C)) @
@@ -293,13 +466,13 @@ def covariance_matrix_closed_form(A, C, gamma, a, b, delta):
         gATA_b = matrix_power(gATA, b + 1) if ~(np.isinf(b)) else np.zeros_like(gATA)
         cond_coeff = cond(np.eye(N * N) - gATA)
         if cond_coeff > 1e15:
-            import warnings
             warnings.warn(
-                f'Badly conditioned Steady State Matrix (cond={cond_coeff:.2e}): '
-                'W may be inaccurate. Consider using smaller segment boundaries or '
-                'a lower g value or use AlssmPolyLegendre',
-                UserWarning, stacklevel=3,
-            )
+                'Badly conditioned Stein coefficient matrix: W may be inaccurate. '
+                'Consider using smaller segment boundaries or a lower g value.',
+                WConditionNumberWarning,
+                stacklevel=3,
+                )
+
         return np.dot(gamma ** (-delta),
                       np.kron(np.eye(N), np.atleast_2d(C)) @
                       (inv(np.eye(N * N) - gATA) @ (gATA_a - gATA_b)) @

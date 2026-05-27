@@ -122,11 +122,10 @@ axs[nax].plot(t, lcr, lw=1.0, c='k', label='LCR')
 axs[nax].scatter(peaks_B / fs, lcr[peaks_B], marker=7, c='b')
 axs[nax].legend(loc=1)
 axs[nax].set_ylim(bottom=0, top=2.2)
-
 axs[nax].set_xlim(left=.4, right=4.2)
+axs[nax].set(xlabel='time [s]')
 
 nax += 1
-plt.gcf().text(0.883, 0.164, '(s)')
 plt.subplots_adjust(bottom=0.21)
 
 plt.show()

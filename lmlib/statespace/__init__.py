@@ -13,12 +13,12 @@ with extensions from [Zalmai2017]_ , [Wildhaber2019]_ and [Baeriswyl2025]_.
 
 
 
-.. Currentmodule:: lmlib.statespace
+.. currentmodule:: lmlib.statespace
 
-.. Autosummary::
+.. autosummary::
     :toctree: ../_generated
 
-    Model
+    model
     cost
     rls
     backend
