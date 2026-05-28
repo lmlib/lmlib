@@ -2,8 +2,16 @@
 Alternative ALSSM Outputs [gu107.0]
 ===================================
 
-lmlib offers different possibilities to generate an ALSSM output from estimates.
-This guide script shows different methods.
+Demonstrates different ways to reconstruct the signal estimate from the
+state vectors returned by :meth:`~lmlib.statespace.rls.RLSAlssm.minimize_x`.
+
+A :class:`~lmlib.statespace.cost.CompositeCost` combines a polynomial and a
+sinusoidal ALSSM.  After filtering and minimization, two output methods are
+compared:
+
+* **Normal output** — all ALSSMs contribute equally (``alssm_weights=None``).
+* **Weighted output** — only the sinusoidal component is selected by passing
+  ``alssm_weights=(0, 1)``, setting the polynomial contribution to zero.
 
 """
 import numpy as np

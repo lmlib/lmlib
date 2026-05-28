@@ -2,13 +2,20 @@
 Single-Segment (CostSegment) Models: Trajectories and Windows [gu103.0]
 =======================================================================
 
-Defines a cost segment which consists of an ALSSM and a left-sided,
-exponentially decaying window.
+Defines a cost segment consisting of an ALSSM and a left-sided,
+exponentially decaying window, then visualises the window weights and
+the resulting signal trajectories for a set of state vectors.
+
+Two plot groups are shown:
+
+* **Upper plots** — the window and trajectories in the relative index
+  domain (centred at :math:`j=0`).
+* **Lower plots** — the same trajectories placed at absolute signal
+  positions ``K_refs`` in a length-``K`` output vector.
 
 See also:
-Cost Function Classes in :mod:`lmlib.statespace`,
 :class:`~lmlib.statespace.cost.CostSegment`,
-:class:`~lmlib.statespace.cost.Segment`
+:class:`~lmlib.statespace.segment.Segment`
 """
 import matplotlib.pyplot as plt
 import lmlib as lm
@@ -20,7 +27,7 @@ alssm_poly = lm.AlssmPoly(poly_degree=3, label="alssm-polynomial")
 # Defining a segment with a left-sided, exponentially decaying window
 a = -10  # left boundary
 b = 5  # right boundary
-g = 8  # effective weighted number of sample under the window (controlling the window size)
+g = 8  # effective number of weighted samples under the window (controls window size)
 left_seg = lm.Segment(a, b, lm.FORWARD, g, label="left-decaying")
 
 # creating the cost segment, combining window (segment) and model (ALSSM).

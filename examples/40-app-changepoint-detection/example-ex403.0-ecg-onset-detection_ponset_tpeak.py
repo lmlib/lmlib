@@ -3,8 +3,15 @@ ECG P, T Wave Onset and Peak Detection [ex403.0]
 ================================================
 Example published in [Waldmann2022]_ as Example 3.
 
-Another common task in cardiology is to accurately measure onsets and peaks of P and T waves in the electrocardiography (ECG) signals.
-We here demonstrate a Two-Sided Line Model (TSLM) to extract such features. 
+A common task in cardiology is to accurately measure the onsets and peaks
+of P and T waves in electrocardiography (ECG) signals.  This example
+demonstrates a Two-Sided Line Model (TSLM) approach for extracting these
+fiducial points.
+
+Two separate TSLM cost functions (``costs_A`` for onsets, ``costs_B`` for
+peaks) are applied to a noisy ECG signal.  Candidate locations are identified
+by LCR peaks, and onset / peak positions are refined by selecting the extremum
+within a neighbourhood of each peak.
 
 """
 

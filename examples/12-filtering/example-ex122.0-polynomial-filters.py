@@ -2,7 +2,18 @@
 Symmetric and Non-Symmetric Polynomial Filters with ALSSMs [ex122.0]
 ====================================================================
 
-Applies Composite Costs of polynomials of degrees N=0..4.
+Applies :class:`CompositeCost` instances with polynomial ALSSMs of degrees
+0 through 3 to a rectangular test signal.
+
+Two filter configurations are shown for each polynomial degree:
+
+* **Symmetric filter** — a forward left window and a backward right window
+  of equal size, yielding a zero-phase (non-causal) smoother.
+* **Left (causal) filter** — a single forward window on the left side only,
+  yielding a causal, phase-delayed smoother.
+
+Higher polynomial degrees follow the signal edges more closely but are more
+sensitive to noise away from transitions.
 
 """
 

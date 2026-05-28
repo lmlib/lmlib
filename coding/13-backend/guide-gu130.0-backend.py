@@ -1,7 +1,15 @@
 """
-Benchmarking of State-Space vs. Transfer-Function Backend [gu131.0]
-===================================================================
-This guide script demonstrates the usage of transfer-function (tf) backend in RLSAlssm* classes.
+Benchmarking State-Space vs. Transfer-Function Backend [gu130.0]
+================================================================
+
+Measures the throughput (in mega-samples per second, MS/s) of the
+:class:`~lmlib.statespace.rls.RLSAlssm` filter for the ``numpy`` and
+``lfilter`` backends on a single-channel signal.
+
+The ``lfilter`` backend converts the state-space recursion to a cascade of
+IIR/FIR transfer functions and uses :func:`scipy.signal.lfilter`, which
+can be significantly faster for long signals when the model order is low.
+
 """
 import timeit
 import numpy as np

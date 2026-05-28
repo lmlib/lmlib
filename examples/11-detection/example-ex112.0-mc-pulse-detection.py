@@ -2,9 +2,15 @@
 Multi-Channel Spike Detection [ex112.0]
 =======================================
 
-This example shows a spike detection algorithm that uses autonomous linear state space models together with
-exponentially decaying windows. Given is a multi-channel signal containing multiple spikes
-(sinusoidal cycle with decaying amplitude) with additive white Gaussian noise and a baseline.
+Demonstrates a spike detection algorithm that uses autonomous linear state
+space models together with exponentially decaying windows. The input is a
+multi-channel signal containing multiple spikes (sinusoidal cycles with
+decaying amplitude) with additive white Gaussian noise and a polynomial
+baseline.
+
+The algorithm fits a spike model and a baseline model simultaneously using
+a :class:`CompositeCost`, computes the Log-Cost Ratio (LCR) for each sample
+and channel, and identifies spike locations at LCR peaks.
 
 """
 

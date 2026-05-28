@@ -82,7 +82,7 @@ def numpy_backward_recursion_W(W, A, C,  a, b, delta, gamma, y, v, beta):
                 W[k-2] += W0
             else:
                 W[k-2] += W0 * beta
-                
+
 
 
 # xi1 recursions

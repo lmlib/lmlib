@@ -2,8 +2,16 @@
 Oversampling [ex125.0]
 ======================
 
-Oversampling Signals
+Oversamples a signal using an ALSSM-based polynomial interpolation.
 
+A sparse input signal (every ``os_rate``-th sample is non-zero, set to the
+original ECG sample value) is filtered with a :class:`CompositeCost` whose
+forward and backward segments span the oversampling interval.  The ALSSM
+fits a degree-2 polynomial locally around each original sample, and the
+dense output is read at all oversampled indices, effectively performing
+polynomial interpolation at the oversampling rate.
+
+Signal source: ``EECG_BASELINE_1CH_10S_FS2400HZ.csv`` (bundled library data).
 """
 import matplotlib.pyplot as plt
 import numpy as np

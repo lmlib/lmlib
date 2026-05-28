@@ -2,11 +2,15 @@
 ALSSM Trajectory [gu102.0]
 ==========================
 
-Evaluation of a ALSSM over a time range with a given initial state.
+Evaluates an ALSSM over a time range for a given initial state vector.
+
+:meth:`~lmlib.statespace.model.ModelBase.eval_output` computes the output
+sequence :math:`s_j(x_0) = C A^j x_0` for a range of evaluation indices
+:math:`j`.  Three polynomial ALSSMs of degree 1, 2, and 3 are evaluated and
+plotted together.
 
 See also:
-:meth:`~lmlib.statespace.model.Alssm.trajectory`,
-:meth:`~lmlib.statespace.model.Alssm.trajectories`
+:meth:`~lmlib.statespace.model.ModelBase.eval_output`
 
 """
 
@@ -24,7 +28,7 @@ alssm = lm.AlssmPoly(poly_degree=2, label='2nd degree')
 x0_d2 = [-1, 2, .1]  # initial state vector
 sx0_d2 = alssm.eval_output(x0_d2, js)
 
-alssm = lm.AlssmPoly(poly_degree=3, label='3nd degree')
+alssm = lm.AlssmPoly(poly_degree=3, label='3rd degree')
 x0_d3 = [-1, 2, .1, -.01]  # initial state vector
 sx0_d3 = alssm.eval_output(x0_d3, js)
 

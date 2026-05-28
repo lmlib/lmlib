@@ -288,9 +288,9 @@ class MPoly(_PolyBase):
 
 class Poly(_PolyBase):
     r"""
-    Univariate polyonimial in vector exponent notation: :math:`\alpha^\mathsf{T} x^q`
+    Univariate polynomial in vector exponent notation: :math:`\alpha^\mathsf{T} x^q`
 
-    Polynomial class for uni-variate polynomials in vector exponent notation, [Wildhaber2019]_, see Chapter 6.
+    Polynomial class for univariate polynomials in vector exponent notation; see [Wildhaber2019]_, Chapter 6.
 
     Such a polynomial `p(x)` in `x` is defined as
 
@@ -465,7 +465,7 @@ def poly_sum_expo(expos):
 
     Returns
     -------
-    expo :class:`~numpy.ndarray`
+    expo : :class:`~numpy.ndarray`
         ``q_tilde``,
         exponent vector :math:`\tilde{q}`
 
@@ -1014,17 +1014,17 @@ def poly_int_expo(expo):
 def poly_diff(poly):
     r""" :math:`\frac{d}{dx} \big(\alpha^{\mathsf{T}}x^q\big) = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}`
 
-    Derivation of a polynomial
+    Derivative of a polynomial
 
     Parameters
     ----------
     poly : Poly
-        polynomial for derivation
+        polynomial to differentiate
 
     Returns
     -------
     out : Poly
-        derivative
+        derivative polynomial
         :math:`\tilde{\alpha}^\mathsf{T} x^\tilde{q}`
 
     References
@@ -1037,13 +1037,12 @@ def poly_diff(poly):
 def poly_diff_coef(poly):
     r""" :math:`\frac{d}{dx} \big(\alpha^{\mathsf{T}}x^q\big) =\color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}`
 
-    Coefficient vector :math:`\tilde{\alpha}` of polynomial derivation, see :func:`poly_diff`
+    Coefficient vector :math:`\tilde{\alpha}` of the derivative of a polynomial; see :func:`poly_diff`
 
     Parameters
     ----------
     poly : Poly
-        polynomial for derivation
-
+        polynomial to differentiate
 
     Returns
     -------
@@ -1198,12 +1197,14 @@ def mpoly_int_expos(expos, position):
 
 def mpoly_diff(mpoly, position, sparse=False):
     """
-    Derivative of a multivariate polynomial with respect to the variable at a position
+    Derivative of a multivariate polynomial with respect to the variable at the given position.
 
     Parameters
     ----------
     mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+        Multivariate polynomial to differentiate.
     position : int
+        Index of the variable with respect to which the derivative is taken.
 
     Returns
     -------
@@ -1211,7 +1212,7 @@ def mpoly_diff(mpoly, position, sparse=False):
 
     References
     ----------
-    Todo: REF
+    [Wildhaber2019]_ (Eq. 6.24, multivariate generalisation)
 
     """
     coefs = (mpoly_diff_coef(mpoly, position, sparse),)
@@ -1221,12 +1222,16 @@ def mpoly_diff(mpoly, position, sparse=False):
 
 def mpoly_diff_coef(mpoly, position, sparse=False):
     """
-    Coefficient vector for :func:`mpoly_diff`
+    Coefficient vector for :func:`mpoly_diff`.
 
     Parameters
     ----------
     mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+        Multivariate polynomial to differentiate.
     position : int
+        Index of the differentiation variable.
+    sparse : bool, optional
+        If True, use sparse matrix arithmetic. Default: False.
 
     Returns
     -------
@@ -1234,7 +1239,7 @@ def mpoly_diff_coef(mpoly, position, sparse=False):
 
     References
     ----------
-    TODO: Ref
+    [Wildhaber2019]_ (Eq. 6.25, multivariate generalisation)
 
     """
     return np.dot(mpoly_diff_coef_L(mpoly.expos, position, sparse), mpoly.coefs[0])
@@ -1242,12 +1247,16 @@ def mpoly_diff_coef(mpoly, position, sparse=False):
 
 def mpoly_diff_coef_L(expos, position, sparse=False):
     """
-    Coefficient manipulation matrix for :func:`mpoly_diff`
+    Coefficient manipulation matrix for :func:`mpoly_diff`.
 
     Parameters
     ----------
     expos : tuple of array_like
+        Exponent vectors of the multivariate polynomial.
     position : int
+        Index of the differentiation variable.
+    sparse : bool, optional
+        If True, return a sparse matrix. Default: False.
 
     Returns
     -------
@@ -1255,7 +1264,7 @@ def mpoly_diff_coef_L(expos, position, sparse=False):
 
     References
     ----------
-    TODO: Ref
+    [Wildhaber2019]_ (Eq. 6.27, multivariate generalisation)
 
     """
     if sparse:
@@ -1268,12 +1277,14 @@ def mpoly_diff_coef_L(expos, position, sparse=False):
 
 def mpoly_diff_expos(expos, position):
     """
-    Exponent vectors for :func:`mpoly_diff`
+    Exponent vectors for :func:`mpoly_diff`.
 
     Parameters
     ----------
     expos : tuple of array_like
+        Exponent vectors of the multivariate polynomial.
     position : int
+        Index of the differentiation variable.
 
     Returns
     -------
@@ -1281,7 +1292,7 @@ def mpoly_diff_expos(expos, position):
 
     References
     ----------
-    TODO: Ref
+    [Wildhaber2019]_ (Eq. 6.26, multivariate generalisation)
 
     """
 
@@ -1435,11 +1446,14 @@ def mpoly_square(mpoly, sparse=False):
 
 def mpoly_square_coef_L(expos, sparse=False):
     """
-    Coefficient manipulation matrix for :func:`mpoly_square`
+    Coefficient manipulation matrix for :func:`mpoly_square`.
 
     Parameters
     ----------
-    expos : array_like
+    expos : tuple of array_like
+        Exponent vectors of the multivariate polynomial.
+    sparse : bool, optional
+        If True, return a sparse matrix. Default: False.
 
     Returns
     -------
@@ -1447,7 +1461,7 @@ def mpoly_square_coef_L(expos, sparse=False):
 
     References
     ----------
-    TODO: Ref
+    [Wildhaber2019]_ (Eq. 6.44)
 
     """
     if len(expos) == 1:
@@ -1533,7 +1547,7 @@ def mpoly_square_expos(expos):
 
 def mpoly_square_expo_Ms(expos):
     r"""
-    Exponent manipulation matrices :math:`M_1, M_2, \dots M_N` of square of `N`-multivariate polynomials
+    Exponent manipulation matrices :math:`M_1, M_2, \dots M_N` for the square of an *N*-variate polynomial.
 
     Parameters
     ----------
@@ -1549,7 +1563,7 @@ def mpoly_square_expo_Ms(expos):
 
     References
     ----------
-    TODO: Ref
+    [Wildhaber2019]_ (Eq. 6.45)
 
     """
     out = []
@@ -2301,15 +2315,15 @@ def mpoly_transformation_expos(q):
 
 
 def mpoly_extend_coef_L(expos, pos, sparse=False):
-    """Extends the polynomial by variables without changing its result
+    r"""Extends the polynomial by additional variables without changing its value.
 
-    Basis expansion
+    Basis expansion:
 
     .. math::
 
-        \alpha^\mathsf{T}x^q = (\Lambda\alpha)^\mathsf{T}(x^q \otimes y\^r \otimes ... \otimes z^s)
+        \alpha^\mathsf{T}x^q = (\Lambda\alpha)^\mathsf{T}(x^q \otimes y^r \otimes \cdots \otimes z^s)
 
-    for $s = [0, 1]$
+    for :math:`s = [0, 1]`.
 
     """
     tmp_ = []

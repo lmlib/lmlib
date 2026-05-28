@@ -1,8 +1,18 @@
 """
-Benchmarking of Stace-Space vs. Transfer-Function Backend [gu131.0]
-===================================================================
+Benchmarking State-Space vs. Transfer-Function Backend [gu131.0]
+================================================================
 
-This guide script demonstrates the usage of transfer-function (tf) backend in RLSAlssm* classes. Here we use 6 different channels instead of one.
+Measures and compares the throughput (MS/s) of the
+:class:`~lmlib.statespace.rls.RLSAlssm` filter across the ``numpy``,
+``lfilter``, and (if available) ``jit`` backends for four configurations:
+
+* Single-channel, non-steady-state
+* Single-channel, steady-state
+* Multi-channel parallel (M=6), non-steady-state
+* Multi-channel parallel (M=6), steady-state
+
+Results are displayed as a horizontal bar chart.
+
 """
 import timeit
 import numpy as np

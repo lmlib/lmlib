@@ -2,7 +2,15 @@
 Matched Filter in Low-Dimensional ALSSM Feature Space [ex502.0]
 ===============================================================
 
-Implementation of a Matched Filter using ALSSM signal approximations (here: Polynomials) to significantly increase the processing speed.
+Implements a matched filter using ALSSM signal approximations (polynomial
+basis) to significantly increase processing speed compared to a direct
+sample-domain matched filter.
+
+A reference template is extracted from a 9-channel ECG signal and projected
+onto the Legendre polynomial basis via :class:`AlssmPolyLegendre`.  The
+matched filter response is computed as an inner product of the template
+state vector with each signal window's state vector, which runs in
+:math:`O(N_\\text{states})` per sample instead of :math:`O(N_\\text{template})`.
 
 Author(s): Christof Baeriswyl
 """

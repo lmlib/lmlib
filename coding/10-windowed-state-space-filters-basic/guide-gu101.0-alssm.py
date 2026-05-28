@@ -2,7 +2,15 @@
 Basic ALSSM Coding [gu101.0]
 ============================
 
-This guide script demonstrates how to set up an autonomous linear state space model ALSSM.
+Demonstrates how to set up an autonomous linear state space model (ALSSM).
+
+Two approaches are shown:
+
+1. **Native ALSSM** — explicit definition of the state transition matrix
+   :math:`A` and output matrix :math:`C` using :class:`~lmlib.statespace.model.Alssm`.
+2. **Built-in polynomial ALSSM** — using the convenience class
+   :class:`~lmlib.statespace.model.AlssmPoly`, which constructs the Pascal
+   upper-triangular :math:`A` and default :math:`C` from a polynomial degree.
 
 """
 import lmlib as lm

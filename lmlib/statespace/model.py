@@ -29,16 +29,17 @@ __all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmPolyLegendre', 'AlssmP
 
 class ModelBase(ABC):
     """
-    Abstract baseclass for autonomous linear state space models.
+    Abstract base class for autonomous linear state space models (ALSSMs).
 
     Parameters
     ----------
     label : str, optional
-        Label of ALSSM, default: 'n/a'
-    C_init : array_like, None, optional
-        Initialized Output Matrix, default: 'None'
+        Label of the ALSSM. Default: ``'n/a'``.
+    C_init : array_like or None, optional
+        Initial output matrix stored for use by :meth:`update`. Default: None.
     force_MC : bool, optional
-        Broadcasts an 1-dimensional `C`-vector to a 2-dimensional array of shape (1, N)
+        If True, broadcasts a 1-dimensional ``C`` vector to a 2-dimensional
+        array of shape ``(1, N)`` (multi-channel form). Default: False.
     """
 
     def __init__(self, label:str='n/a', C_init=None, force_MC:bool=False):
@@ -52,6 +53,7 @@ class ModelBase(ABC):
         self.force_MC = force_MC
 
     def __str__(self):
+        """Return a compact string representation showing A, C, and the label."""
         A_str = re.sub('\n+', ',', np.array_str(self.A).replace('\n', '')).replace('[,', '[')
         C_str = re.sub('\n+', ',', np.array_str(self.C).replace('\n', '')).replace('[,', '[')
         return f'{type(self).__name__}(A={A_str}, C={C_str}, label={self.label})'
@@ -59,9 +61,11 @@ class ModelBase(ABC):
     @abstractmethod
     def update(self):
         """
-        Model update
+        Recompute the internal model matrices A and C.
 
-        Updates the internal model (A and C Matrix) based on the initialization parameters of a class.
+        Updates :attr:`A` and :attr:`C` from the stored initialisation parameters
+        (e.g. ``poly_degree``, ``omega``, ``gamma``). Called automatically during
+        ``__init__`` and should be called again after manually changing any parameter.
         """
         pass
 
@@ -72,6 +76,7 @@ class ModelBase(ABC):
 
     @A.setter
     def A(self, A):
+        """Validate and set the state transition matrix A."""
         assert is_array_like(A), 'A is not array like'
         assert is_square(A), f'A is not square, {info_str_found_shape(A)}'
         self._A = np.asarray(A)
@@ -83,6 +88,7 @@ class ModelBase(ABC):
 
     @C.setter
     def C(self, C):
+        """Validate and set the output matrix C."""
         assert is_array_like(C), 'C is not array like'
         assert is_1dim(C) or is_2dim(C), f'C is not 1 or 2 dimensional, {info_str_found_shape(C)}'
         self._C = np.asarray(C)
@@ -94,6 +100,7 @@ class ModelBase(ABC):
 
     @C_init.setter
     def C_init(self, C):
+        """Store the initial output matrix used by :meth:`update`."""
         if C is None:
             self._C_init = None
         else:
@@ -108,6 +115,7 @@ class ModelBase(ABC):
 
     @label.setter
     def label(self, label: str):
+        """Set the model label (must be a string)."""
         assert isinstance(label, str)
         self._label = label
 
@@ -118,16 +126,26 @@ class ModelBase(ABC):
 
     @property
     def Q(self):
-        """int : Alssm output dimension :math:`Q`"""
+        """int : Number of output channels :math:`Q`.
+
+        Returns the first dimension of :attr:`C` when ``C`` is 2-D (multi-channel),
+        or ``0`` when ``C`` is 1-D (single scalar output channel).
+
+        Note: ``Q=0`` is used as a sentinel meaning "scalar output" (a single channel).
+        It does **not** mean zero channels.
+
+        See also :attr:`is_MC`.
+        """
         return self._C.shape[0] if np.ndim(self._C) == 2 else 0
 
     @property
     def alssms(self) -> list:
-        """list : Set of models"""
+        """list : Sub-ALSSMs that compose this model (empty for leaf nodes such as :class:`Alssm`)."""
         return self._alssms
 
     @alssms.setter
     def alssms(self, alssms):
+        """Validate and set the list of sub-ALSSMs."""
         assert isinstance(alssms, Iterable), 'alssms is not iterable'
         for alssm in alssms:
             assert isinstance(alssm, ModelBase), 'element in alssms is not instance nor subclass of ALSSM'
@@ -135,11 +153,12 @@ class ModelBase(ABC):
 
     @property
     def lambdas(self) -> npt.NDArray:
-        """:class:`np.ndarray` : Output scaling factors for each ALSSM in `alssms`"""
+        """:class:`np.ndarray` : Per-ALSSM scalar output scaling factors :math:`\\lambda_m` applied to each sub-model's output matrix :math:`C_m`."""
         return self._lambdas
 
     @lambdas.setter
     def lambdas(self, lambdas):
+        """Validate and set the per-ALSSM output scaling factors."""
         _n = len(self.alssms)
         if lambdas is None:
             lambdas = [1] * _n
@@ -155,42 +174,48 @@ class ModelBase(ABC):
 
     @property
     def force_MC(self) -> bool:
-        """bool : Flag to broadcast to a 2-dimensional `C` state space variable"""
+        """bool : If True, a 1-D output vector ``C`` is broadcast to a 2-D array of shape ``(1, N)`` (multi-channel form)."""
         return self._force_MC
 
     @force_MC.setter
     def force_MC(self, force_MC: bool):
+        """Set the multi-channel broadcast flag (must be bool)."""
         assert isinstance(force_MC, bool), 'force_MC is not of type boolean'
         self._force_MC = force_MC
 
     @ property
     def is_MC(self) -> bool:
-        """bool : returns True if 'C' is MultiChannel (2d)"""
+        """bool : True if the output matrix ``C`` is 2-D (multi-channel form), False if 1-D (scalar output)."""
         return np.ndim(self._C) == 2
 
     def eval_output(self, xs, js=None):
         """
-        Evaluate ALSSM outputs.
+        Evaluate the ALSSM output for one or more state vectors.
 
-        If js is None:
+        Without evaluation index (``js=None``):
+
+        .. math::
             s(x) = C x
-        If js is provided:
+
+        With evaluation indices (``js`` provided):
+
+        .. math::
             s_j(x) = C A^j x
 
         Parameters
         ----------
-        xs : array_like, shape=(..., N)
-            State vector(s)
-        js : array_like, optional, shape=(J,)
-            ALSSM evaluation indices
+        xs : array_like of shape (..., N)
+            State vector(s). The last dimension must equal the model order N.
+        js : array_like of shape (J,) or None, optional
+            Sequence of integer evaluation indices. If None, evaluates at
+            :math:`j = 0` only (i.e. returns :math:`Cx`).
 
         Returns
         -------
         s : ndarray
-            If js is None:
-                shape=(..., [L])
-            If js is provided:
-                shape=(J, ..., [L])
+            If ``js`` is None: shape ``(..., [Q])``.
+            If ``js`` is provided: shape ``(J, ..., [Q])``.
+            The ``[Q]`` dimension is present only when :attr:`is_MC` is True.
         """
         xs = np.asarray(xs)
 
@@ -210,58 +235,55 @@ class ModelBase(ABC):
 
     def dump_tree(self) -> str:
         """
-        Returns the internal structure of the ALSSM model as a string.
+        Return the internal ALSSM tree structure as a string.
 
         Returns
         -------
         out : str
-            String representing internal model structure.
+            Multi-line string representing the nested ALSSM structure.
 
         Examples
         --------
         >>> import lmlib as lm
-        >>> alssm_poly = lm.AlssmPoly(4, label="high order polynomial.rst")
+        >>> import numpy as np
+        >>> alssm_poly = lm.AlssmPoly(4, label="high order polynomial")
         >>> A = [[1, 1], [0, 1]]
         >>> C = [[1, 0]]
         >>> alssm_line = lm.Alssm(A, C, label="line")
         >>> stacked_alssm = lm.AlssmStacked((alssm_poly, alssm_line), label='stacked model')
         >>> print(stacked_alssm.dump_tree())
-        └-Alssm : stacked, A: (7, 7), C: (2, 7), label: stacked model
-          └-Alssm : polynomial.rst, A: (5, 5), C: (1, 5), label: high order polynomial.rst
-          └-Alssm : native, A: (2, 2), C: (1, 2), label: line
-
-
+        AlssmStacked, A: (7, 7), C: (2, 7), label: stacked model
+          └-AlssmPoly, A: (5, 5), C: (1, 5), label: high order polynomial
+          └-Alssm, A: (2, 2), C: (1, 2), label: line
         """
         return self._rec_tree(level=0)
 
     def set_state_var_label(self, label:str, indices:tuple[int]):
         """
-        Adds a label for one or multiple state variabels in the state vector.
-        Such labels are used to quickly referece to single states in the state vector by its names.
+        Register a label for one or more state vector indices.
+
+        Labels allow state components to be referenced by name rather than by
+        numeric index; see :meth:`get_state_var_indices`.
 
         Parameters
         ----------
         label : str
-            Label name
-        indices : tuple
-            State indices
+            Label name to register.
+        indices : tuple of int
+            State vector indices associated with this label.
 
         Examples
         --------
-
         >>> import lmlib as lm
-        >>>
         >>> alssm = lm.AlssmPoly(poly_degree=1, label='slope_with_offset')
         >>> alssm.set_state_var_label('slope', (1,))
-        >>> alssm._state_var_labels
-        {'x': range(0, 2), 'x0': (0,), 'x1': (1,), 'slope': (1,)}
-        >>> alssm._state_var_labels['slope']
-        1,
-
+        >>> alssm.get_state_var_indices('slope_with_offset.slope')
+        (1,)
         """
         self._state_var_labels[label] = indices
 
     def _init_state_var_labels(self):
+        """Initialise the internal state-variable label dictionary from sub-ALSSMs."""
         for n in range(self.N):
             self._state_var_labels['x' + str(n)] = (n,)
         for n in range(self.N, 0, -1):
@@ -269,6 +291,16 @@ class ModelBase(ABC):
         self._state_var_labels['x'] = list(range(self.N))
 
     def _rec_tree(self, level):
+        """
+        Recursively build the state-variable label tree from nested ALSSMs.
+
+        Parameters
+        ----------
+        prefix : str
+            Dot-separated label prefix accumulated during recursion.
+        alssm : ModelBase
+            Current ALSSM node to process.
+        """
         str_self = f'{type(self).__name__}, A: {str(self.A.shape)}, C: {str(self.C.shape)}, label: {self.label}'
         str_tree = ('  ' * level + '└-' + str_self)
         if len(self.alssms) != 0:
@@ -279,12 +311,19 @@ class ModelBase(ABC):
 
     def get_state_var_labels(self):
         """
-        Returns a list of state variable labels
+        Return all registered state-variable labels together with their index tuples.
+
+        Labels are accumulated recursively from all nested sub-ALSSMs, with
+        each label prefixed by the current model's :attr:`label`.  The state
+        indices are adjusted to reflect the position within the combined
+        (block-diagonal) state vector.
 
         Returns
         -------
-        out : list
-            list of state variable labels
+        out : list of (str, tuple of int)
+            List of ``(label_string, indices)`` pairs.  ``label_string`` is a
+            dot-separated path (e.g. ``'stacked.poly.x0'``) and ``indices`` is
+            the corresponding tuple of integer state-vector positions.
         """
         state_list = []
         for var_label, indices in self._state_var_labels.items():
@@ -299,17 +338,19 @@ class ModelBase(ABC):
 
     def get_state_var_indices(self, label):
         """
-        Returns the state indices for a specified label
+        Return the state-vector indices for a state variable identified by its label.
 
         Parameters
         ----------
         label : str
-            state label
+            Fully qualified state label (dot-separated path), as returned by
+            :meth:`get_state_var_labels`.
 
         Returns
         -------
-        out : list of int
-            state indices of the label
+        out : tuple of int or list of int
+            State-vector indices associated with ``label``.
+            Returns an empty list if ``label`` is not found.
         """
 
         for l, indices in self.get_state_var_labels():
@@ -318,10 +359,15 @@ class ModelBase(ABC):
         return []
 
     def get_alssm_output_dimension(self):
-        """int : Returns Alssm output dimension :math:`Q`"""
+        """Return the ALSSM output dimension :math:`Q` (number of output channels)."""
         return self.Q
 
     def _broadcast_C_to_multichannel(self):
+        """
+        Broadcast a 1-D output vector C to shape (1, N) when ``force_MC`` is True.
+
+        Has no effect when C is already 2-D or when ``force_MC`` is False.
+        """
         if self.force_MC:
             self.C = np.atleast_2d(self.C)
 
@@ -334,13 +380,12 @@ class Alssm(ModelBase):
     state space model, defined recursively by
 
     .. math::
-       x[k+1] &= Ax[k]
-
-       s_k(x) = y[k] &= Cx[k],
+       x[k+1] &= A\,x[k]
+       s_k(x) = y[k] &= C\,x[k],
 
     where :math:`A \in \mathbb{R}^{N\times N}, C \in \mathbb{R}^{Q \times N}` are the fixed model parameters (matrices),
     :math:`k` the time index,
-    :math:`y[k] \in \mathbb{R}^{L \times 1}` the output vector,
+    :math:`y[k] \in \mathbb{R}^{Q \times 1}` the output vector,
     and :math:`x[k] \in \mathbb{R}^{N}` the state vector.
 
     For more details, see also [Wildhaber2019]_ [Eq. 4.1].
@@ -349,37 +394,33 @@ class Alssm(ModelBase):
     ----------
     A : array_like, shape=(N, N)
         State Matrix
-    C : array_like, shape=([Q,] N)
-        Output Matrix
+    C : array_like of shape ([Q,] N)
+        Output matrix. Use shape ``(N,)`` for a scalar (single-channel) output
+        or shape ``(Q, N)`` for a Q-channel output.
     **kwargs
         Forwarded to :class:`.ModelBase`
 
     Note
     ----
-    The output matrix :math:`C` can be of the form (N,) for a 1-dimensional output or of the form (Q, N), resulting in a
-    2-dimensional output. Accordingly, the signal sample :math:`y[k]` in a cost function must be in the form of the ALSSM output.
+    When ``C`` has shape ``(N,)``, each signal sample ``y[k]`` in a cost function
+    must be a scalar. When ``C`` has shape ``(Q, N)``, each sample must be a
+    vector of length Q.
 
     |def_N|
     |def_Q|
 
     Examples
     --------
-
     >>> import lmlib as lm
     >>>
     >>> A = [[1, 1], [0, 1]]
     >>> C = [1, 0]
     >>> alssm = lm.Alssm(A, C, label='line')
     >>> print(alssm)
-    A =
-    [[1 1]
-     [0 1]]
-    C =
-    [1 0]
+    AlssmPoly(A=[[1 1],[0 1]], C=[1 0], label=line)
 
     >>> alssm
-    Alssm : native, A: (2, 2), C: (1, 2), label: line
-
+    Alssm(A=[[1 1],[0 1]], C=[1 0], label=line)
     """
 
     def __init__(self, A, C, **kwargs):
@@ -389,6 +430,7 @@ class Alssm(ModelBase):
         self.update()
 
     def update(self):
+        """Reapply ``C_init`` and re-broadcast C to multi-channel form if needed."""
         self.C = self.C_init
         self._init_state_var_labels()
         self._broadcast_C_to_multichannel()
@@ -396,14 +438,14 @@ class Alssm(ModelBase):
 
 class AlssmPoly(ModelBase):
     r"""
-    ALSSM with discrete-time polynomial.rst output sequence
+    ALSSM with discrete-time polynomial output sequence.
 
-    Representation of a `Q`-th degree polynomial.rst in `i` of the form
+    Represents a degree-D polynomial in the propagation index :math:`i`:
 
     .. math::
-        P_Q(i) = x_0 i^0 + x_1 i^1 + ... + x_Q i^Q
+        P_Q(i) = x_0 i^0 + x_1 i^1 + \cdots + x_D i^D
 
-    as an ALSSM, with transition matrix
+    as an ALSSM with Pascal upper-triangular transition matrix, e.g. for :math:`D = 2`:
 
     .. math::
         A =
@@ -421,18 +463,19 @@ class AlssmPoly(ModelBase):
             x_0 & x_1 & ... & x_N \\
         \end{bmatrix}^T
 
+    where :math:`x_n` is the coefficient of the :math:`i^n` term.
+
     For more details see [Wildhaber2019]_ :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
 
 
     Parameters
     ----------
     poly_degree : int
-        Polynomial degree. Corresponds to the highest exponent of the polynomial.rst.
-        It follows an ALSSM system of order `N = poly_degree+1`.
-    C : array_like, shape=([Q,] N), optional
-        Output Matrix.
-        If no output matrix is given, C gets initialized automatically to `[1, 0, ...]` such that the shape
-        is `(N,)`. In addition with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)`. (default: C=None)
+        Polynomial degree :math:`D`. The model order is :math:`N = D + 1`.
+    C : array_like of shape ([Q,] N), optional
+        Output matrix. If not given, defaults to ``[1, 0, ..., 0]`` of shape ``(N,)``,
+        selecting the constant term :math:`x_0`. With ``force_MC=True`` the shape
+        is broadcast to ``(1, N)``. Default: None.
     **kwargs
         Forwarded to :class:`.ModelBase`
 
@@ -444,32 +487,20 @@ class AlssmPoly(ModelBase):
 
     Examples
     --------
-    Setting up a 4. order polynomial.rst, autonomous linear state space model.
+    Setting up a degree-3 polynomial ALSSM:
 
     >>> import lmlib as lm
     >>> alssm = lm.AlssmPoly(poly_degree=3, label="poly")
     >>> print(alssm)
-    A =
-    [[1 1 1 1]
-     [0 1 2 3]
-     [0 0 1 3]
-     [0 0 0 1]]
-    C =
-    [1 0 0 0]
+    AlssmPoly(A=[[1 1 1 1],[0 1 2 3],[0 0 1 3],[0 0 0 1]], C=[1 0 0 0], label=poly)
 
-    Setting up a 3. order polynomial, autonomous linear state space model with two outputs.
+    Setting up a degree-2 polynomial ALSSM with two output channels:
 
+    >>> import numpy as np
     >>> C = np.array([[1, 0, 0], [0, 1, 0]])
     >>> alssm = lm.AlssmPoly(poly_degree=2, C=C, label="poly")
     >>> print(alssm)
-    A =
-    [[1 1 1]
-     [0 1 2]
-     [0 0 1]]
-    C =
-    [[1 0 0]
-     [0 1 0]]
-
+    AlssmPoly(A=[[1 1 1],[0 1 2],[0 0 1]], C=[[1 0 0],[0 1 0]], label=poly)
     """
 
     def __init__(self, poly_degree:int, C=None, **kwargs):
@@ -479,6 +510,7 @@ class AlssmPoly(ModelBase):
         self.update()
 
     def update(self):
+        """Recompute the Pascal upper-triangular A and default C from ``poly_degree``."""
         if self.C_init is None:
             self.C = np.hstack([[1], [0] * self.poly_degree])
         else:
@@ -489,11 +521,12 @@ class AlssmPoly(ModelBase):
 
     @property
     def poly_degree(self) -> int:
-        """int : Polynomial degree (highest exponent/ order - 1)"""
+        """int : Polynomial degree :math:`D` (highest exponent / model order - 1)."""
         return self._poly_degree
 
     @poly_degree.setter
     def poly_degree(self, poly_degree):
+        """Validate and set the polynomial degree (non-negative int)."""
         assert isinstance(poly_degree, int), 'poly_degree is not of type int'
         assert poly_degree >= 0, 'poly_degree is not larger then 0'
         self._poly_degree = poly_degree
@@ -501,10 +534,10 @@ class AlssmPoly(ModelBase):
 
 class AlssmPolyJordan(ModelBase):
     r"""
-    ALSSM with a discrete-time polynomial output sequence, in Jorandian normal form
+    ALSSM with a discrete-time polynomial output sequence in Jordan normal form.
 
-
-    Discrete-time polynomial with ALSSM with transition matrix in Jordanian normal form, see [Zalmai2017]_
+    Discrete-time polynomial ALSSM with a shift-register (Jordan) transition matrix;
+    see [Zalmai2017]_
     :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/176652/zalmai_thesis.pdf#page=41>`.
 
 
@@ -520,10 +553,10 @@ class AlssmPolyJordan(ModelBase):
     Parameters
     ----------
     poly_degree : int
-       Polynomial degree. Corresponds to the highest exponent of the polynomial. `N = poly_degree+1`.
-    C : array_like, shape=(L, N), optional
-        Output Matrix.
-        If C is not set, C is initialized to `[[..., 0, 1]]` of shape `(1, N)`. (default: C=None)
+        Polynomial degree :math:`D`. The model order is :math:`N = D + 1`.
+    C : array_like of shape ([Q,] N), optional
+        Output matrix. If not given, defaults to ``[1, 0, ..., 0]`` of shape ``(N,)``.
+        Default: None.
     **kwargs
         Forwarded to :class:`.ModelBase`
 
@@ -534,22 +567,12 @@ class AlssmPolyJordan(ModelBase):
 
     Examples
     --------
-    Setting up a 3th degree polynomial ALSSM.
+    Setting up a degree-3 polynomial ALSSM in Jordan normal form:
 
     >>> import lmlib as lm
-    >>>
-    >>> polynomial_degree = 3
-    >>> alssm = lm.AlssmPolyJordan(polynomial_degree, label="poly")
-    >>>
-    print(alssm)
-    A =
-    [[1. 1. 0. 0.]
-     [0. 1. 1. 0.]
-     [0. 0. 1. 1.]
-     [0. 0. 0. 1.]]
-    C =
-    [[1 0 0 0]]
-
+    >>> alssm = lm.AlssmPolyJordan(3, label="poly")
+    >>> print(alssm)
+    AlssmPolyJordan(A=[[1. 1. 0. 0.],[0. 1. 1. 0.],[0. 0. 1. 1.],[0. 0. 0. 1.]], C=[1. 0. 0. 0.], label=poly)
     """
 
     def __init__(self, poly_degree:int, C=None, **kwargs):
@@ -559,6 +582,7 @@ class AlssmPolyJordan(ModelBase):
         self.update()
 
     def update(self):
+        """Recompute the Jordan-normal-form A and default C from ``poly_degree``."""
         if self.C_init is None:
             self.C = np.hstack([[1], [0] * self.poly_degree])
         else:
@@ -569,11 +593,12 @@ class AlssmPolyJordan(ModelBase):
 
     @property
     def poly_degree(self) -> int:
-        """int : Polynomial degree :math:`Q` (highest exponent/ order - 1)"""
+        """int : Polynomial degree :math:`D` (highest exponent / model order - 1)."""
         return self._poly_degree
 
     @poly_degree.setter
     def poly_degree(self, poly_degree):
+        """Validate and set the polynomial degree (non-negative int)."""
         assert isinstance(poly_degree, int), 'poly_degree is not of type int'
         assert poly_degree >= 0, 'poly_degree is not larger then 0'
         self._poly_degree = poly_degree
@@ -775,6 +800,7 @@ class AlssmPolyLegendre(ModelBase):
 
     @poly_degree.setter
     def poly_degree(self, v: int):
+        """Validate and set the polynomial degree (non-negative int)."""
         assert isinstance(v, int) and v >= 0, 'poly_degree must be a non-negative int'
         self._poly_degree = v
 
@@ -785,6 +811,7 @@ class AlssmPolyLegendre(ModelBase):
 
     @a_seg.setter
     def a_seg(self, v: int):
+        """Set the left boundary of the Legendre window segment."""
         self._a_seg = int(v)
 
     @property
@@ -794,6 +821,7 @@ class AlssmPolyLegendre(ModelBase):
 
     @b_seg.setter
     def b_seg(self, v: int):
+        """Set the right boundary of the Legendre window segment."""
         self._b_seg = int(v)
 
     @property
@@ -984,7 +1012,7 @@ class AlssmPolyMeixner(ModelBase):
             'poly_degree must be a non-negative int'
         self._poly_degree = int(poly_degree)
 
- 
+
         assert isinstance(segment, Segment), \
             "'segment' must be a lmlib.statespace.segment.Segment instance."
         # ── Validate: Meixner orthogonality requires a semi-infinite segment ──
@@ -1027,11 +1055,12 @@ class AlssmPolyMeixner(ModelBase):
 
     @property
     def poly_degree(self) -> int:
-        """int : Polynomial degree :math:'D'."""
+        """int : Polynomial degree :math:`D`."""
         return self._poly_degree
 
     @poly_degree.setter
     def poly_degree(self, v: int):
+        """Validate and set the polynomial degree (non-negative int)."""
         assert isinstance(v, int) and v >= 0, 'poly_degree must be a non-negative int'
         self._poly_degree = v
 
@@ -1039,11 +1068,6 @@ class AlssmPolyMeixner(ModelBase):
     def g(self) -> float:
         r"""float : Effective window size :math:`g`."""
         return self._g
-
-    @g.setter
-    def g(self, v: float):
-        assert np.isscalar(v) and v > 1.0, 'g must be a scalar > 1'
-        self._g = float(v)
 
     @property
     def direction(self) -> str:
@@ -1106,58 +1130,55 @@ class AlssmSin(ModelBase):
     r"""
     ALSSM with a discrete-time (damped) sinusoidal output sequence.
 
-    The class AlssmSin is defined by a decay factor `rho` and discrete-time frequency `omega`.
+    Generates a sinusoidal sequence with angular frequency :math:`\omega` (radians
+    per sample) and per-sample amplitude decay factor :math:`\rho`:
 
     .. math::
         A =
         \begin{bmatrix}
-            \rho \cos{\omega} & -\rho \sin{\omega} \\
-            \rho \sin{\omega} & \rho \cos{\omega}
+            \rho \cos\omega & -\rho \sin\omega \\
+            \rho \sin\omega &  \rho \cos\omega
         \end{bmatrix}
+
+    The state vector holds :math:`[a\cos, a\sin]` components at the current sample.
+    With the default output :math:`C = [1, 0]`, the output is the cosine component.
 
     For more details see [Wildhaber2019]_ :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
 
     Parameters
     ----------
-    omega : float, int
-        Frequency :math:`\omega = 2\pi f_s`
-    rho : float, int, optional
-        Decay factor, default: rho = 1.0
-    C : array_like, shape=([Q,] N), optional
-        Output Matrix.
-        If no output matrix is given, C gets initialized automatically to `[1, 0]`, such that the shape
-        is `(N,)`. In addition, with ``as_2dim_C=True`` C gets broadcated to shape `(1, N)` (default: C=None)
+    omega : float
+        Normalised discrete-time angular frequency :math:`\omega = 2\pi f / f_s`
+        (radians per sample), where :math:`f` is the signal frequency and
+        :math:`f_s` is the sampling frequency.
+    rho : float, optional
+        Per-sample amplitude decay factor. ``rho = 1.0`` gives an undamped
+        oscillation. Default: 1.0.
+    C : array_like of shape ([Q,] N), optional
+        Output matrix. If not given, defaults to ``[1, 0]``, selecting the cosine
+        component. With ``force_MC=True`` the shape is broadcast to ``(1, N)``.
+        Default: None.
     **kwargs
-        Forwarded to :class:`.ModelBase`
+        Forwarded to :class:`.ModelBase`.
 
     Notes
     -----
     |def_N|
     |def_Q|
 
-
-    Notes
-    -----
-    To convert a continuous-time frequency to a normalized frequency, see :func:`~lmlib.utils.generator.k_period_to_omega`, e.g.,
+    To convert a signal period in samples to a normalised angular frequency, use
+    :func:`~lmlib.utils.generator.k_period_to_omega`:
 
     >>> import lmlib as lm
     >>> from lmlib.utils.generator import k_period_to_omega
     >>> k_period = 20
     >>> alssm = lm.AlssmSin(k_period_to_omega(k_period), rho=0.9)
 
-
     Examples
     --------
-    Parametrization of a sinusoidal ALSSM:
-
-    >>> alssm = lm.AlssmSin(omega= 0.1, rho= 0.9)
+    >>> alssm = lm.AlssmSin(omega=0.1, rho=0.9)
     >>> print(alssm)
-    A =
-    [[ 0.89550375 -0.08985007]
-     [ 0.08985007  0.89550375]]
-    C =
-    [1 0]
-
+    AlssmSin(A=[[ 0.89550375 -0.08985007],[ 0.08985007  0.89550375]], C=[1 0], label=n/a)
     """
 
     def __init__(self, omega:float, rho:float=1.0, C=None, **kwargs):
@@ -1170,6 +1191,7 @@ class AlssmSin(ModelBase):
         self.set_state_var_label('sin', (1,))
 
     def update(self):
+        """Recompute the 2×2 rotation/decay matrix A and default C from :math:`\\omega` and :math:`\\rho`."""
         if self.C_init is None:
             self.C = np.array([1, 0])
         else:
@@ -1181,7 +1203,7 @@ class AlssmSin(ModelBase):
 
     @property
     def omega(self) -> float:
-        """float : Frequency factor :math:`\\omega = 2\\pi f_s`"""
+        r"""float : Normalised angular frequency :math:`\omega = 2\pi f / f_s` (radians per sample)."""
         return self._omega
 
     @omega.setter
@@ -1202,41 +1224,40 @@ class AlssmSin(ModelBase):
 
 class AlssmExp(ModelBase):
     """
-    ALSSM with a discrete-time exponentially decaying/increasing output sequence.
+    ALSSM with a discrete-time exponential output sequence.
 
-    Discrete-time linear state space model generating output sequences of exponentially decaying shape with a decay
-    factor :math:`\\gamma`.
+    Generates a scalar exponential sequence :math:`\\gamma^j` with per-sample
+    factor :math:`\\gamma`:
+
+    .. math::
+        A = [\\gamma], \\qquad s_j(x) = \\gamma^j \\cdot x
+
+    where :math:`x` is the scalar initial amplitude. Values of :math:`|\\gamma| < 1`
+    give a decaying sequence and :math:`|\\gamma| > 1` a growing sequence.
 
     For more details see [Wildhaber2019]_ :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
 
+
     Parameters
     ----------
-    gamma : float, int
-        Decay factor per sample step ( > 1.0 : left-sided decaying; < 1.0 : right-sided decaying)
-    C : array_like, shape=([Q,], N), optional
-        Output Matrix.
-        If no output matrix is given, C gets initialize automatically to `[[1]]`. (default: C=None)
+    gamma : float
+        Per-sample exponential factor :math:`\\gamma`.
+    C : array_like of shape ([Q,] N), optional
+        Output matrix. If not given, defaults to ``[1.]``. Default: None.
     **kwargs
-        Forwarded to :class:`.ModelBase`
+        Forwarded to :class:`.ModelBase`.
 
     Notes
     -----
     |def_N|
     |def_Q|
 
-
     Examples
     --------
-    Parametrizing an exponentially ALSSM:
-
     >>> import lmlib as lm
-    >>> alssm = lm.AlssmExp(gamma= 0.8)
+    >>> alssm = lm.AlssmExp(gamma=0.8)
     >>> print(alssm)
-    A =
-    [[0.8]]
-    C =
-    [[1.]]
-
+    AlssmExp(A=[[0.8]], C=[1.], label=n/a)
     """
 
     def __init__(self, gamma:float, C=None, **kwargs):
@@ -1246,6 +1267,7 @@ class AlssmExp(ModelBase):
         self.update()
 
     def update(self):
+        """Recompute the scalar A matrix and default C from ``gamma``."""
         if self.C_init is None:
             self.C = np.ones((1,))
         else:
@@ -1256,11 +1278,12 @@ class AlssmExp(ModelBase):
 
     @property
     def gamma(self) -> float:
-        """float :  Decay factor per sample :math:`\\gamma`"""
+        """float : Per-sample exponential decay factor :math:`\\gamma`."""
         return self._gamma
 
     @gamma.setter
     def gamma(self, gamma: float):
+        """Validate and set the decay factor :math:`\\gamma`."""
         assert np.isscalar(gamma), 'Decay factor gamma is not scalar'
         self._gamma = gamma
 
@@ -1287,7 +1310,7 @@ class AlssmStacked(ModelBase):
          \tilde{c} \tilde{A}^k \tilde{x} \  \ ,
 
     where :math:`y_m[k]` denotes the output of the m-th joined ALSSM.
-    :math:`y_m[k]`  is either a scalar (for signle-channel ALSSMs) or a column vector (for multi-channel ALSSMs).
+    :math:`y_m[k]`  is either a scalar (for single-channel ALSSMs) or a column vector (for multi-channel ALSSMs).
     Accordingly, the initial state vector is
 
     .. math::
@@ -1299,8 +1322,6 @@ class AlssmStacked(ModelBase):
         \end{bmatrix}
 
     where :math:`x_m[k]` is the state vector of the m-th joined ALSSM.
-
-
 
     Therefore, the internal model matrices of the joined model are set to the block diagonals
 
@@ -1325,16 +1346,15 @@ class AlssmStacked(ModelBase):
 
     For more details see [Wildhaber2019]_ :download:`PDF Sec: Linear Combination of M Systems <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
 
-
     Parameters
     ----------
-    alssms : tuple of ALSSMs
-        Set of `M` autonomous linear state space models
-    lambdas: list of floats, optional
-        List of `M` scalar factors for each output matrix of the ALSSM in `alssms`.
-        (default: lambdas = None, i.e., all scalars are set to 1)
+    alssms : iterable of ModelBase, length M
+        Set of M autonomous linear state space models whose outputs are stacked.
+    lambdas : list of float or None, optional
+        List of M scalar factors :math:`\\lambda_m` weighting each ALSSM's output
+        matrix :math:`C_m`. Default: None (all factors set to 1).
     **kwargs
-        Forwarded to :class:`.ModelBase`
+        Forwarded to :class:`.ModelBase`.
 
     Notes
     -----
@@ -1373,6 +1393,7 @@ class AlssmStacked(ModelBase):
         self.update()
 
     def update(self):
+        """Recompute the block-diagonal A and C from the sub-ALSSMs and their lambda scaling factors."""
         for alssm in self.alssms:
             alssm.update()
         A = block_diag(*[alssm.A for alssm in self.alssms])
@@ -1385,43 +1406,27 @@ class AlssmStacked(ModelBase):
 
 class AlssmSum(ModelBase):
     r"""
-    Stacking multiple ALSSMs, generating summed output vector of ALSSMs.
+    ALSSM combining multiple sub-ALSSMs by summing their outputs.
 
-    Creating a joined ALSSM generating the summed output signal of :math:`M` ALSSMs,
-
-    .. math::
-
-        \tilde{s}_k(\tilde{x}) = s_k^{(1)}(x_1) + ... + s_k^{(M)}(x_M) = y_1[k] + ... + y_M[k] = \tilde{y}_k = \tilde{c} \tilde{A}^k \tilde{x}
-
-
-    Therefore, the internal model matrices of the generated model are
+    Generates the summed output signal of :math:`M` ALSSMs:
 
     .. math::
-        \tilde{A} =
-        \left[\begin{array}{c|c|c}
-            A_1 & 0 & 0 \\ \hline
-            0 & \ddots & 0 \\ \hline
-            0 & 0 & A_{M}
-        \end{array}\right]
+        \tilde{s}_k(\tilde{x}) = s_k^{(1)}(x_1) + \cdots + s_k^{(M)}(x_M)
+        = \tilde{C}\,\tilde{A}^k\,\tilde{x}
 
-        \tilde{C} =
-        \left[\begin{array}{c|c|c}
-            \lambda_1 C_1 & ... & \lambda_M C_M
-        \end{array}\right]
-
+    with block-diagonal transition matrix :math:`\tilde{A}` and horizontally
+    stacked output matrix :math:`\tilde{C} = [\lambda_1 C_1 \;\cdots\; \lambda_M C_M]`.
 
     Parameters
     ----------
-    alssms : tuple of shape=(M) of :class:`Alssm`
-        Set of `M` autonomous linear state space models.
-        All ALSSMs need to have the same number of output channels, see :meth:`Alssm.output_count`
-    lambdas: list of shape=(M) of floats, optional
-        List of `M` scalar factors for each output matrix of the ALSSM in `alssms`.
-        (default: lambdas = None, i.e., all scalars are set to 1)
+    alssms : iterable of ModelBase, length M
+        Set of M autonomous linear state space models. All ALSSMs must share the
+        same output dimension; see :meth:`~ModelBase.get_alssm_output_dimension`.
+    lambdas : list of float or None, optional
+        List of M scalar factors :math:`\lambda_m` applied to each output matrix.
+        Default: None (all factors set to 1).
     **kwargs
-        Forwarded to :class:`.ModelBase`
-
-
+        Forwarded to :class:`.ModelBase`.
 
     |def_M|
 
@@ -1456,6 +1461,7 @@ class AlssmSum(ModelBase):
         self.update()
 
     def update(self):
+        """Recompute block-diagonal A and horizontally stacked C from sub-ALSSMs."""
         for alssm in self.alssms:
             alssm.update()
         assert common_C_dim(self.alssms), "Alssms has not same output dimensions."
@@ -1486,17 +1492,17 @@ class AlssmProd(ModelBase):
 
     For more details, see also [Zalmai2017]_ [Proposition 2],  [Wildhaber2019]_ [Eq. 4.21].
 
-
     Parameters
     ----------
-    alssms : tuple of shape=(M) of :class:`Alssm`
-        Set of `M` autonomous linear state space models.
-        All ALSSMs need to have the same number of output channels, see :meth:`Alssm.output_count`
-    lambdas: list of shape=(M) of floats, optional
-        List of `M` scalar factors for each output matrix of the ALSSM in `alssms`.
-        (default: lambdas = None, i.e., all scalars are set to 1)
+    alssms : iterable of ModelBase, length M
+        Set of M autonomous linear state space models. For the Kronecker product
+        interpretation to give a scalar output, all sub-ALSSMs should produce
+        scalar outputs (i.e. 1-D ``C``).
+    lambdas : list of float or None, optional
+        List of M scalar factors applied to each output matrix.
+        Default: None (all factors set to 1).
     **kwargs
-        Forwarded to :class:`.ModelBase`
+        Forwarded to :class:`.ModelBase`.
 
 
     |def_M|

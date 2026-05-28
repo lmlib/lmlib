@@ -1,10 +1,14 @@
 """
-Notch Detection in ABP Signal [ex402.0] 
+Notch Detection in ABP Signal [ex402.0]
 ====================================================
 Example published in [Waldmann2022]_ as Example 2.
 
-Arterial blood pressure (ABP) signals usually show a dicrotic notch in the decreasing slope which are considered as the
-end of a systolic cycle. To detect these notches, we here use a Two-Sided Line Model (TSLM).
+Arterial blood pressure (ABP) signals typically show a dicrotic notch in
+the descending slope, marking the end of the systolic cycle.  This example
+detects these notches using a Two-Sided Line Model (TSLM) that compares
+a ``Continuous`` line fit (no slope change) against a ``Free`` fit (independent
+slopes on each side) via the Log-Cost Ratio (LCR).  A peak in the LCR signals
+the presence of a notch.
 
 """
 

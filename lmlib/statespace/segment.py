@@ -16,16 +16,15 @@ FW = FORWARD
 
 class Segment:
     r"""
-    The Segment represents a window of finite or infinite interval borders used to select and weight signal samples in a cost function.
+    Segment defining a window interval for weighting signal samples in a cost function.
 
-    Segments are commonly used in combination with ALSSM signal models to select and weight the samples in cost
-    functions, see :class:`CostSegment` or :class:`CompositeCost`. The window of a segment either has an exponentially
-    decaying shape or is defined by the output of its own ALSSM model, denoted ast the `window ALSSM`.
-    The selection of a window also controls the direction of a stable recursive cost computation (forward or backward).
+    Segments are commonly used in combination with ALSSM signal models to select and
+    weight the samples in cost functions; see :class:`CostSegment` or
+    :class:`CompositeCost`. The window has an exponentially decaying shape controlled
+    by the decay factor :math:`\gamma`. The direction of the window also determines
+    whether the recursive cost computation runs forward or backward.
 
-
-    In cunjunction with an ALSSM,
-    a Segment leads to a cost function of the form
+    In conjunction with an ALSSM, a Segment leads to a cost function of the form
 
     .. math::
         J_k(x) = \sum_{i=k+a}^{k+b} \gamma^{i-k-\delta}\big(CA^{i-k}x - y_i\big)^2 \ ,
@@ -42,48 +41,49 @@ class Segment:
 
     Parameters
     ----------
-    a : int, np.inf
-        Left boundary of the segment's interval
-    b : int, np.inf
-        Right boundary of the segment's interval
-    g : int, float, None
-        :math:`g > 0`. Effective number of samples under the window. This is used as a (more readable) surrogate for the
-        window decay of exponential windows, see [Wildhaber2018]_. |br|
-        :math:`g` is counted to the left or right of :math:`k+ \delta`, for a forward or backward computation
-        direction, respectively.
+    a : int or -np.inf
+        Left boundary of the segment's interval (inclusive).
+    b : int or np.inf
+        Right boundary of the segment's interval (inclusive).
     direction : str
-        Computation direction of recursive computations (also select a left- or right-side decaying window) |br|
-        :data:`statespace.FORWARD` or `'fw'` use forward computation with forward recursions |br|
-        :data:`statespace.BACKWARD` or `'bw'` use backward computation with backward recursions
+        Recursion direction for the cost computation; also selects whether the
+        window decays toward the left or the right. |br|
+        :data:`statespace.FORWARD` or ``'fw'``: forward computation (window decays to the left). |br|
+        :data:`statespace.BACKWARD` or ``'bw'``: backward computation (window decays to the right).
+    g : int, float, or None
+        Effective number of samples under the window, :math:`g > 1`. Used as a
+        more readable surrogate for the window decay factor; see [Wildhaber2018]_. |br|
+        :math:`g` is counted to the right of :math:`k+\delta` for forward direction
+        and to the left for backward direction. Must be ``None`` when ``gamma`` is
+        provided instead.
     delta : int, optional
-        Exponential window is normalized to 1 at relative index :code:`delta`.
-    gamma : float, int
-        Window Constant Decay, (Alternative for `g`. If gamma is set `g` has to be None)
-        `gamma` is to choose dependent of the direction (forward, backward). Forward directions with `gamma <= 1` will
-        raise a warning for possible instability, backwards directions with `gamma >= 1`.
-        See [Wildhaber2018]_ Table IV
-    label : str, None, optional
-        Segment label, useful for debugging in more complex systems (default: label = None)
+        Relative index at which the window weight is normalised to 1. Default: 0.
+    gamma : float or None, optional
+        Window decay factor (alternative to ``g``). When set, ``g`` must be ``None``.
+        For forward direction, ``gamma > 1`` is required for stability; a warning is
+        issued for ``gamma <= 1``. For backward direction, ``gamma < 1`` is required;
+        a warning is issued for ``gamma >= 1``. See [Wildhaber2018]_ Table IV.
+    label : str or None, optional
+        Segment label, useful for debugging in more complex systems. Default: None.
 
     Notes
     -----
-    The interval of the semgment includes both boundaries `a` and `b` in the calculations.
-    i.e., if the sum runs over the interval :math:`k \in [a,b] ` it treats `b-a+1` samples.
+    The interval includes both boundaries ``a`` and ``b``, so the sum runs over
+    :math:`b - a + 1` samples when both are finite.
 
     Examples
     --------
     >>> import lmlib as lm
     >>> segment = lm.Segment(a=-20, b=-1, direction=lm.FORWARD, g=15)
     >>> print(segment)
-    Segment : a:-20, b:-1, fw, g:15, delta:0, label: None
+    Segment(a=-20, b=-1, direction=fw, g=15, delta=0, label=n/a)
 
-    >>> segment = lm.Segment(a=-0, b=100, direction=lm.BACKWARD, g=15, delta=30, label="right-sided window with shift")
+    >>> segment = lm.Segment(a=0, b=100, direction=lm.BACKWARD, g=15, delta=30, label="right-sided window with shift")
     >>> print(segment)
-    Segment : a:0, b:100, bw, g:15, delta:30, label: right-sided window with shift
-
+    Segment(a=0, b=100, direction=bw, g=15, delta=30, label=right-sided window with shift)
     """
 
-    def __init__(self, a:Union[int, float], b:Union[int, float], direction:str, g:int, delta:int=0, label:str=None, gamma:Union[int, float]=None):
+    def __init__(self, a:Union[int, float], b:Union[int, float], direction:str, g:Union[int, float, None], delta:int=0, label:str=None, gamma:Union[int, float]=None):
         self._a = None
         self._b = None
         self.set_boundaries(a, b)
@@ -91,7 +91,7 @@ class Segment:
         if gamma is not None:
             assert g is None, "g is not None. If gamma is set, g has to be None."
             self._g = None
-            self.gamma = gamma
+            self.gamma = np.float(gamma)
             if self.direction == FW and self.gamma <= 1:
                 warnings.warn('gamma <= 1 in forward direction can result into instability')
             if self.direction == BW and self.gamma >= 1:
@@ -106,6 +106,7 @@ class Segment:
         self.label = 'n/a' if label is None else label
 
     def __str__(self):
+        """Return a human-readable summary of the segment's parameters."""
         return f'{type(self).__name__}(' \
                f'a={self.a}, ' \
                f'b={self.b}, ' \
@@ -126,13 +127,15 @@ class Segment:
 
     @property
     def g(self):
-        """int, float, None : Effective number of samples :math:`g`, setting the window with
+        r"""int or float : Effective number of samples :math:`g`, setting the window width.
 
-        The effective number of samples :math:`g` is used to derive
-        and set the window decay factor :math:`\\gamma` internally.
+        The effective number of samples :math:`g` is used to derive and set the window
+        decay factor :math:`\gamma` internally:
 
-        [Wildhaber2018] [Section III.A]
+        - forward direction: :math:`\gamma = g / (g - 1) > 1`
+        - backward direction: :math:`\gamma = (g - 1) / g < 1`
 
+        Must satisfy :math:`g > 0`. See [Wildhaber2018]_ Section III.A.
         """
         return self._g
 
@@ -144,7 +147,7 @@ class Segment:
 
     @property
     def direction(self):
-        """str : Sets the segment's recursion computation `direction`
+        """str : returns the segment's recursion computation `direction`
 
             - :data:`FORWARD`, :data:`FW` or `'fw'` use forward computation with forward recursions
             - :data:`BACKWARD`, :data:`BW` or `'bw'` use backward computation with backward recursions
@@ -153,13 +156,22 @@ class Segment:
 
     @direction.setter
     def direction(self, direction):
+        """str : Sets the segment's recursion computation `direction`
+
+            - :data:`FORWARD`, :data:`FW` or `'fw'` use forward computation with forward recursions
+            - :data:`BACKWARD`, :data:`BW` or `'bw'` use backward computation with backward recursions
+        """
         assert isinstance(direction, str), 'Computation direction is not of type string.'
         assert direction in (BW, FW), f'Unknown direction parameter: {self.direction}'
         self._direction = direction
 
     @property
     def delta(self):
-        """int : Relative window shift :math:`\\delta`"""
+        r"""int : Window normalisation index :math:`\delta`.
+
+        The window weight :math:`\gamma^{i - k - \delta}` equals 1 at relative index
+        :math:`i - k = \delta`.
+        """
         return self._delta
 
     @delta.setter
@@ -178,16 +190,15 @@ class Segment:
 
     @property
     def gamma(self):
-        r"""float : Window decay factor :math:`\gamma`
+        r"""float : Window decay factor :math:`\gamma`.
 
-        Window decay factor :math:`\gamma` is set internally on the initialization of a new segment object
-        and is derived from the *effective number of samples* :attr:`Segment.g` as follows:
+        The window decay factor :math:`\gamma` is set during initialisation and is
+        derived from the effective number of samples :attr:`Segment.g` as follows:
 
-        - for a segment with forward recursions: :math:`\gamma = \frac{g}{g-1}`
-        - for a segment with forward recursions: :math:`\gamma = \big(\frac{g}{g-1}\big)^{-1}`
+        - forward direction: :math:`\gamma = \frac{g}{g-1} > 1`
+        - backward direction: :math:`\gamma = \frac{g-1}{g} < 1`
 
-        [Wildhaber2018] [Table IV]
-
+        See [Wildhaber2018]_ Table IV.
         """
         return self._gamma
 
@@ -229,22 +240,23 @@ class Segment:
         :math:`\gamma`. The window weight function is defined as
 
         .. math::
-            w_i = \gamma^{i}
+            w_i = \gamma^{i-\delta}
 
         For more details see [Wildhaber2018]_.
 
         Parameters
         ----------
-        thd : float, None, optional
-            Threshold for infinite Segment boundaries. Crops any window weight below the threshold.
+        thd : float, optional
+            Threshold below which window weights are truncated (used to clip
+            infinite segment boundaries to a finite range). Default: 1e-6.
 
         Returns
         -------
-        `tuple` :code:`(range, array)`
-
-            * :code:`range` of length `JR`: relative index range of window with respect to segment's boundaries.
-            * :code:`array` of shape=(JR) of floats: per-index window weight over the reported index range
-
+        ab_range : ndarray of int
+            Relative index range of shape ``(JR,)``, covering the indices at
+            which the window weight exceeds ``thd``.
+        weights : ndarray of float, shape ``(JR,)``
+            Per-sample window weights :math:`\gamma^{i - \delta}` over ``ab_range``.
 
         |def_JR|
 
@@ -252,4 +264,3 @@ class Segment:
 
         ab_range = self._ab_range(thd=thd)
         return ab_range, self.gamma ** (np.array(ab_range) - self.delta)
-

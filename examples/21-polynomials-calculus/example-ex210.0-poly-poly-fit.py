@@ -2,8 +2,9 @@
 Polynomial to Polynomial Fit [ex210.0]
 ======================================
 
-Fits a polynomial of lower order to a polynomial of higher order by minimizing the squared error over the given window.
-This example is derived and published in [Wildhaber2020]_ .
+Fits a polynomial of lower order to a polynomial of higher order by
+minimizing the squared error over the given window.
+This example is derived and published in [Wildhaber2020]_.
 
 """
 

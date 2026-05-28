@@ -5,11 +5,11 @@ all based on ALSSMs
 .. currentmodule:: lmlib.statespace.cost
 
 .. inheritance-diagram:: lmlib.statespace.cost
-   :top-classes: lmlib.statespace.cost.Segment, lmlib.statespace.cost.CompositeCost, lmlib.statespace.cost.NDCompositeCost, lmlib.statespace.cost.ConstrainMatrix
-   :parts: 1
+   :top-classes: lmlib.statespace.cost.BaseCost, lmlib.statespace.cost.BaseCost1d
+   :parts: 2
 
 """
-
+#:top-classes: lmlib.statespace.cost.CostSegment, lmlib.statespace.cost.CompositeCost, lmlib.statespace.cost.NDCompositeCost, lmlib.statespace.cost.ConstrainMatrix
 
 from abc import ABC, abstractmethod
 import numpy as np
@@ -31,6 +31,19 @@ class BaseCost(ABC):
         yield self
 
     def _get_sub_cost_term(self, dim=None, seg=None):
+        """
+        Return the sub-cost term for a given segment index.
+
+        Parameters
+        ----------
+        seg : int or None, optional
+            Segment index to retrieve.  If None, returns ``self``.
+
+        Returns
+        -------
+        CostSegment or CompositeCost
+            The requested sub-cost term.
+        """
         return self
 
     @property
@@ -56,23 +69,26 @@ class BaseCost(ABC):
     @abstractmethod
     def get_steady_state_W(self, dim_order=None, method='closed_form'):
         """
-        Returns Steady State Matrix W
+        Return the steady-state Gram matrix W.
 
         Parameters
         ----------
-        dim_order : list of int, None
-            Specifies the dimensional order in a list of integers.
-            If None, dim_order is equal to to range(self.L)
+        dim_order : list of int or None, optional
+            For :class:`NDCompositeCost`, specifies the order in which dimensions
+            are Kronecker-multiplied. If None, uses ``range(self.L)``.
+            Ignored for 1-D cost types (:class:`CostSegment`, :class:`CompositeCost`).
         method : str, optional
-            If 'closed_form' is used, the steady state matrix will be calculated in a close form.
-            This method can be critical, as it can produce badly conditioned matrices internally.
-            If 'limited_sum' is used, the steady state matrix will be calculated brute force, with a stop condition
-            on a minimum change.
+            Numerical method for computing W:
+
+            - ``'schur'`` (default): Schur decomposition — numerically stable.
+            - ``'closed_form'``: direct matrix inversion via the Stein equation —
+              may be ill-conditioned for large segments or high model orders.
+            - ``'limited_sum'``: iterative summation (not yet implemented).
 
         Returns
         -------
-        Wss = `class:numpy.ndarray`
-            Steady State Matrix W
+        W : :class:`numpy.ndarray`
+            Steady-state Gram matrix of shape ``(N, N)``.
         """
         pass
 
@@ -83,25 +99,37 @@ class BaseCost(ABC):
 
 
 class BaseCost1d(ABC):
+    """
+    Abstract base class for one-dimensional cost terms.
 
+    Defines the interface for cost terms that act on a single signal
+    dimension, exposing ALSSM output evaluation and state-variable index
+    lookup.
+    """
     @abstractmethod
     def eval_alssm_output(self, xs, alssm_weights=None):
         """
-        Evaluation of the ALSSM for multiple state vectors `xs`.
-
-        **See:** :meth:`~lmlib.statespace.models.Alssm.eval`
+        Evaluate the ALSSM output for multiple state vectors.
 
         Parameters
         ----------
-        xs : array_like of shape=(XS, N [,S]) of floats
-            List of state vectors :math:`x`
-        alssm_weights : None, scalar, array_like
-            CostSegments contains a single Alssm, where CompositeCost and NDCompositeCost
-            may have multiple Alssms.
-            - If is None no Alssm output weights are set (all equal 1).
-            - If is scalar, each Alssm output has the same weight as `alssm_weights`.
-            - If is array_like, each Alssm output has the weight respectively to the alssms_weights.
-            Each element sets the weight of the output of the m-th ALSSM in :attr:`CompositeCost.alssms`.
+        xs : array_like of shape (..., N)
+            Array of state vectors. The last dimension must equal the model order N.
+        alssm_weights : None, scalar, or array_like of shape (M,), optional
+            Per-ALSSM output scaling factors:
+
+            - ``None``: all ALSSMs contribute with weight 1.
+            - scalar: all ALSSMs are scaled by the same value.
+            - array_like: element ``m`` scales the output of the m-th ALSSM in
+              :attr:`CompositeCost.alssms`.
+
+            For :class:`CostSegment`, which contains a single ALSSM, only
+            ``None`` or a scalar are meaningful.
+
+        Returns
+        -------
+        out : ndarray
+            ALSSM output evaluated at each state vector in ``xs``.
         """
         pass
 
@@ -154,7 +182,7 @@ class CostSegment(BaseCost, BaseCost1d):
                    |--|-------|-----|----> k (time, relativ to the segment reference index 0)
                    a  0     delta   b
 
-        a,b : segment interval borders a and b in N, a < b
+          a, b : segment interval boundaries (integers or ±∞), a < b
 
 
     A cost segment is the quadratic cost function
@@ -163,20 +191,20 @@ class CostSegment(BaseCost, BaseCost1d):
         J_a^b(k,x,\theta) = \sum_{i=k+a}^{k+b} \alpha_{k+\delta}(i)v_i(y_i - cA^{i-k}x)^2
 
     over a fixed interval :math:`\{a, \dots, b\}` with :math:`a \in \mathbb{Z} \cup \{ - \infty \}`,
-    :math:`b \in \mathbb{Z} \cup \{ + \infty\}`, and :math:`a \le b`,
+    :math:`b \in \mathbb{Z} \cup \{ + \infty\}`, and :math:`a < b`,
     and with initial state vector :math:`x \in \mathbb{R}^{N \times 1}`.
-    For more details, seen in Section 4.2.6  and Chapter 9 in [Wildhaber2019]_ .
+    For more details, see Section 4.2.6  and Chapter 9 in [Wildhaber2019]_ .
 
     Parameters
     ----------
     alssm : ModelBase
-        ALSSM, defining the signal model
+        ALSSM defining the signal model.
     segment : :class:`.Segment`
-        Segment, defining the window
+        Segment defining the window shape and recursion direction.
     beta : float, optional
-        Scaling factor on each cost term. beta >= 0.0, default: 1.0
+        Non-negative scaling factor on this cost term. Default: 1.0.
     label : str, optional
-        Label of CostSegment, default: 'n/a'
+        Label of the CostSegment. Default: ``'n/a'``.
 
     Examples
     --------
@@ -187,10 +215,9 @@ class CostSegment(BaseCost, BaseCost1d):
     >>> segment_left = lm.Segment(a=-30, b=0, direction=lm.FORWARD, g=20, label="finite left")
     >>> cost = lm.CostSegment(alssm_line, segment_left, label="left line")
     >>> print(cost)
-    CostSegment : label: left line
-      └- Alssm : polynomial, A: (2, 2), C: (1, 2), label: slope with offset,
-      └- Segment : a:-30, b:0, fw, g:20, delta:0, label: finite left
-
+    CostSegment(label: left line)
+      └- AlssmPoly(A=[[1 1],[0 1]], C=[1 0], label=slope with offset),
+      └- Segment(a=-30, b=0, direction=fw, g=20, delta=0, label=finite left)
     """
 
     def __init__(self, alssm, segment, beta=1.0, label='n/a'):
@@ -200,11 +227,12 @@ class CostSegment(BaseCost, BaseCost1d):
         self.label = label
 
     def __str__(self):
+        """Return a human-readable summary of the CostSegment."""
         return f'{type(self).__name__}(label: {self.label}) \n  └- {self.alssm}, \n  └- {self.segment}'
 
     @property
     def alssm(self):
-        """ModelBase : Alssm"""
+        """ModelBase : The ALSSM signal model attached to this cost segment."""
         return self._alssm
 
     @alssm.setter
@@ -214,7 +242,7 @@ class CostSegment(BaseCost, BaseCost1d):
 
     @property
     def segment(self):
-        """Segment : Segment"""
+        """Segment : The window/segment attached to this cost segment."""
         return self._segment
 
     @segment.setter
@@ -224,7 +252,7 @@ class CostSegment(BaseCost, BaseCost1d):
 
     @property
     def beta(self):
-        """float : Scaling factor on CostSegment"""
+        """float : Non-negative scaling factor :math:`\\beta` on this cost segment."""
         return self._beta
 
     @beta.setter
@@ -239,15 +267,34 @@ class CostSegment(BaseCost, BaseCost1d):
         return [CostSegment(alssm, self.segment, self.beta, self.label)]
 
     def get_alssm_order(self) -> int:
+        """Return the state-space order N of the attached ALSSM."""
         return self.alssm.N
 
     def get_number_of_dimensions(self):
+        """Return 1 — a CostSegment always represents a single dimension."""
         return 1
 
     def get_alssm_output_dimension(self) -> int:
+        """Return the output dimension Q of the attached ALSSM."""
         return self.alssm.get_alssm_output_dimension()
 
     def get_steady_state_W(self, dim_order=None, method='schur'):
+        """
+        Compute the steady-state Gram matrix W for this cost segment.
+
+        Parameters
+        ----------
+        dim_order : ignored
+            Accepted for interface compatibility; unused for 1-D costs.
+        method : str, optional
+            Computation method: ``'schur'`` (default), ``'closed_form'``,
+            or ``'limited_sum'``.
+
+        Returns
+        -------
+        W : ndarray of shape (N, N)
+            Steady-state Gram matrix.
+        """
         A, C = self.alssm.A, self.alssm.C
         gamma = self.segment.gamma
         a, b, delta = self.segment.a, self.segment.b, self.segment.delta
@@ -262,23 +309,51 @@ class CostSegment(BaseCost, BaseCost1d):
             raise NotImplementedError(f'unknown method {method}')
 
     def get_state_var_indices(self, label):
+        """
+        Return the state indices corresponding to a named state variable.
+
+        Parameters
+        ----------
+        label : str
+            State variable label as registered in the ALSSM.
+
+        Returns
+        -------
+        indices : list of int
+            Indices into the state vector for the labelled variable.
+        """
         return self.alssm.get_state_var_indices(label)
 
     def eval_alssm_output(self, xs, alssm_weights=None):
+        """
+        Evaluate the ALSSM output for a set of state vectors.
+
+        Parameters
+        ----------
+        xs : array_like of shape (..., N)
+            State vectors; the last dimension must match the model order N.
+        alssm_weights : None, scalar, or array_like, optional
+            Output weights forwarded to :class:`AlssmSum`. Default: None.
+
+        Returns
+        -------
+        out : ndarray
+            ALSSM output sequences for each state vector in ``xs``.
+        """
         return AlssmSum([self.alssm], alssm_weights).eval_output(xs)
 
     def get_alssms(self):
+        """Return a list containing the single ALSSM of this cost segment."""
         return [self.alssm]
 
 class CompositeCost(BaseCost, BaseCost1d):
     r"""
-    Quadratic cost function defined by a conjunction one or multiple  of :class:`~lmlib.statespace.model.Alssm` and :class:`.Segment`
+    Quadratic cost function defined by one or more ALSSMs and one or more Segments.
 
-    A composite costs combines multiple ALSSM models and multiple Segments in the form of a grid,
-    where each row is a model and each column a Segment.
-    The segments define the temporal relations of the models.
-    Mapping matrix `F` enables or disables each ALSSM/Segment pair in each grid node;
-    multiple active ALSSMs in one column are superimposed.
+    A CompositeCost combines multiple ALSSM models and multiple Segments in a grid,
+    where each row corresponds to one ALSSM and each column to one Segment.
+    The mapping matrix ``F`` enables or disables each ALSSM/Segment pair at each grid
+    node; multiple active ALSSMs in one column are superimposed.
 
     A CompositeCost is an implementation of [Wildhaber2019]_ :download:`PDF (Composite Cost) <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=118>`
 
@@ -309,14 +384,12 @@ class CompositeCost(BaseCost, BaseCost1d):
 
         P : number of segments
 
-        F[m,p] in R+, scalar on alssm's output. (i.e., 0 for inactive grid node,
-        1 or any other scalar factor for active grid node).
+        F[m,p] in R+, scalar weight on alssm m's output in segment p.
+        (0 for an inactive grid node; any positive scalar for an active node.)
 
 
-    This figure shows a graphical representation of a composite cost, depicting the internal relationships between
-    Segments, ALSSMs, and the mapping matrix F. F[m,p] is implemented as a scalar factor multiplied on the alssm's
-    output signal.
-
+    This figure shows the internal relationships between Segments, ALSSMs, and the
+    mapping matrix ``F``.
 
     For more details, see Chapter 9 in [Wildhaber2019]_.
     The cost function of a composite cost is defined as
@@ -330,17 +403,17 @@ class CompositeCost(BaseCost, BaseCost1d):
 
     Parameters
     ----------
-    alssms : tuple, shape=(M,)
-        Set of ALSSMs
-    segments : tuple, shape=(P,)
-        Set of Segments
-    F : array_like of shape=(M, P)
-        Mapping matrix :math:`F`, maps models to segment
-    betas : array_like of shape=(P,), optional
-        Segment scalars on cost terms, default: all ones
+    alssms : iterable of ModelBase, length M
+        Set of M ALSSM models.
+    segments : iterable of Segment, length P
+        Set of P Segments.
+    F : array_like of shape (M, P)
+        Mapping matrix. ``F[m, p]`` is the scalar weight of ALSSM ``m`` in Segment ``p``.
+        Set to 0 to disable a grid node.
+    betas : array_like of shape (P,), optional
+        Per-segment scaling factors :math:`\beta_p`. Default: all ones.
     label : str, optional
-        Label of ALSSM, default: 'n/a'
-
+        Label of this CompositeCost. Default: ``'n/a'``.
 
     |def_M|
     |def_P|
@@ -360,10 +433,9 @@ class CompositeCost(BaseCost, BaseCost1d):
     >>> F = [[0, 1, 0], [1, 1, 1]]
     >>> cost = lm.CompositeCost((alssm_spike, alssm_baseline), (segment_left, segment_middle, segment_right), F, label='spike_baseline')
     >>> print(cost)
-    CostSegment : label: spike_baseline
-      └- ['Alssm : polynomial, A: (4, 4), C: (1, 4), label: spike', 'Alssm : polynomial, A: (3, 3), C: (1, 3), label: baseline'],
-      └- [Segment : a: -50, b: -1, direction: fw, g: 20, delta: 0, label: finite left , Segment : a: 0, b: 10, direction: fw, g: 100, delta: 0, label: finite middle , Segment : a: 10, b: 50, direction: fw, g: 20, delta: 10, label: finite right ]
-
+    CompositeCost(label=spike_baseline)
+      └- ['AlssmPoly(A=..., C=..., label=spike)', 'AlssmPoly(A=..., C=..., label=baseline)'],
+      └- [Segment(a=-50, ..., label=finite left), Segment(a=0, ..., label=finite middle), Segment(a=10, ..., label=finite right)]
     """
 
     def __init__(self, alssms, segments, F, betas=None, label='n/a'):
@@ -396,6 +468,7 @@ class CompositeCost(BaseCost, BaseCost1d):
         self.label = label
 
     def __str__(self):
+        """Return a multi-line human-readable summary of the CompositeCost."""
         return f'CompositeCost(label={self.label}) \n' \
                f'  └- {[alssm.__str__() for alssm in self.alssms]}, \n' \
                f'  └- {[segment.__str__() for segment in self.segments]} '
@@ -413,7 +486,7 @@ class CompositeCost(BaseCost, BaseCost1d):
             cost_segment = CostSegment(alssm, segment, self.betas[p], self.label + '-' + str(p))
             cost_segments.append(cost_segment)
         return cost_segments
-    
+
     def _get_sub_cost_term(self, dim=None, seg=None):
         """Returns a specific CostSegment by segment index."""
         if seg is None:
@@ -423,22 +496,22 @@ class CompositeCost(BaseCost, BaseCost1d):
 
     @property
     def alssms(self):
-        """Iterable : List of ALSSM"""
+        """list of ModelBase : ALSSM signal models."""
         return self._alssms
 
     @property
     def segments(self):
-        """Iterable : List of Segment"""
+        """list of Segment : Window segments."""
         return self._segments
 
     @property
     def M(self):
-        """int : Number of Alssms"""
+        """int : Number of ALSSMs :math:`M`."""
         return len(self.alssms)
 
     @property
     def P(self):
-        """int : Number of Segments"""
+        """int : Number of Segments :math:`P`."""
         return len(self.segments)
 
     @property
@@ -455,19 +528,37 @@ class CompositeCost(BaseCost, BaseCost1d):
 
     @property
     def betas(self):
-        """array_like of shape=(P,) : Segment scalars on cost terms"""
+        """ndarray of shape (P,) : Per-segment scaling factors :math:`\\beta_p \\geq 0`."""
         return self._betas
 
     def get_alssm_order(self):
+        """Return the combined state-space order N of all ALSSMs."""
         return self._get_sub_cost_term(seg=0).get_alssm_order()
 
     def get_alssm_output_dimension(self):
+        """Return the output dimension Q shared by all ALSSMs."""
         return self._get_sub_cost_term(seg=0).get_alssm_output_dimension()
 
     def get_number_of_dimensions(self):
+        """Return 1 — a CompositeCost always represents a single signal dimension."""
         return 1
 
     def get_steady_state_W(self, dim_order=None, method='schur'):
+        """
+        Compute the steady-state Gram matrix W as a beta-weighted sum over segments.
+
+        Parameters
+        ----------
+        dim_order : ignored
+            Accepted for interface compatibility; unused for 1-D costs.
+        method : str, optional
+            Forwarded to each :meth:`CostSegment.get_steady_state_W`.
+
+        Returns
+        -------
+        W : ndarray of shape (N, N)
+            Aggregate steady-state Gram matrix.
+        """
         N = self.get_alssm_order()
         W = np.zeros((N, N))
 
@@ -476,12 +567,40 @@ class CompositeCost(BaseCost, BaseCost1d):
         return W
 
     def eval_alssm_output(self, xs, alssm_weights=None):
+        """
+        Evaluate the summed ALSSM output for a set of state vectors.
+
+        Parameters
+        ----------
+        xs : array_like of shape (..., N)
+            State vectors.
+        alssm_weights : None, scalar, or array_like, optional
+            Per-ALSSM output weights forwarded to :class:`AlssmSum`.
+
+        Returns
+        -------
+        out : ndarray
+            Summed ALSSM output for each input state vector.
+        """
         return AlssmSum(self.alssms, alssm_weights).eval_output(xs)
 
     def get_state_var_indices(self, label):
+        """
+        Return the state indices for a named state variable in the stacked ALSSM.
+
+        Parameters
+        ----------
+        label : str
+            State variable label.
+
+        Returns
+        -------
+        indices : list of int
+        """
         return AlssmSum(self.alssms, label='cost').get_state_var_indices('cost.' + label)
 
     def get_alssms(self):
+        """Return the list of ALSSMs comprising this CompositeCost."""
         return self.alssms
 
     def spline_H(self, max_continuity: int, alssm_index: int = 0) -> np.ndarray:
@@ -668,11 +787,34 @@ class CompositeCost(BaseCost, BaseCost1d):
 
 
 class NDCompositeCost(BaseCost):
+    """
+    N-dimensional composite cost function over multiple signal dimensions.
+
+    Wraps a list of :class:`CompositeCost` or :class:`CostSegment` objects,
+    one per signal dimension.  The Gram matrix is formed as the Kronecker
+    product of the per-dimension Gram matrices, enabling separable
+    multi-dimensional filtering.
+
+    Parameters
+    ----------
+    cost_terms : list of CompositeCost or CostSegment
+        One cost term per dimension.  All terms must share the same ALSSM
+        output dimension Q.
+    """
 
     def __init__(self, cost_terms: List[Union[CompositeCost, CostSegment]]):
+        """
+        Initialise an NDCompositeCost.
+
+        Parameters
+        ----------
+        cost_terms : list of CompositeCost or CostSegment
+            One cost term per dimension L.
+        """
         self.cost_terms = cost_terms
 
     def __iter__(self):
+        """Iterate over the per-dimension cost terms."""
         return iter(self.cost_terms)
 
     def _get_sub_cost_term(self, dim=None, seg=None):
@@ -686,7 +828,7 @@ class NDCompositeCost(BaseCost):
 
     @property
     def cost_terms(self):
-        """Iterable : List/Tuple of CostSegment/CompositeCost"""
+        """list : Per-dimension cost terms (CompositeCost or CostSegment)."""
         return self._costs
 
     @cost_terms.setter
@@ -708,15 +850,34 @@ class NDCompositeCost(BaseCost):
         return len(self.cost_terms)
 
     def get_number_of_dimensions(self):
+        """Return the number of signal dimensions L."""
         return self.L
 
     def get_alssm_order(self):
+        """Return the Kronecker-product state order N = prod(N_l for l in dims)."""
         return int(np.prod([cost.get_alssm_order() for cost in self.cost_terms]))
 
     def get_alssm_output_dimension(self):
+        """Return the output dimension Q (shared across all dimensions)."""
         return self.cost_terms[0].get_alssm_output_dimension()
 
     def get_steady_state_W(self, dim_order=None, method='schur'):
+        """
+        Compute the n-dimensional steady-state Gram matrix as a Kronecker product.
+
+        Parameters
+        ----------
+        dim_order : list of int or None, optional
+            Order in which dimensions are Kronecker-multiplied.
+            Default: ``range(self.L)``.
+        method : str, optional
+            Forwarded to each per-dimension ``get_steady_state_W``.
+
+        Returns
+        -------
+        W : ndarray of shape (N, N)
+            Combined steady-state Gram matrix.
+        """
         if dim_order is None:
             dim_order = range(self.L)
 
@@ -727,19 +888,26 @@ class NDCompositeCost(BaseCost):
 
     def eval_alssm_output(self, xs, nd_alssm_weights=None):
         """
-        Evaluate n-dimensional Alssm output
+        Evaluate the n-dimensional ALSSM output.
+
+        Forms a separable (Kronecker-product) ALSSM from the per-dimension
+        sub-models and evaluates it at each state vector in ``xs``.
 
         Parameters
         ----------
-        xs : array_like of shape(..., N)
-            states at which to evaluate the output
-        nd_alssm_weights : array_like of shape(L, M), optional
-            Alssm weights for each dimension
+        xs : array_like of shape (..., N)
+            State vectors at which to evaluate the output. The last axis must
+            equal the combined model order :math:`N = \\prod_l N_l`.
+        nd_alssm_weights : array_like of shape (L, M), optional
+            Per-ALSSM output weights for each signal dimension.  Element
+            ``[l, m]`` scales the output of ALSSM ``m`` in dimension ``l``.
+            If ``None``, all ALSSMs in every dimension contribute equally.
 
         Returns
         -------
-        ndarray of shape(..., [Q])
-            Alssm output for each state in xs
+        out : ndarray of shape (..., [Q])
+            ALSSM output evaluated at each state vector in ``xs``.
+            The ``[Q]`` dimension is present only when :attr:`is_MC` is True.
         """
         alssms = []
         for l in range(self.L):
@@ -753,15 +921,22 @@ class NDCompositeCost(BaseCost):
 
 class ConstrainMatrix:
     """
-    Constrain Matrix Generator
+    Builder for the linear constraint matrix ``H`` used in state-vector minimization.
 
-    Builder class to set up matrix `H` as a linear constraint for the squared error minimization.
+    Constructs and accumulates pairwise equality constraints between state components,
+    then returns a full-column-rank ``H`` matrix suitable for passing to
+    :meth:`~lmlib.statespace.rls.RLSAlssm.minimize_x` or
+    :meth:`~lmlib.statespace.rls.RLSAlssm.minimize_v`.
+
+    The constrained minimization is:
+
+    .. math::
+        \\hat{x} = \\operatorname{arg\\,min}_x J(x) \\quad \\text{s.t.}\\quad x = H v
 
     Parameters
     ----------
-    cost : CompositeCost, CostSegment
-        CompositeCost or CostSegment
-
+    cost : CompositeCost or CostSegment
+        Cost function whose ALSSM order determines the size of ``H``.
     """
 
     TSLM_TYPES = ('free',
@@ -773,8 +948,7 @@ class ConstrainMatrix:
                   'peak',
                   'step'
                   )
-    """tuple of string: Two Sided Line Model Types. see REF
-    """
+    """tuple of str : Supported Two-Sided Line Model constraint type names."""
 
     def __init__(self, cost):
         assert isinstance(cost, (CompositeCost, CostSegment)), 'cost not of type CompositeCost,'
@@ -784,20 +958,23 @@ class ConstrainMatrix:
 
     def constrain(self, indices, value):
         """
-        Add constraining
+        Add a constraint between two state indices.
 
-        I.e., Apply a dependency between two indices.
+        Sets ``H[indices[0], indices[1]] = value`` and
+        ``H[indices[1], indices[0]] = value``, creating a symmetric dependency
+        between the two state components.
 
         Parameters
         ----------
-        indices: array_like of shape(2,)
-            indices to apply a dependency
-        value
+        indices : array_like of shape (2,)
+            Pair of state indices to constrain.
+        value : float
+            Constraint value placed at both off-diagonal positions.
 
         Returns
         -------
-        s : ConstrainMatrix
-            self
+        self : ConstrainMatrix
+            Returns self to allow method chaining.
         """
         assert 0 <= indices[0] < self._N, f'first index not in range [0, {self._N - 1}]'
         assert 0 <= indices[1] < self._N, f'second index not in range [0, {self._N - 1}]'
@@ -807,23 +984,24 @@ class ConstrainMatrix:
 
     def constrain_by_labels(self, label_1, label_2, value):
         """
-        Add constraining by labels
+        Add a constraint between two state variables identified by label.
 
-        I.e., Apply a dependency between two indices.
+        Looks up the state indices for ``label_1`` and ``label_2`` and delegates
+        to :meth:`constrain`.
 
         Parameters
         ----------
-        label_1: str
-            label of the first state variable index to apply a dependency
-        label_2: str
-            label of the second state variable index to apply a dependency
-        value: int, float
-            dependency value
+        label_1 : str
+            Label of the first state variable.
+        label_2 : str
+            Label of the second state variable.
+        value : float
+            Constraint value.
 
         Returns
         -------
-        s : ConstrainMatrix
-            self
+        self : ConstrainMatrix
+            Returns self to allow method chaining.
         """
 
         index_1 = self._cost.get_state_var_indices(label_1)
@@ -834,12 +1012,16 @@ class ConstrainMatrix:
 
     def digest(self):
         """
-        Reruns a "snapshot" of the constraint matrix with the applied constraints
+        Return a snapshot of the constraint matrix with redundant columns removed.
+
+        Removes columns that are zero, duplicate, or linearly dependent on other
+        columns before returning, yielding a full-column-rank H matrix.
 
         Returns
         -------
-        H : :class:`numpy.ndarray` of shape(N, M)
-            Constrain Matrix
+        H : :class:`numpy.ndarray` of shape (N, K)
+            Constraint matrix, where K <= N is the number of independent constraints
+            remaining after redundancy removal.
         """
         H = self._data.copy()
 

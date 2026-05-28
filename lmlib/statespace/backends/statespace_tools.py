@@ -78,32 +78,77 @@ def _sanitize_zeros(zeros, tol=1e-6):
 
 
 def _transform_ALSSM_matrices(A, C, P):
+    """
+    Apply a similarity transform P to the ALSSM matrices A and C.
+
+    Returns ``(P @ A @ P_inv, C @ P_inv)``.
+
+    Parameters
+    ----------
+    A : ndarray of shape (N, N)
+        State transition matrix.
+    C : ndarray of shape ([Q,] N)
+        Output matrix.
+    P : ndarray of shape (N, N)
+        Invertible transformation matrix.
+
+    Returns
+    -------
+    At : ndarray of shape (N, N)
+        Transformed state matrix.
+    Ct : ndarray of shape ([Q,] N)
+        Transformed output matrix.
+    """
     P_inv = np.linalg.inv(P)
     At = P@A@P_inv
     Ct = C@P_inv
     return At, Ct
 
 def _transform_x(xs, P):
+    """
+    Apply a similarity transform P to an array of state vectors.
+
+    Parameters
+    ----------
+    xs : ndarray of shape (K, N, ...)
+        State vectors; the second axis is the state dimension.
+    P : ndarray of shape (N, N)
+        Transformation matrix.
+
+    Returns
+    -------
+    ndarray of shape (K, N, ...)
+        Transformed state vectors ``P @ x`` for each sample k.
+    """
     return np.einsum('mn, kn...->km...', P, xs)
 
 
 def kron_q(x, q):
     """
-    Kronecker Power for a vector x by as non-negative integer q
+    Compute the Kronecker power :math:`x^{\\otimes q}` of an array.
 
-    For reference, see  [Baeriswyl2025]_ [Eq. 6].
+    For a vector or matrix ``x``, this returns
+
+    .. math::
+
+        x^{\\otimes 0} = I_1, \\quad
+        x^{\\otimes 1} = x, \\quad
+        x^{\\otimes q} = x \\otimes x^{\\otimes (q-1)} \\; (q \\geq 2).
+
+    For reference, see [Baeriswyl2025]_ [Eq. 6].
 
     Parameters
     ----------
     x : array_like
-        Base array/matrix
+        Base array or matrix.
     q : int
-        Kronecker exponent
+        Non-negative Kronecker exponent.
 
     Returns
     -------
-    out : array_like
-        array/matrix raised by the kronecker exponent
+    out : ndarray
+        ``x`` raised to the Kronecker power ``q``.  Shape is
+        ``(x.shape[0]**q, x.shape[1]**q)`` for a 2-D input.
 
     """
     if q == 0:
@@ -118,17 +163,19 @@ def kron_q(x, q):
 
 def common_C_dim(alssms):
     """
-    Checks if all Alssm have the same C output dimension
+    Check whether all ALSSMs share the same output matrix dimensionality.
 
     Parameters
     ----------
-    alssms : list of Alssm
-        Alssms to check for common C dimension
+    alssms : list of ModelBase
+        ALSSMs to compare.
 
     Returns
     -------
-    bool : True if all Alssms have the same C dimension else False
-
+    bool
+        ``True`` if all ALSSMs have the same number of output dimensions
+        (same ``C.ndim`` and same first dimension of ``C`` when 2-D),
+        ``False`` otherwise.
     """
     C_ndim = [alssm.C.ndim for alssm in alssms]
     C_L = [np.atleast_2d(alssm.C).shape[0] for alssm in alssms]

@@ -1,3 +1,14 @@
+"""
+Backend for Recursive Least Squares Calculation using lfilter
+===========================================================
+
+Resources
+---------
+Authors: Christof Baeriswyl, Frédéric Waldmann, Alexander Bertrand, Reto Wildhaber
+
+"""
+
+
 import numpy as np
 from numpy.linalg import inv, matrix_power, eigvals
 from scipy.signal import lfilter, convolve, zpk2sos, sosfilt, ss2tf
@@ -341,12 +352,12 @@ def lfilter_forward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta
     for n_ in range(1, N):
         y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi_add[:-1], gAinvT[n_])
         xi_add[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
-        
-    # SE weight for this cost segment 
-    if beta != 1:
-        xi_add *= beta    
 
-    #xi needs to be correctly inserted. since the signal y_delayed_b had an actual delay of 0, 
+    # SE weight for this cost segment
+    if beta != 1:
+        xi_add *= beta
+
+    #xi needs to be correctly inserted. since the signal y_delayed_b had an actual delay of 0,
     #we need to shift xi0 by b.
     if b >= 0:
         xi += xi_add[b:b+K]
@@ -403,7 +414,7 @@ def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, bet
 
     #time-reverse observation for backward recursion
     y_weighted_flipped = y_weighted[::-1]
-    
+
     # shift signal
     # insert the shifted signal: since a < b (by definition), the backward recursion starts with signal a only.
     if not np.isinf(b):
@@ -428,12 +439,12 @@ def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, bet
     for n_ in range(1, N):
         y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi_add[:-1], gAT[n_])
         xi_add[:, n_] = lfilter([1, 0], [1, -gamma], y_diff[n_].T).T
-    
+
     # SE weight for this cost segment
     if beta != 1:
         xi_add *= beta
-    
-    #xi needs to be correctly inserted. since the signal y_delayed_a had an actual delay of 0, 
+
+    #xi needs to be correctly inserted. since the signal y_delayed_a had an actual delay of 0,
     #we need to shift xi0 by a.
     xi0_flipped = xi_add[::-1]
     if a >= 0:
@@ -446,6 +457,7 @@ def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, bet
 
 # xi2 lfilter parallel
 def lfilter_parallel_xi2(xi2, denom, num_b, num_a, a, b, direction, delta, gamma, y, sample_weights, beta):
+    """Compute :math:`\\xi^{(2)}` using the parallel lfilter backend (transfer-function form)."""
     raise NotImplementedError("lfilter_parallel_xi2 not implemented yet.")
 
 
@@ -455,6 +467,7 @@ def lfilter_parallel_xi1(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
                           sos_iir_b_list=None, sos_iir_a_list=None,
                           n_poles_b_list=None, n_poles_a_list=None,
                           advance_b_list=None, advance_a_list=None):
+    """Compute :math:`\\xi^{(1)}` using the parallel lfilter backend (transfer-function form)."""
     if direction == 'fw':
         lfilter_forward_parallel_xi(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
                                      a, b, delta, gamma, y, sample_weights, beta,
@@ -472,6 +485,7 @@ def lfilter_parallel_xi1(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
 
 # xi0 lfilter parallel (delegates to cascade implementation, since the ALSSM is not used for xi0 calculation)
 def lfilter_parallel_xi0(xi0, denom, num_b, num_a, a, b, direction, delta, gamma, y, sample_weights, beta, kappa_diag=True):
+    """Compute :math:`\\xi^{(0)}` using the parallel lfilter backend (delegates to cascade internally)."""
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     lfilter_cascade_xi0(xi0,_A,_C,a,b,direction,delta,gamma,y,sample_weights,beta)
@@ -479,6 +493,7 @@ def lfilter_parallel_xi0(xi0, denom, num_b, num_a, a, b, direction, delta, gamma
 
 # nu lfilter parallel
 def lfilter_parallel_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
+    """Compute :math:`\\nu` using the parallel lfilter backend (delegates to cascade internally)."""
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = np.broadcast_to(1., np.shape(y))  # create an array of shape Ks, but contains only a single 1.0 in memory
@@ -489,7 +504,7 @@ def lfilter_parallel_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weigh
         lfilter_backward_cascade_xi(nu, _A, _C, a, b, delta, gamma, _y, sample_weights, beta, _params)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
-    
+
 
 def _make_num_sos(num_row):
     """Build a numerator-only SOS from a single row of ss2tf output.
@@ -760,11 +775,11 @@ def lfilter_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da
             iir = ib - ia
         else:
             iir = sosfilt(sos_iir, fb - fa)
-        
+
         # SE weight for this cost segment
         if beta != 1:
-            iir *= beta    
-            
+            iir *= beta
+
         if b >= 0:
             xi[:, n_] += iir[b:b + K]
         else:
@@ -841,11 +856,11 @@ def lfilter_backward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, d
             iir = ia - ib
         else:
             iir = sosfilt(sos_iir, fa - fb)
-            
+
         # SE weight for this cost segment
         if beta != 1:
-            iir *= beta        
-            
+            iir *= beta
+
         if a >= 0:
             end = K - a
             if end > 0:

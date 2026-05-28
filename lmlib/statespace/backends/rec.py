@@ -12,7 +12,38 @@ __all__ = ['xi_q_recursion', 'xi_q_asterisk_l_recursion']
 
 
 def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, backend, filter_form, numdenom, cascade_params=None):
-    # Equation 47 in Baeriswyl2025
+    """
+    Run the :math:`\\xi^{(q)*l}` multi-dimensional recursion (Eq. 47 in [Baeriswyl2025]).
+
+    Computes the cross-dimensional xi terms needed for N-dimensional cost
+    functions by applying the Kronecker-structured recursion in the numpy
+    backend (jit/lfilter fall back to numpy with a warning).
+
+    Parameters
+    ----------
+    xi_curr : ndarray
+        Output buffer; updated in-place.
+    q : int
+        Recursion order (0, 1, or 2).
+    alssm : ModelBase
+        ALSSM defining A and C matrices.
+    segment : Segment
+        Segment defining the window parameters and direction.
+    xi_prev : ndarray
+        Previously computed xi values from the lower-dimensional recursion.
+    v : ndarray
+        Sample weights.
+    beta : float
+        Cost scaling factor.
+    backend : str
+        Computational backend (``'numpy'``, ``'jit'``, or ``'lfilter'``).
+    filter_form : str
+        Filter structure (``'cascade'`` or ``'parallel'``).
+    numdenom : list or None
+        Pre-built transfer-function coefficients for the lfilter backend.
+    cascade_params : list or None, optional
+        Pre-built cascade parameters for the lfilter cascade backend.
+    """
 
     Nq_prev = xi_prev.shape[-1]
     INq = np.eye(Nq_prev)
@@ -35,7 +66,34 @@ def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, back
 
 
 def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, numdenom, cascade_params=None):
-    # Equation 18 in Baeriswyl2025
+    """
+    Run the :math:`\\xi^{(q)}` recursion to the selected backend (Eq. 18 in [Baeriswyl2025]).
+
+    Parameters
+    ----------
+    xi : ndarray
+        Output buffer; updated in-place.
+    q : int
+        Recursion order: 2 for W, 1 for xi, 0 for kappa.
+    alssm : ModelBase
+        ALSSM providing A and C.
+    segment : Segment
+        Window parameters and direction.
+    y : ndarray
+        Input signal samples.
+    v : ndarray
+        Per-sample weights.
+    beta : float
+        Cost scaling factor.
+    backend : str
+        Computational backend (``'numpy'``, ``'lfilter'``, or ``'jit'``).
+    filter_form : str
+        Internal filter structure (``'cascade'`` or ``'parallel'``).
+    numdenom : list or None
+        Pre-built transfer-function coefficients (lfilter parallel only).
+    cascade_params : list or None, optional
+        Pre-built cascade parameters (lfilter cascade + q==1 only).
+    """
 
     if backend == 'numpy':
         if q == 2:
@@ -132,4 +190,3 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, numd
             raise ValueError("unknown filter-form: '{}'".format(filter_form))
     else:
         raise ValueError("unknown backend: '{}'".format(backend))
-

@@ -2,6 +2,19 @@
 Structure and Evaluation of Multivariate Polynomials [gu201.1]
 ==============================================================
 
+Demonstrates how to create and evaluate a multivariate polynomial using
+:class:`~lmlib.polynomial.poly.MPoly` in vector exponent notation
+:math:`\\tilde{\\alpha}^\\mathsf{T}(x^q \\otimes y^r)`.
+
+Six evaluation cases are shown:
+
+1. Univariate :class:`MPoly` (single variable, no cross terms) — print.
+2. Evaluate at a scalar.
+3. Evaluate over a 1-D array.
+4. Bivariate :class:`MPoly` (factorised coefficients) — scalar evaluation.
+5. Array-valued variable inputs — output shape matches input shape.
+6. High-dimensional array inputs — confirm broadcast output shape.
+
 """
 import numpy as np
 import lmlib as lm

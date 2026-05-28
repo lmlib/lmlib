@@ -2,8 +2,14 @@
 Multi-Segment (Composite) Models: Windows and Trajectories [gu104.0]
 ====================================================================
 
-Defines a Composite Cost, consisting of two stacked ALSSM models,
-and applies them to detect pulses.
+Defines a :class:`~lmlib.statespace.cost.CompositeCost` combining two ALSSM
+models (a pulse model and a baseline model) with three segments (left, centre,
+right), and visualises the resulting windows and trajectories.
+
+The mapping matrix ``F`` selects which ALSSM is active in each segment:
+the pulse model covers only the centre segment, while the baseline model
+spans all three.  Separate trajectory plots are shown for the pulse-only,
+baseline-only, and combined (pulse + baseline) contributions.
 
 """
 import matplotlib.pyplot as plt
@@ -18,17 +24,17 @@ from lmlib.utils.generator import (gen_rand_pulse, gen_wgn, gen_rand_walk)
 alssm_pulse = lm.AlssmPoly(poly_degree=0, label="line-model-pulse")
 alssm_baseline = lm.AlssmPoly(poly_degree=2, label="offset-model-baseline")
 
-# Defining segments with a left-resp. right-sided decaying window and a center segment with nearly rectangular window
-semgent_left = lm.Segment(a=-np.inf, b=-1, direction=lm.FORWARD, g=20)
-semgent_center= lm.Segment(a=0, b=10, direction=lm.FORWARD, g=5000)
-semgent_right = lm.Segment(a=10+1, b=np.inf, direction=lm.BACKWARD, g=20, delta=10)
+# Defining segments with a left- resp. right-sided decaying window and a center segment with a nearly rectangular window
+segment_left = lm.Segment(a=-np.inf, b=-1, direction=lm.FORWARD, g=20)
+segment_center= lm.Segment(a=0, b=10, direction=lm.FORWARD, g=5000)
+segment_right = lm.Segment(a=10+1, b=np.inf, direction=lm.BACKWARD, g=20, delta=10)
 
 # Defining the final cost function
 # mapping matrix between models and segments (rows = models, columns = segments)
 F = [[0, 1, 0],
      [1, 1, 1]]
 
-costs = lm.CompositeCost((alssm_pulse, alssm_baseline), (semgent_left, semgent_center, semgent_right), F)
+costs = lm.CompositeCost((alssm_pulse, alssm_baseline), (segment_left, segment_center, segment_right), F)
 x0 = [2, 3, 0.02, -0.0002] # initial states of alssm_pulse [0:1] and of alssm_baseline [1:4]
 
 windows = lm.Window.eval(costs,thd=0.01)

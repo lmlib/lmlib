@@ -2,16 +2,18 @@
 Calculus with Polynomials [gu203.0]
 ===================================
 
-This guide script demonstrates the use of arithmetic manipulations on polynomials.
+Demonstrates arithmetic operations on univariate polynomials using the
+:mod:`lmlib.polynomial` calculus functions.
 
-**Arithmetic Operations**
+**Operations shown:**
 
-* Summation of polynomials
-* Product of polynomials
-* Integral of polynomials over a single or multiple variables
-* Derivative of polynomials
-* Shifting a polynomial to the left or right
-* Dilating a polynomial
+* Sum of two polynomials (:func:`~lmlib.polynomial.poly.poly_sum`)
+* Product of two polynomials (:func:`~lmlib.polynomial.poly.poly_prod`)
+* Square of a polynomial (:func:`~lmlib.polynomial.poly.poly_square`)
+* Shift of a polynomial (:func:`~lmlib.polynomial.poly.poly_shift`)
+* Dilation of a polynomial (:func:`~lmlib.polynomial.poly.poly_dilation`)
+* Indefinite integral of a polynomial (:func:`~lmlib.polynomial.poly.poly_int`)
+* Derivative of a polynomial (:func:`~lmlib.polynomial.poly.poly_diff`)
 
 """
 import lmlib as lm
@@ -23,10 +25,10 @@ p2 = lm.Poly([2, -1], [0, 1])
 print(p1)
 print(p2)
 print("\n"+"-"*40+"\n")
-print("Adding two polynomials p1 and p2\n")
+print("Sum of polynomials p1 and p2\n")
 print(lm.poly_sum((p1, p2)), '\n')
 
-print("Multiply two polynomials p1 and p2\n")
+print("Product of polynomials p1 and p2\n")
 print(lm.poly_prod((p1, p2)), '\n')
 
 
@@ -44,7 +46,7 @@ eta = -5
 print(lm.poly_dilation(p1, eta), '\n')
 
 
-print("Integration polynomial p1\n")
+print("Integral of polynomial p1\n")
 print(lm.poly_int(p1), '\n')
 
 

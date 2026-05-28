@@ -2,8 +2,13 @@
 Time and Amplitude Scaling [ex703.0]
 ====================================
 
-This example is published in [Wildhaber2020]_ .
+Estimates both a time-scaling (dilation) factor and an amplitude-scaling
+factor between two locally polynomial signals.
+This example is published in [Wildhaber2020]_.
 
+The polynomial coefficients of the reference and the candidate windows are
+related by the dilation and amplitude operators, enabling a closed-form
+least-squares estimator via the polynomial calculus.
 """
 
 import matplotlib.pyplot as plt

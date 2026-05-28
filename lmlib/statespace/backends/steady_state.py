@@ -437,10 +437,35 @@ def covariance_matrix_schur(A, C, gamma, a, b, delta):
     return float(gamma ** (-delta)) * (kron_IC @ M @ kron_CtI)
 
 
-   
+
 
 
 def covariance_matrix_closed_form(A, C, gamma, a, b, delta):
+    """
+    Compute the steady-state Gram matrix W in closed form via a Stein equation.
+
+    Uses the analytic matrix inversion approach.  May issue a
+    :class:`WConditionNumberWarning` when the Stein coefficient matrix is
+    badly conditioned (condition number > 1e15).
+
+    Parameters
+    ----------
+    A : ndarray of shape (N, N)
+        State transition matrix.
+    C : ndarray of shape ([Q,] N)
+        Output matrix.
+    gamma : float
+        Window decay factor.
+    a, b : int or np.inf
+        Segment boundaries.
+    delta : int
+        Window normalisation index.
+
+    Returns
+    -------
+    W : ndarray of shape (N, N)
+        Steady-state Gram matrix.
+    """
     N = np.shape(A)[0]
     gATA = gamma * np.kron(np.transpose(A), A)
 
@@ -482,4 +507,14 @@ def covariance_matrix_closed_form(A, C, gamma, a, b, delta):
 
 
 def covariance_matrix_limited_sum(A, C, gamma, a, b, delta):
+    """
+    Compute the steady-state Gram matrix W by iterative summation.
+
+    Not yet implemented.  Raises :class:`NotImplementedError`.
+
+    Parameters
+    ----------
+    A, C, gamma, a, b, delta
+        See :func:`covariance_matrix_closed_form`.
+    """
     raise NotImplementedError("limited_sum is not implemented yet.")

@@ -2,7 +2,13 @@
 Symmetric Moving Average Filters with ALSSMs [ex121.0]
 ======================================================
 
-Applies a Composite Cost with a two-sided, symmetric window as a symmetric moving average filter of length L=100.
+Applies a :class:`CompositeCost` with a two-sided symmetric window as a
+symmetric moving average filter of length L=100.
+
+A degree-0 polynomial ALSSM (i.e. a constant model) is combined with a
+forward left segment and a backward right segment of equal length.  The
+resulting filter is equivalent to a finite-impulse-response (FIR) boxcar
+average, but is computed efficiently via the recursive ALSSM framework.
 
 """
 

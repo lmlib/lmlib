@@ -1,8 +1,17 @@
 """
 ECG Shape Detection [ex113.0]
-=======================================
+==============================
 
+Detects a known reference shape in a single-channel electrocardiogram (ECG)
+signal using a template-matching approach based on ALSSMs.
 
+A reference template is extracted from the signal at a known location
+(``K_REF``).  A polynomial ALSSM fits the template and every candidate
+window in the signal; the Log-Cost Ratio (LCR) between a shape-model fit
+and a flat-baseline fit is used to score each candidate.  Peaks in the LCR
+above ``LCR_THD`` are returned as detected beat locations.
+
+Signal source: ``EECG_BASELINE_1CH_10S_FS2400HZ.csv`` (bundled library data).
 """
 
 import matplotlib.pyplot as plt

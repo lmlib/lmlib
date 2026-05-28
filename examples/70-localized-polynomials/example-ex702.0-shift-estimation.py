@@ -2,10 +2,20 @@
 Audio Signal Shift Estimation [ex702.0]
 =======================================
 Example 2 as published in [Wildhaber2020]_.
-Equation references in the code (such as e.g. # Eq. 6.52) refer to equations in [Wildhaber2019]_, .
+Equation references in the code (e.g. ``# Eq. 6.52``) refer to equations
+in [Wildhaber2019]_.
 
-Top Plot: two-channel acoustic signal from left (L) and right (R) ear with an (unknown, to be estimated) interaural time delay. 
-Middle Plot: `s` show the local time delay estimate of corresponding local polynomial fits (local and averaged estimate), 
+**Top plot:** Two-channel acoustic signal from the left (L) and right (R)
+ear with an unknown interaural time delay (ITD) to be estimated.
+
+**Middle plot:** Local time-delay estimates from corresponding local
+polynomial fits (per-sample estimate and running average).
+
+**Bottom plot:** Estimated delay overlaid on the signal.
+
+The shift is estimated by comparing the polynomial coefficients of the two
+channels within a sliding window, exploiting the algebraic shift relationship
+between the polynomial bases of the left and right channels.
 """
 
 import numpy as np

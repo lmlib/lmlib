@@ -2,8 +2,13 @@
 Multi-Channel Symmetric Signal Filter [ex123.0]
 ===============================================
 
-Applies a Composite Cost with a symmetric window as a symmetric, linear filter to a multi-channel signal.
+Applies a :class:`CompositeCost` with a symmetric two-sided window as a
+symmetric linear filter to a multi-channel signal.
 
+A degree-5 polynomial ALSSM is fitted over equal-length left and right
+windows.  The same model is applied in parallel to all channels using the
+multi-channel (MC) output form of the ALSSM.  The ``lfilter`` backend is
+selected for efficiency.
 
 """
 

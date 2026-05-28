@@ -49,10 +49,10 @@ class RLSAlssm:
     r"""
     Recursive Least Square Alssm Class to solve Alssm Cost Functions.
 
-    This class uses either a :class:`CostSegment`, :class:`CompositeCost` or :class:`NDCompositeCost` and defines the functions to solve it recursively. 
+    This class uses either a :class:`CostSegment`, :class:`CompositeCost` or :class:`NDCompositeCost` and defines the functions to solve it recursively.
     :math:`W_k`, :math:`\xi_k`, :math:`\kappa_k` and :math:`\nu_k` can be computed either as a forward or as a backward recursion as defined in Eq. (22-25) [Wildhaber2018]_.
     :math:`W_k` is the Gram matrix defined by the ALSSM (:math:`A`, :math:`c`, :math:`\alpha` and :math:`w`). :math:`\mathrm{vec}(W_k)=\xi^{(2)}(k,y)=\xi^{(2)}(k,\mathbf{1})` (with :math:`\mathbf{1}` the all ones vector) Eq. (21) [Baeriswyl2025]_.
-    :math:`\xi_k` (:math:`=\xi^{(1)}(k,y)` Eq. (20) [Baeriswyl2025]_) is the projection of the signal to the ALSSM subspace.
+    :math:`\xi_k` (:math:`=\xi^{(1)}(k,y)` Eq. (20) [Baeriswyl2025]_) is the cross correlation of the signal with the ALSSM basis.
     :math:`\kappa_k` gives the energy of a signal weighted under :math:`\alpha` and :math:`w`. :math:`\kappa_k=\xi^{(0)}(k,y)` Eq. (19) [Baeriswyl2025]_.
     Additionally, :math:`\nu_k` is introduced which is the number of weighted samples in the window.
 
@@ -60,8 +60,8 @@ class RLSAlssm:
     .. math::
         J_k(x) = \sum_{i=k+a}^{k+b} \alpha^{k+\delta}(i) w_i \big(y_i - CA^{i-k}x\big)^2
 
-    .. seealso:: 
-        [Wildhaber2018]_ [Wildhaber2019]_ 
+    .. seealso::
+        [Wildhaber2018]_ [Wildhaber2019]_
         For the definition of the :math:`\xi^{(q)}(k,y)` terms see Eq. (19-21) [Baeriswyl2025]_
 
     Parameters
@@ -76,7 +76,7 @@ class RLSAlssm:
         If True, computes the Gram matrix :math:`W_k` (:math:`\xi^{(2)}`).
         Required for :meth:`minimize_v`, :meth:`minimize_x`, and :meth:`eval_errors`. Default: True.
     calc_xi : bool, optional
-        If True, computes the signal projection :math:`\xi_k = \xi^{(1)}(k, y)`.
+        If True, computes the signal cross correlation :math:`\xi_k = \xi^{(1)}(k, y)`.
         Required for :meth:`minimize_v`, :meth:`minimize_x`, and :meth:`eval_errors`. Default: True.
     calc_kappa : bool, optional
         If True, computes the signal energy :math:`\kappa_k = \xi^{(0)}(k, y)`.
@@ -149,7 +149,7 @@ class RLSAlssm:
         self._nu = None
 
         self._backend = backend if backend is not None else get_backend(cost_terms)
-        
+
         self._filter_form = filter_form
 
         # Collect per-dimension CompositeCosts once, reused throughout __init__
@@ -181,24 +181,27 @@ class RLSAlssm:
         self._build_numdenom(_sub_costs, numdenom)
 
     # ------------------------------------------------------------------
-    # Properties 
+    # Properties
     # ------------------------------------------------------------------
 
     @property
     def xi2(self):
+        """ndarray : Alias for :attr:`W` (:math:`\\xi^{(2)}`, the Gram matrix)."""
         return self.W
 
     @property
     def xi1(self):
+        """ndarray : Alias for :attr:`xi` (:math:`\\xi^{(1)}`, the signal cross correlation)."""
         return self.xi
 
     @property
     def xi0(self):
+        """ndarray : Alias for :attr:`kappa` (:math:`\\xi^{(0)}`, the signal energy)."""
         return self.kappa
 
     @property
     def W(self):
-        """:class:`~numpy.ndarray` : Filter Parameter :math:`W`"""
+        """:class:`~numpy.ndarray` : Gram matrix :math:`W_k` (constant :math:`W` in steady-state mode). Shape ``(..., N, N)``."""
         if self._xi2 is None:
             raise ValueError('xi2 has not been calculated. '
                              'Please run the filter() method with calc_W=True before calling W.')
@@ -206,7 +209,7 @@ class RLSAlssm:
 
     @property
     def xi(self):
-        """:class:`~numpy.ndarray` :  Filter Parameter :math:`\\xi`"""
+        """:class:`~numpy.ndarray` : Signal cross-correlation :math:`\\xi_k = \\xi^{(1)}(k,y)`. Shape ``(..., N)``."""
         if self._xi1 is None:
             raise ValueError('xi1 has not been calculated. '
                              'Please run the filter() method with calc_xi=True before calling xi.')
@@ -214,7 +217,7 @@ class RLSAlssm:
 
     @property
     def kappa(self):
-        """:class:`~numpy.ndarray` : Filter Parameter :math:`\\kappa`"""
+        """:class:`~numpy.ndarray` : Signal energy :math:`\\kappa_k = \\xi^{(0)}(k,y)`. Shape ``(...,)``."""
         if self._xi0 is None:
             raise ValueError('xi0 has not been calculated. '
                              'Please run the filter() method with calc_kappa=True before calling kappa.')
@@ -222,26 +225,26 @@ class RLSAlssm:
 
     @property
     def nu(self):
-        """:class:`~numpy.ndarray` : Filter Parameter :math:`\\nu`"""
+        """:class:`~numpy.ndarray` : Effective number of weighted samples :math:`\\nu_k` in the window. Not yet implemented."""
         # TODO nu implementation
         raise NotImplementedError("nu calculation is not yet implemented.")
-    
+
     def _build_cascade_params(self, _sub_costs):
         r"""
         Build _cascade_params as a 3-D structure: _cascade_params[dim_index][seg_index][alssm_index]
-        
+
         Each leaf entry is either None (numpy/jit backends, parallel filter form,
         or inactive grid node with f_mp==0) or a dict of precomputed scalars and
         matrices for the lfilter cascade backend. The dict keys depend on the
         segment direction:
           fw: gamma_inv, gamma_a, gamma_b, gAinvT, Aac, Abc, N
           bw: gamma,     gamma_a, gamma_b, gAT,    Aac, Abc, N
-        
+
         For q==1 (xi) the filtering is done per individual ALSSM, so each
         ALSSM gets its own pre-calculated parameters derived from its own
         (small) A_m and C_m rather than from the combined block-diagonal matrix.
         This avoids constructing the large AlssmSum just to decompose it again.
-        
+
         For q==2 (W) the combined AlssmSum is still used (see recursion methods),
         so _cascade_params[dim][p][m] is not consumed for q==2; the combined entry is
         built on-the-fly there instead.
@@ -264,19 +267,19 @@ class RLSAlssm:
                             A, C, a, b, delta, gamma, segment.direction
                         )
 
-    
+
     def _build_numdenom(self, _sub_costs, numdenom):
         r"""
         Build _numdenom as a 3-D structure: _numdenom[dim_index][seg_index][alssm_index]
-        
+
         Each leaf entry is either None (numpy/jit backends, or inactive grid
         node with f_mp==0) or [denom, num_b, num_a] (lfilter parallel backend).
-        
+
         For q==1 (xi) the filtering is now done per individual ALSSM, so each
         ALSSM gets its own transfer-function coefficients derived from its own
         (small) A_m and C_m rather than from the combined block-diagonal matrix.
         This avoids constructing the large AlssmSum just to decompose it again.
-        
+
         For q==2 (W) the combined AlssmSum is still used (see recursion methods),
         so _numdenom[dim][p][m] is not consumed for q==2; the combined entry is
         built on-the-fly there instead.
@@ -386,30 +389,43 @@ class RLSAlssm:
 
 
     # ------------------------------------------------------------------
-    # filter 
+    # filter
     # ------------------------------------------------------------------
 
     def filter(self, y, sample_weights=None, dim_order=None):
         r"""
-        Calculates the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` and :math:`\nu_k` based on an input signal :math:`y`.
+        Compute the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` and :math:`\nu_k` from the input signal :math:`y`.
 
-        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
-        This function validates if every parameter has the right dimensions and redirects to each :math:`q`. It also coordinates the recursion steps across dimensions: :meth:`_nd_xi_q_recursion()` for the first dimension, :meth:`_nd_xi_q_asterisk_l_recursion()` for the subsequent ones.
-        TODO: calculate :math:`\nu_k`.
+        The three cost parameters correspond to:
+
+        * :math:`q=0`: :math:`\kappa_k = \xi^{(0)}(k,y)` — signal energy (weighted sum of :math:`y^2`).
+        * :math:`q=1`: :math:`\xi_k = \xi^{(1)}(k,y)` — cross-correlation of the signal with the ALSSM basis.
+        * :math:`q=2`: :math:`W_k = \xi^{(2)}(k,y)` — Gram matrix (independent of :math:`y` in LTI case).
+
+        They are computed via the recursive equations (22–25) in [Wildhaber2018]_ for each cost
+        segment, dispatched to the selected backend.  For multi-dimensional costs
+        (:class:`NDCompositeCost`), :meth:`_nd_xi_q_recursion` is called for the first dimension
+        and :meth:`_nd_xi_q_asterisk_l_recursion` for each subsequent one.
 
         Parameters
         ----------
         y : array_like of shape (K, [Q])
-            Input signal. The Q dimension is the ALSSM output dimension, and for scalar ALSSMs (Q=0) a 1D array is also accepted.
+            Input signal. The trailing ``Q`` dimension is the ALSSM output dimension.
+            For scalar ALSSMs (``Q=0`` internally) a 1-D array of shape ``(K,)`` is also accepted.
         sample_weights : array_like of shape (K,), optional
-            Per-sample weights :math:`w_i \in \[0,1\]`. Default: all ones.
-        dim_order : array_like of int, optional
-            Has no effect for :class:`CostSegment` and :class:`CompositeCost`. The order in which ND dimensions are reduced in the recursion for :class:`NDCompositeCost`. Default: np.arange(L) with L number of dimensions.
+            Per-sample weights :math:`w_i \in [0,1]`. Default: all ones.
+        dim_order : array_like of int of length L, optional
+            Order in which ND dimensions are processed in the recursion for
+            :class:`NDCompositeCost`.  Has no effect for :class:`CostSegment`
+            or :class:`CompositeCost`.  Default: ``np.arange(L)``.
 
         Notes
         -----
-        When `steady_state=True`, :math:`W_k` is precomputed once as a constant :math:`W` regardless of `calc_W`. This is valid when all window parameters are independent of :math:k (i.e., :math:`w_k = w` and :math:\gamma_k = \gamma), in which case the :math:`W_k` recursion converges to a steady state satisfying a Lyapunov equation (see Section III-I.2 in [Wildhaber2018]_).
-        The code uses :math:`Q=0` to mean a :math:`1\times1` scalar, not zero-dimensional.
+        When ``steady_state=True`` (the default), :math:`W_k` is precomputed once as the
+        constant steady-state Gram matrix :math:`W`, regardless
+        of ``calc_W``.  This is valid whenever all window parameters are time-invariant
+        (i.e. :math:`w_k = w` and :math:`\gamma_k = \gamma`); see Section III-I.2 in
+        [Wildhaber2018]_. 
 
         Returns
         -------
@@ -419,10 +435,10 @@ class RLSAlssm:
         Raises
         ------
         ValueError
-            If `y` has wrong shape.
-            If `sample_weights` has wrong shape.
+            If ``y`` has the wrong shape.
+            If ``sample_weights`` has the wrong shape.
         AssertionError
-            If `dim_order` has wrong length.
+            If ``dim_order`` has the wrong length.
         """
 
         # -------- check dimension order --------
@@ -446,7 +462,7 @@ class RLSAlssm:
                     elif y.shape[-1] != 1:  # multi dimension signal (processed in parallel)
                         y = y.reshape(*y.shape, 1)
                     else:
-                        raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')    
+                        raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
                 else:
                     raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
             elif Q == 1:  # 1-dimensional output
@@ -502,7 +518,7 @@ class RLSAlssm:
         # TODO
 
     # ------------------------------------------------------------------
-    # minimize / eval 
+    # minimize / eval
     # ------------------------------------------------------------------
 
     def minimize_v(self, H=None, h=None, solver='lstsq'):
@@ -812,7 +828,7 @@ class RLSAlssm:
         Raises
         ------
         AssertionError
-            Propagated from :meth:`minimize_v`: 
+            Propagated from :meth:`minimize_v`:
             If ``H`` does not have ``N`` rows.
             If ``h`` does not have length ``N``.
             If ``H.T @ W @ H`` is not invertible (only when ``steady_state=True``).
@@ -1010,10 +1026,10 @@ class RLSAlssm:
         r"""
         Defines the recursion to calculate the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for a given :math:`q \in \{0,1,2\}` based on an input signal :math:`y`.
 
-        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. 
+        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`.
         They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
-        We iterate over each individual ALSSM m within every segment p and write the result into the appropriate sub-slice of xi_curr.  
-        Because A is block-diagonal, the blocks are independent and can be computed separately. 
+        We iterate over each individual ALSSM m within every segment p and write the result into the appropriate sub-slice of xi_curr.
+        Because A is block-diagonal, the blocks are independent and can be computed separately.
         Each ALSSM m is wrapped in a single-element AlssmSum with weight F[m,p] so that:
           - force_MC is honoured (C is guaranteed 2-D for all backends), and
           - the F-column weight is folded into C (as lambda), keeping beta equal to the original segment beta.
@@ -1070,7 +1086,7 @@ class RLSAlssm:
         # For CompositeCost/CostSegment there is exactly one slot (index 0)
         # regardless of which model_dimension axis is being processed.
         dim_index = model_dimension if isinstance(self._cost_terms, NDCompositeCost) else 0
-        
+
         N = sub_cost.get_alssm_order()
         *Ks, Q = np.shape(y)
         xi_curr = np.zeros((*Ks, N ** q), order='F')  # last dimension is the nd-model-order
@@ -1095,8 +1111,8 @@ class RLSAlssm:
             # The full W of a CompositeCost contains cross-terms between
             # different ALSSMs.  These sit at non-contiguous positions in the
             # flattened N^2 vector, so per-ALSSM sub-slicing is not correct
-            # for M > 1 (more than 1 model). Use the combined AlssmSum (original behaviour). 
-            # _numdenom is not consumed here; numdenom_p is irrelevant for q==2 with 
+            # for M > 1 (more than 1 model). Use the combined AlssmSum (original behaviour).
+            # _numdenom is not consumed here; numdenom_p is irrelevant for q==2 with
             # the combined path (numdenom would need to match the large A).
             # ------------------------------------------------------------------
             if q == 2:
@@ -1176,7 +1192,7 @@ class RLSAlssm:
         r"""
         Defines the recursion for one additional dimension to calculate the ALSSM cost parameters :math:`\xi^{(q)*}(k,y)` for a given :math:`q \in \{0,1,2\}` based on an input signal :math:`y`.
 
-        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`. 
+        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`.
         They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
         This function subdivides the calculation into cost segments (for-loop). The same per-ALSSM decomposition as _nd_xi_q_recursion is applied:
         each ALSSM m in the CompositeCost for this dimension is processed independently, writing into the corresponding sub-slice of xi_curr.

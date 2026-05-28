@@ -4,8 +4,8 @@
 Surface Plot of Multivariate Polynomials [gu202.0]
 ==================================================
 
-This guide script generates a multivariate polynomial using the :class:`MPoly` class. The polynomial is shown in a 3-D
-surface plot. plot.
+This guide script generates a bivariate polynomial using the :class:`~lmlib.polynomial.poly.MPoly` class
+and displays it as a 3-D surface plot.
 
 """
 

@@ -3,9 +3,16 @@ Edge Detection [ex110.0]
 ========================
 
 Performs edge detection based on two adjacent ALSSMs,
-which are connected with linear constraints on its state parameters.
-Edges are detected on LCR (Log-Cost Ratios) peaks.
+which are connected with linear constraints on their state parameters.
+Edges are detected at peaks of the LCR (Log-Cost Ratio).
 
+The Two-Sided Line Model (TSLM) fits two independent line models to a
+left and a right window around each sample.  A ``Continuous`` constraint
+(shared offset and slope) is compared against a ``Free`` (unconstrained)
+fit.  The resulting LCR measures how well the two-line model captures a
+step-like discontinuity.
+
+See also [Waldmann2022]_ Example 1.
 """
 import numpy as np
 import matplotlib.pyplot as plt

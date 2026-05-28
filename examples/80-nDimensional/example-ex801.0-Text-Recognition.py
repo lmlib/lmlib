@@ -1,8 +1,17 @@
 """
-Text Recognition Ex.801
------------------------
-@author: christof, frederic
+Text Recognition [ex801.0]
+--------------------------
 
+Demonstrates 2-D ALSSM-based text recognition using an
+:class:`NDCompositeCost` over a pixel image.
+
+A reference letter image is used as a template.  The 2-D ALSSM filter
+projects each local image patch onto a separable polynomial basis (one
+per image dimension) and computes the Log-Cost Ratio (LCR) between the
+best-fit model and a flat (constant) background model.  Peaks in the
+resulting LCR map indicate the presence of the reference character.
+
+Authors: Christof Baeriswyl, Frédéric Waldmann
 """
 import numpy as np
 import matplotlib.pyplot as plt
