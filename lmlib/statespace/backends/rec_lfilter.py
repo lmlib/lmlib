@@ -455,6 +455,664 @@ def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, bet
 
 
 
+# ─── asterisk-l cascade helpers ──────────────────────────────────────────────
+
+def _compute_cascade_params_asterisk(A, C, a, b, delta, gamma, Nprev, direction):
+    r"""
+    Precompute state-space scalars for the asterisk-l cascade IIR filters.
+
+    Called once per (ALSSM, segment, Nprev) triple before the asterisk
+    recursion loop.  The returned dict is passed directly to
+    :func:`lfilter_xi_asterisk_l_forward_cascade_recursion` or
+    :func:`lfilter_xi_asterisk_l_backward_cascade_recursion`.
+
+    The effective system for the asterisk recursion uses
+    :math:`A_\mathrm{ast} = I_{N_\mathrm{prev}} \otimes A`, which is
+    block-diagonal with :math:`N_\mathrm{prev}` copies of ``A`` on the
+    diagonal.  Because ``A`` is upper triangular, ``A_ast`` is also upper
+    triangular, so the cascade structure (lower-triangular
+    :math:`\gamma^{-1} A_\mathrm{ast}^{-\mathrm{T}}`) is preserved.
+
+    The ``Aac`` / ``Abc`` entries are stored as ravelled 1-D vectors so that
+    the driving-input computation
+
+    .. code-block:: python
+
+        y_diff = (xi_N_b[..., :, None] * Abc_1d).reshape(L, *S_shape, Nprev*N)
+
+    works for both 1-D ``C`` (shape ``(N,)``) and 2-D ``C`` (shape ``(1, N)``
+    as produced by :class:`AlssmSum`).
+
+    Parameters
+    ----------
+    A : np.ndarray, shape (N, N)
+        Upper-triangular state-transition matrix of the ALSSM.
+    C : np.ndarray, shape ([L,] N)
+        Output matrix of the ALSSM (1-D or 2-D).
+    a, b : int or ±inf
+        Segment boundaries.
+    delta : int
+        Segment normalisation shift.
+    gamma : float
+        Window decay factor.
+    Nprev : int
+        Trailing state dimension of ``xi_prev`` (i.e. :math:`N_\mathrm{prev}`).
+    direction : str
+        ``'fw'`` or ``'bw'``.
+
+    Returns
+    -------
+    dict
+        Keys for ``'fw'``:
+            ``gamma_inv``, ``gamma_a``, ``gamma_b``, ``gAinvT``,
+            ``Aac``, ``Abc``, ``N``, ``Nprev``.
+        Keys for ``'bw'``:
+            ``gamma``, ``gamma_a``, ``gamma_b``, ``gAT``,
+            ``Aac``, ``Abc``, ``N``, ``Nprev``.
+    """
+    N = A.shape[0]
+    A_inv = inv(A)
+    gamma_inv = 1.0 / gamma
+    if direction == 'fw':
+        Aa = matrix_power(A, 0 if np.isinf(a) else a - 1)
+        Ab = matrix_power(A, b)
+        return {
+            'gamma_inv': gamma_inv,
+            'gamma_a':   gamma ** (a - 1 - delta),
+            'gamma_b':   gamma ** (b - delta),
+            'gAinvT':    gamma_inv * A_inv.T,
+            'Aac':       np.dot(Aa.T, C.T).ravel(),   # always (N,)
+            'Abc':       np.dot(Ab.T, C.T).ravel(),    # always (N,)
+            'N':         N,
+            'Nprev':     Nprev,
+        }
+    else:  # bw
+        Aa = matrix_power(A, a)
+        Ab = matrix_power(A, 0 if np.isinf(b) else b + 1)
+        return {
+            'gamma':   gamma,
+            'gamma_a': gamma ** (a - delta),
+            'gamma_b': gamma ** (b - delta + 1),
+            'gAT':     gamma * A.T,
+            'Aac':     np.dot(Aa.T, C.T).ravel(),     # always (N,)
+            'Abc':     np.dot(Ab.T, C.T).ravel(),     # always (N,)
+            'N':       N,
+            'Nprev':   Nprev,
+        }
+
+
+@profile
+def lfilter_xi_asterisk_l_forward_cascade_recursion(xi, cascade_params_ast, a, b, xi_N, v, beta):
+    r"""
+    IIR forward cascade for the asterisk-l recursion :math:`\xi^{(1)*l}`.
+
+    Computes the cross-dimensional xi term
+
+    .. math::
+        \xi^{(1)*l}(k) \mathrel{+}=
+        \text{(boundary-b)} - \text{(boundary-a)}
+
+    using the same cascade-of-1-D-IIR structure as
+    :func:`lfilter_forward_cascade_xi`, but driven by the previously
+    accumulated ``xi_N`` (a state vector from the lower-dimensional
+    recursion) rather than the raw signal ``y``.
+
+    The effective system matrix is :math:`A_\mathrm{ast} = I_{N_p} \otimes A`
+    (block-diagonal, upper triangular), so the cascade can process all
+    :math:`N_p` blocks simultaneously.  For each model state dimension
+    ``n``, one :func:`scipy.signal.lfilter` call handles all
+    :math:`N_p \times \prod(S)` channels in a single pass.
+
+    See [Baeriswyl2025]_ Eq. (47).
+
+    Parameters
+    ----------
+    xi : np.ndarray, shape (K, \*S, Nprev \* N)
+        Output buffer, updated in-place.
+    cascade_params_ast : dict
+        Precomputed parameters from
+        :func:`_compute_cascade_params_asterisk` with ``direction='fw'``.
+        Required keys: ``gamma_inv``, ``gamma_a``, ``gamma_b``,
+        ``gAinvT``, ``Aac``, ``Abc``, ``N``, ``Nprev``.
+    a : int or inf
+        Left segment boundary.
+    b : int or inf
+        Right segment boundary.
+    xi_N : np.ndarray, shape (K, \*S, Nprev)
+        Previously accumulated xi from the lower-dimensional recursion.
+        The first axis is the active filter axis; ``\*S`` are extra
+        spatial dimensions; the last axis is the Nprev state components.
+    v : np.ndarray
+        Sample weights (unused in the asterisk recursion; accepted for
+        interface consistency with the numpy backend).
+    beta : float
+        Segment cost weight.
+
+    Notes
+    -----
+    The driving input for each output state ``n_`` = ``j * N + n`` is
+
+    .. math::
+        d[k,\,j,\,n] =
+          \gamma_b \cdot \mathrm{Abc}[n] \cdot \xi_N[k+b,\,j]
+          - \gamma_a \cdot \mathrm{Aac}[n] \cdot \xi_N[k+a-1,\,j]
+
+    where ``j`` indexes the :math:`N_p` blocks and ``n`` indexes the
+    model state dimension within each block.  After computing ``y_diff``
+    with shape ``(L, \*S, Nprev, N)``, the inner cascade loop adds the
+    lower-triangular coupling ``gAinvT[n, :n]`` from previously computed
+    state dims and applies one ``lfilter`` call per model dimension ``n``.
+
+    Raises
+    ------
+    ValueError
+        If the state-transition matrix ``A`` is not upper triangular.
+    """
+    gamma_inv = cascade_params_ast['gamma_inv']
+    gamma_a   = cascade_params_ast['gamma_a']
+    gamma_b   = cascade_params_ast['gamma_b']
+    gAinvT    = cascade_params_ast['gAinvT']   # (N, N) lower-triangular
+    Aac       = cascade_params_ast['Aac']       # (N,) ravelled
+    Abc       = cascade_params_ast['Abc']       # (N,) ravelled
+    N         = cascade_params_ast['N']
+    Nprev     = cascade_params_ast['Nprev']
+
+    if not np.allclose(gAinvT, np.tril(gAinvT)):
+        raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
+
+    K       = xi_N.shape[0]
+    S_shape = xi_N.shape[1:-1]   # extra spatial dims between K and Nprev
+
+    # ── boundary padding (same logic as lfilter_forward_cascade_xi) ──────────
+    if not np.isinf(a):
+        window_width = b - a + 1
+        K_append = max(window_width, b + 1) if b >= 0 else window_width
+    else:
+        K_append = 0
+    L = K + K_append
+
+    # ── b-boundary driving input ──────────────────────────────────────────────
+    # xi_N_b shape: (L, *S, Nprev); delayed_b = xi_N[:K], zeros after.
+    xi_N_b = np.zeros((L, *S_shape, Nprev))
+    xi_N_b[:K] = xi_N
+
+    # y_diff[l, *s, j*N + n] = gamma_b * Abc[n] * xi_N_b[l, *s, j]
+    # (..., Nprev, 1) * (N,) -> (..., Nprev, N) -> reshape (..., Nprev*N)
+    y_diff = (xi_N_b[..., :, None] * (gamma_b * Abc)).reshape(L, *S_shape, Nprev * N)
+
+    # ── a-boundary subtraction ────────────────────────────────────────────────
+    if not np.isinf(a):
+        a_offset = b - a + 1     # delay between b- and a-boundary signals
+        xi_N_a = np.zeros((L, *S_shape, Nprev))
+        xi_N_a[a_offset:a_offset + K] = xi_N
+        y_diff -= (xi_N_a[..., :, None] * (gamma_a * Aac)).reshape(L, *S_shape, Nprev * N)
+
+    # ── cascade IIR loop (one lfilter call per model state dim n) ─────────────
+    # Reshape to (L, *S, Nprev, N) for convenient per-n block access.
+    xi_add = np.zeros((L, *S_shape, Nprev * N), order='F')
+    yd_r   = y_diff.reshape(L, *S_shape, Nprev, N)   # view into y_diff
+    xa_r   = xi_add.reshape(L, *S_shape, Nprev, N)   # view into xi_add
+
+    for n in range(N):
+        if n > 0:
+            # Lower-triangular coupling: add contributions from dims 0..n-1
+            # within each block (gAinvT[n, :n] is the coupling row).
+            yd_r[1:, ..., n] += np.einsum('...m,m->...', xa_r[:-1, ..., :n], gAinvT[n, :n])
+        # Filter all (*S, Nprev) channels simultaneously along the time axis.
+        inp    = yd_r[..., n].reshape(L, -1)           # (L, prod(S)*Nprev)
+        out    = lfilter([1, 0], [1, -gamma_inv], inp.T).T
+        xa_r[..., n] = out.reshape(L, *S_shape, Nprev)
+
+    if beta != 1:
+        xi_add *= beta
+
+    # ── accumulate into output (same slicing as lfilter_forward_cascade_xi) ───
+    if b >= 0:
+        xi += xi_add[b:b + K]
+    if b < 0:
+        xi[-b:] += xi_add[0:K + b]
+
+
+@profile
+def lfilter_xi_asterisk_l_backward_cascade_recursion(xi, cascade_params_ast, a, b, xi_N, v, beta):
+    r"""
+    IIR backward cascade for the asterisk-l recursion :math:`\xi^{(1)*l}`.
+
+    Mirror of :func:`lfilter_xi_asterisk_l_forward_cascade_recursion` for
+    backward segments (direction ``'bw'``).
+
+    The time axis of ``xi_N`` is reversed before the cascade, and the
+    accumulated result is reversed again before being written back, exactly
+    mirroring how :func:`lfilter_backward_cascade_xi` handles the regular
+    xi recursion.
+
+    Parameters
+    ----------
+    xi : np.ndarray, shape (K, \*S, Nprev \* N)
+        Output buffer, updated in-place.
+    cascade_params_ast : dict
+        Precomputed parameters from
+        :func:`_compute_cascade_params_asterisk` with ``direction='bw'``.
+        Required keys: ``gamma``, ``gamma_a``, ``gamma_b``,
+        ``gAT``, ``Aac``, ``Abc``, ``N``, ``Nprev``.
+    a : int or inf
+        Left segment boundary.
+    b : int or inf
+        Right segment boundary.
+    xi_N : np.ndarray, shape (K, \*S, Nprev)
+        Previously accumulated xi from the lower-dimensional recursion.
+    v : np.ndarray
+        Sample weights (unused; accepted for interface consistency).
+    beta : float
+        Segment cost weight.
+
+    Raises
+    ------
+    ValueError
+        If the state-transition matrix ``A`` is not upper triangular.
+    """
+    gamma   = cascade_params_ast['gamma']
+    gamma_a = cascade_params_ast['gamma_a']
+    gamma_b = cascade_params_ast['gamma_b']
+    gAT     = cascade_params_ast['gAT']     # (N, N) lower-triangular
+    Aac     = cascade_params_ast['Aac']     # (N,) ravelled
+    Abc     = cascade_params_ast['Abc']     # (N,) ravelled
+    N       = cascade_params_ast['N']
+    Nprev   = cascade_params_ast['Nprev']
+
+    if not np.allclose(gAT, np.tril(gAT)):
+        raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
+
+    K       = xi_N.shape[0]
+    S_shape = xi_N.shape[1:-1]
+
+    # ── boundary padding ──────────────────────────────────────────────────────
+    K_append = (b - a + 1) if not np.isinf(b) else 0
+    L = K + K_append
+
+    # Time-reverse xi_N for the backward recursion (mirrors lfilter_backward_cascade_xi).
+    xi_N_flipped = xi_N[::-1]
+
+    # ── a-boundary driving input (leading contribution in backward pass) ──────
+    xi_N_a = np.zeros((L, *S_shape, Nprev))
+    xi_N_a[:K] = xi_N_flipped
+    y_diff = (xi_N_a[..., :, None] * (gamma_a * Aac)).reshape(L, *S_shape, Nprev * N)
+
+    # ── b-boundary subtraction (delayed by window width) ─────────────────────
+    if not np.isinf(b):
+        xi_N_b = np.zeros((L, *S_shape, Nprev))
+        xi_N_b[K_append:] = xi_N_flipped
+        y_diff -= (xi_N_b[..., :, None] * (gamma_b * Abc)).reshape(L, *S_shape, Nprev * N)
+
+    # ── cascade IIR loop ──────────────────────────────────────────────────────
+    xi_add = np.zeros((L, *S_shape, Nprev * N), order='F')
+    yd_r   = y_diff.reshape(L, *S_shape, Nprev, N)
+    xa_r   = xi_add.reshape(L, *S_shape, Nprev, N)
+
+    for n in range(N):
+        if n > 0:
+            yd_r[1:, ..., n] += np.einsum('...m,m->...', xa_r[:-1, ..., :n], gAT[n, :n])
+        inp  = yd_r[..., n].reshape(L, -1)
+        out  = lfilter([1, 0], [1, -gamma], inp.T).T
+        xa_r[..., n] = out.reshape(L, *S_shape, Nprev)
+
+    if beta != 1:
+        xi_add *= beta
+
+    # ── accumulate (same slicing as lfilter_backward_cascade_xi) ─────────────
+    xi_add_flipped = xi_add[::-1]
+    if a >= 0:
+        end = K - a
+        if end > 0:
+            xi[:end] += xi_add_flipped[-end:]
+    if a < 0:
+        xi += xi_add_flipped[b + 1:K + b + 1]
+
+
+def _apply_fir_batched(sos, extra_delay, y_sig_2d, Lout):
+    """Batched variant of :func:`_apply_fir` for 2-D input.
+
+    Parameters
+    ----------
+    sos : ndarray or None
+        Numerator SOS filter coefficients.
+    extra_delay : int
+        Integer delay to prepend (zero-padding at the front).
+    y_sig_2d : ndarray, shape (L, C)
+        Multi-channel input; each column is one independent signal.
+    Lout : int
+        Desired output length.
+
+    Returns
+    -------
+    result : ndarray, shape (Lout, C)
+        Filtered and delayed output.  Columns beyond the natural filter
+        output are zero-padded; samples before index 0 are dropped.
+    """
+    C = y_sig_2d.shape[1]
+    result = np.zeros((Lout, C))
+    if sos is None:
+        return result
+    filtered = sosfilt(sos, y_sig_2d.T).T          # (L, C)
+    end = min(extra_delay + filtered.shape[0], Lout)
+    result[extra_delay:end] = filtered[:end - extra_delay]
+    return result
+
+
+def _build_parallel_ast_sos(A, C, a, b, delta, gamma, direction):
+    r"""
+    Build the per-row SOS structure for the parallel asterisk-l recursion.
+
+    Produces the same 11-element list as ``_numdenom[dim][p][m]`` (see
+    :meth:`~lmlib.statespace.rls.RLSAlssm._build_numdenom`), but for a
+    single ALSSM block and without the ``AlssmSum`` wrapper.
+
+    Called once inside :func:`lfilter_xi_asterisk_l_forward_parallel_recursion`
+    and :func:`lfilter_xi_asterisk_l_backward_parallel_recursion` the first
+    time those functions are invoked for a given ``(A, C, a, b, gamma,
+    direction)`` combination.  The result is identical to what
+    ``_build_numdenom`` would compute if the asterisk ALSSM were an ordinary
+    model dimension.
+
+    Parameters
+    ----------
+    A : ndarray, shape (N, N)
+        State-transition matrix.
+    C : ndarray, shape ([L,] N)
+        Output matrix (1-D or 2-D).
+    a, b : int or ±inf
+        Segment boundaries.
+    delta : int
+        Window normalisation shift.
+    gamma : float
+        Window decay factor.
+    direction : str
+        ``'fw'`` or ``'bw'``.
+
+    Returns
+    -------
+    list of length 11
+        ``[sos_iir_shared, sos_b_list, sos_a_list, db_list, da_list,``
+        ``sos_iir_b_list, sos_iir_a_list, n_poles_b_list, n_poles_a_list,``
+        ``advance_b_list, advance_a_list]``
+    """
+    from lmlib.statespace.backends.statespace_tools import ss2zpk_qz
+    N_m = A.shape[0]
+    if direction == 'fw':
+        gAT = (1.0 / gamma) * inv(A).T
+        Aac = (matrix_power(A, 0 if np.isinf(a) else a - 1).T @ C.T).ravel()
+        Abc = (matrix_power(A, b).T @ C.T).ravel()
+    else:  # bw
+        gAT = gamma * A.T
+        Aac = (matrix_power(A, a).T @ C.T).ravel()
+        Abc = (matrix_power(A, 0 if np.isinf(b) else b + 1).T @ C.T).ravel()
+
+    poles = eigvals(gAT)
+    sos_iir_shared = zpk2sos(np.zeros(len(poles)), poles, 1.0)
+
+    Abc_col = Abc.reshape(N_m, 1)
+    Aac_col = Aac.reshape(N_m, 1)
+    sos_b_list = []; sos_a_list = []; db_list = []; da_list = []
+    sos_iir_b_list = []; sos_iir_a_list = []
+    n_poles_b_list = []; n_poles_a_list = []
+    advance_b_list = []; advance_a_list = []
+    for n_ in range(N_m):
+        C_row = np.zeros((1, N_m)); C_row[0, n_] = 1.0
+        z_b, _, k_b, n_inf_b = ss2zpk_qz(gAT, Abc_col, C_row)
+        z_a, _, k_a, n_inf_a = ss2zpk_qz(gAT, Aac_col, C_row)
+        sb, db, si_b = _zpk_cancel_and_build_sos(z_b, k_b, poles, n_inf_zeros=n_inf_b)
+        sa, da, si_a = _zpk_cancel_and_build_sos(z_a, k_a, poles, n_inf_zeros=n_inf_a)
+        sos_b_list.append(sb); sos_a_list.append(sa)
+        db_list.append(db);    da_list.append(da)
+        sos_iir_b_list.append(si_b); sos_iir_a_list.append(si_a)
+        n_poles_b_list.append(_count_poles_in_sos(si_b))
+        n_poles_a_list.append(_count_poles_in_sos(si_a))
+        advance_b_list.append(1 if abs(float(Abc[n_])) < 1e-10 else 0)
+        advance_a_list.append(1 if abs(float(Aac[n_])) < 1e-10 else 0)
+
+    return [sos_iir_shared, sos_b_list, sos_a_list, db_list, da_list,
+            sos_iir_b_list, sos_iir_a_list, n_poles_b_list, n_poles_a_list,
+            advance_b_list, advance_a_list]
+
+
+@profile
+def lfilter_xi_asterisk_l_forward_parallel_recursion(xi, nd, a, b, delta, gamma, xi_N, v, beta):
+    r"""
+    SOS-based forward parallel filter for the asterisk-l recursion
+    :math:`\xi^{(1)*l}`.
+
+    Applies the same per-row SOS structure as
+    :func:`lfilter_forward_parallel_xi`, but driven by ``xi_N`` (the
+    accumulated cost vector from the previous dimension) rather than by the
+    raw signal ``y``.
+
+    Because the effective system matrix for the asterisk recursion is
+    :math:`A_\mathrm{ast} = I_{N_p} \otimes A` (block-diagonal), each of the
+    :math:`N_p` blocks shares exactly the same transfer function as the
+    base-model xi recursion.  This function therefore applies the **same**
+    ``nd`` SOS structure once per input channel ``j`` of ``xi_N``, writing
+    the ``N``-dimensional result into output rows ``j \cdot N \ldots (j+1)N-1``.
+
+    All :math:`N_p` input channels (and any extra spatial dimensions ``\*S``)
+    are batched into a single 2-D array so that each ``sosfilt`` / FIR call
+    processes all channels simultaneously.
+
+    Parameters
+    ----------
+    xi : ndarray, shape (K, \*S, Nprev \* N)
+        Output buffer, updated in-place.
+    nd : list
+        11-element SOS list from :func:`_build_parallel_ast_sos` with
+        ``direction='fw'``.
+    a : int or inf
+        Left segment boundary.
+    b : int or inf
+        Right segment boundary.
+    delta : int
+        Window normalisation shift.
+    gamma : float
+        Window decay factor.
+    xi_N : ndarray, shape (K, \*S, Nprev)
+        Input from the lower-dimensional recursion.
+    v : ndarray
+        Sample weights (unused; accepted for interface consistency).
+    beta : float
+        Segment cost weight.
+    """
+    K      = xi_N.shape[0]
+    Nprev  = xi_N.shape[-1]
+    S_shape = xi_N.shape[1:-1]
+    S_flat = int(np.prod(S_shape)) if S_shape else 1
+    N      = xi.shape[-1] // Nprev       # N_model
+
+    sos_iir      = nd[0]
+    sos_b_list   = nd[1]; sos_a_list   = nd[2]
+    db_list      = nd[3]; da_list      = nd[4]
+    sos_iir_b_list = nd[5] if len(nd) > 5 else None
+    sos_iir_a_list = nd[6] if len(nd) > 6 else None
+    n_poles_b_list = nd[7] if len(nd) > 7 else None
+    n_poles_a_list = nd[8] if len(nd) > 8 else None
+
+    gamma_a   = gamma ** (a - 1 - delta)
+    gamma_b   = gamma ** (b - delta)
+    gamma_inv = 1.0 / gamma
+
+    K_append = max(b - a + 1, b + 1) if (not np.isinf(a) and b >= 0) else \
+               (b - a + 1 if not np.isinf(a) else 0)
+    L = K + K_append
+
+    # ── flatten (K, *S, Nprev) -> (K, S_flat * Nprev) ────────────────────────
+    # The kron(I_Nprev, A) block-diagonal structure means channel j maps
+    # to output rows j*N .. (j+1)*N-1, independent of all other j.
+    # We can therefore treat (S_flat * Nprev) as an independent channel batch.
+    xi_N_2d = xi_N.reshape(K, S_flat * Nprev)   # (K, S_flat*Nprev)
+
+    # ── boundary driving signals ──────────────────────────────────────────────
+    y_db = np.zeros((L, S_flat * Nprev))
+    y_db[:K] = xi_N_2d * gamma_b
+
+    y_da = np.zeros((L, S_flat * Nprev))
+    if not np.isinf(a):
+        y_da[K_append:K + K_append] = xi_N_2d * gamma_a
+
+    use_per_row_iir = (sos_iir_b_list is not None and sos_iir_a_list is not None)
+    use_gamma_shift = (n_poles_b_list  is not None and n_poles_a_list  is not None)
+
+    # ── reshape xi for in-place accumulation ──────────────────────────────────
+    # (K, *S, Nprev*N) -> (K, S_flat, Nprev, N) -> (K, S_flat*Nprev, N)
+    xi_r = xi.reshape(K, S_flat, Nprev, N).reshape(K, S_flat * Nprev, N)
+
+    for n_ in range(N):
+        Lout = L + max(db_list[n_], da_list[n_]) + 1
+        fb = _apply_fir_batched(sos_b_list[n_], db_list[n_], y_db, Lout)  # (Lout, S*Nprev)
+        fa = _apply_fir_batched(sos_a_list[n_], da_list[n_], y_da, Lout)  # (Lout, S*Nprev)
+
+        if use_per_row_iir:
+            if use_gamma_shift:
+                np_b = n_poles_b_list[n_]; np_a = n_poles_a_list[n_]
+                if np_b >= 2 and _poles_are_real(sos_iir_b_list[n_]):
+                    ib = np.column_stack(
+                        [_gamma_shift_iir(fb[:, ch], np_b, gamma_inv)
+                         for ch in range(S_flat * Nprev)])
+                else:
+                    ib = sosfilt(sos_iir_b_list[n_], fb.T).T
+                if np_a >= 2 and _poles_are_real(sos_iir_a_list[n_]):
+                    ia = np.column_stack(
+                        [_gamma_shift_iir(fa[:, ch], np_a, gamma_inv)
+                         for ch in range(S_flat * Nprev)])
+                else:
+                    ia = sosfilt(sos_iir_a_list[n_], fa.T).T
+            else:
+                ib = sosfilt(sos_iir_b_list[n_], fb.T).T
+                ia = sosfilt(sos_iir_a_list[n_], fa.T).T
+            iir = ib - ia                                  # (Lout, S*Nprev)
+        else:
+            iir = sosfilt(sos_iir, (fb - fa).T).T          # (Lout, S*Nprev)
+
+        if beta != 1:
+            iir *= beta
+
+        if b >= 0:
+            xi_r[:, :, n_] += iir[b:b + K]
+        else:
+            xi_r[-b:, :, n_] += iir[0:K + b]
+
+    # Write back (xi_r may be a copy if reshape broke contiguity)
+    xi[:] = xi_r.reshape(K, *S_shape, Nprev * N)
+
+
+@profile
+def lfilter_xi_asterisk_l_backward_parallel_recursion(xi, nd, a, b, delta, gamma, xi_N, v, beta):
+    r"""
+    SOS-based backward parallel filter for the asterisk-l recursion
+    :math:`\xi^{(1)*l}`.
+
+    Mirror of :func:`lfilter_xi_asterisk_l_forward_parallel_recursion` for
+    backward segments.  The time axis of ``xi_N`` is reversed before the SOS
+    filter pass, and the output is reversed again before accumulation, exactly
+    mirroring :func:`lfilter_backward_parallel_xi`.
+
+    Parameters
+    ----------
+    xi : ndarray, shape (K, \*S, Nprev \* N)
+        Output buffer, updated in-place.
+    nd : list
+        11-element SOS list from :func:`_build_parallel_ast_sos` with
+        ``direction='bw'``.
+    a : int or inf
+        Left segment boundary.
+    b : int or inf
+        Right segment boundary.
+    delta : int
+        Window normalisation shift.
+    gamma : float
+        Window decay factor.
+    xi_N : ndarray, shape (K, \*S, Nprev)
+        Input from the lower-dimensional recursion.
+    v : ndarray
+        Sample weights (unused; accepted for interface consistency).
+    beta : float
+        Segment cost weight.
+    """
+    K       = xi_N.shape[0]
+    Nprev   = xi_N.shape[-1]
+    S_shape = xi_N.shape[1:-1]
+    S_flat  = int(np.prod(S_shape)) if S_shape else 1
+    N       = xi.shape[-1] // Nprev
+
+    sos_iir      = nd[0]
+    sos_b_list   = nd[1]; sos_a_list   = nd[2]
+    db_list      = nd[3]; da_list      = nd[4]
+    sos_iir_b_list = nd[5]  if len(nd) > 5  else None
+    sos_iir_a_list = nd[6]  if len(nd) > 6  else None
+    n_poles_b_list = nd[7]  if len(nd) > 7  else None
+    n_poles_a_list = nd[8]  if len(nd) > 8  else None
+    advance_b_list = nd[9]  if len(nd) > 9  else None
+    advance_a_list = nd[10] if len(nd) > 10 else None
+
+    gamma_a = gamma ** (a - delta)
+    gamma_b = gamma ** (b - delta + 1)
+
+    K_append = (b - a + 1) if not np.isinf(b) else 0
+    L = K + K_append
+
+    xi_N_2d      = xi_N.reshape(K, S_flat * Nprev)
+    xi_N_flipped = xi_N_2d[::-1]                           # time-reverse
+
+    y_da = np.zeros((L, S_flat * Nprev))
+    y_da[:K] = xi_N_flipped * gamma_a
+
+    y_db = np.zeros((L, S_flat * Nprev))
+    if not np.isinf(b):
+        y_db[K_append:K + K_append] = xi_N_flipped * gamma_b
+
+    use_per_row_iir = (sos_iir_b_list is not None and sos_iir_a_list is not None)
+    use_gamma_shift = (n_poles_b_list  is not None and n_poles_a_list  is not None)
+
+    xi_r = xi.reshape(K, S_flat, Nprev, N).reshape(K, S_flat * Nprev, N)
+
+    for n_ in range(N):
+        adv_a = advance_a_list[n_] if advance_a_list is not None else 0
+        adv_b = advance_b_list[n_] if advance_b_list is not None else 0
+        Lout = L + max(db_list[n_], da_list[n_]) + 1
+        fa = _apply_fir_batched(sos_a_list[n_], da_list[n_], y_da, Lout)
+        fb = _apply_fir_batched(sos_b_list[n_], db_list[n_], y_db, Lout)
+
+        if use_per_row_iir:
+            if use_gamma_shift:
+                np_b = n_poles_b_list[n_]; np_a = n_poles_a_list[n_]
+                if np_a >= 2 and _poles_are_real(sos_iir_a_list[n_]):
+                    ia = np.column_stack(
+                        [_gamma_shift_iir(fa[:, ch], np_a, gamma)
+                         for ch in range(S_flat * Nprev)])
+                else:
+                    ia = sosfilt(sos_iir_a_list[n_], fa.T).T
+                if np_b >= 2 and _poles_are_real(sos_iir_b_list[n_]):
+                    ib = np.column_stack(
+                        [_gamma_shift_iir(fb[:, ch], np_b, gamma)
+                         for ch in range(S_flat * Nprev)])
+                else:
+                    ib = sosfilt(sos_iir_b_list[n_], fb.T).T
+            else:
+                ia = sosfilt(sos_iir_a_list[n_], fa.T).T
+                ib = sosfilt(sos_iir_b_list[n_], fb.T).T
+            iir = ia - ib
+        else:
+            iir = sosfilt(sos_iir, (fa - fb).T).T
+
+        if beta != 1:
+            iir *= beta
+
+        if a >= 0:
+            end = K - a
+            if end > 0:
+                xi_r[:end, :, n_] += iir[adv_a:end + adv_a][::-1]
+        else:
+            xi_r[:, :, n_] += iir[-a + adv_a:K - a + adv_a][::-1]
+
+    xi[:] = xi_r.reshape(K, *S_shape, Nprev * N)
+
+
 # xi2 lfilter parallel
 def lfilter_parallel_xi2(xi2, denom, num_b, num_a, a, b, direction, delta, gamma, y, sample_weights, beta):
     """Compute :math:`\\xi^{(2)}` using the parallel lfilter backend (transfer-function form)."""

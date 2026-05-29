@@ -3,6 +3,7 @@ import numpy as np
 from ..backend import available_backends
 from .rec_numpy import *
 from .rec_lfilter import *
+from .rec_lfilter import _compute_cascade_params_asterisk, _build_parallel_ast_sos
 if 'jit' in available_backends:
     from .rec_jit import *
 import warnings
@@ -50,19 +51,87 @@ def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, back
     A = kron_q(alssm.A, q)
     C = kron_q(alssm.C, q)
 
-    if backend in ('jit', 'lfilter'):
-        warnings.warn(
-            "nD costs currently only support numpy backend. Defaulting to numpy.",
-            SyntaxWarning,
-            stacklevel=2,
-        )
-    if backend in ('numpy', 'jit', 'lfilter'):
+    if backend == 'jit':
+        jit_xi_asterisk_l_recursion(xi_curr, A, C,
+                                    segment.a, segment.b, segment.direction,
+                                    segment.delta, segment.gamma,
+                                    INq, xi_prev,
+                                    v, beta)
+        return
+
+    if backend == 'numpy':
         numpy_xi_asterisk_l_recursion(xi_curr, A, C,
                                       segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                       INq, xi_prev,
                                       v, beta)
-    else:
-        raise ValueError("unknown backend: '{}'".format(backend))
+    elif backend == 'lfilter':
+        if filter_form == 'cascade':
+            # q==0 and q==1: lfilter cascade supports upper-triangular A.
+            # q==2 falls through to numpy.
+            if q in (0, 1):
+                # q==0: kron_q(A,0)=[[1.]], kron_q(C,0)=[[1.]] -- scalar IIR,
+                #        identical to q==1 cascade with A=[[1.]], C=[[1.]].
+                # q==1: base-model A and C directly.
+                try:
+                    cp_ast = _compute_cascade_params_asterisk(
+                        A, C,
+                        segment.a, segment.b, segment.delta, segment.gamma,
+                        Nq_prev, segment.direction,
+                    )
+                    if segment.direction == 'fw':
+                        lfilter_xi_asterisk_l_forward_cascade_recursion(
+                            xi_curr, cp_ast, segment.a, segment.b, xi_prev, v, beta)
+                    else:
+                        lfilter_xi_asterisk_l_backward_cascade_recursion(
+                            xi_curr, cp_ast, segment.a, segment.b, xi_prev, v, beta)
+                except ValueError:
+                    # A is not upper triangular — fall back to numpy
+                    numpy_xi_asterisk_l_recursion(xi_curr, A, C,
+                                                  segment.a, segment.b, segment.direction,
+                                                  segment.delta, segment.gamma,
+                                                  INq, xi_prev, v, beta)
+            else:
+                # q==2: fall back to numpy
+                numpy_xi_asterisk_l_recursion(xi_curr, A, C,
+                                              segment.a, segment.b, segment.direction,
+                                              segment.delta, segment.gamma,
+                                              INq, xi_prev, v, beta)
+
+        elif filter_form == 'parallel':
+            # q==0 and q==1: build SOS on-the-fly from A, C and apply parallel filter.
+            # A=kron_q(A,0)=[[1.]] for q==0 is automatically handled (scalar IIR).
+            # q==2 falls through to numpy.
+            if q in (0, 1):
+                try:
+                    nd_ast = _build_parallel_ast_sos(
+                        A, C,
+                        segment.a, segment.b, segment.delta, segment.gamma,
+                        segment.direction,
+                    )
+                    if segment.direction == 'fw':
+                        lfilter_xi_asterisk_l_forward_parallel_recursion(
+                            xi_curr, nd_ast,
+                            segment.a, segment.b, segment.delta, segment.gamma,
+                            xi_prev, v, beta)
+                    else:
+                        lfilter_xi_asterisk_l_backward_parallel_recursion(
+                            xi_curr, nd_ast,
+                            segment.a, segment.b, segment.delta, segment.gamma,
+                            xi_prev, v, beta)
+                except Exception:
+                    # Any failure (non-invertible A, numerical issues) — fall back
+                    numpy_xi_asterisk_l_recursion(xi_curr, A, C,
+                                                  segment.a, segment.b, segment.direction,
+                                                  segment.delta, segment.gamma,
+                                                  INq, xi_prev, v, beta)
+            else:
+                # q==2: fall back to numpy
+                numpy_xi_asterisk_l_recursion(xi_curr, A, C,
+                                              segment.a, segment.b, segment.direction,
+                                              segment.delta, segment.gamma,
+                                              INq, xi_prev, v, beta)
+        else:
+            raise ValueError("unknown filter-form: '{}'".format(filter_form))
 
 
 def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, numdenom, cascade_params=None):

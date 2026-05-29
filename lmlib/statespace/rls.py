@@ -394,86 +394,203 @@ class RLSAlssm:
 
     def filter(self, y, sample_weights=None, dim_order=None):
         r"""
-        Compute the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` and :math:`\nu_k` from the input signal :math:`y`.
+        Compute the three ALSSM cost parameters from the input signal :math:`y`.
 
-        The three cost parameters correspond to:
+        The cost function at signal index :math:`k` is:
 
-        * :math:`q=0`: :math:`\kappa_k = \xi^{(0)}(k,y)` — signal energy (weighted sum of :math:`y^2`).
-        * :math:`q=1`: :math:`\xi_k = \xi^{(1)}(k,y)` — cross-correlation of the signal with the ALSSM basis.
-        * :math:`q=2`: :math:`W_k = \xi^{(2)}(k,y)` — Gram matrix (independent of :math:`y` in LTI case).
+        .. math::
 
-        They are computed via the recursive equations (22–25) in [Wildhaber2018]_ for each cost
-        segment, dispatched to the selected backend.  For multi-dimensional costs
-        (:class:`NDCompositeCost`), :meth:`_nd_xi_q_recursion` is called for the first dimension
-        and :meth:`_nd_xi_q_asterisk_l_recursion` for each subsequent one.
+            J_k(x) = x^\top W_k x - 2\,x^\top \xi_k + \kappa_k
+
+        where :math:`W_k`, :math:`\xi_k`, and :math:`\kappa_k` are computed here as
+        the three :math:`\xi^{(q)}` terms for :math:`q \in \{0, 1, 2\}`:
+
+        .. list-table::
+            :header-rows: 1
+            :widths: 8 20 55
+
+            * - :math:`q`
+              - Symbol
+              - Meaning
+            * - 0
+              - :math:`\kappa_k = \xi^{(0)}_k`
+              - Weighted signal energy :math:`\sum_i \alpha^{k+\delta}(i)\,w_i\,\|y_i\|^2`
+            * - 1
+              - :math:`\xi_k = \xi^{(1)}_k`
+              - Cross-correlation of :math:`y` with the ALSSM basis; the right-hand
+                side of the normal equations :math:`W_k x = \xi_k`
+            * - 2
+              - :math:`W_k = \xi^{(2)}_k`
+              - Gram matrix (independent of :math:`y` in the LTI / steady-state case)
+
+        For :class:`CostSegment` and :class:`CompositeCost` (1-D) each quantity is
+        computed via the recursive equations (22–25) in [Wildhaber2018]_ by the
+        selected backend.
+
+        For :class:`NDCompositeCost` (multi-dimensional) the ND cost separates as a
+        Kronecker product over the per-dimension sub-costs.  The computation is
+        therefore chained over dimensions:
+
+        1. :meth:`_nd_xi_q_recursion` processes the first axis in ``dim_order``,
+           reading directly from ``y`` and producing ``xi_prev`` of shape
+           ``(*Ks, N_0**q)``.
+        2. For each subsequent axis ``dim_order[l]``,
+           :meth:`_nd_xi_q_asterisk_l_recursion` extends the trailing axis of
+           ``xi_prev`` from ``Nq_prev`` to ``Nq_prev * N_l**q``, accumulating the
+           Kronecker structure dimension by dimension.
+        3. After all ``L`` axes are processed the trailing axis has size
+           :math:`(N_0 \cdots N_{L-1})^q = N_\text{total}^q`.
+
+        The final results are stored in :attr:`W` (:math:`\xi^{(2)}`),
+        :attr:`xi` (:math:`\xi^{(1)}`), and :attr:`kappa` (:math:`\xi^{(0)}`).
 
         Parameters
         ----------
-        y : array_like of shape (K, [Q])
-            Input signal. The trailing ``Q`` dimension is the ALSSM output dimension.
-            For scalar ALSSMs (``Q=0`` internally) a 1-D array of shape ``(K,)`` is also accepted.
-        sample_weights : array_like of shape (K,), optional
-            Per-sample weights :math:`w_i \in [0,1]`. Default: all ones.
-        dim_order : array_like of int of length L, optional
-            Order in which ND dimensions are processed in the recursion for
-            :class:`NDCompositeCost`.  Has no effect for :class:`CostSegment`
-            or :class:`CompositeCost`.  Default: ``np.arange(L)``.
+        y : array_like
+            Input signal.
+
+            * **1-D / CompositeCost / CostSegment** — shape ``(K,)`` or ``(K, Q)``.
+              ``K`` is the signal length; ``Q`` is the ALSSM output dimension.
+              For scalar ALSSMs (``Q = 0`` internally) a plain 1-D array ``(K,)``
+              is accepted and silently reshaped to ``(K, 1)``.
+            * **ND / NDCompositeCost** — shape ``(K_0, K_1, ..., K_{L-1})`` for
+              scalar ALSSMs (``Q = 0``), or ``(K_0, ..., K_{L-1}, Q)`` for
+              vector-output ALSSMs.  There must be exactly ``L`` spatial axes,
+              one per sub-cost, regardless of the processing order given by
+              ``dim_order``.
+
+        sample_weights : array_like of shape matching ``y`` without the trailing
+            ``Q`` axis, optional.
+            Per-sample scalar weights :math:`w_i \in [0, 1]` applied to each
+            observation before accumulation.  Must broadcast to the spatial shape
+            of ``y``.  Default: all ones (uniform weighting).
+
+        dim_order : array_like of int of length ``L``, optional
+            Processing order of the signal axes for :class:`NDCompositeCost`.
+
+            ``dim_order[0]`` is processed first by :meth:`_nd_xi_q_recursion`;
+            ``dim_order[1], dim_order[2], ...`` are each processed in turn by
+            :meth:`_nd_xi_q_asterisk_l_recursion`.
+
+            The Kronecker structure of the output state vector follows this order:
+            with ``dim_order = [d_0, d_1, ..., d_{L-1}]``, the trailing axis of
+            the minimiser result ``xs`` (see :meth:`minimize_x`) is arranged as:
+
+            .. math::
+
+                x_{d_0} \otimes x_{d_1} \otimes \cdots \otimes x_{d_{L-1}}
+
+            where :math:`x_{d_l}` is the per-dimension state vector for axis
+            :math:`d_l`.  Changing ``dim_order`` therefore permutes the Kronecker
+            blocks in ``xs``, but does not change the scalar cost :math:`J_k(x)`.
+
+            Has no effect for :class:`CostSegment` or :class:`CompositeCost`
+            (those are inherently 1-D).  Default: ``np.arange(L)`` (axes in
+            natural order).
 
         Notes
         -----
-        When ``steady_state=True`` (the default), :math:`W_k` is precomputed once as the
-        constant steady-state Gram matrix :math:`W`, regardless
-        of ``calc_W``.  This is valid whenever all window parameters are time-invariant
-        (i.e. :math:`w_k = w` and :math:`\gamma_k = \gamma`); see Section III-I.2 in
-        [Wildhaber2018]_. 
+        **Steady-state mode** (``steady_state=True``, the default):
+            :math:`W_k` is constant and precomputed once via
+            :meth:`~lmlib.CompositeCost.get_steady_state_W` before the signal
+            recursion starts.  This is valid whenever the window is
+            time-invariant (:math:`w_k = w`, :math:`\gamma_k = \gamma`), which
+            holds for all standard :class:`Segment` definitions without
+            sample-dependent weights.  See Section III-I.2 in [Wildhaber2018]_.
+            The ``calc_W`` flag is ignored in this mode.
+
+        **Time-varying mode** (``steady_state=False``):
+            :math:`W_k` is computed sample-by-sample via the :math:`q = 2`
+            recursion, which carries the same computational cost as the
+            :math:`q = 1` recursion.  Required near signal boundaries or when
+            ``sample_weights`` varies over time.  Only supported for 1-D costs;
+            multi-dimensional costs require ``steady_state=True`` (the ND
+            :math:`W` recursion is not yet implemented).
+
+        **ND Kronecker product structure**:
+            For an :class:`NDCompositeCost` with sub-costs of orders
+            :math:`N_0, N_1, \ldots, N_{L-1}`:
+
+            * ``xi`` (shape ``(*Ks, N_0 \cdots N_{L-1})``) is the cross-correlation
+              vector arranged as a Kronecker-product of the per-dimension basis
+              vectors, consistent with a separable cost function over all dimensions.
+            * ``W`` (steady-state, shape ``(N_\text{total}^2,)`` flattened then
+              reshaped to ``(N_\text{total}, N_\text{total})`` by :attr:`W`) is the
+              Kronecker product of the per-dimension Gram matrices.
+            * The minimiser ``xs = W^{-1} \xi`` therefore recovers the full
+              multi-dimensional Kronecker-product state at every sample location.
 
         Returns
         -------
         None
-            Results are stored in-place and accessed via :attr:`W`, :attr:`xi`, and :attr:`kappa`.
+            Results are stored in-place.  Access via:
+
+            * :attr:`W`     — Gram matrix :math:`W_k` or :math:`W`
+              (shape ``(N, N)`` steady-state, or ``(*Ks, N, N)`` time-varying)
+            * :attr:`xi`    — cross-correlation :math:`\xi_k`
+              (shape ``(*Ks, N)``)
+            * :attr:`kappa` — signal energy :math:`\kappa_k`
+              (shape ``(*Ks,)``)
+
+            where :math:`N = N_0 \cdots N_{L-1}` is the total model order.
 
         Raises
         ------
         ValueError
-            If ``y`` has the wrong shape.
-            If ``sample_weights`` has the wrong shape.
+            If ``y`` does not have the expected number of spatial axes or output
+            dimension ``Q``.
+            If ``sample_weights`` does not match the spatial shape of ``y``.
         AssertionError
-            If ``dim_order`` has the wrong length.
+            If ``dim_order`` does not have exactly ``L`` elements.
+            If ``steady_state=False`` and ``L > 1`` (ND time-varying W not supported).
         """
 
-        # -------- check dimension order --------
+        # ── Resolve and validate dim_order ────────────────────────────────────
+        # L == 1 for CostSegment / CompositeCost; L >= 2 for NDCompositeCost.
+        # dim_order controls which signal axis is processed at each chain step
+        # and therefore the Kronecker ordering of the output state vector.
         L = self._cost_terms.get_number_of_dimensions()
         if dim_order is None:
             dim_order = np.arange(L)
         assert len(dim_order) == L, f'dim_order has wrong length, {info_str_found_shape(dim_order)}'
+
+        # Time-varying W for ND costs is not implemented: the asterisk recursion
+        # for q=2 would need to handle xi_prev correctly across dimensions, which
+        # requires the same Kronecker chain used for steady-state W.
         if L > 1 and self._calc_W and not self._steady_state:
             assert False, "for multidimensional ALSSMs, W requires steady_state=True"
 
-        # -------- broadcast and check y --------
+        # ── Normalise y shape ─────────────────────────────────────────────────
+        # All backends expect y with an explicit trailing output dimension Q,
+        # even for scalar ALSSMs (Q=0 → Q treated as 1 after reshape).
+        # The spatial shape (*Ks,) is preserved; sample_weights must match it.
         Q = self._cost_terms.get_alssm_output_dimension()
         y = np.asarray(y)
         if isinstance(self._cost_terms, (CompositeCost, CostSegment)):
-            if Q == 0:  # scalar output
-                if y.ndim == 1:  # 1 dim signal
+            if Q == 0:  # scalar output: ensure trailing singleton axis
+                if y.ndim == 1:  # 1-D signal (K,) → (K, 1)
                     y = y.reshape(-1, 1)
                 elif y.ndim >= 2:
                     if y.shape[1] == 1:
-                        pass #already has correct dimension
-                    elif y.shape[-1] != 1:  # multi dimension signal (processed in parallel)
+                        pass  # already (K, 1)
+                    elif y.shape[-1] != 1:  # parallel signals (K, ...) → (K, ..., 1)
                         y = y.reshape(*y.shape, 1)
                     else:
                         raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
                 else:
                     raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
-            elif Q == 1:  # 1-dimensional output
+            elif Q == 1:  # explicit 1-D output: must already have trailing axis
                 if y.ndim == 1 or y.shape[-1] != Q:
                     raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
-            else:
+            else:  # vector output: trailing axis must match Q
                 if y.shape[-1] != Q:
                     raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
 
         if isinstance(self._cost_terms, NDCompositeCost):
-            if Q == 0:  # scalar output
+            # NDCompositeCost: y must have exactly L spatial axes.
+            # For scalar output (Q=0) y has shape (K_0, ..., K_{L-1}); append
+            # a trailing singleton so all backends see a uniform (..., Q) shape.
+            if Q == 0:
                 if y.ndim == L:
                     y = y.reshape(*y.shape, 1)
                 else:
@@ -481,16 +598,26 @@ class RLSAlssm:
             if 1 <= Q != y.shape[-1]:
                 raise ValueError(f'y has wrong dimension, {info_str_found_shape(y)}')
 
-        # -------- check sample weight --------
+        # ── Validate and broadcast sample_weights ────────────────────────────
+        # sample_weights shape must equal the spatial shape of y, i.e. y.shape[:-1].
+        # Using broadcast_to for the default (all-ones) avoids allocating a
+        # full array when weights are not needed.
         if sample_weights is None:
             sample_weights = np.broadcast_to(1., y.shape[:-1])
         else:
             if np.shape(sample_weights) != y.shape[:-1]:
                 raise ValueError(f'sample_weights has wrong shape, {info_str_found_shape(sample_weights)}')
 
-        # -------- calc xi2 --------
+        # ── Compute W (xi^(2), Gram matrix) ──────────────────────────────────
+        # Steady-state: W is time-invariant, precomputed once from the segment
+        # parameters via a Stein/Lyapunov equation.  Result is stored flattened
+        # as a 1-D array; the W property reshapes it to (N, N) on access.
+        #
+        # Time-varying: W_k is computed sample-by-sample via the q=2 recursion
+        # chain, using the same _nd_xi_q_recursion / _nd_xi_q_asterisk_l_recursion
+        # machinery as q=1.  Only supported for L=1.
         if self._steady_state:
-            self._xi2 = self._cost_terms.get_steady_state_W(dim_order,method=self._steady_state_method).flatten()
+            self._xi2 = self._cost_terms.get_steady_state_W(dim_order, method=self._steady_state_method).flatten()
         elif self._calc_W and not self._steady_state:
             q = 2
             xi_prev = self._nd_xi_q_recursion(q, y, sample_weights, dim_order[0])
@@ -498,7 +625,17 @@ class RLSAlssm:
                 xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, sample_weights, nd_dim)
             self._xi2 = xi_prev
 
-        # -------- calc xi1 --------
+        # ── Compute xi (xi^(1), cross-correlation vector) ────────────────────
+        # xi_k = sum_i alpha(i) w_i (C A^{i-k})^T y_i  (vector, shape (*Ks, N))
+        #
+        # For ND costs with L dimensions the computation is chained:
+        #   Step 0 (dim_order[0]):   xi_prev shape  (*Ks, N_0)
+        #   Step 1 (dim_order[1]):   xi_prev shape  (*Ks, N_0 * N_1)
+        #   ...
+        #   Step L-1 (dim_order[L-1]): xi_prev shape (*Ks, N_0 * ... * N_{L-1})
+        #
+        # The resulting Kronecker ordering of the trailing axis matches dim_order:
+        #   xi[k] = xi_{d_0}(k) ⊗ xi_{d_1}(k) ⊗ ... ⊗ xi_{d_{L-1}}(k)
         if self._calc_xi:
             q = 1
             xi_prev = self._nd_xi_q_recursion(q, y, sample_weights, dim_order[0])
@@ -506,7 +643,13 @@ class RLSAlssm:
                 xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, sample_weights, nd_dim)
             self._xi1 = xi_prev
 
-        # -------- calc xi0 --------
+        # ── Compute kappa (xi^(0), signal energy) ────────────────────────────
+        # kappa_k = sum_i alpha(i) w_i ||y_i||^2  (scalar per sample, shape (*Ks,))
+        #
+        # kappa is independent of the ALSSM model (no A or C involved); it is
+        # the same chain call as for q=1 but the ALSSM is used only as a
+        # structural placeholder.  The final [..., 0] index extracts the scalar
+        # from the trailing singleton axis that the q=0 recursion produces.
         if self._calc_kappa:
             q = 0
             xi_prev = self._nd_xi_q_recursion(q, y, sample_weights, dim_order[0])
@@ -514,8 +657,8 @@ class RLSAlssm:
                 xi_prev = self._nd_xi_q_asterisk_l_recursion(xi_prev, q, y, sample_weights, nd_dim)
             self._xi0 = xi_prev[..., 0]
 
-        # -------- calc nu --------
-        # TODO
+        # ── nu (number of weighted samples) ──────────────────────────────────
+        # TODO: not yet implemented.
 
     # ------------------------------------------------------------------
     # minimize / eval
@@ -1089,16 +1232,28 @@ class RLSAlssm:
 
         N = sub_cost.get_alssm_order()
         *Ks, Q = np.shape(y)
-        xi_curr = np.zeros((*Ks, N ** q), order='F')  # last dimension is the nd-model-order
+        xi_curr = np.zeros((*Ks, N ** q))  # C-order; last dimension is the nd-model-order
 
         # Move the model_dimension axis and flatten all other spatial dims so
         # the inner loop sees a simple (n_parallel, K, Q) array.
-        _xi_curr = np.moveaxis(xi_curr, model_dimension, -2)
-        _xi_curr = np.reshape(_xi_curr, (-1, *_xi_curr.shape[-2:]))
+        #
+        # Bug fix: the original code allocated xi_curr with order='F' and
+        # then called np.moveaxis(..., model_dimension, -2) + np.reshape(...).
+        # When model_dimension != 0 and the signal has 3+ spatial dimensions the
+        # moveaxis produces a non-contiguous view, so numpy.reshape cannot return
+        # a view and silently returns a *copy*.  Writes to the reshaped array never
+        # propagate back to xi_curr, leaving it all-zero.
+        #
+        # Fix: use np.ascontiguousarray on the moveaxis view before reshaping,
+        # compute into the working buffer, then copy the result back.
+        _xi_view = np.moveaxis(xi_curr, model_dimension, -2)
+        _xi_work = np.ascontiguousarray(_xi_view)       # always a writeable copy
+        _xi_curr = np.reshape(_xi_work, (-1, *_xi_work.shape[-2:]))
         _y = np.moveaxis(y, model_dimension, -2)
-        _y = np.reshape(_y, (-1, *_y.shape[-2:]))
+        _y = np.reshape(np.ascontiguousarray(_y), (-1, *_y.shape[-2:]))
         _sample_weights = np.moveaxis(sample_weights, model_dimension, -1)
-        _sample_weights = np.reshape(_sample_weights, (-1, *_sample_weights.shape[-1:]))
+        _sample_weights = np.reshape(np.ascontiguousarray(_sample_weights),
+                                     (-1, *_sample_weights.shape[-1:]))
 
         offsets = self._alssm_offsets(sub_cost)  # shape (M+1,)
 
@@ -1182,6 +1337,9 @@ class RLSAlssm:
                         beta_p, self._backend, self._filter_form, numdenom_pm, self._cascade_params[dim_index][p][m]
                     )
 
+        # Copy the computed results from the working buffer back into xi_curr
+        # (needed because _xi_work is a copy, not a view of xi_curr).
+        _xi_view[:] = np.reshape(_xi_curr, _xi_view.shape)
         return xi_curr
 
     # ------------------------------------------------------------------
@@ -1287,60 +1445,57 @@ class RLSAlssm:
                 )
                 continue
 
-            # q == 1: per-ALSSM-pair asterisk recursion.
+            # q == 1: per-current-ALSSM asterisk recursion.
             #
-            # The output xi_2d must follow the Kronecker layout
-            # xi_2d[n_prev * N_curr + n_curr], matching W = W_dim0 ⊗ W_dim1.
-            # A naive per-ALSSM split (grouping by the dim-1/current-pass ALSSM)
-            # would produce the block-transposed ordering and yield J < 0.
+            # xi_prev is the fully-accumulated result of all previous dimension
+            # steps and is treated as a monolithic block of size Nq_prev.
+            # For each ALSSM m_curr in the *current* dimension we call the
+            # backend once with the full xi_prev (INq = eye(Nq_prev) is built
+            # inside xi_q_asterisk_l_recursion from xi_prev.shape[-1]).
+            # The output has shape (..., Nq_prev * N_curr_m) and is written
+            # into xi_curr using the Kronecker stride N (total current-dimension
+            # order), i.e. flat index  n_prev * N + n_curr.
             #
-            # The correct approach exploits block-diagonality by processing each
-            # (m_prev, m_curr) ALSSM pair independently:
-            #   1. Slice xi_prev to only the m_prev states (last-axis sub-slice).
-            #   2. Call the recursion with the m_curr wrapped ALSSM on that slice.
-            #      INq = eye(N_prev_m) so the kron gives N_prev_m * N_curr_m output.
-            #   3. Write the result into the correct (n_prev, n_curr) sub-block of
-            #      xi_curr viewed as a (... N_total, N_total) matrix.
-            #
-            # This gives O(M^2) calls each operating on small (N_m × N_m) systems
-            # instead of one call on the full (N_total × N_total) system, while
-            # producing exactly the same result.
+            # Two bugs were present in the original code and are fixed here:
+            #   Bug 1 - wrong stride: used Nq_prev instead of N in the
+            #           scatter-write n_prev * Nq_prev + n_curr.
+            #           These coincide only when N == Nq_prev (equal-order 2-D).
+            #   Bug 2 - spurious m_prev loop: iterated over the *current*
+            #           dimension's offsets for both m_curr and m_prev, treating
+            #           xi_prev as if it were partitioned by the current-dimension
+            #           ALSSMs. xi_prev is already a monolithic accumulated block
+            #           and must not be re-sliced here.
             for m_curr, (curr_n0, curr_n1) in enumerate(
                     zip(offsets[:-1], offsets[1:])):
                 f_curr = sub_cost.F[m_curr, p]
                 if f_curr == 0.0:
                     continue
+                N_curr_m = curr_n1 - curr_n0
                 wrapped_curr = AlssmSum(
                     [sub_cost.alssms[m_curr]], [f_curr], force_MC=True)
 
-                for m_prev, (prev_n0, prev_n1) in enumerate(
-                        zip(offsets[:-1], offsets[1:])):
-                    N_prev_m = prev_n1 - prev_n0
-                    N_curr_m = curr_n1 - curr_n0
+                # Temporary output: (..., Nq_prev * N_curr_m).
+                # xi_q_asterisk_l_recursion builds INq = eye(Nq_prev) internally
+                # from xi_prev.shape[-1], so we pass the full _xi_prev.
+                xi_tmp = np.zeros(
+                    (*_xi_prev.shape[:-1], Nq_prev * N_curr_m))
 
-                    # Sub-slice of xi_prev for m_prev states (last axis, contiguous)
-                    xi_prev_slice = _xi_prev[..., prev_n0:prev_n1]
+                xi_q_asterisk_l_recursion(
+                    xi_tmp, q,
+                    wrapped_curr, segment,
+                    _xi_prev, _sample_weights,
+                    beta_p, self._backend, self._filter_form, None, None
+                )
 
-                    # Temporary output: (..., N_prev_m * N_curr_m)
-                    xi_tmp = np.zeros(
-                        (*_xi_prev.shape[:-1], N_prev_m * N_curr_m))
-
-                    xi_q_asterisk_l_recursion(
-                        xi_tmp, q,
-                        wrapped_curr, segment,
-                        xi_prev_slice, _sample_weights,
-                        beta_p, self._backend, self._filter_form, None, None
-                    )
-
-                    # Write into the flat xi_curr at the correct strided positions.
-                    # The flat layout is xi[..., n_prev * N_curr + n_curr], so
-                    # the (m_prev, m_curr) block occupies a strided sub-tensor.
-                    xi_tmp_mat = xi_tmp.reshape(
-                        *_xi_prev.shape[:-1], N_prev_m, N_curr_m)
-                    for i_prev in range(N_prev_m):
-                        for i_curr in range(N_curr_m):
-                            n_prev = prev_n0 + i_prev
-                            n_curr = curr_n0 + i_curr
-                            _xi_curr[..., n_prev * Nq_prev + n_curr] += xi_tmp_mat[..., i_prev, i_curr]
+                # Scatter xi_tmp into xi_curr with the correct Kronecker stride.
+                # xi_tmp layout: n_prev * N_curr_m + i_curr  (stride = N_curr_m).
+                # xi_curr layout: n_prev * N + n_curr        (stride = N).
+                # For each n_prev in [0, Nq_prev) and i_curr in [0, N_curr_m):
+                #   n_curr = curr_n0 + i_curr
+                xi_tmp_mat = xi_tmp.reshape(*_xi_prev.shape[:-1], Nq_prev, N_curr_m)
+                for n_prev in range(Nq_prev):
+                    for i_curr in range(N_curr_m):
+                        n_curr = curr_n0 + i_curr
+                        _xi_curr[..., n_prev * N + n_curr] += xi_tmp_mat[..., n_prev, i_curr]
 
         return xi_curr

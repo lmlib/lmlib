@@ -1,0 +1,507 @@
+"""
+Ground-Truth Validation of NDCompositeCost Trajectory
+======================================================
+
+Tests:
+
+  TEST 1  — 2-D Polynomial   AlssmPoly pd=2×pd=2    (RLS pipeline)
+  TEST 2  — 2-D Polynomial   AlssmPoly pd=2×pd=1    mixed degrees (exact xs)
+  TEST 3  — 2-D Polynomial   AlssmPolyLegendre       (RLS pipeline)
+  TEST 4  — 2-D Sinusoidal   AlssmSin                (exact xs + RLS smoke)
+  TEST 5  — 3-D Polynomial   AlssmPoly pd=2×pd=2×pd=1 (exact xs)
+  TEST 6  — 3-D Sinusoidal   AlssmSin                  (exact xs)
+
+Checks per test
+---------------
+  A  _eval_nd_patch at reference pixels (BW×…×BW, j=0) vs ground truth
+  B  eval_y from single anchor, BW offsets (j≥0) and FW offsets (j<0)
+  C  Full-grid eval_y (all anchors) BW interior slice vs ground truth
+
+Exact xs vs RLS xs
+------------------
+When the lmlib RLS filter gives machine-precision states (AlssmPoly,
+AlssmPolyLegendre, identical order per dim, 2-D) we use those directly.
+In all other cases (mixed degree, AlssmSin, any 3-D) we compute the exact
+optimal state at each pixel via the normal equations (lstsq).
+This isolates the Trajectory from library-internal approximation errors.
+"""
+
+import sys
+sys.path.insert(0, '/home/claude')
+
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import warnings
+import time
+from itertools import product as itp
+from numpy.linalg import matrix_power
+import lmlib as lm
+from lmlib.statespace.trajectory import _eval_nd_patch
+
+warnings.filterwarnings('ignore')
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────────────────────────────────────
+
+def two_sided(alssm, l_side, g):
+    sl = lm.Segment(a=-l_side, b=-1, direction=lm.FW, g=g)
+    sr = lm.Segment(a=0, b=l_side, direction=lm.BW, g=g)
+    return lm.CompositeCost([alssm, alssm], [sl, sr], [[1, 0], [0, 1]])
+
+
+def rls_xs(nd_cost, Y):
+    rls = lm.RLSAlssm(nd_cost, steady_state=True,
+                      backend='lfilter', filter_form='cascade')
+    rls.filter(Y)
+    return rls.minimize_x()
+
+
+def exact_xs_at(nd_cost, Y, ks):
+    """
+    Exact optimal state at pixel ks=(k1,...,kL) via normal equations.
+    """
+    L, K, N = nd_cost.L, Y.shape, nd_cost.get_alssm_order()
+    seg_data = [
+        [(cs.alssm.C, cs.alssm.A, cs.segment._ab_range())
+         for cs in nd_cost.cost_terms[l]._get_cost_segments()]
+        for l in range(L)
+    ]
+
+    H, yv = [], []
+    def build(l, cv, jt):
+        if l == L:
+            r = tuple(int(ks[d] + jt[d]) for d in range(L))
+            if all(0 <= r[d] < K[d] for d in range(L)):
+                H.append(cv); yv.append(Y[r])
+            return
+        for C, A, ab in seg_data[l]:
+            for j in ab:
+                build(l+1,
+                      np.kron(cv, C @ matrix_power(A, int(j))) if cv is not None
+                      else C @ matrix_power(A, int(j)),
+                      jt + (j,))
+    build(0, None, ())
+    return np.linalg.lstsq(np.array(H), np.array(yv), rcond=None)[0]
+
+
+def build_exact_xs_grid(nd_cost, Y, margin):
+    """Fill exact xs for every interior pixel. Returns array (*Y.shape, N)."""
+    N = nd_cost.get_alssm_order()
+    xs = np.zeros((*Y.shape, N))
+    K  = Y.shape
+    L  = nd_cost.L
+    it = list(itp(*[range(margin, K[d]-margin) for d in range(L)]))
+    for pix in it:
+        xs[pix] = exact_xs_at(nd_cost, Y, pix)
+    return xs
+
+
+def build_exact_xs_grid_full(nd_cost, Y):
+    """Fill exact xs for EVERY pixel (including boundary). Used for test C."""
+    N = nd_cost.get_alssm_order()
+    xs = np.zeros((*Y.shape, N))
+    K  = Y.shape
+    L  = nd_cost.L
+    for pix in itp(*[range(k) for k in K]):
+        xs[pix] = exact_xs_at(nd_cost, Y, pix)
+    return xs
+
+
+def bw_fw_idx(nd_cost):
+    L = nd_cost.L
+    P = [len(nd_cost.cost_terms[l]._get_cost_segments()) for l in range(L)]
+    combos = list(itp(*[range(p) for p in P]))
+    return (combos.index(tuple(p-1 for p in P)),
+            combos.index(tuple(0 for _ in P)),
+            len(combos))
+
+
+def chk(label, got, expected, atol):
+    err = abs(float(got) - float(expected))
+    ok  = err < atol
+    print(f"    {'✓' if ok else '✗'} {label}: "
+          f"got={float(got):.7g},  expected={float(expected):.7g},  |err|={err:.2e}")
+    return ok
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Core A/B/C runner
+# ──────────────────────────────────────────────────────────────────────────────
+
+def run_abc(nd_cost, xs, Y, pixels_int, ref_pix,
+            atol_A, atol_B, rel_C, margin,
+            xs_C=None, Y_C=None, margin_C=None):
+    """
+    xs must be a full grid array (*Y.shape, N) with interior pixels filled.
+
+    xs_C / Y_C / margin_C: optional separate (smaller) grid for test C where
+    ALL pixels have exact xs filled.  If None, xs/Y/margin are used for C too.
+    For exact-xs tests, pass a small fully-filled grid here to avoid zero
+    contamination from unfilled boundary pixels.
+    """
+    if xs_C is None:
+        xs_C, Y_C, margin_C = xs, Y, margin
+    bw_idx, fw_idx, _ = bw_fw_idx(nd_cost)
+    L = nd_cost.L
+    K = Y.shape
+
+    # ── A ────────────────────────────────────────────────────────────────────
+    print(f"\n  A. _eval_nd_patch BW…BW at j=0,  atol={atol_A:.0e}")
+    ok_A = all(
+        chk(f"f{p}",
+            _eval_nd_patch(nd_cost, xs[p], tuple(1 for _ in range(L)))[1].flat[0],
+            Y[p], atol_A)
+        for p in pixels_int)
+
+    # ── B ────────────────────────────────────────────────────────────────────
+    xs_ref = xs[ref_pix]
+    l_bw   = int(nd_cost.cost_terms[0]._get_cost_segments()[-1].segment.b)
+    l_fw   = abs(int(nd_cost.cost_terms[0]._get_cost_segments()[0].segment.a))
+    # Sample offsets: 0, l//3, 2l//3, l  for each dim (BW), and negatives (FW)
+    step = max(1, l_bw // 3)
+    bw_ranges = [list(range(0, l_bw+1, step)) for _ in range(L)]
+    fw_ranges = [list(range(-l_fw, 0, step)) for _ in range(L)]
+
+    print(f"\n  B. eval_y anchor={ref_pix};  BW (j≥0),  atol={atol_B:.0e}")
+    traj_bw = lm.Trajectory.eval_y(nd_cost, xs_ref, ref_pix, K)
+    ok_B = True
+    for off in itp(*bw_ranges):
+        abs_p = tuple(ref_pix[d]+off[d] for d in range(L))
+        if all(0 <= abs_p[d] < K[d] for d in range(L)):
+            ok_B = chk(f"BW {off}", traj_bw[abs_p], Y[abs_p], atol_B) and ok_B
+
+    print(f"       FW (j<0), merged_seg=False,  atol={atol_B:.0e}")
+    traj_fw = lm.Trajectory.eval_y(nd_cost, xs_ref, ref_pix, K, merged_seg=False)
+    for off in itp(*fw_ranges):
+        abs_p = tuple(ref_pix[d]+off[d] for d in range(L))
+        if all(0 <= abs_p[d] < K[d] for d in range(L)):
+            ok_B = chk(f"FW {off}",
+                       traj_fw[tuple([fw_idx] + list(abs_p))],
+                       Y[abs_p], atol_B) and ok_B
+
+    # ── C ────────────────────────────────────────────────────────────────────
+    print(f"\n  C. Full-grid eval_y,  rel tol={rel_C:.0e}")
+    KC    = Y_C.shape
+    ks_C  = np.array(list(itp(*[range(k) for k in KC])))
+    traj_C = lm.Trajectory.eval_y(nd_cost, xs_C, ks_C, KC,
+                                   merged_ks=True, merged_seg=False)
+    sl     = tuple(slice(margin_C, KC[d]-margin_C) for d in range(L))
+    bw_in  = traj_C[tuple([bw_idx]) + sl]
+    tr_in  = Y_C[sl]
+    scale  = np.max(np.abs(tr_in)) + 1e-12
+    nz     = np.abs(tr_in) > 0.05 * scale
+    rel_err = (np.max(np.abs((bw_in-tr_in)[nz]) / scale)
+               if nz.any() else np.max(np.abs(bw_in-tr_in)) / scale)
+    print(f"    BW interior max rel error = {rel_err:.3e}")
+    ok_C = rel_err < rel_C
+    print(f"    {'✓ PASSED' if ok_C else '✗ FAILED'}  (threshold {rel_C:.0e})")
+
+    # For visualisation: full-grid reconstruction on the main Y grid
+    ks_all = np.array(list(itp(*[range(k) for k in K])))
+    traj_f = lm.Trajectory.eval_y(nd_cost, xs, ks_all, K,
+                                   merged_ks=True, merged_seg=False)
+    return ok_A and ok_B and ok_C, traj_f, bw_idx
+
+
+def banner(s):
+    print(); print("=" * 65); print(s); print("=" * 65)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Signals
+# ══════════════════════════════════════════════════════════════════════════════
+
+# 2-D grids
+K1_2, K2_2 = 40, 45          # main grid for tests
+K1g2, K2g2 = np.meshgrid(np.arange(K1_2, dtype=float),
+                          np.arange(K2_2, dtype=float), indexing='ij')
+
+# Small 2-D grid for test C in exact-xs tests (all pixels filled)
+# Must be >= 2*margin + 3 in each dimension.
+# Test 2: margin=7 → K_S=17;  Test 4: margin=11 → K_S=25
+K1_S2, K2_S2 = 17, 17    # for test 2 (l=6, margin=7)
+K1_S4, K2_S4 = 25, 25    # for test 4 (l=10, margin=11)
+K1gS2, K2gS2 = np.meshgrid(np.arange(K1_S2, dtype=float),
+                             np.arange(K2_S2, dtype=float), indexing='ij')
+K1gS4, K2gS4 = np.meshgrid(np.arange(K1_S4, dtype=float),
+                             np.arange(K2_S4, dtype=float), indexing='ij')
+
+a1  = np.array([1.0,  0.05, -0.002])
+a2  = np.array([3.0, -0.08,  0.001])
+a2L = np.array([3.0, -0.08])      # linear
+
+p1 = a1[0] + a1[1]*K1g2 + a1[2]*K1g2**2
+p2 = a2[0] + a2[1]*K2g2 + a2[2]*K2g2**2
+p2L = a2L[0] + a2L[1]*K2g2
+
+Y_pp   = p1 * p2       # pd=2×pd=2
+Y_pL   = p1 * p2L      # pd=2×pd=1
+w1, w2 = 0.18, 0.22
+Y_sin  = np.sin(w1*K1g2) * np.cos(w2*K2g2)
+
+# Small-grid variants for test C (all pixels covered by exact xs)
+p1S2  = a1[0] + a1[1]*K1gS2 + a1[2]*K1gS2**2
+p2LS2 = a2L[0] + a2L[1]*K2gS2
+Y_pLS  = p1S2 * p2LS2                           # for test 2
+Y_sinS = np.sin(w1*K1gS4) * np.cos(w2*K2gS4)   # for test 4
+
+# 3-D grids
+K1_3, K2_3, K3_3 = 15, 15, 15
+K1g3, K2g3, K3g3 = np.meshgrid(np.arange(K1_3, dtype=float),
+                                 np.arange(K2_3, dtype=float),
+                                 np.arange(K3_3, dtype=float), indexing='ij')
+a3L = np.array([0.5, 0.03])
+Y_3p = ((a1[0]+a1[1]*K1g3+a1[2]*K1g3**2) *
+        (a2[0]+a2[1]*K2g3+a2[2]*K2g3**2) *
+        (a3L[0]+a3L[1]*K3g3))
+w3 = 0.15
+Y_3s = np.sin(w1*K1g3) * np.cos(w2*K2g3) * np.sin(w3*K3g3)
+
+# Small 3-D grid for test C in exact-xs 3D tests (l=3, margin=4 → K_3S=11)
+K_3S = 11
+K1g3S, K2g3S, K3g3S = np.meshgrid(*[np.arange(K_3S, dtype=float)]*3, indexing='ij')
+Y_3pS = ((a1[0]+a1[1]*K1g3S+a1[2]*K1g3S**2) *
+         (a2[0]+a2[1]*K2g3S+a2[2]*K2g3S**2) *
+         (a3L[0]+a3L[1]*K3g3S))
+Y_3sS = np.sin(w1*K1g3S) * np.cos(w2*K2g3S) * np.sin(w3*K3g3S)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TEST 1: 2-D Poly pd=2×pd=2  — RLS pipeline
+# ══════════════════════════════════════════════════════════════════════════════
+banner("TEST 1: 2-D Poly pd=2×pd=2  [RLS pipeline]")
+
+l1, g1, m1 = 8, 16, 9
+alssm_p2 = lm.AlssmPoly(poly_degree=2)
+nd1 = lm.NDCompositeCost([two_sided(alssm_p2, l1, g1)] * 2)
+xs1 = rls_xs(nd1, Y_pp)
+print(f"  Grid {K1_2}×{K2_2},  N={nd1.get_alssm_order()},  xs {xs1.shape}")
+
+ok1, tf1, bwi1 = run_abc(
+    nd1, xs1, Y_pp,
+    pixels_int=[(12,15),(20,28),(30,35),(18,10),(10,33)],
+    ref_pix=(20, 22), atol_A=1e-6, atol_B=1e-5, rel_C=1e-5, margin=m1)
+print(f"\n  {'✓ TEST 1 ALL PASSED' if ok1 else '✗ TEST 1 SOME FAILED'}")
+assert ok1
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TEST 2: 2-D Poly pd=2×pd=1  — mixed degrees, exact xs
+# ══════════════════════════════════════════════════════════════════════════════
+banner("TEST 2: 2-D Poly pd=2×pd=1  mixed degrees [exact xs]")
+
+l2, g2, m2 = 6, 12, 7
+alssm_p1 = lm.AlssmPoly(poly_degree=1)
+nd2 = lm.NDCompositeCost([two_sided(alssm_p2, l2, g2),
+                           two_sided(alssm_p1, l2, g2)])
+print(f"  Grid {K1_2}×{K2_2},  N={nd2.get_alssm_order()}")
+print(f"  Building exact xs for interior pixels (A+B) and small grid (C)…")
+t0 = time.time()
+xs2     = build_exact_xs_grid(nd2, Y_pL, m2)
+xs2_C   = build_exact_xs_grid_full(nd2, Y_pLS)   # K1_S×K2_S, all pixels filled
+print(f"  Done in {time.time()-t0:.1f}s")
+
+ok2, tf2, bwi2 = run_abc(
+    nd2, xs2, Y_pL,
+    pixels_int=[(12,15),(20,28),(30,35),(18,10),(10,33)],
+    ref_pix=(20, 22), atol_A=1e-9, atol_B=1e-8, rel_C=1e-4, margin=m2,
+    xs_C=xs2_C, Y_C=Y_pLS, margin_C=m2)
+print(f"\n  {'✓ TEST 2 ALL PASSED' if ok2 else '✗ TEST 2 SOME FAILED'}")
+assert ok2
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TEST 3: 2-D AlssmPolyLegendre  — RLS pipeline
+# ══════════════════════════════════════════════════════════════════════════════
+banner("TEST 3: 2-D AlssmPolyLegendre pd=2×pd=2  [RLS pipeline]")
+
+l3, g3, m3 = 8, 16, 9
+alssm_pL = lm.AlssmPolyLegendre(poly_degree=2, a_seg=-l3, b_seg=l3)
+nd3 = lm.NDCompositeCost([two_sided(alssm_pL, l3, g3)] * 2)
+xs3 = rls_xs(nd3, Y_pp)      # same polynomial signal as TEST 1
+print(f"  Grid {K1_2}×{K2_2},  N={nd3.get_alssm_order()}")
+
+ok3, tf3, bwi3 = run_abc(
+    nd3, xs3, Y_pp,
+    pixels_int=[(12,15),(20,28),(30,35),(18,10),(10,33)],
+    ref_pix=(20, 22), atol_A=1e-6, atol_B=1e-5, rel_C=1e-5, margin=m3)
+print(f"\n  {'✓ TEST 3 ALL PASSED' if ok3 else '✗ TEST 3 SOME FAILED'}")
+assert ok3
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TEST 4: 2-D Sinusoidal  — exact xs (Part I) + RLS smoke (Part II)
+# ══════════════════════════════════════════════════════════════════════════════
+banner("TEST 4: 2-D Sinusoidal  f=sin(w1·k1)·cos(w2·k2)")
+
+l4, g4, m4 = 10, 20, 11
+alssm_s1 = lm.AlssmSin(omega=w1)
+alssm_s2 = lm.AlssmSin(omega=w2)
+nd4 = lm.NDCompositeCost([two_sided(alssm_s1, l4, g4),
+                           two_sided(alssm_s2, l4, g4)])
+print(f"  Grid {K1_2}×{K2_2},  N={nd4.get_alssm_order()}")
+
+# Part I: exact xs
+print("  PART I — exact xs  (machine precision)")
+print("  Building exact xs for interior pixels (A+B) and small grid (C)…")
+t0 = time.time()
+xs4e   = build_exact_xs_grid(nd4, Y_sin, m4)
+xs4e_C = build_exact_xs_grid_full(nd4, Y_sinS)   # K1_S×K2_S, all pixels filled
+print(f"  Done in {time.time()-t0:.1f}s")
+
+ok4a, tf4, bwi4 = run_abc(
+    nd4, xs4e, Y_sin,
+    pixels_int=[(12,15),(20,28),(16,30),(18,12),(11,20)],
+    ref_pix=(18, 20), atol_A=1e-10, atol_B=1e-9, rel_C=1e-4, margin=m4,
+    xs_C=xs4e_C, Y_C=Y_sinS, margin_C=m4)
+print(f"  {'✓ PART I PASSED' if ok4a else '✗ PART I FAILED'}")
+
+# Part II: RLS pipeline smoke-test (per-pixel only; full-grid nanmax distorts for sin)
+print("\n  PART II — RLS pipeline smoke-test (atol=1e-1)")
+xs4r = rls_xs(nd4, Y_sin)
+pixels4 = [(12,15),(20,28),(16,30),(18,12),(11,20)]
+ok4b = all(
+    chk(f"RLS f{p}",
+        _eval_nd_patch(nd4, xs4r[p], (1,1))[1].flat[0],
+        Y_sin[p], 1e-1)
+    for p in pixels4)
+print(f"  {'✓ PART II PASSED' if ok4b else '✗ PART II FAILED'}")
+
+ok4 = ok4a and ok4b
+print(f"\n  {'✓ TEST 4 ALL PASSED' if ok4 else '✗ TEST 4 SOME FAILED'}")
+assert ok4
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TEST 5: 3-D Polynomial  pd=2×pd=2×pd=1  — exact xs
+# ══════════════════════════════════════════════════════════════════════════════
+banner("TEST 5: 3-D Polynomial  f=p2(k1)·p2(k2)·p1(k3)  [exact xs]")
+
+l5, g5, m5 = 3, 6, 4
+nd5 = lm.NDCompositeCost([two_sided(alssm_p2, l5, g5),
+                           two_sided(alssm_p2, l5, g5),
+                           two_sided(alssm_p1, l5, g5)])
+print(f"  Grid {K1_3}×{K2_3}×{K3_3},  N={nd5.get_alssm_order()},  L={nd5.L}")
+print(f"  Y range [{Y_3p.min():.3f}, {Y_3p.max():.3f}]")
+
+print("  Building exact xs for interior pixels (A+B) and small 3D grid (C)…")
+t0 = time.time()
+xs5     = build_exact_xs_grid(nd5, Y_3p, m5)
+xs5_C   = build_exact_xs_grid_full(nd5, Y_3pS)   # K_3S^3, all pixels filled
+print(f"  Done in {time.time()-t0:.1f}s")
+
+ok5, tf5, bwi5 = run_abc(
+    nd5, xs5, Y_3p,
+    pixels_int=[(6,6,5),(8,9,7),(10,7,9),(7,10,6)],
+    ref_pix=(7, 8, 6), atol_A=1e-8, atol_B=1e-7, rel_C=1e-3, margin=m5,
+    xs_C=xs5_C, Y_C=Y_3pS, margin_C=m5)
+print(f"\n  {'✓ TEST 5 ALL PASSED' if ok5 else '✗ TEST 5 SOME FAILED'}")
+assert ok5
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TEST 6: 3-D Sinusoidal  — exact xs
+# ══════════════════════════════════════════════════════════════════════════════
+banner("TEST 6: 3-D Sinusoidal  f=sin(w1·k1)·cos(w2·k2)·sin(w3·k3)  [exact xs]")
+
+l6, g6, m6 = 3, 6, 4
+alssm_s3 = lm.AlssmSin(omega=w3)
+nd6 = lm.NDCompositeCost([two_sided(alssm_s1, l6, g6),
+                           two_sided(alssm_s2, l6, g6),
+                           two_sided(alssm_s3, l6, g6)])
+print(f"  Grid {K1_3}×{K2_3}×{K3_3},  N={nd6.get_alssm_order()},  L={nd6.L}")
+print(f"  w=(w1,w2,w3)=({w1},{w2},{w3})")
+
+print("  Building exact xs for interior pixels (A+B) and small 3D grid (C)…")
+t0 = time.time()
+xs6     = build_exact_xs_grid(nd6, Y_3s, m6)
+xs6_C   = build_exact_xs_grid_full(nd6, Y_3sS)   # K_3S^3, all pixels filled
+print(f"  Done in {time.time()-t0:.1f}s")
+
+ok6, tf6, bwi6 = run_abc(
+    nd6, xs6, Y_3s,
+    pixels_int=[(6,6,5),(8,9,7),(10,7,9),(7,10,6)],
+    ref_pix=(7, 8, 6), atol_A=1e-10, atol_B=1e-9, rel_C=1e-3, margin=m6,
+    xs_C=xs6_C, Y_C=Y_3sS, margin_C=m6)
+print(f"\n  {'✓ TEST 6 ALL PASSED' if ok6 else '✗ TEST 6 SOME FAILED'}")
+assert ok6
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Visualisation (2-D tests)
+# ──────────────────────────────────────────────────────────────────────────────
+
+fig, axes = plt.subplots(4, 4, figsize=(18, 16))
+fig.suptitle("ND Trajectory Ground-Truth Validation  (2-D tests)\n"
+             "Columns: ground truth · BW reconstruction · |error| interior · scatter",
+             fontsize=12, fontweight='bold')
+
+rows = [
+    (Y_pp,  tf1, bwi1, m1, "T1 Poly pd=2×pd=2"),
+    (Y_pL,  tf2, bwi2, m2, "T2 Poly pd=2×pd=1  [mixed]"),
+    (Y_pp,  tf3, bwi3, m3, "T3 PolyLegendre"),
+    (Y_sin, tf4, bwi4, m4, "T4 Sin×Cos"),
+]
+K1, K2 = K1_2, K2_2
+colors = ['steelblue','darkorange','forestgreen','mediumpurple']
+
+for row, (Y_true, traj_f, bwi, mar, label) in enumerate(rows):
+    bwbw = traj_f[bwi]
+    err  = np.abs(Y_true - bwbw)
+    mask = np.zeros_like(Y_true, dtype=bool)
+    mask[mar:K1-mar, mar:K2-mar] = True
+    vmin, vmax = np.nanpercentile(Y_true, [2, 98])
+    ax = axes[row]
+
+    ax[0].imshow(Y_true, cmap='RdBu_r', vmin=vmin, vmax=vmax, origin='upper')
+    ax[0].set_title(f"{label}\nGround truth"); ax[0].axis('off')
+    ax[0].add_patch(plt.Rectangle((mar-.5,mar-.5),K2-2*mar,K1-2*mar,
+                                  fill=False,edgecolor='cyan',lw=1.5,ls='--'))
+
+    ax[1].imshow(bwbw, cmap='RdBu_r', vmin=vmin, vmax=vmax, origin='upper')
+    ax[1].set_title(f"{label}\nBW reconstruction"); ax[1].axis('off')
+
+    im = ax[2].imshow(np.where(mask, err, np.nan), cmap='hot', origin='upper')
+    ax[2].set_title(f"{label}\n|error| interior"); ax[2].axis('off')
+    plt.colorbar(im, ax=ax[2], fraction=0.046, pad=0.04)
+
+    t, a = Y_true[mask], bwbw[mask]
+    ax[3].scatter(t, a, s=3, alpha=0.4, rasterized=True, color=colors[row])
+    mn, mx = t.min(), t.max()
+    ax[3].plot([mn, mx], [mn, mx], 'r--', lw=1.2)
+    ax[3].set_xlabel("Ground truth"); ax[3].set_ylabel("BW eval_y")
+    ax[3].set_title(f"{label}\nScatter interior")
+    ax[3].set_aspect('equal', adjustable='box')
+
+plt.tight_layout()
+outfile = '/mnt/user-data/outputs/nd_trajectory_ground_truth.png'
+plt.savefig(outfile, dpi=110, bbox_inches='tight')
+print(f"\nPlot saved → {outfile}")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Summary
+# ──────────────────────────────────────────────────────────────────────────────
+print()
+print("=" * 65)
+print("SUMMARY")
+print("=" * 65)
+for num, ok, desc in [
+    (1, ok1, "2-D Poly pd=2×pd=2             (RLS pipeline)"),
+    (2, ok2, "2-D Poly pd=2×pd=1 mixed deg.  (exact xs)"),
+    (3, ok3, "2-D AlssmPolyLegendre           (RLS pipeline)"),
+    (4, ok4, "2-D Sin×Cos                     (exact xs + RLS smoke)"),
+    (5, ok5, "3-D Poly pd=2×pd=2×pd=1         (exact xs)"),
+    (6, ok6, "3-D Sin×Cos×Sin                 (exact xs)"),
+]:
+    print(f"  TEST {num}  {'✓ PASSED' if ok else '✗ FAILED'}  — {desc}")
+
+all_ok = ok1 and ok2 and ok3 and ok4 and ok5 and ok6
+print()
+print("=" * 65)
+print(f"{'All 6 tests PASSED ✓' if all_ok else 'Some tests FAILED ✗'}")
+print("=" * 65)
+assert all_ok
