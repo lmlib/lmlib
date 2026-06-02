@@ -1,0 +1,113 @@
+site_name: Lmlib Documenation
+theme:
+  name: material
+  favicon: images/favicon.png
+  logo: images/logo.svg
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue grey
+      accent: blue grey 
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: black
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs       # Top tabs for categories
+    - navigation.sections   # Sections in sidebar
+    - navigation.tracking   # Highlights active section
+    - navigation.top        # Back to top button
+    - content.code.copy
+extra:
+  manifest: null
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - What is LMLib?: getting_started/whats_lmlib.md
+    - State-Space Tutorial: getting_started/state-space-tutorial.md
+    - Coding Examples:
+      - Windowed State Space Filters: coding/_generated_galleries/10-windowed-state-space-filters-basic/index.md
+      - Backend: coding/_generated_galleries/13-backend/index.md
+      - Polynome: coding/_generated_galleries/20-polynomials-basics/index.md
+  - Installation: getting_started/installation.md
+  - Catalog:
+    - Biosignals: catalog/_generated_galleries/biosignals/index.md
+    - Generators: catalog/_generated_galleries/generators/index.md
+  - Examples: 
+    - Detection: examples/_generated_galleries/11-detection/index.md
+    - Filtering: examples/_generated_galleries/12-filtering/index.md
+    - Polynomials Calculus: examples/_generated_galleries/21-polynomials-calculus/index.md
+    - APP Changepoint Detection: examples/_generated_galleries/40-app-changepoint-detection/index.md
+    - Convolution: examples/_generated_galleries/50-convolution/index.md
+    - Localized Polynpmials: examples/_generated_galleries/70-localized-polynomials/index.md
+    - N Dimensional: examples/_generated_galleries/80-nDimensional/index.md
+  - API:
+    - Overview: api/index.md
+    #- lmlib: api/lmlib-root.md
+    #- Statespace: api/lmlib-statespace.md
+    #- Utils: api/lmlib-utils.md
+    - Polynomial Submodules:
+      - Polynomial: api/lmlib-polynomial-poly.md
+    - Statespace Submodules:
+      - Applications: api/lmlib-statespace-applications.md
+      - Model: api/lmlib-statespace-model.md
+    #  - Cost: api/lmlib-statespace-cost.md
+    #  - RLS: api/lmlib-statespace-rls.md
+    #  - Window: api/lmlib-statespace-window.md
+    #  - Segment: api/lmlib-statespace-segment.md
+    #  - Trajectory: api/lmlib-statespace-trajectory.md
+    #  - Backend: api/lmlib-statespace-backend.md
+  - Bibliography: bibliography.md
+  - About Us: about_us.md
+
+
+plugins:
+  - search
+  - mkdocstrings:
+      import:
+        - https://docs.python.org/3/objects.inv
+      handlers:
+        python:
+          options:
+            show_root_heading: true
+            show_source: false
+            show_root_full_path: false
+            heading_level: 3
+            parameter_headings: true
+            members_order: alphabetical
+            docstring_section_style: table  # or list or spaced or table
+            show_if_no_docstring: true
+            docstring_style: numpy 
+            separate_signature: false   # Puts signature on its own line
+            show_signature_annotations: true
+            group_by_category: true
+            show_category_heading: true
+            show_symbol_type_heading: true
+
+
+# --- Math rendering ---
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+  - toc:
+      permalink: true
+  - admonition
+  - codehilite
+
+# --- MathJax loader ---
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
