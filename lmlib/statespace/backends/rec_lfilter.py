@@ -15,6 +15,21 @@ from scipy.signal import lfilter, convolve, zpk2sos, sosfilt, ss2tf
 from lmlib.utils.profiling import profile
 
 
+def _block_ranges(block_sizes, N):
+    """
+    Yield ``(start, stop)`` index ranges for each ALSSM block in a combined,
+    block-diagonal state vector of length ``N``.
+
+    ``block_sizes`` is the list of per-ALSSM state orders.  When it is ``None``
+    or describes a single block the whole vector ``[0, N)`` is returned, so
+    callers reduce to the original full-width (non-block-aware) behaviour.
+    """
+    if not block_sizes or len(block_sizes) <= 1:
+        return [(0, N)]
+    offsets = np.concatenate([[0], np.cumsum(block_sizes)])
+    return [(int(offsets[m]), int(offsets[m + 1])) for m in range(len(block_sizes))]
+
+
 def _compute_cascade_params(A, C, a, b, delta, gamma, direction):
     r"""
     Precompute all state-space and gamma scalars needed by the cascade IIR filters.
@@ -139,7 +154,7 @@ def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sample_weig
 
 
 # xi1 lfilter cascade
-def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weights, beta, cascade_params):
+def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weights, beta, block_sizes=None):
     r"""
     Computes the first-order cost parameter :math:`\xi^{(1)}(k, y)` in-place,
     which equals the signal projection vector :math:`\xi_k`.
@@ -184,15 +199,23 @@ def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weig
     because ``A`` must be upper-triangular, so the state equations are lower-dimensional and
     can be solved in order.
 
+    ``block_sizes`` is the list of per-ALSSM state orders making up the (combined,
+    block-diagonal) ``A``.  When given, the cross-block feed-forward terms — which
+    are structurally zero for a block-diagonal ``A`` — are skipped, so the work
+    drops from :math:`O(K N^2)` to :math:`O(K \\sum_m N_m^2)` in a single pass
+    (no per-block function-call overhead).  ``cascade_params`` are computed here
+    from ``A``/``C`` (mirroring :func:`lfilter_cascade_xi2`).
+
     Raises
     ------
     ValueError
         If `direction` is not ``'fw'`` or ``'bw'``.
     """
+    cascade_params = _compute_cascade_params(A, C, a, b, delta, gamma, direction)
     if direction == 'fw':
-        lfilter_forward_cascade_xi(xi1, cascade_params, a, b, y, sample_weights, beta)
+        lfilter_forward_cascade_xi(xi1, cascade_params, a, b, y, sample_weights, beta, block_sizes)
     elif direction == 'bw':
-        lfilter_backward_cascade_xi(xi1, cascade_params, a, b, y, sample_weights, beta)
+        lfilter_backward_cascade_xi(xi1, cascade_params, a, b, y, sample_weights, beta, block_sizes)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
@@ -279,7 +302,7 @@ def lfilter_cascade_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weight
 # transparent pass-through when lm.profiling.enable() has not been called
 # (overhead is a single bool check per call). See lmlib/utils/profiling.py.
 @profile
-def lfilter_forward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta):
+def lfilter_forward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta, block_sizes=None):
     """
     IIR forward calculation of xi.
 
@@ -347,11 +370,15 @@ def lfilter_forward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta
     # iterating through ALSSM (xi) elements
     y_diff = np.swapaxes(y_diff, 0, 1)  # convenient for later indexing
     xi_add = np.zeros((K + K_append, *xi.shape[1:]), order='F')
-    n_ = 0
-    xi_add[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
-    for n_ in range(1, N):
-        y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi_add[:-1], gAinvT[n_])
-        xi_add[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
+    # gAinvT is block-diagonal when A is (each ALSSM is one block); the
+    # feed-forward einsum is therefore sliced to each block, skipping the
+    # structurally-zero cross-block terms.  block_sizes=None (or a single
+    # block) reproduces the original full-width cascade.
+    for s, e in _block_ranges(block_sizes, N):
+        xi_add[:, s] = lfilter([1, 0], [1, -gamma_inv], y_diff[s].T).T
+        for n_ in range(s + 1, e):
+            y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi_add[:-1, s:e], gAinvT[n_, s:e])
+            xi_add[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
 
     # SE weight for this cost segment
     if beta != 1:
@@ -370,7 +397,7 @@ def lfilter_forward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta
 # general backward cascade
 # @profile is intentional on this production function (see forward cascade comment above).
 @profile
-def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta):
+def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta, block_sizes=None):
     """
     IIR backward calculation of xi.
 
@@ -434,11 +461,13 @@ def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, bet
     # iterating through dimensions
     y_diff = np.swapaxes(y_diff, 0, 1)  # convenient for later indexing
     xi_add = np.zeros((K + K_append, *xi.shape[1:]), order='F')
-    n_ = 0
-    xi_add[:, n_] = lfilter([1, 0], [1, -gamma], y_diff[n_].T).T
-    for n_ in range(1, N):
-        y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi_add[:-1], gAT[n_])
-        xi_add[:, n_] = lfilter([1, 0], [1, -gamma], y_diff[n_].T).T
+    # gAT is block-diagonal when A is; slice the feed-forward to each block
+    # (see lfilter_forward_cascade_xi for details).
+    for s, e in _block_ranges(block_sizes, N):
+        xi_add[:, s] = lfilter([1, 0], [1, -gamma], y_diff[s].T).T
+        for n_ in range(s + 1, e):
+            y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi_add[:-1, s:e], gAT[n_, s:e])
+            xi_add[:, n_] = lfilter([1, 0], [1, -gamma], y_diff[n_].T).T
 
     # SE weight for this cost segment
     if beta != 1:
@@ -799,6 +828,22 @@ def _apply_fir_batched(sos, extra_delay, y_sig_2d, Lout):
     return result
 
 
+# ─── parallel asterisk-l recursion  ───────────────────────────────────────────
+#
+# `xi_q_asterisk_l_recursion` (backends/rec.py) routes the # q==1 asterisk step 
+#  for filter_form='parallel' through `lfilter_parallel_xi_asterisk_split`, 
+# which builds a per-ALSSM-block transfer
+# function via `_build_parallel_ast_sos` and scatters each block result into the
+# Kronecker layout of xi_curr.  (q==0 kappa and q==2 W use the cascade / numpy
+# realizations.)
+#
+# The previously-broken backward recursion (`...backward_parallel_recursion`)
+# applied a spurious per-row `advance` offset to its output slice that the
+# forward path and the first-pass backward filter never used; this is fixed and
+# both directions now match the numpy reference to ~1e-12.
+# ──────────────────────────────────────────────────────────────────────────────
+
+
 def _build_parallel_ast_sos(A, C, a, b, delta, gamma, direction):
     r"""
     Build the per-row SOS structure for the parallel asterisk-l recursion.
@@ -1072,8 +1117,6 @@ def lfilter_xi_asterisk_l_backward_parallel_recursion(xi, nd, a, b, delta, gamma
     xi_r = xi.reshape(K, S_flat, Nprev, N).reshape(K, S_flat * Nprev, N)
 
     for n_ in range(N):
-        adv_a = advance_a_list[n_] if advance_a_list is not None else 0
-        adv_b = advance_b_list[n_] if advance_b_list is not None else 0
         Lout = L + max(db_list[n_], da_list[n_]) + 1
         fa = _apply_fir_batched(sos_a_list[n_], da_list[n_], y_da, Lout)
         fb = _apply_fir_batched(sos_b_list[n_], db_list[n_], y_db, Lout)
@@ -1106,11 +1149,153 @@ def lfilter_xi_asterisk_l_backward_parallel_recursion(xi, nd, a, b, delta, gamma
         if a >= 0:
             end = K - a
             if end > 0:
-                xi_r[:end, :, n_] += iir[adv_a:end + adv_a][::-1]
+                xi_r[:end, :, n_] += iir[0:end][::-1]
         else:
-            xi_r[:, :, n_] += iir[-a + adv_a:K - a + adv_a][::-1]
+            xi_r[:, :, n_] += iir[-a:K - a][::-1]
 
     xi[:] = xi_r.reshape(K, *S_shape, Nprev * N)
+
+
+def lfilter_parallel_xi_asterisk_split(xi_curr, A, C, a, b, delta, gamma, direction,
+                                       xi_prev, v, beta, block_sizes):
+    r"""
+    Per-ALSSM-block parallel asterisk-l recursion (:math:`\xi^{(1)*l}`, Option A).
+
+    For each ALSSM block of the current dimension the (small) block transfer
+    function is built and filtered independently — avoiding the ill-conditioned
+    state-space → transfer-function conversion that the full block-diagonal
+    matrix would incur — and the block result is scattered into the combined
+    Kronecker layout of ``xi_curr``.
+
+    A single-ALSSM current dimension reduces to one block, so the scatter is the
+    identity and this matches :func:`lfilter_xi_asterisk_l_forward_parallel_recursion`
+    applied directly.
+
+    Layout
+    ------
+    Block ``m`` (order ``N_m`` at offset ``[n0, n1)``) produces ``xi_tmp`` with
+    trailing layout ``n_prev * N_m + i``.  It is scattered into ``xi_curr`` whose
+    trailing layout is ``n_prev * N + n_curr`` (``N`` = total current-dim order,
+    ``n_curr = n0 + i``).  The scatter is done per ``n_prev`` with contiguous
+    slices so it is robust to the (Fortran-order / moved-axis) memory layout of
+    ``xi_curr``.
+    """
+    Nq_prev = xi_prev.shape[-1]
+    N = A.shape[0]
+    for n0, n1 in _block_ranges(block_sizes, N):
+        C_m = C[:, n0:n1]
+        if not np.any(C_m):
+            continue  # inactive block (F[m, p] == 0)
+        A_m = A[n0:n1, n0:n1]
+        N_m = n1 - n0
+        nd = _build_parallel_ast_sos(A_m, C_m, a, b, delta, gamma, direction)
+        xi_tmp = np.zeros((*xi_prev.shape[:-1], Nq_prev * N_m), order='F')
+        if direction == 'fw':
+            lfilter_xi_asterisk_l_forward_parallel_recursion(
+                xi_tmp, nd, a, b, delta, gamma, xi_prev, v, beta)
+        else:
+            lfilter_xi_asterisk_l_backward_parallel_recursion(
+                xi_tmp, nd, a, b, delta, gamma, xi_prev, v, beta)
+        # scatter block result into the Kronecker layout of xi_curr
+        for n_prev in range(Nq_prev):
+            xi_curr[..., n_prev * N + n0: n_prev * N + n1] += \
+                xi_tmp[..., n_prev * N_m: (n_prev + 1) * N_m]
+
+
+def build_parallel_numdenom(A, C, a, b, delta, gamma, direction, block_sizes):
+    r"""
+    Build the per-ALSSM transfer-function (SOS) coefficients consumed by the
+    parallel :math:`\xi^{(1)}` filter.
+
+    The combined ``A`` is block-diagonal and ``C`` is block-partitioned
+    (``C[:, n0:n1] == f_m C_m`` for ALSSM ``m``).  Each block is decomposed
+    independently — the parallel form converts state-space to transfer function
+    per output row, which is ill-conditioned on the full block-diagonal matrix
+    (clustered poles) but well-behaved per block.
+
+    Returns
+    -------
+    list of (n0, n1, numdenom_m)
+        One entry per *active* ALSSM block (a block is inactive when its ``C``
+        slice is all-zero, i.e. ``F[m, p] == 0``).  ``numdenom_m`` is the
+        11-element coefficient list expected by :func:`lfilter_parallel_xi1`.
+
+    Notes
+    -----
+    Relocated here (was ``RLSAlssm._build_numdenom``) so the parallel realization
+    lives entirely in the backend.  The ``numdenom_m`` layout is documented in
+    :func:`lfilter_forward_parallel_xi`.
+    """
+    from lmlib.statespace.backends.statespace_tools import ss2zpk_qz
+
+    plan = []
+    for n0, n1 in _block_ranges(block_sizes, A.shape[0]):
+        A_m = A[n0:n1, n0:n1]
+        C_m = C[:, n0:n1]
+        if not np.any(C_m):
+            continue  # inactive block (F[m, p] == 0)
+        N_m = n1 - n0
+
+        if direction == 'fw':
+            gAT = (1.0 / gamma) * inv(A_m).T
+            Aac = (matrix_power(A_m, 0 if np.isinf(a) else a - 1).T @ C_m.T).ravel()
+            Abc = (matrix_power(A_m, b).T @ C_m.T).ravel()
+        elif direction == 'bw':
+            gAT = gamma * A_m.T
+            Aac = (matrix_power(A_m, a).T @ C_m.T).ravel()
+            Abc = (matrix_power(A_m, 0 if np.isinf(b) else b + 1).T @ C_m.T).ravel()
+        else:
+            raise NotImplementedError("Segment direction must be fw or bw")
+
+        poles = eigvals(gAT)
+        sos_iir_shared = zpk2sos(np.zeros(len(poles)), poles, 1.0)
+
+        Abc_col = Abc.reshape(N_m, 1)
+        Aac_col = Aac.reshape(N_m, 1)
+        sos_b_list = []; sos_a_list = []; db_list = []; da_list = []
+        sos_iir_b_list = []; sos_iir_a_list = []
+        n_poles_b_list = []; n_poles_a_list = []
+        advance_b_list = []; advance_a_list = []
+        for n_ in range(N_m):
+            C_row = np.zeros((1, N_m)); C_row[0, n_] = 1.0
+            z_b, _, k_b, n_inf_b = ss2zpk_qz(gAT, Abc_col, C_row)
+            z_a, _, k_a, n_inf_a = ss2zpk_qz(gAT, Aac_col, C_row)
+            sb, db, si_b = _zpk_cancel_and_build_sos(z_b, k_b, poles, n_inf_zeros=n_inf_b)
+            sa, da, si_a = _zpk_cancel_and_build_sos(z_a, k_a, poles, n_inf_zeros=n_inf_a)
+            sos_b_list.append(sb); sos_a_list.append(sa)
+            db_list.append(db);    da_list.append(da)
+            sos_iir_b_list.append(si_b); sos_iir_a_list.append(si_a)
+            n_poles_b_list.append(_count_poles_in_sos(si_b))
+            n_poles_a_list.append(_count_poles_in_sos(si_a))
+            advance_b_list.append(1 if abs(float(Abc[n_])) < 1e-10 else 0)
+            advance_a_list.append(1 if abs(float(Aac[n_])) < 1e-10 else 0)
+
+        numdenom_m = [sos_iir_shared, sos_b_list, sos_a_list, db_list, da_list,
+                      sos_iir_b_list, sos_iir_a_list, n_poles_b_list, n_poles_a_list,
+                      advance_b_list, advance_a_list]
+        plan.append((n0, n1, numdenom_m))
+    return plan
+
+
+def lfilter_parallel_xi1_split(xi1, plan, a, b, direction, delta, gamma, y, sample_weights, beta):
+    r"""
+    Per-ALSSM parallel :math:`\xi^{(1)}` recursion.
+
+    ``plan`` is the list produced by :func:`build_parallel_numdenom`; each active
+    ALSSM block is filtered independently and written into its sub-slice
+    ``xi1[..., n0:n1]`` (block-diagonal ``A`` ⇒ blocks are independent for
+    :math:`q = 1`).
+    """
+    for n0, n1, nd in plan:
+        _iir_b = nd[5] if len(nd) > 5 else None
+        _iir_a = nd[6] if len(nd) > 6 else None
+        _np_b = nd[7] if len(nd) > 7 else None
+        _np_a = nd[8] if len(nd) > 8 else None
+        _adv_b = nd[9] if len(nd) > 9 else None
+        _adv_a = nd[10] if len(nd) > 10 else None
+        lfilter_parallel_xi1(xi1[..., n0:n1], nd[0], nd[1], nd[2], nd[3], nd[4],
+                             a, b, direction, delta, gamma, y, sample_weights, beta,
+                             _iir_b, _iir_a, _np_b, _np_a, _adv_b, _adv_a)
 
 
 # xi2 lfilter parallel

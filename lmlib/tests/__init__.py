@@ -3,21 +3,20 @@ lmlib.tests
 ===========
 Test suite for lmlib.  Entry point: ``lmlib.test()``.
 
-Individual test modules
------------------------
-test_RLSAlssm    — RLSAlssm.filter / minimize_x / eval_errors
-test_CostSegment — CostSegment construction and properties
-test_Trajectory  — Trajectory.eval / eval_y
-test_rls         — end-to-end regression + backend comparison
-test_nd_split    — per-ALSSM splitting correctness for NDCompositeCost
 """
-import unittest
 import os
 
 
 def test(verbosity=1, failfast=False):
     """
     Run the lmlib test suite.
+
+    Uses pytest if available (so both pytest-style and unittest-style test
+    modules are collected), and falls back to unittest discovery otherwise.
+
+    Note: some test modules (e.g. ``test_alssm_poly_meixner``) are written in
+    pytest style (parametrized classes, fixtures) and are NOT collected by
+    plain unittest discovery — run with pytest to include them.
 
     Parameters
     ----------
@@ -37,14 +36,32 @@ def test(verbosity=1, failfast=False):
     >>> lmlib.test()
     >>> lmlib.test(verbosity=2)
     """
-    test_dir  = os.path.dirname(os.path.abspath(__file__))
+    test_dir = os.path.dirname(os.path.abspath(__file__))
+
+    try:
+        import pytest
+    except ImportError:
+        pytest = None
+
+    if pytest is not None:
+        args = [test_dir]
+        if verbosity <= 0:
+            args.append('-q')
+        elif verbosity >= 2:
+            args.append('-v')
+        if failfast:
+            args.append('-x')
+        # pytest exit code 0 = all passed, 5 = no tests collected
+        return pytest.main(args) == 0
+
+    # ---- fallback: unittest discovery (skips pytest-only test modules) ----
+    import unittest
     top_level = os.path.dirname(test_dir)  # the lmlib/ package dir (contains tests/)
     loader = unittest.TestLoader()
-    suite  = loader.discover(
+    suite = loader.discover(
         start_dir=test_dir,
         pattern='test_*.py',
         top_level_dir=top_level,
     )
     runner = unittest.TextTestRunner(verbosity=verbosity, failfast=failfast)
-    result = runner.run(suite)
-    return result.wasSuccessful()
+    return runner.run(suite).wasSuccessful()

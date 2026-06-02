@@ -986,32 +986,32 @@ class AlssmPolyMeixner(ModelBase):
 
     """
 
-    def __init__(self, poly_degree: int, segment=None, **kwargs):
+    def __init__(self, poly_degree: int, segment, **kwargs):
         r"""
         Parameters
         ----------
         poly_degree : int
             Polynomial degree :math:`D \geq 0`.  The model order is :math:`N = D+1`.
-        segment : :class:`Segment`, optional
-            Target segment.  **Recommended.**  Encodes direction, :math:`g`, and
-            boundary shift in one object:
+        segment : :class:`Segment`
+            Target segment.  Encodes direction, :math:`g`, and boundary shift:
 
-            * ``segment.g`` → window size.
+            * ``segment.g`` → window size :math:`g` (giving decay
+              :math:`\gamma = (g-1)/g`).
             * ``segment.direction`` → ``'bw'`` selects :math:`A_{\rm bw}`;
               ``'fw'`` selects :math:`A_{\rm fw} = A_{\rm bw}^{-1}`.
             * ``segment.a`` (BW, if finite) or ``segment.b`` (FW, if finite)
               → shifts :math:`C` to restore Gram matrix orthogonality when the
               segment does not start at the canonical origin.
 
-            Either ``segment`` or ``g`` must be given (not both).
+            Meixner orthogonality requires a semi-infinite support, so the
+            segment must be backward with ``b=+inf`` or forward with ``a=-inf``.
         **kwargs
-            Forwarded to :class:`ModelBase`. """
+            Forwarded to :class:`ModelBase` (e.g. ``label``). """
 
         super().__init__(**kwargs)
         assert isinstance(poly_degree, int) and poly_degree >= 0, \
             'poly_degree must be a non-negative int'
         self._poly_degree = int(poly_degree)
-
 
         assert isinstance(segment, Segment), \
             "'segment' must be a lmlib.statespace.segment.Segment instance."
@@ -1066,7 +1066,7 @@ class AlssmPolyMeixner(ModelBase):
 
     @property
     def g(self) -> float:
-        r"""float : Effective window size :math:`g`."""
+        r"""float : Effective window size :math:`g` (read-only; from the segment)."""
         return self._g
 
     @property

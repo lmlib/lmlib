@@ -52,8 +52,14 @@ def numerical_gram(poly_degree, gamma, J=8000):
     return V.T @ (w[:, None] * V)
 
 
-def make_alssm(poly_degree, g, **kwargs):
-    return lm.AlssmPolyMeixner(poly_degree=poly_degree, g=g, **kwargs)
+def make_alssm(poly_degree, g, direction=lm.BACKWARD, **kwargs):
+    """Build an AlssmPolyMeixner over a canonical semi-infinite segment with
+    effective window size ``g`` (origin at the canonical lag, shift=0)."""
+    if direction == lm.BACKWARD:
+        seg = lm.Segment(a=0, b=np.inf, direction=lm.BACKWARD, g=g)
+    else:
+        seg = lm.Segment(a=-np.inf, b=-1, direction=lm.FORWARD, g=g)
+    return lm.AlssmPolyMeixner(poly_degree, seg, **kwargs)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -386,49 +392,59 @@ class TestEx122:
 
     def test_output_finite_matches_poly(self):
         """
-        On a short finite signal, AlssmPolyMeixner(D,g) and AlssmPoly(D) should
-        produce the same filtered output ŷ (both are fitting degree-D polynomials
-        — only the basis differs).
+        On a single semi-infinite segment, AlssmPolyMeixner(D) and AlssmPoly(D)
+        fit the *same* degree-D polynomial subspace, so the filtered output ŷ
+        (the projection onto that subspace) must be identical — only the basis
+        differs.
+
+        Note: this equality holds per segment.  It does NOT hold for a two-sided
+        (FW + BW) cost driven by a single Meixner ALSSM, because a Meixner model
+        carries a direction-specific decay and the BW-built model evaluated in a
+        FW segment spans a different fit than Poly.  The single-segment form is
+        the meaningful invariant.
         """
-        np.random.seed(0)
         K = 500
-        k = np.arange(K)
         y = gen_rect(K, 500, 250) + gen_wgn(K, sigma=0.02, seed=7)
         g = 20
+        seg = lm.Segment(a=0, b=np.inf, direction=lm.BACKWARD, g=g)
+
+        def get_yhat(alssm):
+            cost = lm.CompositeCost((alssm,), (seg,), F=[[1]])
+            rls  = lm.RLSAlssm(cost, steady_state=True)
+            return rls.fit(y)
 
         for D in [0, 1, 2, 3]:
-            alssm_p = lm.AlssmPoly(poly_degree=D)
-            alssm_m = make_alssm(D, g)
-
-            seg_L = lm.Segment(a=-np.inf, b=-1,     direction=lm.FORWARD,  g=g)
-            seg_R = lm.Segment(a=0,       b=np.inf, direction=lm.BACKWARD, g=g)
-
-            def get_yhat(alssm):
-                cost = lm.CompositeCost((alssm,), (seg_L, seg_R), F=[[1, 1]])
-                rls  = lm.RLSAlssm(cost, steady_state=True)
-                return rls.fit(y)
-
-            y_poly = get_yhat(alssm_p)
-            y_meix = get_yhat(alssm_m)
+            y_poly = get_yhat(lm.AlssmPoly(poly_degree=D))
+            y_meix = get_yhat(lm.AlssmPolyMeixner(D, seg))
 
             corr = np.corrcoef(y_poly, y_meix)[0, 1]
             rmse = np.sqrt(np.mean((y_poly - y_meix) ** 2))
             print(f"  ex122 D={D}: corr={corr:.6f}  RMSE={rmse:.2e}")
             assert corr > 0.999, f"D={D}: low correlation between Poly and Meixner outputs ({corr:.4f})"
-            assert rmse < 0.05, f"D={D}: RMSE too large ({rmse:.2e})"
+            assert rmse < 1e-3, f"D={D}: RMSE too large ({rmse:.2e})"
 
     def test_symmetric_filter_symmetry(self):
         """
-        A two-sided filter on a symmetric signal should produce a symmetric output.
+        A symmetric two-sided Meixner filter on a symmetric signal produces a
+        symmetric output.
+
+        Because a Meixner model is inherently one-sided (its decay has a
+        direction), symmetry requires a *direction-matched, shift-matched* pair:
+        a forward-built ALSSM for the forward segment and a backward-built ALSSM
+        for the backward segment, with mirror-matched boundaries (both touching
+        the origin → shift 0).  A single backward-built ALSSM reused in both
+        segments is NOT symmetric.
         """
         K = 200
         y = np.zeros(K)
         y[80:120] = 1.0    # rectangular pulse, centred in signal
         g = 20
-        alssm = make_alssm(2, g)
-        seg_L = lm.Segment(a=-np.inf, b=-1,     direction=lm.FORWARD,  g=g)
-        seg_R = lm.Segment(a=0,       b=np.inf, direction=lm.BACKWARD, g=g)
-        cost  = lm.CompositeCost((alssm,), (seg_L, seg_R), F=[[1, 1]])
+        # mirror-matched boundaries about the origin (both shift 0)
+        seg_L = lm.Segment(a=-np.inf, b=0,       direction=lm.FORWARD,  g=g)
+        seg_R = lm.Segment(a=0,       b=np.inf,  direction=lm.BACKWARD, g=g)
+        alssm_L = lm.AlssmPolyMeixner(2, seg_L)   # forward-built
+        alssm_R = lm.AlssmPolyMeixner(2, seg_R)   # backward-built
+        cost  = lm.CompositeCost((alssm_L, alssm_R), (seg_L, seg_R), F=[[1, 0], [0, 1]])
         rls   = lm.RLSAlssm(cost, steady_state=True)
         y_hat = rls.fit(y)
         # Mirror image: y_hat[k] ≈ y_hat[K-1-k] (allow 5% deviation)
@@ -471,8 +487,8 @@ class TestEx111:
         K, y, y_rpulse = signal
         g_bl, g_sp, len_pulse = 50, 15000, 20
 
-        alssm_pulse    = lm.AlssmPolyMeixner(poly_degree=0, g=g_bl, label='pulse')
-        alssm_baseline = lm.AlssmPolyMeixner(poly_degree=2, g=g_bl, label='baseline')
+        alssm_pulse    = make_alssm(0, g_bl, label='pulse')
+        alssm_baseline = make_alssm(2, g_bl, label='baseline')
 
         lcr = self._run_detection(alssm_pulse, alssm_baseline, K, y, g_sp, g_bl, len_pulse)
 
@@ -489,8 +505,8 @@ class TestEx111:
 
         def run(use_meixner):
             if use_meixner:
-                ap = lm.AlssmPolyMeixner(poly_degree=0, g=g_bl, label='pulse')
-                ab = lm.AlssmPolyMeixner(poly_degree=2, g=g_bl, label='baseline')
+                ap = make_alssm(0, g_bl, label='pulse')
+                ab = make_alssm(2, g_bl, label='baseline')
             else:
                 ap = lm.AlssmPoly(poly_degree=0, label='pulse')
                 ab = lm.AlssmPoly(poly_degree=2, label='baseline')
@@ -511,7 +527,7 @@ class TestEx111:
                            delta=len_pulse)
 
         for D in [1, 2]:
-            am = lm.AlssmPolyMeixner(D, g_bl, label='m')
+            am = make_alssm(D, g_bl, label='m')
             ap = lm.AlssmPoly(D, label='p')
             F  = [[1, 1, 1]]
 
@@ -550,7 +566,7 @@ class TestEx113:
         N1, N2 = 3, 5
 
         # Use Meixner for baseline; Jordan for pulse (shape model stays the same)
-        alssm_baseline = lm.AlssmPolyMeixner(poly_degree=N1 - 1, g=g_bl, label="alssm-baseline")
+        alssm_baseline = make_alssm(N1 - 1, g_bl, label="alssm-baseline")
         alssm_pulse    = lm.AlssmPolyJordan(poly_degree=N2 - 1, label="alssm-pulse")
 
         segL = lm.Segment(a=-np.inf,       b=-1 - SHAPE_LEN_2, direction=lm.FORWARD,  g=g_bl,
@@ -674,10 +690,17 @@ class TestEdgeCases:
         with pytest.raises((AssertionError, TypeError)):
             make_alssm(-1, 20)
 
-    def test_g_setter_validation(self):
-        alssm = make_alssm(2, 20)
+    def test_invalid_g_rejected_by_segment(self):
+        # g is taken from the segment; the g <= 1 check now lives in Segment.
         with pytest.raises((AssertionError, ValueError)):
-            alssm.g = 0.5
+            lm.Segment(a=0, b=np.inf, direction=lm.BACKWARD, g=0.5)
+
+    def test_g_is_read_only(self):
+        # g is derived from the segment and is not a settable (legacy) attribute.
+        alssm = make_alssm(2, 20)
+        assert np.isclose(alssm.g, 20.0)
+        with pytest.raises(AttributeError):
+            alssm.g = 30.0
 
     def test_gamma_property(self):
         g = 50.0

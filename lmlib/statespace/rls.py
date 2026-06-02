@@ -1,7 +1,6 @@
 import sys
 import numpy as np
-from numpy.linalg import inv, cond, matrix_power, eigvals
-from scipy.signal import zpk2sos
+from numpy.linalg import inv, cond
 
 from lmlib.statespace.backend import get_backend
 from lmlib.statespace.cost import CompositeCost, CostSegment, NDCompositeCost
@@ -26,23 +25,17 @@ def create_rls(cost, multi_channel_set=False, steady_state=False, kappa_diag=Tru
     return RLSAlssm(cost, steady_state=steady_state, **kwargs)
 
 
-def _as_composite_cost(cost):
+def _cost_parts(cost): #TODO remove this function and directly insert the code at the corresponding calls.
     """
-    Ensure *cost* is a CompositeCost.
+    Return ``(segments, alssms, F, betas)`` for a CostSegment or CompositeCost.
 
-    A CostSegment is a degenerate CompositeCost with M=1 ALSSM, P=1 Segment and
-    F = [[1]].  Wrapping it here means the rest of the filtering code never
-    needs to branch on the concrete cost type.
+    A CostSegment is the degenerate single-ALSSM / single-segment case; it is
+    unpacked here directly (``F = [[1]]``) so the recursion drivers never branch
+    on the concrete cost type and never have to build a throw-away CompositeCost.
     """
     if isinstance(cost, CostSegment):
-        return CompositeCost(
-            [cost.alssm],
-            [cost.segment],
-            np.ones((1, 1)),
-            betas=np.array([cost.beta]),
-            label=cost.label,
-        )
-    return cost  # already a CompositeCost
+        return [cost.segment], [cost.alssm], np.ones((1, 1)), np.array([cost.beta])
+    return list(cost.segments), list(cost.alssms), cost.F, cost.betas
 
 
 class RLSAlssm:
@@ -129,7 +122,7 @@ class RLSAlssm:
     """
 
     def __init__(self, cost_terms, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=False, filter_form='cascade',
-                 backend=None, numdenom=None, steady_state_method='schur'):
+                 backend=None, steady_state_method='schur'):
         self._cost_terms = cost_terms
         assert all(isinstance(_, bool) for _ in (steady_state, calc_W, calc_xi, calc_kappa, calc_nu)), \
             'steady_state, calc_W, calc_xi, calc_kappa and calc_nu must be boolean.'
@@ -152,33 +145,30 @@ class RLSAlssm:
 
         self._filter_form = filter_form
 
-        # Collect per-dimension CompositeCosts once, reused throughout __init__
-        # and the recursion methods.
+        # Per-dimension cost terms (CostSegment or CompositeCost), one per ND axis.
         #   - NDCompositeCost._get_sub_cost_term() returns a list of costs.
-        #   - CompositeCost/CostSegment._get_sub_cost_term() returns the cost
-        #     itself (a single object, not a list).
-        # Normalise to a list of CompositeCosts in both cases.
+        #   - CompositeCost/CostSegment._get_sub_cost_term() returns the cost itself.
         raw = cost_terms._get_sub_cost_term()
-        if isinstance(raw, list):
-            _sub_costs = [_as_composite_cost(ct) for ct in raw]
-        else:
-            _sub_costs = [_as_composite_cost(raw)]
+        _sub_costs = raw if isinstance(raw, list) else [raw]
 
         # ------------------------------------------------------------------
         # check if filter form is valid for all segments
         # ------------------------------------------------------------------
         if self._backend == 'lfilter' and self._filter_form == 'cascade':
             for ct in _sub_costs:
-                for alssm in ct.alssms:
+                _, _alssms, _, _ = _cost_parts(ct)
+                for alssm in _alssms:
                     if not np.allclose(alssm.A, np.triu(alssm.A)):
                         self._filter_form = 'parallel'
                         print("State-Space Matrix A is not upper triangular, "
                               "cascade version can't be used. "
                               "Defaulting to filter_form='parallel'.")
 
-        self._build_cascade_params(_sub_costs)
-
-        self._build_numdenom(_sub_costs, numdenom)
+        # The parallel xi^(1) realization needs per-ALSSM transfer functions.
+        # Build them once here (the heavy SOS/QZ construction lives in the
+        # backend, build_parallel_numdenom); cascade/numpy/jit need nothing.
+        # Layout: _parallel_plan[dim_index][seg_index] -> list of (n0, n1, numdenom).
+        self._parallel_plan = self._build_parallel_plan(_sub_costs)
 
     # ------------------------------------------------------------------
     # Properties
@@ -229,163 +219,39 @@ class RLSAlssm:
         # TODO nu implementation
         raise NotImplementedError("nu calculation is not yet implemented.")
 
-    def _build_cascade_params(self, _sub_costs):
+    def _build_parallel_plan(self, _sub_costs):
         r"""
-        Build _cascade_params as a 3-D structure: _cascade_params[dim_index][seg_index][alssm_index]
+        Pre-build per-ALSSM transfer-function coefficients for the parallel
+        :math:`\xi^{(1)}` realization (lfilter parallel backend only).
 
-        Each leaf entry is either None (numpy/jit backends, parallel filter form,
-        or inactive grid node with f_mp==0) or a dict of precomputed scalars and
-        matrices for the lfilter cascade backend. The dict keys depend on the
-        segment direction:
-          fw: gamma_inv, gamma_a, gamma_b, gAinvT, Aac, Abc, N
-          bw: gamma,     gamma_a, gamma_b, gAT,    Aac, Abc, N
+        Returns a 3-D structure ``plan[dim_index][seg_index]`` where each leaf is
+        the list of ``(n0, n1, numdenom)`` tuples produced by
+        :func:`~lmlib.statespace.backends.rec_lfilter.build_parallel_numdenom`
+        (one entry per active ALSSM block).  Returns ``None`` for every other
+        backend/filter-form combination (nothing to pre-build).
 
-        For q==1 (xi) the filtering is done per individual ALSSM, so each
-        ALSSM gets its own pre-calculated parameters derived from its own
-        (small) A_m and C_m rather than from the combined block-diagonal matrix.
-        This avoids constructing the large AlssmSum just to decompose it again.
-
-        For q==2 (W) the combined AlssmSum is still used (see recursion methods),
-        so _cascade_params[dim][p][m] is not consumed for q==2; the combined entry is
-        built on-the-fly there instead.
+        The combined block-diagonal ``A`` / block-partitioned ``C`` are built
+        once per segment here; the backend slices and decomposes each block.
         """
-        self._cascade_params = [
-            [[None] * ct.M for _ in range(ct.P)] for ct in _sub_costs
-            ]
+        if not (self._filter_form == 'parallel' and self._backend == 'lfilter'):
+            return None
 
-        if self._filter_form == 'cascade' and self._backend == 'lfilter':
-            from lmlib.statespace.backends.rec_lfilter import _compute_cascade_params
-            for dim_idx, ct in enumerate(_sub_costs):
-                for p, segment in enumerate(ct.segments):
-                    a, b, delta, gamma = segment.a, segment.b, segment.delta, segment.gamma
-                    for m, alssm_m in enumerate(ct.alssms):
-                        if ct.F[m, p] == 0.0:
-                            continue
-                        wrapped = AlssmSum([alssm_m], [ct.F[m, p]], force_MC=True)
-                        A, C = wrapped.A, wrapped.C
-                        self._cascade_params[dim_idx][p][m] = _compute_cascade_params(
-                            A, C, a, b, delta, gamma, segment.direction
-                        )
+        from lmlib.statespace.backends.rec_lfilter import build_parallel_numdenom
 
+        plan = []
+        for ct in _sub_costs:
+            segments, alssms, F, _ = _cost_parts(ct)
+            block_sizes = [al.N for al in alssms]
+            seg_plans = []
+            for p, segment in enumerate(segments):
+                combined = AlssmSum(alssms, F[:, p], force_MC=True)
+                seg_plans.append(build_parallel_numdenom(
+                    combined.A, combined.C,
+                    segment.a, segment.b, segment.delta, segment.gamma,
+                    segment.direction, block_sizes))
+            plan.append(seg_plans)
+        return plan
 
-    def _build_numdenom(self, _sub_costs, numdenom):
-        r"""
-        Build _numdenom as a 3-D structure: _numdenom[dim_index][seg_index][alssm_index]
-
-        Each leaf entry is either None (numpy/jit backends, or inactive grid
-        node with f_mp==0) or [denom, num_b, num_a] (lfilter parallel backend).
-
-        For q==1 (xi) the filtering is now done per individual ALSSM, so each
-        ALSSM gets its own transfer-function coefficients derived from its own
-        (small) A_m and C_m rather than from the combined block-diagonal matrix.
-        This avoids constructing the large AlssmSum just to decompose it again.
-
-        For q==2 (W) the combined AlssmSum is still used (see recursion methods),
-        so _numdenom[dim][p][m] is not consumed for q==2; the combined entry is
-        built on-the-fly there instead.
-        """
-        self._numdenom = [
-            [[None] * ct.M for _ in range(ct.P)] for ct in _sub_costs
-        ]
-
-        if self._filter_form == 'parallel' and self._backend == 'lfilter' and numdenom is None:
-            from lmlib.statespace.backends.statespace_tools import ss2zpk_qz
-            from lmlib.statespace.backends.rec_lfilter import (
-                _zpk_cancel_and_build_sos, _count_poles_in_sos)
-            for dim_idx, ct in enumerate(_sub_costs):
-                for p, segment in enumerate(ct.segments):
-                    gamma = segment.gamma
-                    a     = segment.a
-                    b     = segment.b
-
-                    for m, alssm_m in enumerate(ct.alssms):
-                        f_mp = ct.F[m, p]
-                        if f_mp == 0.0:
-                            # Inactive grid node — leave entry as None.
-                            continue
-
-                        wrapped = AlssmSum([alssm_m], [f_mp], force_MC=True)
-                        A = wrapped.A
-                        C = wrapped.C
-                        N_m = wrapped.N
-
-                        if segment.direction == 'fw':
-                            gAT   = (1.0 / gamma) * inv(A).T
-                            Aac   = (matrix_power(A, 0 if np.isinf(a) else a - 1).T @ C.T).ravel()
-                            Abc   = (matrix_power(A, b).T @ C.T).ravel()
-                        elif segment.direction == 'bw':
-                            gAT   = gamma * A.T
-                            Aac   = (matrix_power(A, a).T @ C.T).ravel()
-                            Abc   = (matrix_power(A, 0 if np.isinf(b) else b + 1).T @ C.T).ravel()
-                        else:
-                            raise NotImplementedError("Segment direction must be fw or bw")
-
-                        # --- Build SOS structures ---
-                        # Poles = eigenvalues of gAT (avoids polynomial expansion).
-                        # A shared sos_iir is stored at index [0] for backward
-                        # compatibility with user-supplied numdenom dicts.
-                        poles = eigvals(gAT)
-                        sos_iir_shared = zpk2sos(np.zeros(len(poles)), poles, 1.0)
-
-                        # Zeros via QZ (Rosenbrock pencil + generalised Schur
-                        # decomposition): avoids the Faddeev-LeVerrier polynomial
-                        # round-trip of scipy ss2tf / ss2zpk, giving exact zeros for
-                        # cancellable rows and near-MATLAB accuracy for the rest.
-                        # PZ cancellation reduces each row to the minimal-order IIR.
-                        # _numdenom layout:
-                        #   [0] sos_iir_shared  – full-order IIR (legacy compat)
-                        #   [1] sos_b_list      – per-row FIR SOS, boundary b
-                        #   [2] sos_a_list      – per-row FIR SOS, boundary a
-                        #   [3] db_list         – per-row FIR delay, boundary b
-                        #   [4] da_list         – per-row FIR delay, boundary a
-                        #   [5] sos_iir_b_list  – per-row reduced IIR SOS, boundary b
-                        #   [6] sos_iir_a_list  – per-row reduced IIR SOS, boundary a
-                        #   [7] n_poles_b_list  – pole count per row, boundary b
-                        #   [8] n_poles_a_list  – pole count per row, boundary a
-                        #   [9] advance_b_list  – backward slice advance, boundary b
-                        #   [10] advance_a_list – backward slice advance, boundary a
-                        #
-                        # advance_*_list[n_] = 1 when the boundary vector component
-                        # boundary_vec[n_] = 0, which causes the IIR slice alignment
-                        # to be off by 1 sample in the backward filter.  This happens
-                        # because the QZ transfer function H_n for row n_ has the
-                        # correct mathematical form but the IIR slice includes one
-                        # extra "warmup" sample that must be dropped.
-                        # For the forward filter the analogous issue (huge spurious
-                        # zero from QZ) is corrected in _zpk_cancel_and_build_sos.
-                        Abc_col = Abc.reshape(N_m, 1)
-                        Aac_col = Aac.reshape(N_m, 1)
-                        sos_b_list = []; sos_a_list = []; db_list = []; da_list = []
-                        sos_iir_b_list = []; sos_iir_a_list = []
-                        n_poles_b_list = []; n_poles_a_list = []
-                        advance_b_list = []; advance_a_list = []
-                        for n_ in range(N_m):
-                            C_row = np.zeros((1, N_m)); C_row[0, n_] = 1.0
-                            z_b, _, k_b, n_inf_b = ss2zpk_qz(gAT, Abc_col, C_row)
-                            z_a, _, k_a, n_inf_a = ss2zpk_qz(gAT, Aac_col, C_row)
-                            sb, db, si_b = _zpk_cancel_and_build_sos(z_b, k_b, poles, n_inf_zeros=n_inf_b)
-                            sa, da, si_a = _zpk_cancel_and_build_sos(z_a, k_a, poles, n_inf_zeros=n_inf_a)
-                            sos_b_list.append(sb); sos_a_list.append(sa)
-                            db_list.append(db);    da_list.append(da)
-                            sos_iir_b_list.append(si_b); sos_iir_a_list.append(si_a)
-                            n_poles_b_list.append(_count_poles_in_sos(si_b))
-                            n_poles_a_list.append(_count_poles_in_sos(si_a))
-                            # Advance = 1 when the boundary vector component at row
-                            # n_ is zero.  Only the backward filter uses this.
-                            advance_b_list.append(1 if abs(float(Abc[n_])) < 1e-10 else 0)
-                            advance_a_list.append(1 if abs(float(Aac[n_])) < 1e-10 else 0)
-
-                        self._numdenom[dim_idx][p][m] = [sos_iir_shared, sos_b_list,
-                                                          sos_a_list, db_list, da_list,
-                                                          sos_iir_b_list, sos_iir_a_list,
-                                                          n_poles_b_list, n_poles_a_list,
-                                                          advance_b_list, advance_a_list]
-
-
-
-        if self._filter_form == 'parallel' and self._backend == 'lfilter' and numdenom is not None:
-            print("Using user-supplied SOS coefficients (numdenom).")
-            self._numdenom = numdenom
 
 
     # ------------------------------------------------------------------
@@ -1149,20 +1015,8 @@ class RLSAlssm:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def _alssm_offsets(composite_cost):
-        """
-        Return the cumulative state-vector offsets for each ALSSM in a
-        CompositeCost.
-
-        Returns an array of shape (M+1,) so that ALSSM m occupies
-        xi[..., offsets[m] : offsets[m+1]].
-        """
-        orders = [alssm.N for alssm in composite_cost.alssms]
-        return np.concatenate([[0], np.cumsum(orders)])
-
     # ------------------------------------------------------------------
-    # Recursion: _nd_xi_q_recursion
+    # Recursion: _nd_xi_q_recursion (first dimension)
     # ------------------------------------------------------------------
 
     def _nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
@@ -1218,132 +1072,42 @@ class RLSAlssm:
             (all signal dimensions) and a trailing axis of size :math:`N_l^q`, where
             :math:`N_l` is the model order of the sub-cost for ``model_dimension``.
         """
-
-        # Normalise to CompositeCost so we always have .alssms, .segments, .F
-        sub_cost = _as_composite_cost(
-            self._cost_terms._get_sub_cost_term(model_dimension)
-        )
-
-        # dim_index: position of this dimension inside _numdenom.
-        # For NDCompositeCost each dimension has its own slot.
-        # For CompositeCost/CostSegment there is exactly one slot (index 0)
-        # regardless of which model_dimension axis is being processed.
+        segments, alssms, F, betas = _cost_parts(
+            self._cost_terms._get_sub_cost_term(model_dimension))
         dim_index = model_dimension if isinstance(self._cost_terms, NDCompositeCost) else 0
+        N = sum(al.N for al in alssms)
+        block_sizes = [al.N for al in alssms]
 
-        N = sub_cost.get_alssm_order()
         *Ks, Q = np.shape(y)
         xi_curr = np.zeros((*Ks, N ** q))  # C-order; last dimension is the nd-model-order
 
-        # Move the model_dimension axis and flatten all other spatial dims so
-        # the inner loop sees a simple (n_parallel, K, Q) array.
-        #
-        # Bug fix: the original code allocated xi_curr with order='F' and
-        # then called np.moveaxis(..., model_dimension, -2) + np.reshape(...).
-        # When model_dimension != 0 and the signal has 3+ spatial dimensions the
-        # moveaxis produces a non-contiguous view, so numpy.reshape cannot return
-        # a view and silently returns a *copy*.  Writes to the reshaped array never
-        # propagate back to xi_curr, leaving it all-zero.
-        #
-        # Fix: use np.ascontiguousarray on the moveaxis view before reshaping,
-        # compute into the working buffer, then copy the result back.
+        # Move model_dimension next to the trailing axis and flatten the other
+        # signal axes into a batch.  moveaxis can yield a non-contiguous view for
+        # which reshape silently returns a copy, so work on an explicit copy and
+        # write the result back through the view.
         _xi_view = np.moveaxis(xi_curr, model_dimension, -2)
-        _xi_work = np.ascontiguousarray(_xi_view)       # always a writeable copy
+        _xi_work = np.ascontiguousarray(_xi_view)
         _xi_curr = np.reshape(_xi_work, (-1, *_xi_work.shape[-2:]))
-        _y = np.moveaxis(y, model_dimension, -2)
-        _y = np.reshape(np.ascontiguousarray(_y), (-1, *_y.shape[-2:]))
-        _sample_weights = np.moveaxis(sample_weights, model_dimension, -1)
-        _sample_weights = np.reshape(np.ascontiguousarray(_sample_weights),
-                                     (-1, *_sample_weights.shape[-1:]))
+        _ym = np.ascontiguousarray(np.moveaxis(y, model_dimension, -2))
+        _y = np.reshape(_ym, (-1, *_ym.shape[-2:]))
+        _swm = np.ascontiguousarray(np.moveaxis(sample_weights, model_dimension, -1))
+        _sw = np.reshape(_swm, (-1, *_swm.shape[-1:]))
 
-        offsets = self._alssm_offsets(sub_cost)  # shape (M+1,)
+        for p, segment in enumerate(segments):
+            combined = AlssmSum(alssms, F[:, p], force_MC=True)
+            plan = (self._parallel_plan[dim_index][p]
+                    if self._parallel_plan is not None else None)
+            for i in range(_y.shape[0]):
+                xi_q_recursion(
+                    _xi_curr[i], q, combined, segment,
+                    _y[i], _sw[i], betas[p],
+                    self._backend, self._filter_form, block_sizes, plan)
 
-        # iterate over CostSegments
-        for p, segment in enumerate(sub_cost.segments):
-            beta_p = sub_cost.betas[p]
-
-            # ------------------------------------------------------------------
-            # q == 2  (W matrix)
-            # The full W of a CompositeCost contains cross-terms between
-            # different ALSSMs.  These sit at non-contiguous positions in the
-            # flattened N^2 vector, so per-ALSSM sub-slicing is not correct
-            # for M > 1 (more than 1 model). Use the combined AlssmSum (original behaviour).
-            # _numdenom is not consumed here; numdenom_p is irrelevant for q==2 with
-            # the combined path (numdenom would need to match the large A).
-            # ------------------------------------------------------------------
-            if q == 2:
-                combined = AlssmSum(sub_cost.alssms, sub_cost.F[:, p], force_MC=True)
-                for i in range(_y.shape[0]):
-                    xi_q_recursion(
-                        _xi_curr[i], q,
-                        combined, segment,
-                        _y[i], _sample_weights[i],
-                        beta_p, self._backend, self._filter_form, None,
-                    )
-                continue  # next segment — inner m-loop not needed for q==2
-
-            # ------------------------------------------------------------------
-            # q == 0  (kappa)
-            # The recursion for kappa does not use alssm.A or alssm.C at all
-            # (it only accumulates y² weighted by the window).  A single pass
-            # per segment is therefore sufficient regardless of how many ALSSMs
-            # are present.  We pass the first ALSSM as a dummy placeholder and
-            # sum all F weights for this segment column into a single effective
-            # beta so the overall scaling remains correct.
-            # ------------------------------------------------------------------
-            if q == 0:
-                # kappa = integral(y^2 * window) is a property of the segment
-                # alone — it is independent of the ALSSM structure and the F
-                # weights.  One pass per segment with the unmodified beta_p is
-                # all that is needed.  (Multiplying by f_sum, as was done
-                # previously, incorrectly double-counts segments that have more
-                # than one active ALSSM.)
-                dummy_alssm = AlssmSum([sub_cost.alssms[0]], [1.0], force_MC=True)
-                for i in range(_y.shape[0]):
-                    xi_q_recursion(
-                        _xi_curr[i], q,
-                        dummy_alssm, segment,
-                        _y[i], _sample_weights[i],
-                        beta_p, self._backend, self._filter_form, None,
-                    )
-                continue
-
-            # ------------------------------------------------------------------
-            # q == 1  (xi): iterate per ALSSM, write into per-ALSSM sub-slice
-            # ------------------------------------------------------------------
-            for m, alssm_m in enumerate(sub_cost.alssms):
-                f_mp = sub_cost.F[m, p]
-                if f_mp == 0.0:
-                    continue  # inactive grid node — skip
-
-                # Wrap the individual ALSSM in a single-element AlssmSum.
-                # This serves two purposes:
-                #   1. force_MC=True ensures C is always 2-D (required by the
-                #      lfilter cascade backend).
-                #   2. The F-weight f_mp is absorbed into C via the lambda
-                #      argument, exactly as AlssmSum(alssms, F[:,p]) did,
-                #      without mutating the original ALSSM object.
-                wrapped = AlssmSum([alssm_m], [f_mp], force_MC=True)
-
-                # Per-ALSSM sub-slice — the main optimisation.
-                # Block-diagonal A means ALSSM m contributes only to
-                # elements [offsets[m] : offsets[m+1]] of xi.
-                n0, n1 = offsets[m], offsets[m + 1]
-                numdenom_pm = self._numdenom[dim_index][p][m]
-                for i in range(_y.shape[0]):
-                    xi_q_recursion(
-                        _xi_curr[i, :, n0:n1], q,
-                        wrapped, segment,
-                        _y[i], _sample_weights[i],
-                        beta_p, self._backend, self._filter_form, numdenom_pm, self._cascade_params[dim_index][p][m]
-                    )
-
-        # Copy the computed results from the working buffer back into xi_curr
-        # (needed because _xi_work is a copy, not a view of xi_curr).
         _xi_view[:] = np.reshape(_xi_curr, _xi_view.shape)
         return xi_curr
 
     # ------------------------------------------------------------------
-    # Recursion: _nd_xi_q_asterisk_l_recursion
+    # Recursion: _nd_xi_q_asterisk_l_recursion (subsequent dimensions)
     # ------------------------------------------------------------------
 
     def _nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, sample_weights, model_dimension):
@@ -1368,28 +1132,11 @@ class RLSAlssm:
             The trailing axis of the output grows by a factor :math:`N_l^q`, where
             :math:`N_l` is the model order of the sub-cost for ``model_dimension``.
         y : array_like of shape (\*Ks, Q)
-            Input signal. Only used to determine the leading shape ``Ks``; the
-            actual values are not read (the signal information enters via ``xi_prev``).
+            Input signal (only its shape is used; values enter via ``xi_prev``).
         sample_weights : array_like of shape (\*Ks,)
             Per-sample weights :math:`w_i \in [0,1]`.
         model_dimension : int
-            Index of the signal axis along which the 1-D state-space recursion is applied.
-            All other signal axes are moved to the front and iterated over
-            sequentially (one slice at a time via the backend call).
-            For an ND signal (``NDCompositeCost``) each axis is processed in a separate call.
-
-        Notes
-        -----
-        The difference between this function and :meth:`_nd_xi_q_recursion()` is
-        that this function defines every **subsequent** recursion step after the first:
-        it reads from the accumulated ``xi_prev`` (shape ``(*Ks, Nq_prev)``) and
-        extends the trailing axis to ``Nq_prev * N_l**q``, realising the tensor-product
-        (Kronecker) structure over ND dimensions. After processing all L dimensions the
-        trailing axis has size :math:`(N_0 \cdots N_{L-1})^q = N_\mathrm{total}^q`.
-
-        :meth:`_nd_xi_q_recursion()` is used for the **first** dimension:
-        it reads directly from the input signal `y` and initialises :math:`\xi^{(q)}`
-        from scratch with shape ``(*Ks, N_0**q)``.
+            Signal axis processed in this step.
 
         Returns
         -------
@@ -1397,105 +1144,26 @@ class RLSAlssm:
             Extended cost parameter. The leading shape matches `y`; the trailing axis
             is the product of all accumulated sub-cost orders raised to :math:`q`.
         """
-        sub_cost = _as_composite_cost(
-            self._cost_terms._get_sub_cost_term(model_dimension)
-        )
-
-        dim_index = model_dimension if isinstance(self._cost_terms, NDCompositeCost) else 0
-
-        N = sub_cost.get_alssm_order()
+        segments, alssms, F, betas = _cost_parts(
+            self._cost_terms._get_sub_cost_term(model_dimension))
+        N = sum(al.N for al in alssms)
+        block_sizes = [al.N for al in alssms]
         Nq_prev = xi_prev.shape[-1]
+
         *Ks, Q = np.shape(y)
         xi_curr = np.zeros((*Ks, Nq_prev * N ** q), order='F')
 
-        # move subarray to first dimensions (returns a view)
+        # move the processed axis to the front (views); the backend handles the
+        # remaining leading axes as a batch.
         _xi_curr = np.moveaxis(xi_curr, model_dimension, 0)
         _xi_prev = np.moveaxis(xi_prev, model_dimension, 0)
         _sample_weights = np.moveaxis(sample_weights, model_dimension, 0)
 
-        offsets = self._alssm_offsets(sub_cost)
-
-        # iterate over CostSegments
-        for p, segment in enumerate(sub_cost.segments):
-            beta_p = sub_cost.betas[p]
-
-            # q == 2: use combined AlssmSum (old behaviour), called once per segment.
-            if q == 2:
-                combined = AlssmSum(sub_cost.alssms, sub_cost.F[:, p], force_MC=True)
-                xi_q_asterisk_l_recursion(
-                    _xi_curr, q,
-                    combined, segment,
-                    _xi_prev, _sample_weights,
-                    beta_p, self._backend, self._filter_form, None,
-                )
-                continue
-
-            # q == 0: kappa asterisk — independent of ALSSM structure and F.
-            # One pass per segment with the unmodified beta_p is sufficient.
-            if q == 0:
-                if all(sub_cost.F[m, p] == 0.0
-                       for m in range(len(sub_cost.alssms))):
-                    continue  # segment fully inactive — skip
-                dummy_alssm = AlssmSum([sub_cost.alssms[0]], [1.0], force_MC=True)
-                xi_q_asterisk_l_recursion(
-                    _xi_curr, q,
-                    dummy_alssm, segment,
-                    _xi_prev, _sample_weights,
-                    beta_p, self._backend, self._filter_form, None,
-                )
-                continue
-
-            # q == 1: per-current-ALSSM asterisk recursion.
-            #
-            # xi_prev is the fully-accumulated result of all previous dimension
-            # steps and is treated as a monolithic block of size Nq_prev.
-            # For each ALSSM m_curr in the *current* dimension we call the
-            # backend once with the full xi_prev (INq = eye(Nq_prev) is built
-            # inside xi_q_asterisk_l_recursion from xi_prev.shape[-1]).
-            # The output has shape (..., Nq_prev * N_curr_m) and is written
-            # into xi_curr using the Kronecker stride N (total current-dimension
-            # order), i.e. flat index  n_prev * N + n_curr.
-            #
-            # Two bugs were present in the original code and are fixed here:
-            #   Bug 1 - wrong stride: used Nq_prev instead of N in the
-            #           scatter-write n_prev * Nq_prev + n_curr.
-            #           These coincide only when N == Nq_prev (equal-order 2-D).
-            #   Bug 2 - spurious m_prev loop: iterated over the *current*
-            #           dimension's offsets for both m_curr and m_prev, treating
-            #           xi_prev as if it were partitioned by the current-dimension
-            #           ALSSMs. xi_prev is already a monolithic accumulated block
-            #           and must not be re-sliced here.
-            for m_curr, (curr_n0, curr_n1) in enumerate(
-                    zip(offsets[:-1], offsets[1:])):
-                f_curr = sub_cost.F[m_curr, p]
-                if f_curr == 0.0:
-                    continue
-                N_curr_m = curr_n1 - curr_n0
-                wrapped_curr = AlssmSum(
-                    [sub_cost.alssms[m_curr]], [f_curr], force_MC=True)
-
-                # Temporary output: (..., Nq_prev * N_curr_m).
-                # xi_q_asterisk_l_recursion builds INq = eye(Nq_prev) internally
-                # from xi_prev.shape[-1], so we pass the full _xi_prev.
-                xi_tmp = np.zeros(
-                    (*_xi_prev.shape[:-1], Nq_prev * N_curr_m))
-
-                xi_q_asterisk_l_recursion(
-                    xi_tmp, q,
-                    wrapped_curr, segment,
-                    _xi_prev, _sample_weights,
-                    beta_p, self._backend, self._filter_form, None, None
-                )
-
-                # Scatter xi_tmp into xi_curr with the correct Kronecker stride.
-                # xi_tmp layout: n_prev * N_curr_m + i_curr  (stride = N_curr_m).
-                # xi_curr layout: n_prev * N + n_curr        (stride = N).
-                # For each n_prev in [0, Nq_prev) and i_curr in [0, N_curr_m):
-                #   n_curr = curr_n0 + i_curr
-                xi_tmp_mat = xi_tmp.reshape(*_xi_prev.shape[:-1], Nq_prev, N_curr_m)
-                for n_prev in range(Nq_prev):
-                    for i_curr in range(N_curr_m):
-                        n_curr = curr_n0 + i_curr
-                        _xi_curr[..., n_prev * N + n_curr] += xi_tmp_mat[..., n_prev, i_curr]
+        for p, segment in enumerate(segments):
+            combined = AlssmSum(alssms, F[:, p], force_MC=True)
+            xi_q_asterisk_l_recursion(
+                _xi_curr, q, combined, segment,
+                _xi_prev, _sample_weights, betas[p],
+                self._backend, self._filter_form, block_sizes)
 
         return xi_curr

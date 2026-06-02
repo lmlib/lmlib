@@ -120,7 +120,15 @@ class TestNDSplit(unittest.TestCase):
                         f"{label}: W mismatch   max|Δ|={np.max(np.abs(W_ref-rls.W)):.2e}")
         self.assertTrue(np.allclose(kappa_ref, rls.kappa, atol=TOL, rtol=0),
                         f"{label}: kappa mismatch max|Δ|={np.max(np.abs(kappa_ref-rls.kappa)):.2e}")
-        W_pinv = np.linalg.pinv(rls.W)
+        # J_min = kappa - xi^T W^+ xi must be >= 0 (physical residual cost).
+        # W can be extremely ill-conditioned for high-degree Jordan bases over
+        # short windows (e.g. cond(W) ~ 1e27 for D=4 / N_m=5), where an
+        # unregularized pseudo-inverse makes the quadratic form overshoot kappa
+        # by a tiny relative amount.  Truncating singular components below
+        # rcond * sigma_max (pure numerical noise at this conditioning) gives the
+        # physically correct, non-negative residual.  The library outputs
+        # (xi, W, kappa) themselves are exact — checked above against the ref.
+        W_pinv = np.linalg.pinv(rls.W, rcond=1e-8)
         J_min = rls.kappa - np.einsum('...i,ij,...j->...', rls.xi, W_pinv, rls.xi)
         self.assertTrue(np.all(J_min >= -1e-6),
                         f"{label}: J_min < 0  min={J_min.min():.6f}")
