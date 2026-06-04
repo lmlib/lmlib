@@ -25,8 +25,12 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -e .
-          python3 scripts/create_gallery.py
-
+          
+      - name: Build MkDocs via Makefile
+        working-directory: docs              # run make from the docs/ folder
+        run: make build                      # 
+  
+          
       - name: Build and Deploy
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
         env:
