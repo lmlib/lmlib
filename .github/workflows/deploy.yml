@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop  # Change to 'master' if your default branch is master
+  workflow_dispatch:   #  
 
 jobs:
   deploy:
