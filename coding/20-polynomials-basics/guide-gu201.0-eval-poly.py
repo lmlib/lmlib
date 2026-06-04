@@ -1,16 +1,16 @@
-"""
+r"""
 Structure and Evaluation of Univariate Polynomials [gu201.0]
 ============================================================
 
 Demonstrates how to create and evaluate a univariate polynomial using
-:class:`~lmlib.polynomial.poly.Poly` in vector exponent notation
-:math:`\\alpha^\\mathsf{T} x^q`.
+[`Poly`][lmlib.polynomial.poly.Poly] in vector exponent notation
+$\alpha^\mathsf{T} x^q$.
 
 Four evaluation cases are shown:
 
 1. Print the polynomial's coefficient and exponent vectors.
-2. Evaluate at a scalar :math:`x = 3`.
-3. Evaluate over a 1-D array of :math:`x` values.
+2. Evaluate at a scalar $x = 3$.
+3. Evaluate over a 1-D array of $x$ values.
 4. Evaluate over a 3-D array and confirm the output shape.
 
 """

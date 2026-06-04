@@ -3,7 +3,7 @@ Text Recognition [ex801.0]
 --------------------------
 
 Demonstrates 2-D ALSSM-based text recognition using an
-:class:`NDCompositeCost` over a pixel image.
+[`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost] over a pixel image.
 
 A reference letter image is used as a template.  The 2-D ALSSM filter
 projects each local image patch onto a separable polynomial basis (one

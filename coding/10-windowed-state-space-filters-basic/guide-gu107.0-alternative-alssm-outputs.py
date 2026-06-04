@@ -3,9 +3,9 @@ Alternative ALSSM Outputs [gu107.0]
 ===================================
 
 Demonstrates different ways to reconstruct the signal estimate from the
-state vectors returned by :meth:`~lmlib.statespace.rls.RLSAlssm.minimize_x`.
+state vectors returned by [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x].
 
-A :class:`~lmlib.statespace.cost.CompositeCost` combines a polynomial and a
+A [`CompositeCost`][lmlib.statespace.cost.CompositeCost] combines a polynomial and a
 sinusoidal ALSSM.  After filtering and minimization, two output methods are
 compared:
 

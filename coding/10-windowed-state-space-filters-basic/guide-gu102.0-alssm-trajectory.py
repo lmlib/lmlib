@@ -4,13 +4,13 @@ ALSSM Trajectory [gu102.0]
 
 Evaluates an ALSSM over a time range for a given initial state vector.
 
-:meth:`~lmlib.statespace.model.ModelBase.eval_output` computes the output
-sequence :math:`s_j(x_0) = C A^j x_0` for a range of evaluation indices
-:math:`j`.  Three polynomial ALSSMs of degree 1, 2, and 3 are evaluated and
+[`eval_output`][lmlib.statespace.model.ModelBase.eval_output] computes the output
+sequence $s_j(x_0) = C A^j x_0$ for a range of evaluation indices
+$j$.  Three polynomial ALSSMs of degree 1, 2, and 3 are evaluated and
 plotted together.
 
 See also:
-:meth:`~lmlib.statespace.model.ModelBase.eval_output`
+[`eval_output`][lmlib.statespace.model.ModelBase.eval_output]
 
 """
 

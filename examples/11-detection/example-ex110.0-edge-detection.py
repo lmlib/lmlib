@@ -1,4 +1,4 @@
-"""
+r"""
 Edge Detection [ex110.0]
 ========================
 
@@ -12,7 +12,7 @@ left and a right window around each sample.  A ``Continuous`` constraint
 fit.  The resulting LCR measures how well the two-line model captures a
 step-like discontinuity.
 
-See also [Waldmann2022]_ Example 1.
+See also [\[Waldmann2022\]](../../../bibliography.md#waldmann2022) Example 1.
 """
 import numpy as np
 import matplotlib.pyplot as plt

@@ -3,9 +3,9 @@ Benchmarking State-Space vs. Transfer-Function Backend for ND Costs [gu131.1]
 ==============================================================================
 
 Measures and compares the throughput (MS/s) of the
-:class:`~lmlib.statespace.rls.RLSAlssm` filter across the ``numpy``,
+[`RLSAlssm`][lmlib.statespace.rls.RLSAlssm] filter across the ``numpy``,
 ``lfilter``, and (if available) ``jit`` backends for four configurations
-using a 2-D :class:`~lmlib.statespace.cost.NDCompositeCost`:
+using a 2-D [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost]:
 
 * Small image (100×100), low poly degree (1)
 * Small image (100×100), high poly degree (2)

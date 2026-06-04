@@ -1,14 +1,14 @@
-"""
+r"""
 ALSSM Transformation [ex126.0]
 ===============================
 
 Demonstrates how applying a similarity transform to the ALSSM matrices
 can eliminate the need for a matrix inversion in the minimization step.
 
-When the Gram matrix :math:`W` is transformed to the identity :math:`I`,
-the least-squares minimizer simplifies to :math:`\\hat{x} = W^{-1}\\xi = \\xi`,
+When the Gram matrix $W$ is transformed to the identity $I$,
+the least-squares minimizer simplifies to $\hat{x} = W^{-1}\xi = \xi$,
 removing the solve step entirely.  The transform is computed from the
-Cholesky factor of :math:`W` and applied to both the ALSSM matrices
+Cholesky factor of $W$ and applied to both the ALSSM matrices
 ``(A, C)`` and the recovered state vectors ``xs``.
 
 """

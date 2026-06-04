@@ -1,15 +1,15 @@
-"""
+r"""
 (Edu) Edge Detection [ex401.0] 
 ==============================
-This example is published in [Waldmann2022]_ as Example 1.
+This example is published in [\[Waldmann2022\]](../../../bibliography.md#waldmann2022) as Example 1.
 
 This basic example illustrates the detection of edges using a Two-Sided Line Model (TSLM), weighting the two options of
 a "Continuous" versus a "Straight" line in a LCR term.
 
 
 **Education Examples (Edu):**
-This is an illustrative example to demonstrate the use of the core package(s) :py:mod:`~lmlib.statespace.model`
-and :py:mod:`~lmlib.statespace.cost`.
+This is an illustrative example to demonstrate the use of the core package(s) [`model`][lmlib.statespace.model]
+and [`cost`][lmlib.statespace.cost].
 The implementation of this example could be significantly simplified when additionally using creator functions from
 package as demonstrated in [Example ex401.1].
 

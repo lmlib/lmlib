@@ -3,9 +3,9 @@ Local Signal Approximation and Trajectories [gu105.0]
 =====================================================
 
 Fits a high-degree polynomial locally to a rectangular test signal using
-:class:`~lmlib.statespace.rls.RLSAlssm` and compares the Pascal monomial
-basis (:class:`~lmlib.statespace.model.AlssmPoly`) against the numerically
-superior Legendre basis (:class:`~lmlib.statespace.model.AlssmPolyLegendre`).
+[`RLSAlssm`][lmlib.statespace.rls.RLSAlssm] and compares the Pascal monomial
+basis ([`AlssmPoly`][lmlib.statespace.model.AlssmPoly]) against the numerically
+superior Legendre basis ([`AlssmPolyLegendre`][lmlib.statespace.model.AlssmPolyLegendre]).
 
 For each of three reference positions, the optimal state vector is extracted
 from the full filter output and the corresponding trajectory is placed in the

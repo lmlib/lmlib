@@ -1,10 +1,10 @@
-"""
+r"""
 Time and Amplitude Scaling [ex703.0]
 ====================================
 
 Estimates both a time-scaling (dilation) factor and an amplitude-scaling
 factor between two locally polynomial signals.
-This example is published in [Wildhaber2020]_.
+This example is published in [\[Wildhaber2020\]](../../../bibliography.md#wildhaber2020).
 
 The polynomial coefficients of the reference and the candidate windows are
 related by the dilation and amplitude operators, enabling a closed-form

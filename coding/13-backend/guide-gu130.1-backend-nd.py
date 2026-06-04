@@ -3,11 +3,11 @@ Benchmarking State-Space vs. Transfer-Function Backend (ND) [gu130.1]
 ======================================================================
 
 Measures the throughput (in mega-samples per second, MS/s) of the
-:class:`~lmlib.statespace.rls.RLSAlssm` filter using an
-:class:`~lmlib.statespace.cost.NDCompositeCost` for the ``numpy``,
+[`RLSAlssm`][lmlib.statespace.rls.RLSAlssm] filter using an
+[`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost] for the ``numpy``,
 ``lfilter``, and (if available) ``jit`` backends.
 
-An :class:`NDCompositeCost` over a 2-D signal (image) is built using
+An [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost] over a 2-D signal (image) is built using
 the same separable polynomial basis as in example-ex801.0-Text-Recognition.py.
 
 Each backend processes a (K1 x K2) image and results are reported in

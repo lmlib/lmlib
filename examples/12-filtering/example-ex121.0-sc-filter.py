@@ -2,7 +2,7 @@
 Symmetric Moving Average Filters with ALSSMs [ex121.0]
 ======================================================
 
-Applies a :class:`CompositeCost` with a two-sided symmetric window as a
+Applies a [`CompositeCost`][lmlib.statespace.cost.CompositeCost] with a two-sided symmetric window as a
 symmetric moving average filter of length L=100.
 
 A degree-0 polynomial ALSSM (i.e. a constant model) is combined with a

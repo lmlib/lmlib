@@ -2,7 +2,7 @@
 Multi-Segment (Composite) Models: Windows and Trajectories [gu104.0]
 ====================================================================
 
-Defines a :class:`~lmlib.statespace.cost.CompositeCost` combining two ALSSM
+Defines a [`CompositeCost`][lmlib.statespace.cost.CompositeCost] combining two ALSSM
 models (a pulse model and a baseline model) with three segments (left, centre,
 right), and visualises the resulting windows and trajectories.
 

@@ -1,7 +1,7 @@
-"""
+r"""
 Notch Detection in ABP Signal [ex402.0]
 ====================================================
-Example published in [Waldmann2022]_ as Example 2.
+Example published in [\[Waldmann2022\]](../../../bibliography.md#waldmann2022) as Example 2.
 
 Arterial blood pressure (ABP) signals typically show a dicrotic notch in
 the descending slope, marking the end of the systolic cycle.  This example

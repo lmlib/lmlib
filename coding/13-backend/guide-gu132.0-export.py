@@ -3,13 +3,13 @@ Export of Transfer-Function Coefficients [gu132.0]
 ==================================================
 
 Shows how to extract the IIR/FIR transfer-function coefficients from an
-:class:`~lmlib.statespace.cost.CostSegment` and use them to implement the
-RLS filter directly with :func:`scipy.signal.lfilter`.
+[`CostSegment`][lmlib.statespace.cost.CostSegment] and use them to implement the
+RLS filter directly with [`scipy.signal.lfilter`][scipy.signal.lfilter].
 
 The exported coefficients ``(q_a, q_b, p)`` encode the boundary FIR
 numerators (at indices ``a`` and ``b``) and the shared IIR denominator ``p``.
 The helper function ``filter_direct_form`` reproduces the
-:meth:`~lmlib.statespace.rls.RLSAlssm.filter` output from these coefficients
+[`filter`][lmlib.statespace.rls.RLSAlssm.filter] output from these coefficients
 without using lmlib at all, making the result portable to other environments.
 
 """

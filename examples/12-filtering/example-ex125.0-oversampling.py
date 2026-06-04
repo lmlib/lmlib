@@ -5,7 +5,7 @@ Oversampling [ex125.0]
 Oversamples a signal using an ALSSM-based polynomial interpolation.
 
 A sparse input signal (every ``os_rate``-th sample is non-zero, set to the
-original ECG sample value) is filtered with a :class:`CompositeCost` whose
+original ECG sample value) is filtered with a [`CompositeCost`][lmlib.statespace.cost.CompositeCost] whose
 forward and backward segments span the oversampling interval.  The ALSSM
 fits a degree-2 polynomial locally around each original sample, and the
 dense output is read at all oversampled indices, effectively performing

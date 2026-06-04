@@ -1,7 +1,7 @@
-"""
+r"""
 Edge Detection [ex401.1]
 ====================================================
-Example published in [Waldmann2022]_ as Example 1.
+Example published in [\[Waldmann2022\]](../../../bibliography.md#waldmann2022) as Example 1.
 
 Illustrates edge detection using a Two-Sided Line Model (TSLM) that scores
 each sample by the Log-Cost Ratio (LCR) between a ``Continuous`` constraint
@@ -9,7 +9,7 @@ each sample by the Log-Cost Ratio (LCR) between a ``Continuous`` constraint
 (single global line).  Peaks in the LCR above a threshold indicate slope
 discontinuities (edges).
 
-This application-level example uses the :class:`~lmlib.statespace.applications.TSLM`
+This application-level example uses the [`TSLM`][lmlib.statespace.applications.TSLM]
 creator class for conciseness.  For the equivalent educational step-by-step
 construction see example ``ex401.0``.
 

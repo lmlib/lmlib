@@ -3,17 +3,17 @@ Calculus with Polynomials [gu203.0]
 ===================================
 
 Demonstrates arithmetic operations on univariate polynomials using the
-:mod:`lmlib.polynomial` calculus functions.
+[`lmlib.polynomial.poly`][lmlib.polynomial.poly] calculus functions.
 
 **Operations shown:**
 
-* Sum of two polynomials (:func:`~lmlib.polynomial.poly.poly_sum`)
-* Product of two polynomials (:func:`~lmlib.polynomial.poly.poly_prod`)
-* Square of a polynomial (:func:`~lmlib.polynomial.poly.poly_square`)
-* Shift of a polynomial (:func:`~lmlib.polynomial.poly.poly_shift`)
-* Dilation of a polynomial (:func:`~lmlib.polynomial.poly.poly_dilation`)
-* Indefinite integral of a polynomial (:func:`~lmlib.polynomial.poly.poly_int`)
-* Derivative of a polynomial (:func:`~lmlib.polynomial.poly.poly_diff`)
+* Sum of two polynomials ([`poly_sum`][lmlib.polynomial.poly.poly_sum])
+* Product of two polynomials ([`poly_prod`][lmlib.polynomial.poly.poly_prod])
+* Square of a polynomial ([`poly_square`][lmlib.polynomial.poly.poly_square])
+* Shift of a polynomial ([`poly_shift`][lmlib.polynomial.poly.poly_shift])
+* Dilation of a polynomial ([`poly_dilation`][lmlib.polynomial.poly.poly_dilation])
+* Indefinite integral of a polynomial ([`poly_int`][lmlib.polynomial.poly.poly_int])
+* Derivative of a polynomial ([`poly_diff`][lmlib.polynomial.poly.poly_diff])
 
 """
 import lmlib as lm

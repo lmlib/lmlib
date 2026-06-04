@@ -3,7 +3,7 @@ Benchmarking State-Space vs. Transfer-Function Backend [gu131.0]
 ================================================================
 
 Measures and compares the throughput (MS/s) of the
-:class:`~lmlib.statespace.rls.RLSAlssm` filter across the ``numpy``,
+[`RLSAlssm`][lmlib.statespace.rls.RLSAlssm] filter across the ``numpy``,
 ``lfilter``, and (if available) ``jit`` backends for four configurations:
 
 * Single-channel, non-steady-state

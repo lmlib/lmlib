@@ -1,4 +1,4 @@
-"""
+r"""
 Matched Filter in Low-Dimensional ALSSM Feature Space [ex502.0]
 ===============================================================
 
@@ -7,10 +7,10 @@ basis) to significantly increase processing speed compared to a direct
 sample-domain matched filter.
 
 A reference template is extracted from a 9-channel ECG signal and projected
-onto the Legendre polynomial basis via :class:`AlssmPolyLegendre`.  The
+onto the Legendre polynomial basis via [`AlssmPolyLegendre`][lmlib.statespace.model.AlssmPolyLegendre].  The
 matched filter response is computed as an inner product of the template
 state vector with each signal window's state vector, which runs in
-:math:`O(N_\\text{states})` per sample instead of :math:`O(N_\\text{template})`.
+$O(N_\text{states})$ per sample instead of $O(N_\text{template})$.
 
 Author(s): Christof Baeriswyl
 """

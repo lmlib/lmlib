@@ -1,7 +1,7 @@
-"""
+r"""
 ECG P, T Wave Onset and Peak Detection [ex403.0]
 ================================================
-Example published in [Waldmann2022]_ as Example 3.
+Example published in [\[Waldmann2022\]](../../../bibliography.md#waldmann2022) as Example 3.
 
 A common task in cardiology is to accurately measure the onsets and peaks
 of P and T waves in electrocardiography (ECG) signals.  This example

@@ -2,18 +2,18 @@
 Composed ALSSM Windows (Weighting Window) [gu106.0]
 ===================================================
 
-Each cost segment in :mod:`lmlib.statespace.cost` is weighted by its own
+Each cost segment in [`lmlib.statespace.cost`][lmlib.statespace.cost] is weighted by its own
 exponential window function.  This guide script demonstrates the basic
 exponentially decaying window of both finite and infinite support, and shows
 how a more complex symmetric window is built by composing four such segments.
 
 The composed window consists of two exponentially decaying tails (left and
 right) and a near-rectangular centre region, all joined into a single
-:class:`~lmlib.statespace.cost.CompositeCost`.
+[`CompositeCost`][lmlib.statespace.cost.CompositeCost].
 
 See also:
-:meth:`~lmlib.statespace.segment.Segment.window`,
-:class:`~lmlib.statespace.window.Window`
+[`window`][lmlib.statespace.segment.Segment.window],
+[`Window`][lmlib.statespace.window.Window]
 
 """
 

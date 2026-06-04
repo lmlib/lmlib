@@ -9,13 +9,13 @@ the resulting signal trajectories for a set of state vectors.
 Two plot groups are shown:
 
 * **Upper plots** — the window and trajectories in the relative index
-  domain (centred at :math:`j=0`).
+  domain (centred at $j=0$).
 * **Lower plots** — the same trajectories placed at absolute signal
   positions ``K_refs`` in a length-``K`` output vector.
 
 See also:
-:class:`~lmlib.statespace.cost.CostSegment`,
-:class:`~lmlib.statespace.segment.Segment`
+[`CostSegment`][lmlib.statespace.cost.CostSegment],
+[`Segment`][lmlib.statespace.segment.Segment]
 """
 import matplotlib.pyplot as plt
 import lmlib as lm

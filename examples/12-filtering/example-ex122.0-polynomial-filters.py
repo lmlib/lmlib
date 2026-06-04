@@ -2,7 +2,7 @@
 Symmetric and Non-Symmetric Polynomial Filters with ALSSMs [ex122.0]
 ====================================================================
 
-Applies :class:`CompositeCost` instances with polynomial ALSSMs of degrees
+Applies [`CompositeCost`][lmlib.statespace.cost.CompositeCost] instances with polynomial ALSSMs of degrees
 0 through 3 to a rectangular test signal.
 
 Two filter configurations are shown for each polynomial degree:

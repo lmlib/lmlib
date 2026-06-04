@@ -5,11 +5,11 @@ Superposition (Stacking) of ALSSMs [gu101.1]
 Generates two discrete-time autonomous linear state space models and stacks
 them into a single combined model that produces a two-channel stacked output.
 
-:meth:`~lmlib.statespace.model.ModelBase.dump_tree` returns the internal
+[`dump_tree`][lmlib.statespace.model.ModelBase.dump_tree] returns the internal
 structure of the stacked ALSSM and helps with debugging.
 
-Note: replacing :class:`~lmlib.statespace.model.AlssmStacked` with
-:class:`~lmlib.statespace.model.AlssmSum` generates a summed (scalar)
+Note: replacing [`AlssmStacked`][lmlib.statespace.model.AlssmStacked] with
+[`AlssmSum`][lmlib.statespace.model.AlssmSum] generates a summed (scalar)
 output instead of a stacked (multi-channel) output.
 
 """

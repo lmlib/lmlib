@@ -1,9 +1,9 @@
-"""
+r"""
 Audio Signal Shift Estimation [ex702.0]
 =======================================
-Example 2 as published in [Wildhaber2020]_.
+Example 2 as published in [\[Wildhaber2020\]](../../../bibliography.md#wildhaber2020).
 Equation references in the code (e.g. ``# Eq. 6.52``) refer to equations
-in [Wildhaber2019]_.
+in [\[Wildhaber2019\]](../../../bibliography.md#wildhaber2019).
 
 **Top plot:** Two-channel acoustic signal from the left (L) and right (R)
 ear with an unknown interaural time delay (ITD) to be estimated.

@@ -2,14 +2,14 @@
 Symmetric and Non-Symmetric Polynomial Filters with Meixner Basis [ex122.1]
 ===========================================================================
 
-Applies :class:`CompositeCost` instances with :class:`AlssmPolyMeixner` of
+Applies [`CompositeCost`][lmlib.statespace.cost.CompositeCost] instances with [`AlssmPolyMeixner`][lmlib.statespace.model.AlssmPolyMeixner] of
 degrees 0 through 7 to a rectangular test signal.
 
 The Meixner basis is orthogonal under the exponential (geometric) window
 weight, giving a well-conditioned Gram matrix for semi-infinite windows.
 This makes it the preferred polynomial basis for recursive least-squares
 filtering with exponential windows, especially at high polynomial degrees
-where the monomial (Pascal) basis of :class:`AlssmPoly` becomes numerically
+where the monomial (Pascal) basis of [`AlssmPoly`][lmlib.statespace.model.AlssmPoly] becomes numerically
 ill-conditioned.
 
 Two filter configurations are shown for each degree:

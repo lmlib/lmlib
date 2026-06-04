@@ -1,9 +1,9 @@
-"""
+r"""
 Overview of Two-Sided Line Model (TSLM) Applications [ex404.0]
 ===============================================================
 
 Compares multiple Two-Sided Line Model (TSLM) constraint types on a
-piecewise-linear test signal; cf. [Waldmann2022]_.
+piecewise-linear test signal; cf. [\[Waldmann2022\]](../../../bibliography.md#waldmann2022).
 
 For each pair of hypothesis constraints (H0, H1), the Log-Cost Ratio
 (LCR) is computed and plotted.  The constraint pairs tested are:

@@ -9,7 +9,7 @@ decaying amplitude) with additive white Gaussian noise and a polynomial
 baseline.
 
 The algorithm fits a spike model and a baseline model simultaneously using
-a :class:`CompositeCost`, computes the Log-Cost Ratio (LCR) for each sample
+a [`CompositeCost`][lmlib.statespace.cost.CompositeCost], computes the Log-Cost Ratio (LCR) for each sample
 and channel, and identifies spike locations at LCR peaks.
 
 """

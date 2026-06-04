@@ -3,11 +3,11 @@ Benchmarking State-Space vs. Transfer-Function Backend [gu130.0]
 ================================================================
 
 Measures the throughput (in mega-samples per second, MS/s) of the
-:class:`~lmlib.statespace.rls.RLSAlssm` filter for the ``numpy`` and
+[`RLSAlssm`][lmlib.statespace.rls.RLSAlssm] filter for the ``numpy`` and
 ``lfilter`` backends on a single-channel signal.
 
 The ``lfilter`` backend converts the state-space recursion to a cascade of
-IIR/FIR transfer functions and uses :func:`scipy.signal.lfilter`, which
+IIR/FIR transfer functions and uses [`scipy.signal.lfilter`][scipy.signal.lfilter], which
 can be significantly faster for long signals when the model order is low.
 
 """

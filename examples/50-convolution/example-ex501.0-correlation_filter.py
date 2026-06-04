@@ -6,7 +6,7 @@ Performs correlation (or convolution) of a multi-channel signal (blue) with
 a given reference template (red) in a low-dimensional ALSSM feature space.
 
 Each signal window is projected onto the Legendre polynomial basis via an
-:class:`AlssmPolyLegendre` and the resulting compact state-vector coefficients
+[`AlssmPolyLegendre`][lmlib.statespace.model.AlssmPolyLegendre] and the resulting compact state-vector coefficients
 are used as features.  Template matching is then carried out as a simple inner
 product in this low-dimensional space, which is much faster than direct
 correlation in the original high-dimensional sample space.
