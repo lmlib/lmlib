@@ -15,6 +15,181 @@ from scipy.signal import lfilter, convolve, zpk2sos, sosfilt, ss2tf
 from lmlib.utils.profiling import profile
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Cascade-parameter cache (module-level / static)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# ``_compute_cascade_params`` turns a ``(A, C, a, b, delta, gamma, direction)``
+# tuple into the precomputed ``inv``/``matrix_power``/``np.dot`` scalars that the
+# cascade IIR filters consume.  Those inputs depend only on the ALSSM model and
+# the segment window — never on the signal ``y`` or the sample weights — so the
+# result is identical:
+#
+#   * across the inner per-signal-slice loop of one ``filter()`` call,
+#   * across repeated ``filter()`` calls on the same RLSAlssm object, and
+#   * across *different* RLSAlssm objects that happen to share the same model
+#     and window (same A, C, a, b, delta, gamma, direction).
+#
+# Recomputing it every time (the previous behaviour) wasted ``inv`` /
+# ``matrix_power`` calls.  The old design cached the dict per RLSAlssm instance
+# (``self._cascade_params[dim][seg][alssm]``); because the cache key is fully
+# determined by the model+window — not by which object asked — a *single static
+# cache shared by the whole lfilter cascade backend* is both simpler and strictly
+# more sharing: two RLSAlssm objects with identical models now compute the params
+# once between them.  The cache is therefore deliberately NOT an instance
+# attribute; it lives here, next to the function that fills it.
+#
+# The cached dicts are treated as read-only by every consumer
+# (``lfilter_forward_cascade_xi`` / ``lfilter_backward_cascade_xi`` only read the
+# entries), so handing out the shared object is safe.
+#
+# Lifetime: unbounded for the process lifetime.  Entries are tiny (a handful of
+# small arrays + scalars) and the number of distinct (model, window) keys in any
+# real program is small and bounded, so this does not grow without limit in
+# practice.  ``clear_lfilter_caches()`` is provided for tests and for the
+# rare caller that wants to reclaim the memory explicitly.
+
+_CASCADE_PARAMS_CACHE = {}
+
+# Companion cache for the asterisk-l recursion (Eq. 47).  Its result is computed
+# by ``_compute_cascade_params_asterisk`` and depends on the same model+window
+# inputs *plus* ``Nprev`` (the trailing state dimension of ``xi_prev``), so it
+# needs its own key shape and is kept in a separate dict.  Same rationale,
+# lifetime and read-only-sharing guarantees as ``_CASCADE_PARAMS_CACHE`` above.
+_CASCADE_PARAMS_ASTERISK_CACHE = {}
+
+# Companion cache for the parallel xi^(1) realization.  ``build_parallel_numdenom``
+# turns the same model+window inputs (plus ``block_sizes``) into per-ALSSM
+# transfer-function (SOS) coefficients via QZ + pole-zero cancellation, which is
+# comparatively expensive.  Unlike the cascade params it is already built only
+# once per RLSAlssm object (in ``RLSAlssm._build_parallel_plan`` at construction
+# time, then reused across every ``filter()`` call), so this cache does NOT
+# remove a per-slice/per-filter hot loop — its sole benefit is sharing the plan
+# across *different* RLSAlssm objects that have the same model + window +
+# block layout (e.g. parameter sweeps that re-instantiate the same cost).  Same
+# lifetime and read-only-sharing guarantees as the caches above (the returned
+# plan is only read by ``lfilter_parallel_xi1_split`` / the parallel xi filters).
+_BUILD_PARALLEL_NUMDENOM_CACHE = {}
+
+# Companion cache for the *parallel asterisk-l* realization.  ``_build_parallel_ast_sos``
+# is the asterisk analogue of ``build_parallel_numdenom`` (same QZ + pole-zero
+# cancellation per output row) but for a single ALSSM block, so its key omits
+# ``block_sizes``.  Unlike the non-asterisk parallel plan, this one is built
+# inside ``lfilter_parallel_xi_asterisk_split`` on the asterisk recursion path
+# and is NOT pre-built at construction time — without this cache it is recomputed
+# on every ``filter()`` call (and per object).  Caching therefore removes both a
+# per-filter redundancy and the cross-object recompute.  Same lifetime and
+# read-only-sharing guarantees as the caches above.
+_BUILD_PARALLEL_AST_SOS_CACHE = {}
+
+
+def _array_key(arr):
+    """
+    Build a hashable, content-based key fragment for an ndarray.
+
+    Combines shape, dtype and raw bytes so that two arrays with identical
+    contents (regardless of identity) map to the same key.  ``np.ascontiguousarray``
+    guarantees a well-defined byte layout for non-contiguous inputs (e.g. ``.T``
+    views), and the dtype is included so e.g. an int and float array with the
+    same nominal values do not collide.
+    """
+    a = np.ascontiguousarray(arr)
+    return (a.shape, a.dtype.str, a.tobytes())
+
+
+def _cascade_params_key(A, C, a, b, delta, gamma, direction):
+    """
+    Hashable cache key fully identifying a ``_compute_cascade_params`` result.
+
+    The result depends only on these seven inputs; ``a``/``b`` may be ``±inf``
+    (valid, hashable float keys) and the array contents are folded in via
+    [`_array_key`][lmlib.statespace.backends.rec_lfilter._array_key].
+    """
+    return (_array_key(A), _array_key(C),
+            a, b, delta, gamma, direction)
+
+
+def _cascade_params_asterisk_key(A, C, a, b, delta, gamma, Nprev, direction):
+    """
+    Hashable cache key fully identifying a ``_compute_cascade_params_asterisk``
+    result.
+
+    Identical to [`_cascade_params_key`][lmlib.statespace.backends.rec_lfilter._cascade_params_key]
+    but with ``Nprev`` folded in, since the asterisk result (and its stored
+    ``Nprev`` field, used by the consumers to reshape) depends on it.
+    """
+    return (_array_key(A), _array_key(C),
+            a, b, delta, gamma, Nprev, direction)
+
+
+def _build_parallel_numdenom_key(A, C, a, b, delta, gamma, direction, block_sizes):
+    """
+    Hashable cache key fully identifying a ``build_parallel_numdenom`` result.
+
+    Same model+window fields as
+    [`_cascade_params_key`][lmlib.statespace.backends.rec_lfilter._cascade_params_key]
+    plus ``direction`` and ``block_sizes``: the plan's per-block decomposition
+    depends on how the combined state vector is partitioned, so the block layout
+    is part of the identity.  ``block_sizes`` may be ``None`` (single block) —
+    normalised to a tuple so both forms hash consistently.
+    """
+    bs = None if not block_sizes else tuple(int(x) for x in block_sizes)
+    return (_array_key(A), _array_key(C),
+            a, b, delta, gamma, direction, bs)
+
+
+def _build_parallel_ast_sos_key(A, C, a, b, delta, gamma, direction):
+    """
+    Hashable cache key fully identifying a ``_build_parallel_ast_sos`` result.
+
+    Operates on a single ALSSM block, so — unlike
+    [`_build_parallel_numdenom_key`][lmlib.statespace.backends.rec_lfilter._build_parallel_numdenom_key]
+    — there is no ``block_sizes`` field.
+    """
+    return (_array_key(A), _array_key(C),
+            a, b, delta, gamma, direction)
+
+
+def clear_lfilter_caches():
+    """
+    Empty all static lfilter-backend coefficient caches.
+
+    Drops every entry from the cascade $\\xi^{(q)}$ cache
+    ([`_compute_cascade_params`][lmlib.statespace.backends.rec_lfilter._compute_cascade_params]),
+    the asterisk-l cascade cache
+    ([`_compute_cascade_params_asterisk`][lmlib.statespace.backends.rec_lfilter._compute_cascade_params_asterisk]),
+    the parallel $\\xi^{(1)}$ plan cache
+    ([`build_parallel_numdenom`][lmlib.statespace.backends.rec_lfilter.build_parallel_numdenom]),
+    and the parallel asterisk-l plan cache
+    ([`_build_parallel_ast_sos`][lmlib.statespace.backends.rec_lfilter._build_parallel_ast_sos]).
+    All persist for the process lifetime and are shared by every lfilter
+    consumer.  This helper is mainly useful in tests (to measure cold-vs-warm
+    behaviour) and to reclaim memory explicitly.
+    """
+    _CASCADE_PARAMS_CACHE.clear()
+    _CASCADE_PARAMS_ASTERISK_CACHE.clear()
+    _BUILD_PARALLEL_NUMDENOM_CACHE.clear()
+    _BUILD_PARALLEL_AST_SOS_CACHE.clear()
+
+
+def lfilter_cache_info():
+    """
+    Return entry-count diagnostics for the static lfilter-backend caches.
+
+    Returns
+    -------
+    dict
+        ``{'size': <entries in the xi^(q) cascade cache>,
+        'asterisk_size': <entries in the asterisk-l cascade cache>,
+        'parallel_size': <entries in the parallel xi^(1) plan cache>,
+        'parallel_asterisk_size': <entries in the parallel asterisk-l plan cache>}``.
+    """
+    return {'size': len(_CASCADE_PARAMS_CACHE),
+            'asterisk_size': len(_CASCADE_PARAMS_ASTERISK_CACHE),
+            'parallel_size': len(_BUILD_PARALLEL_NUMDENOM_CACHE),
+            'parallel_asterisk_size': len(_BUILD_PARALLEL_AST_SOS_CACHE)}
+
+
 def _block_ranges(block_sizes, N):
     """
     Yield ``(start, stop)`` index ranges for each ALSSM block in a combined,
@@ -32,13 +207,23 @@ def _block_ranges(block_sizes, N):
 
 def _compute_cascade_params(A, C, a, b, delta, gamma, direction):
     r"""
-    Precompute all state-space and gamma scalars needed by the cascade IIR filters.
+    Precompute (and cache) the state-space/gamma scalars for the cascade IIR filters.
 
-    Called once per (ALSSM, segment) pair at RLSAlssm construction time and
-    stored in ``_cascade_params[dim][p][m]``.  The returned dict is then passed
-    directly to ``lfilter_forward_cascade_xi`` / ``lfilter_backward_cascade_xi``,
-    avoiding repeated ``inv``, ``matrix_power`` and ``np.dot`` calls inside the
-    filter loop.
+    The returned dict is passed directly to ``lfilter_forward_cascade_xi`` /
+    ``lfilter_backward_cascade_xi``, avoiding repeated ``inv``, ``matrix_power``
+    and ``np.dot`` calls inside the filter loop.
+
+    The result is fully determined by ``(A, C, a, b, delta, gamma, direction)``
+    — it does not depend on the signal or the sample weights — so it is memoised
+    in a process-wide static cache
+    (see [`clear_lfilter_caches`][lmlib.statespace.backends.rec_lfilter.clear_lfilter_caches]).
+    Two calls with the same model and window (whether from the same RLSAlssm
+    object, repeated ``filter()`` calls, or *different* RLSAlssm objects) return
+    the same cached dict.  Consumers only read the dict, so sharing it is safe.
+
+    The actual computation lives in
+    [`_compute_cascade_params_uncached`][lmlib.statespace.backends.rec_lfilter._compute_cascade_params_uncached];
+    this wrapper handles the cache lookup/insert.
 
     Parameters
     ----------
@@ -53,7 +238,23 @@ def _compute_cascade_params(A, C, a, b, delta, gamma, direction):
     -------
     dict with keys:
         fw: gamma_inv, gamma_a, gamma_b, gAinvT, Aac, Abc, N
-        bw: gamma_a, gamma_b, gAT, Aac, Abc, N
+        bw: gamma, gamma_a, gamma_b, gAT, Aac, Abc, N
+    """
+    key = _cascade_params_key(A, C, a, b, delta, gamma, direction)
+    params = _CASCADE_PARAMS_CACHE.get(key)
+    if params is None:
+        params = _compute_cascade_params_uncached(A, C, a, b, delta, gamma, direction)
+        _CASCADE_PARAMS_CACHE[key] = params
+    return params
+
+
+def _compute_cascade_params_uncached(A, C, a, b, delta, gamma, direction):
+    r"""
+    Compute the state-space and gamma scalars for the cascade IIR filters.
+
+    Pure function with no caching; see
+    [`_compute_cascade_params`][lmlib.statespace.backends.rec_lfilter._compute_cascade_params]
+    for the cached entry point and parameter/return documentation.
     """
     N = A.shape[1]
     if direction == 'fw':
@@ -490,10 +691,9 @@ def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, bet
 
 def _compute_cascade_params_asterisk(A, C, a, b, delta, gamma, Nprev, direction):
     r"""
-    Precompute state-space scalars for the asterisk-l cascade IIR filters.
+    Precompute (and cache) state-space scalars for the asterisk-l cascade IIR filters.
 
-    Called once per (ALSSM, segment, Nprev) triple before the asterisk
-    recursion loop.  The returned dict is passed directly to
+    The returned dict is passed directly to
     [`lfilter_xi_asterisk_l_forward_cascade_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_forward_cascade_recursion] or
     [`lfilter_xi_asterisk_l_backward_cascade_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_backward_cascade_recursion].
 
@@ -513,6 +713,15 @@ def _compute_cascade_params_asterisk(A, C, a, b, delta, gamma, Nprev, direction)
 
     works for both 1-D ``C`` (shape ``(N,)``) and 2-D ``C`` (shape ``(1, N)``
     as produced by [`AlssmSum`][lmlib.statespace.model.AlssmSum]).
+
+    The result is fully determined by ``(A, C, a, b, delta, gamma, Nprev,
+    direction)`` — it does not depend on the signal or the sample weights — so it
+    is memoised in a process-wide static cache (see
+    [`clear_lfilter_caches`][lmlib.statespace.backends.rec_lfilter.clear_lfilter_caches]),
+    shared across the per-slice asterisk loop, repeated ``filter()`` calls, and
+    different RLSAlssm objects with the same model+window+``Nprev``.  Consumers
+    only read the dict, so sharing it is safe.  The actual computation lives in
+    [`_compute_cascade_params_asterisk_uncached`][lmlib.statespace.backends.rec_lfilter._compute_cascade_params_asterisk_uncached].
 
     Parameters
     ----------
@@ -540,6 +749,23 @@ def _compute_cascade_params_asterisk(A, C, a, b, delta, gamma, Nprev, direction)
         Keys for ``'bw'``:
             ``gamma``, ``gamma_a``, ``gamma_b``, ``gAT``,
             ``Aac``, ``Abc``, ``N``, ``Nprev``.
+    """
+    key = _cascade_params_asterisk_key(A, C, a, b, delta, gamma, Nprev, direction)
+    params = _CASCADE_PARAMS_ASTERISK_CACHE.get(key)
+    if params is None:
+        params = _compute_cascade_params_asterisk_uncached(
+            A, C, a, b, delta, gamma, Nprev, direction)
+        _CASCADE_PARAMS_ASTERISK_CACHE[key] = params
+    return params
+
+
+def _compute_cascade_params_asterisk_uncached(A, C, a, b, delta, gamma, Nprev, direction):
+    r"""
+    Compute state-space scalars for the asterisk-l cascade IIR filters.
+
+    Pure function with no caching; see
+    [`_compute_cascade_params_asterisk`][lmlib.statespace.backends.rec_lfilter._compute_cascade_params_asterisk]
+    for the cached entry point and parameter/return documentation.
     """
     N = A.shape[0]
     A_inv = inv(A)
@@ -851,18 +1077,24 @@ def _apply_fir_batched(sos, extra_delay, y_sig_2d, Lout):
 
 def _build_parallel_ast_sos(A, C, a, b, delta, gamma, direction):
     r"""
-    Build the per-row SOS structure for the parallel asterisk-l recursion.
+    Build (and cache) the per-row SOS structure for the parallel asterisk-l recursion.
 
     Produces the same 11-element list as ``_numdenom[dim][p][m]`` (see
     [`_build_numdenom`][lmlib.statespace.rls.RLSAlssm._build_numdenom]), but for a
     single ALSSM block and without the ``AlssmSum`` wrapper.
 
-    Called once inside [`lfilter_xi_asterisk_l_forward_parallel_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_forward_parallel_recursion]
-    and [`lfilter_xi_asterisk_l_backward_parallel_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_backward_parallel_recursion] the first
-    time those functions are invoked for a given ``(A, C, a, b, gamma,
-    direction)`` combination.  The result is identical to what
-    ``_build_numdenom`` would compute if the asterisk ALSSM were an ordinary
-    model dimension.
+    The result is fully determined by ``(A, C, a, b, delta, gamma, direction)``
+    — it does not depend on the signal or the sample weights — and the
+    decomposition (QZ + pole-zero cancellation + per-row SOS) is comparatively
+    expensive.  It is therefore memoised in a process-wide static cache (see
+    [`clear_lfilter_caches`][lmlib.statespace.backends.rec_lfilter.clear_lfilter_caches]).
+    Unlike the non-asterisk parallel plan, this structure is built on the
+    asterisk recursion path (inside
+    [`lfilter_parallel_xi_asterisk_split`][lmlib.statespace.backends.rec_lfilter.lfilter_parallel_xi_asterisk_split])
+    rather than pre-built at construction, so the cache removes a per-filter
+    recompute in addition to sharing across objects.  Consumers only read the
+    returned list, so sharing it is safe.  The actual construction lives in
+    [`_build_parallel_ast_sos_uncached`][lmlib.statespace.backends.rec_lfilter._build_parallel_ast_sos_uncached].
 
     Parameters
     ----------
@@ -885,6 +1117,22 @@ def _build_parallel_ast_sos(A, C, a, b, delta, gamma, direction):
         ``[sos_iir_shared, sos_b_list, sos_a_list, db_list, da_list,``
         ``sos_iir_b_list, sos_iir_a_list, n_poles_b_list, n_poles_a_list,``
         ``advance_b_list, advance_a_list]``
+    """
+    key = _build_parallel_ast_sos_key(A, C, a, b, delta, gamma, direction)
+    nd = _BUILD_PARALLEL_AST_SOS_CACHE.get(key)
+    if nd is None:
+        nd = _build_parallel_ast_sos_uncached(A, C, a, b, delta, gamma, direction)
+        _BUILD_PARALLEL_AST_SOS_CACHE[key] = nd
+    return nd
+
+
+def _build_parallel_ast_sos_uncached(A, C, a, b, delta, gamma, direction):
+    r"""
+    Build the per-row SOS structure for the parallel asterisk-l recursion.
+
+    Pure function with no caching; see
+    [`_build_parallel_ast_sos`][lmlib.statespace.backends.rec_lfilter._build_parallel_ast_sos]
+    for the cached entry point and full parameter/return documentation.
     """
     from lmlib.statespace.backends.statespace_tools import ss2zpk_qz
     N_m = A.shape[0]
@@ -1209,14 +1457,29 @@ def lfilter_parallel_xi_asterisk_split(xi_curr, A, C, a, b, delta, gamma, direct
 
 def build_parallel_numdenom(A, C, a, b, delta, gamma, direction, block_sizes):
     r"""
-    Build the per-ALSSM transfer-function (SOS) coefficients consumed by the
-    parallel $\xi^{(1)}$ filter.
+    Build (and cache) the per-ALSSM transfer-function (SOS) coefficients consumed
+    by the parallel $\xi^{(1)}$ filter.
 
     The combined ``A`` is block-diagonal and ``C`` is block-partitioned
     (``C[:, n0:n1] == f_m C_m`` for ALSSM ``m``).  Each block is decomposed
     independently — the parallel form converts state-space to transfer function
     per output row, which is ill-conditioned on the full block-diagonal matrix
     (clustered poles) but well-behaved per block.
+
+    The result is fully determined by ``(A, C, a, b, delta, gamma, direction,
+    block_sizes)`` — it does not depend on the signal or the sample weights — and
+    the decomposition (QZ + pole-zero cancellation + per-row SOS) is comparatively
+    expensive, so it is memoised in a process-wide static cache (see
+    [`clear_lfilter_caches`][lmlib.statespace.backends.rec_lfilter.clear_lfilter_caches]).
+
+    Unlike the cascade parameters, the parallel plan is already built only once
+    per RLSAlssm object (in ``RLSAlssm._build_parallel_plan`` at construction
+    time) and reused across ``filter()`` calls, so this cache does not eliminate a
+    per-slice/per-filter hot loop.  Its benefit is sharing the plan across
+    *different* RLSAlssm objects with the same model + window + block layout.
+    Consumers only read the returned plan, so sharing it is safe.  The actual
+    construction lives in
+    [`_build_parallel_numdenom_uncached`][lmlib.statespace.backends.rec_lfilter._build_parallel_numdenom_uncached].
 
     Returns
     -------
@@ -1230,6 +1493,24 @@ def build_parallel_numdenom(A, C, a, b, delta, gamma, direction, block_sizes):
     Relocated here (was ``RLSAlssm._build_numdenom``) so the parallel realization
     lives entirely in the backend.  The ``numdenom_m`` layout is documented in
     [`lfilter_forward_parallel_xi`][lmlib.statespace.backends.rec_lfilter.lfilter_forward_parallel_xi].
+    """
+    key = _build_parallel_numdenom_key(A, C, a, b, delta, gamma, direction, block_sizes)
+    plan = _BUILD_PARALLEL_NUMDENOM_CACHE.get(key)
+    if plan is None:
+        plan = _build_parallel_numdenom_uncached(
+            A, C, a, b, delta, gamma, direction, block_sizes)
+        _BUILD_PARALLEL_NUMDENOM_CACHE[key] = plan
+    return plan
+
+
+def _build_parallel_numdenom_uncached(A, C, a, b, delta, gamma, direction, block_sizes):
+    r"""
+    Build the per-ALSSM transfer-function (SOS) coefficients for the parallel
+    $\xi^{(1)}$ filter.
+
+    Pure function with no caching; see
+    [`build_parallel_numdenom`][lmlib.statespace.backends.rec_lfilter.build_parallel_numdenom]
+    for the cached entry point and full parameter/return documentation.
     """
     from lmlib.statespace.backends.statespace_tools import ss2zpk_qz
 
