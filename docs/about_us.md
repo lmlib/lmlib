@@ -12,6 +12,7 @@ Support lmlib by joining the [community](https://www.lmlib.ch/).
 
 - Reto Wildhaber, FHNW Muttenz, / ETH Zürich
 - Frédéric Waldmann, FHNW Muttenz,
+- Christof Baeriswyl, ETH Zürich,
 - Luca Fleischmann, BFH Biel
 
 ## Research
@@ -19,6 +20,8 @@ Support lmlib by joining the [community](https://www.lmlib.ch/).
 - Reto Wildhaber, FHNW Muttenz / ETH Zürich
 - Nour Zalmai, ETH Zürich
 - Frédéric Waldmann, FHNW Muttenz
+- Christof Baeriswyl, ETH Zürich
+
 
 The research was further directly influenced or supported by
 

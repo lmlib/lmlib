@@ -1,6 +1,9 @@
 PYTHON = python3
 ROOT   = ..
-GALLERY_STAMP = examples/_generated_galleries/.stamp
+# NOTE: make runs from this Makefile's directory (docs/), so paths handled by the
+# shell directly (the stamp, clean targets) are relative to docs/. Commands that
+# operate from the repo root are wrapped in `cd $(ROOT) && ...` explicitly.
+GALLERY_STAMP = _generated/.stamp
 
 .PHONY: help install gallery gallery-force serve build clean clean-gallery clean-site
 
@@ -20,13 +23,13 @@ install:
 	pip install -r $(ROOT)/requirements.txt
 
 $(GALLERY_STAMP):
-	cd $(ROOT) && $(PYTHON) scripts/create_gallery.py
+	cd $(ROOT) && $(PYTHON) docs/scripts_docs/create_gallery.py
 	touch $(GALLERY_STAMP)
 
 gallery: $(GALLERY_STAMP)
 
 gallery-force:
-	cd $(ROOT) && $(PYTHON) scripts/create_gallery.py
+	cd $(ROOT) && $(PYTHON) docs/scripts_docs/create_gallery.py
 	touch $(GALLERY_STAMP)
 
 serve: $(GALLERY_STAMP)
@@ -38,9 +41,9 @@ build: $(GALLERY_STAMP)
 clean: clean-gallery clean-site
 
 clean-gallery:
-	rm -rf examples/_generated_galleries
-	rm -rf coding/_generated_galleries
-	rm -rf catalog/_generated_galleries
+	rm -rf _generated/examples/
+	rm -rf _generated/coding/
+	rm -rf _generated/catalog/
 	rm -f $(GALLERY_STAMP)
 
 clean-site:

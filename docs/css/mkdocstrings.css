@@ -1,0 +1,21 @@
+/* docs/css/mkdocstrings.css */
+div.doc-contents:not(.first) {
+  padding-left: 25px;
+  border-left: .05rem solid var(--md-typeset-table-color);
+}
+/* Visually remove the redundant method/function name heading (the signature
+   block right below already shows the name), but keep it in the layout as a
+   zero-height anchor. Using `display: none` here breaks in-page links because
+   browsers cannot scroll to a non-rendered element; the rules below collapse
+   the heading to zero height while leaving it as a valid scroll target. */
+.doc-function .doc-heading {
+  visibility: hidden;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+/* When targeted by a summary/TOC link, land just below the sticky header. */
+.doc-function .doc-heading {
+  scroll-margin-top: 3.4rem;
+}

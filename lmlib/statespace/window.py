@@ -13,7 +13,7 @@ class Window:
     """
     @staticmethod
     def eval(cost, segment_indices=None, thd=1e-6):
-        """
+        r"""
         Compute the window range and weights for each segment of a cost.
 
         Parameters
@@ -25,14 +25,14 @@ class Window:
             If None (default), all segments are used.
         thd : float, optional
             Threshold below which exponential window weights are truncated
-            (passed to :meth:`Segment._ab_range`). Default: 1e-6.
+            (passed to `_ab_range`). Default: 1e-6.
 
         Returns
         -------
         out : ndarray of dtype=object, shape=(P,)
             Array of ``(ab_range, weights)`` tuples, one per segment.
             ``ab_range`` is the integer index range; ``weights`` is the
-            corresponding array of :math:`\\gamma^{i-\\delta}` values.
+            corresponding array of $\gamma^{i-\delta}$ values.
         """
 
         if segment_indices is None:

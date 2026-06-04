@@ -33,7 +33,7 @@ class TestSanitizeZeros(unittest.TestCase):
         self.assertEqual(out.dtype, np.float64)
 
     def test_near_real_snapped_to_real(self):
-        """Zero with |imag|/|real| < 1e-6 must become exactly real."""
+        r"""Zero with $\mathrm{Im}$/$\mathrm{Re}$ < 1e-6 must become exactly real."""
         z = np.array([0.9471 + 1.13e-9j])
         out = self.sanitize(z)
         self.assertEqual(out[0].imag, 0.0)
@@ -123,16 +123,17 @@ class TestParallelBackendPolyJordan(unittest.TestCase):
         self._run(3, g=500, a=-20, b=-1, direction=lm.FORWARD)
         
     def test_degree3_directionwrong(self):
-        """Stable segments where gamma exponentiation exceeds 1 mid-window.
- 
+        r"""
+        Stable segments where gamma exponentiation exceeds 1 mid-window.
+
         ``fw a=0 b=20``: forward segment starting at the current sample (a=0).
           gamma = 1 + 1/g > 1, so gamma^b grows for large b — but the IIR poles
           equal 1/gamma < 1 (stable).
- 
+
         ``bw a=-20 b=-1``: backward segment ending one sample before the current
           sample (b=-1). gamma = 1 - 1/g < 1, IIR poles = gamma < 1 (stable).
- 
-        Both cases are theoretically stable (max|pole| = 0.998) and the parallel
+
+        Both cases are theoretically stable (maxpole = 0.998) and the parallel
         filter output matches numpy to VNRMSE ~5e-10.  The absolute tolerance is
         relaxed to 1e-5 because state 3 carries signal magnitudes ~1000-3000, so
         Strategy-A's precision floor produces absolute differences up to ~3e-6.
@@ -195,14 +196,15 @@ class TestParallelBackendPoly(unittest.TestCase):
 
 
 class TestParallelBackendSin(unittest.TestCase):
-    """Regression + correctness tests for AlssmSin (non-upper-triangular A).
+    r"""
+    Regression + correctness tests for AlssmSin (non-upper-triangular A).
 
     The original bug: QZ returned complex zeros with tiny imaginary noise on
     what should be a real zero, causing zpk2sos to raise
     ``ValueError: Array contains complex value with no matching conjugate``.
 
     All tests use ``rho=1.0`` so that the IIR poles satisfy
-    ``|p| = gamma * rho = gamma < 1`` (backward) or ``|p| = (1/gamma) * (1/rho) = 1/gamma < 1``
+    ``$p$ = gamma * rho = gamma < 1`` (backward) or ``$p$ = (1/gamma) * (1/rho) = 1/gamma < 1``
     (forward, since gamma > 1 for forward segments), keeping the filter stable in
     both directions for any choice of g.
     """

@@ -16,24 +16,27 @@ __all__ = [
 
 
 def _is_legendre_shift(A, tol=1e-10):
-    r"""Return ``(True, h)`` if *A* is a Legendre shift matrix, else ``(False, None)``.
+    r"""
+    Return ``(True, h)`` if *A* is a Legendre shift matrix, else ``(False, None)``.
 
     A Legendre shift matrix satisfies
 
-    .. math::  \phi(t + h) = \phi(t)\,A
+    $$
+    \phi(t + h) = \phi(t)\,A
+    $$
 
-    for some step size :math:`h = 2/(W-1)`.  It is upper-triangular with ones on
+    for some step size $h = 2/(W-1)$.  It is upper-triangular with ones on
     the diagonal, and every column *n* equals the Taylor expansion of
-    :math:`P_n(t + h)` in the Legendre basis (see :class:`AlssmPolyLegendre`).
+    $P_n(t + h)$ in the Legendre basis (see [`AlssmPolyLegendre`][lmlib.statespace.model.AlssmPolyLegendre]).
 
     The test verifies ALL columns of *A* against the exact Taylor expansion of
-    :math:`P_n(t+h)` in the Legendre basis, computed via successive applications
-    of :func:`numpy.polynomial.legendre.legder`.  This is the only check that
+    $P_n(t+h)$ in the Legendre basis, computed via successive applications
+    of [`legder`][numpy.polynomial.legendre.legder].  This is the only check that
     is both necessary and sufficient: earlier versions that only tested columns
     1 and 2 produced false positives for:
 
     * Jordan blocks (``h=1``, ``A[0,2]=0``): caught by the column-2 check.
-    * Block-diagonal Legendre matrices (e.g. from :class:`CompositeCost` wrapping
+    * Block-diagonal Legendre matrices (e.g. from [`CompositeCost`][lmlib.statespace.cost.CompositeCost] wrapping
       two Legendre ALSSMs into one ``AlssmSum``): the top-left block passes
       all scalar checks, but columns ``n ≥ N_sub`` (belonging to the second
       block) fail the full Taylor-expansion check.
@@ -69,16 +72,17 @@ def _is_legendre_shift(A, tol=1e-10):
 
 
 def _is_meixner_shift(A, tol=1e-10):
-    r"""Return ``(True, g)`` if *A* is a Meixner shift matrix, else ``(False, None)``.
+    r"""
+    Return ``(True, g)`` if *A* is a Meixner shift matrix, else ``(False, None)``.
 
-    A Meixner shift matrix for effective window size :math:`g` satisfies
+    A Meixner shift matrix for effective window size $g$ satisfies
 
-    .. math::
-
-        A = I_N - \frac{1}{g-1}\,\triu(\mathbf{1}_N,\,1),
+    $$
+    A = I_N - \frac{1}{g-1}\,\triu(\mathbf{1}_N,\,1),
+    $$
 
     i.e., it is upper-triangular with ones on the diagonal and a single constant
-    value :math:`-1/(g-1)` on every super-diagonal entry.
+    value $-1/(g-1)$ on every super-diagonal entry.
 
     The test verifies the diagonal, the strict upper triangle, and the lower
     triangle.
@@ -110,26 +114,27 @@ def _is_meixner_shift(A, tol=1e-10):
 
 
 def covariance_matrix_meixner(A, C, gamma, a, b, delta):
-    r"""Exact steady-state Gram matrix for :class:`AlssmPolyMeixner`.
+    r"""
+    Exact steady-state Gram matrix for [`AlssmPolyMeixner`][lmlib.statespace.model.AlssmPolyMeixner].
 
     Exploits the closed-form orthogonality of the Meixner polynomials
-    :math:`M_n(j;\,1,\gamma)` under the geometric weight :math:`\gamma^j`:
+    $M_n(j;\,1,\gamma)$ under the geometric weight $\gamma^j$:
 
-    .. math::
+    $$
+    \sum_{j=a}^{b} \gamma^j\, M_m(j)\, M_n(j) = W_n\,\delta_{mn},
+    \qquad W_n = \frac{1}{(1-\gamma)\,\gamma^n}
+    $$
 
-        \sum_{j=a}^{b} \gamma^j\, M_m(j)\, M_n(j) = W_n\,\delta_{mn},
-        \qquad W_n = \frac{1}{(1-\gamma)\,\gamma^n}
-
-    for the **full semi-infinite** backward segment (:math:`a=0, b=\infty`).
+    for the **full semi-infinite** backward segment ($a=0, b=\infty$).
 
     For finite segments or forward infinite segments, the function falls back to a
-    direct Vandermonde sum using :func:`scipy.special.hyp2f1` to evaluate the
+    direct Vandermonde sum using [`hyp2f1`][scipy.special.hyp2f1] to evaluate the
     Meixner basis exactly.
 
     Parameters
     ----------
     A, C, gamma, a, b, delta
-        Same as :func:`covariance_matrix_schur`.
+        Same as [`covariance_matrix_schur`][lmlib.statespace.backends.steady_state.covariance_matrix_schur].
 
     Returns
     -------
@@ -224,33 +229,34 @@ def covariance_matrix_meixner(A, C, gamma, a, b, delta):
 
 
 def covariance_matrix_legendre(A, C, gamma, a, b, delta):
-    r"""Exact steady-state Gram matrix for :class:`AlssmPolyLegendre` via direct summation.
+    r"""
+    Exact steady-state Gram matrix for [`AlssmPolyLegendre`][lmlib.statespace.model.AlssmPolyLegendre] via direct summation.
 
     Exploits the algebraic identity
 
-    .. math::
-
-        C\,A^j = \phi\!\left(-1 + j\,h\right)
-                 = \bigl[P_0(-1+jh),\;\ldots,\;P_D(-1+jh)\bigr]
+    $$
+    C\,A^j = \phi\!\left(-1 + j\,h\right)
+             = \bigl[P_0(-1+jh),\;\ldots,\;P_D(-1+jh)\bigr]
+    $$
 
     so that the design-matrix row at lag *j* is just one row of
-    :func:`numpy.polynomial.legendre.legvander` evaluated at :math:`t_j = -1 + jh`.
+    [`legvander`][numpy.polynomial.legendre.legvander] evaluated at $t_j = -1 + jh$.
     No matrix powers are computed; the result is therefore **exact to machine
     precision** regardless of degree:
 
-    .. math::
+    $$
+    W = \gamma^{-\delta}
+        \sum_{j=a}^{b} \gamma^j\,\phi(t_j)^{\top}\,\phi(t_j)
+      = \gamma^{-\delta}\,V^{\top}\,\mathrm{diag}(\gamma^j)\,V
+    $$
 
-        W = \gamma^{-\delta}
-            \sum_{j=a}^{b} \gamma^j\,\phi(t_j)^{\top}\,\phi(t_j)
-          = \gamma^{-\delta}\,V^{\top}\,\mathrm{diag}(\gamma^j)\,V
-
-    where :math:`V \in \mathbb{R}^{(b-a+1) \times N}` is the Legendre Vandermonde
-    matrix on :math:`t_j \in [-1 + a\,h,\;\ldots,\;-1 + b\,h]`.
+    where $V \in \mathbb{R}^{(b-a+1) \times N}$ is the Legendre Vandermonde
+    matrix on $t_j \in [-1 + a\,h,\;\ldots,\;-1 + b\,h]$.
 
     Parameters
     ----------
     A, C, gamma, a, b, delta
-        Same as :func:`covariance_matrix_schur`.
+        Same as [`covariance_matrix_schur`][lmlib.statespace.backends.steady_state.covariance_matrix_schur].
     """
     is_leg, h = _is_legendre_shift(np.asarray(A, dtype=float))
     if not is_leg:
@@ -281,64 +287,65 @@ def covariance_matrix_legendre(A, C, gamma, a, b, delta):
 
 
 def covariance_matrix_schur(A, C, gamma, a, b, delta):
-    r"""Numerically stable steady-state Gram matrix W via a Schur-based solver.
+    r"""
+    Numerically stable steady-state Gram matrix W via a Schur-based solver.
 
-    Computes the same matrix as :func:`covariance_matrix_closed_form`
+    Computes the same matrix as [`covariance_matrix_closed_form`][lmlib.statespace.backends.steady_state.covariance_matrix_closed_form]
 
-    .. math::
+    $$
+    W = \gamma^{-\delta}
+        \bigl(\mathbf{I}_N \otimes C\bigr)
+        \,M\,
+        \bigl(C^{\top} \otimes \mathbf{I}_N\bigr)
+    $$
 
-        W = \gamma^{-\delta}
-            \bigl(\mathbf{I}_N \otimes C\bigr)
-            \,M\,
-            \bigl(C^{\top} \otimes \mathbf{I}_N\bigr)
+    where $M$ is the finite geometric series
 
-    where :math:`M` is the finite geometric series
-
-    .. math::
-
-        M = \sum_{t=a}^{b} \gamma^t \,
-            (A^t)^{\!\top} \otimes A^t
-          = \gamma^a (A^a)^{\!\top} \!\otimes A^a
-            + \cdots
-            + \gamma^b (A^b)^{\!\top} \!\otimes A^b
+    $$
+    M = \sum_{t=a}^{b} \gamma^t \,
+        (A^t)^{\!\top} \otimes A^t
+      = \gamma^a (A^a)^{\!\top} \!\otimes A^a
+        + \cdots
+        + \gamma^b (A^b)^{\!\top} \!\otimes A^b
+    $$
 
     which satisfies the Stein equation
-    :math:`M - \gamma\,(A^{\top} \!\otimes A)\,M\,=\,P_a - P_{b+1}` (or
-    the reverse inequality for :math:`\gamma > 1`).
+    $M - \gamma\,(A^{\top} \!\otimes A)\,M\,=\,P_a - P_{b+1}$ (or
+    the reverse inequality for $\gamma > 1$).
 
     **AlssmPolyLegendre fast path**
 
     When *A* is detected to be a Legendre shift matrix (upper-triangular, unit
     diagonal, valid step size *h*), this function automatically delegates to
-    :func:`covariance_matrix_legendre` instead of solving the Stein equation.
+    [`covariance_matrix_legendre`][lmlib.statespace.backends.steady_state.covariance_matrix_legendre] instead of solving the Stein equation.
 
-    That path computes :math:`W = V^{\top}\,\mathrm{diag}(\gamma^j)\,V` using
-    :func:`numpy.polynomial.legendre.legvander`, which is exact to machine
+    That path computes $W = V^{\top}\,\mathrm{diag}(\gamma^j)\,V$ using
+    [`legvander`][numpy.polynomial.legendre.legvander], which is exact to machine
     precision for **any** polynomial degree and avoids the ill-conditioned
-    :math:`N^2 \times N^2` Kronecker system entirely.
+    $N^2 \times N^2$ Kronecker system entirely.
 
-    **Why this is more stable than** :func:`covariance_matrix_closed_form`
+    **Why this is more stable than** [`covariance_matrix_closed_form`][lmlib.statespace.backends.steady_state.covariance_matrix_closed_form]
 
     The closed-form function inverts the matrix
-    :math:`I_{N^2} - \gamma\,(A^{\top} \!\otimes A)` (or its inverse for
-    :math:`\gamma > 1`) via :func:`numpy.linalg.inv`.  Forming the explicit
+    $I_{N^2} - \gamma\,(A^{\top} \!\otimes A)$ (or its inverse for
+    $\gamma > 1$) via [`inv`][numpy.linalg.inv].  Forming the explicit
     inverse of a Sylvester/Stein coefficient matrix amplifies rounding errors
-    by :math:`\kappa^2`, where :math:`\kappa` is its condition number.
+    by $\kappa^2$, where $\kappa$ is its condition number.
 
     This function instead solves the Stein equation
 
-    .. math::
+    $$
+    X - \gamma\,(A^{\top} \!\otimes A)\,X = P_a - P_{b+1}
+    $$
 
-        X - \gamma\,(A^{\top} \!\otimes A)\,X = P_a - P_{b+1}
-
-    directly with :func:`scipy.linalg.solve`, exploiting the fact that the
+    directly with [`solve`][scipy.linalg.solve], exploiting the fact that the
     coefficient matrix is available explicitly.  The linear solve (LU
-    factorisation) needs only :math:`O(N^6)` work (same as the explicit
-    inverse) but achieves a backward error of order :math:`u \kappa` rather
-    than :math:`u \kappa^2`.
+    factorisation) needs only $O(N^6)$ work (same as the explicit
+    inverse) but achieves a backward error of order $u \kappa$ rather
+    than $u \kappa^2$.
 
-    For further robustness the right-hand side matrices :math:`P_a` and
-    :math:`P_{b+1}` are formed via :func:`numpy.linalg.matrix_power` (which
+    For further robustness the right-hand side matrices $P_a$ and
+    $P_{b+1}$ are formed via [`matrix_power`][numpy.linalg.matrix_power] (which
     itself uses repeated squaring and is no more expensive than in the
     closed-form variant).
 
@@ -370,7 +377,7 @@ def covariance_matrix_schur(A, C, gamma, a, b, delta):
         significant numerical error even with the stable solver.  This
         typically occurs when ``g`` is chosen too large or the segment is very
         wide; the same warning is also produced by
-        :func:`covariance_matrix_closed_form`.
+        [`covariance_matrix_closed_form`][lmlib.statespace.backends.steady_state.covariance_matrix_closed_form].
         Not emitted when the Legendre fast path is taken (that path is always
         exact to machine precision).
     """
@@ -441,11 +448,11 @@ def covariance_matrix_schur(A, C, gamma, a, b, delta):
 
 
 def covariance_matrix_closed_form(A, C, gamma, a, b, delta):
-    """
+    r"""
     Compute the steady-state Gram matrix W in closed form via a Stein equation.
 
     Uses the analytic matrix inversion approach.  May issue a
-    :class:`WConditionNumberWarning` when the Stein coefficient matrix is
+    [`WConditionNumberWarning`][lmlib._warnings.WConditionNumberWarning] when the Stein coefficient matrix is
     badly conditioned (condition number > 1e15).
 
     Parameters
@@ -507,14 +514,14 @@ def covariance_matrix_closed_form(A, C, gamma, a, b, delta):
 
 
 def covariance_matrix_limited_sum(A, C, gamma, a, b, delta):
-    """
+    r"""
     Compute the steady-state Gram matrix W by iterative summation.
 
-    Not yet implemented.  Raises :class:`NotImplementedError`.
+    Not yet implemented.  Raises [`NotImplementedError`][NotImplementedError].
 
     Parameters
     ----------
     A, C, gamma, a, b, delta
-        See :func:`covariance_matrix_closed_form`.
+        See [`covariance_matrix_closed_form`][lmlib.statespace.backends.steady_state.covariance_matrix_closed_form].
     """
     raise NotImplementedError("limited_sum is not implemented yet.")

@@ -40,42 +40,51 @@ def _cost_parts(cost): #TODO remove this function and directly insert the code a
 
 class RLSAlssm:
     r"""
-    Recursive Least Square Alssm Class to solve Alssm Cost Functions.
+    Recursive Least Square Alssm Class to compute and minimize Alssm Cost Functions.
 
-    This class uses either a :class:`CostSegment`, :class:`CompositeCost` or :class:`NDCompositeCost` and defines the functions to solve it recursively.
-    :math:`W_k`, :math:`\xi_k`, :math:`\kappa_k` and :math:`\nu_k` can be computed either as a forward or as a backward recursion as defined in Eq. (22-25) [Wildhaber2018]_.
-    :math:`W_k` is the Gram matrix defined by the ALSSM (:math:`A`, :math:`c`, :math:`\alpha` and :math:`w`). :math:`\mathrm{vec}(W_k)=\xi^{(2)}(k,y)=\xi^{(2)}(k,\mathbf{1})` (with :math:`\mathbf{1}` the all ones vector) Eq. (21) [Baeriswyl2025]_.
-    :math:`\xi_k` (:math:`=\xi^{(1)}(k,y)` Eq. (20) [Baeriswyl2025]_) is the cross correlation of the signal with the ALSSM basis.
-    :math:`\kappa_k` gives the energy of a signal weighted under :math:`\alpha` and :math:`w`. :math:`\kappa_k=\xi^{(0)}(k,y)` Eq. (19) [Baeriswyl2025]_.
-    Additionally, :math:`\nu_k` is introduced which is the number of weighted samples in the window.
+    This class uses either a [`CostSegment`][lmlib.statespace.cost.CostSegment], [`CompositeCost`][lmlib.statespace.cost.CompositeCost] or [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost].
 
-    The cost function is (Eq. (20) [Wildhaber2018]_):
-    .. math::
-        J_k(x) = \sum_{i=k+a}^{k+b} \alpha^{k+\delta}(i) w_i \big(y_i - CA^{i-k}x\big)^2
+    The cost function is (Eq. (20) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)):
 
-    .. seealso::
-        [Wildhaber2018]_ [Wildhaber2019]_
-        For the definition of the :math:`\xi^{(q)}(k,y)` terms see Eq. (19-21) [Baeriswyl2025]_
+    $$\begin{aligned}
+    J_k(x) &= \sum_{i=k+a}^{k+b} \alpha^{k+\delta}(i) w_i \big(y_i - CA^{i-k}x\big)^2 \\
+           &= x^\top W_k x - 2\,x^\top \xi_k + \kappa_k
+    \end{aligned}
+    $$
+
+    with $W_k \in \mathbb{R}^{N \times N}$ the Gram Matrix defined by the ALSMS ($A$, $c$, $\alpha$ and $w$),
+    $\xi_k \in \mathbb{R}^{N}$ the cross correlation of the signal with the ALSSM basis, and
+    $\kappa_k \in \mathbb{R}$ the signal energy weighted under $\alpha$ and $w$.
+    Additionally, $\nu_k$ is the number of weighted samples in the window.
+
+    The quantities $W_k$, $\xi_k$, $\kappa_k$ and $\nu_k$ can be computed either as a forward or as a backward recursion as defined in Eq. (22-25) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018).
+
+    !!! info
+        See also [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) [\[Wildhaber2019\]](../bibliography.md#wildhaber2019).
+        Eq. (19)-(21) in [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) define the quantities $\xi^{(q)}(k,y), q\in\{0,1,2\}$, with the following correspondence:
+        $\mathrm{vec}(W_k) \triangleq \xi^{(2)}(k,\mathbf{1})$ (with $\mathbf{1}$ the all ones vector),
+        $\xi_k \triangleq \xi^{(1)}(k,y)$, and
+        $\kappa_k \triangleq \xi^{(0)}(k,y)$.
 
     Parameters
     ----------
     cost_terms : CostSegment, CompositeCost, NDCompositeCost
-        Cost function to be minimized recursively. See :class:`CostSegment`, :class:`CompositeCost` or :class:`NDCompositeCost`.
+        Cost function to be minimized recursively. See [`CostSegment`][lmlib.statespace.cost.CostSegment], [`CompositeCost`][lmlib.statespace.cost.CompositeCost] or [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost].
     steady_state : bool, optional
-        Defines if the ALSSM is steady state (not time-varying, e.g. LTI). If so, :math:`W_k` reduces to :math:`W`. Default: True.
-        This happens in case :math:`w_k = w`, :math:`\gamma_k = \gamma` (see Sec. III-I.2 [Wildhaber2018]_).
+        Defines if the ALSSM is steady state (not time-varying, e.g. LTI). If so, $W_k$ reduces to $W$. Default: True.
+        This happens in case $w_k = w$, $\gamma_k = \gamma$ (see Sec. III-I.2 [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)).
         Setting this incorrectly may produce silently wrong results.
     calc_W : bool, optional
-        If True, computes the Gram matrix :math:`W_k` (:math:`\xi^{(2)}`).
-        Required for :meth:`minimize_v`, :meth:`minimize_x`, and :meth:`eval_errors`. Default: True.
+        If True, compute [`W`][lmlib.statespace.rls.RLSAlssm.W].
+        Required for [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v], [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x], and [`eval_errors`][lmlib.statespace.rls.RLSAlssm.eval_errors]. Default: True.
     calc_xi : bool, optional
-        If True, computes the signal cross correlation :math:`\xi_k = \xi^{(1)}(k, y)`.
-        Required for :meth:`minimize_v`, :meth:`minimize_x`, and :meth:`eval_errors`. Default: True.
+        If True, compute [`xi`][lmlib.statespace.rls.RLSAlssm.xi]
+        Required for [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v], [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x], and [`eval_errors`][lmlib.statespace.rls.RLSAlssm.eval_errors]. Default: True.
     calc_kappa : bool, optional
-        If True, computes the signal energy :math:`\kappa_k = \xi^{(0)}(k, y)`.
-        Required for :meth:`eval_errors`. Can be set to False when only the minimizer is needed. Default: True.
+        If True, computes [`kappa`][lmlib.statespace.rls.RLSAlssm.kappa]
+        Required for [`eval_errors`][lmlib.statespace.rls.RLSAlssm.eval_errors]. Can be set to False when only the minimizer is needed. Default: True.
     calc_nu : bool, optional
-        If True, computes :math:`\nu_k`, the number of weighted samples in the window.
+        If True, computes $\nu_k$, the number of weighted samples in the window.
         Not yet implemented. Default: False.
     filter_form : str, optional
         Controls the internal block structure of the recursive filter.
@@ -85,26 +94,24 @@ class RLSAlssm:
 
     backend : str, optional
         Selects the computational backend for the state-space recursions.
-        If ``None``, the globally configured backend is used (see :func:`set_backend`).
+        If ``None``, the globally configured backend is used (see [`set_backend`][lmlib.statespace.backend.set_backend]).
 
         - ``'numpy'`` : pure NumPy implementation (default)
-        - ``'lfilter'`` : transfer-function backend using :func:`scipy.signal.lfilter`
+        - ``'lfilter'`` : transfer-function backend using [`lfilter`][scipy.signal.lfilter]
         - ``'jit'`` : Numba JIT-compiled backend (requires ``numba`` package)
-
-    num_denom : TODO
 
     Notes
     -----
     Setting ``steady_state=True`` (default) assumes the window defined by the cost segments
-    does not change over time (LTI case), which allows :math:`W_k` to be precomputed once
-    as a constant :math:`W`. Set ``steady_state=False`` for time-varying windows
+    does not change over time (LTI case), which allows $W_k$ to be precomputed once
+    as a constant $W$. Set ``steady_state=False`` for time-varying windows
     (e.g. near signal boundaries or with sample-dependent weights), at the cost of
-    a full :math:`W_k` recursion at every sample.
+    a full $W_k$ calculation at every sample.
 
-    Examples
+    Example
     --------
     Fit a polynomial of degree 2 to a signal using a left-sided window:
-
+    ```python
     >>> import numpy as np
     >>> import lmlib as lm
     >>> from lmlib.utils.generator import gen_rect
@@ -114,11 +121,13 @@ class RLSAlssm:
     >>> seg = lm.Segment(a=-20, b=0, direction=lm.FORWARD, g=10)
     >>> rls = lm.RLSAlssm(lm.CostSegment(alssm, seg))
     >>> y_hat = rls.fit(y)
+    ```
 
-    To save computation when only the signal estimate is needed, disable :math:`\kappa`:
-
+    To save computation when only the signal estimate is needed, disable $\kappa$:
+    ```python
     >>> rls = lm.RLSAlssm(lm.CostSegment(alssm, seg), calc_kappa=False)
     >>> y_hat = rls.fit(y)
+    ```
     """
 
     def __init__(self, cost_terms, steady_state=True, calc_W=True, calc_xi=True, calc_kappa=True, calc_nu=False, filter_form='cascade',
@@ -176,22 +185,22 @@ class RLSAlssm:
 
     @property
     def xi2(self):
-        """ndarray : Alias for :attr:`W` (:math:`\\xi^{(2)}`, the Gram matrix)."""
+        r"""[`ndarray`][numpy.ndarray] : $\xi^{(2)}(k,\mathbf{1})$, Alias for [`W`][lmlib.statespace.rls.RLSAlssm.W]."""
         return self.W
 
     @property
     def xi1(self):
-        """ndarray : Alias for :attr:`xi` (:math:`\\xi^{(1)}`, the signal cross correlation)."""
+        r"""[`ndarray`][numpy.ndarray] : $\xi^{(1)}(k,y)$, Alias for [`xi`][lmlib.statespace.rls.RLSAlssm.xi]."""
         return self.xi
 
     @property
     def xi0(self):
-        """ndarray : Alias for :attr:`kappa` (:math:`\\xi^{(0)}`, the signal energy)."""
+        r"""[`ndarray`][numpy.ndarray] : $\xi^{(0)}(k,y)$, Alias for [`kappa`][lmlib.statespace.rls.RLSAlssm.kappa]."""
         return self.kappa
 
     @property
     def W(self):
-        """:class:`~numpy.ndarray` : Gram matrix :math:`W_k` (constant :math:`W` in steady-state mode). Shape ``(..., N, N)``."""
+        r"""[`ndarray`][numpy.ndarray] : Gram matrix $W_k$ (const. $W$ in steady-state mode). Shape ``(..., N, N)``."""
         if self._xi2 is None:
             raise ValueError('xi2 has not been calculated. '
                              'Please run the filter() method with calc_W=True before calling W.')
@@ -199,7 +208,7 @@ class RLSAlssm:
 
     @property
     def xi(self):
-        """:class:`~numpy.ndarray` : Signal cross-correlation :math:`\\xi_k = \\xi^{(1)}(k,y)`. Shape ``(..., N)``."""
+        r"""[`ndarray`][numpy.ndarray] : Signal cross-correlation $\xi_k$. Shape ``(..., N)``."""
         if self._xi1 is None:
             raise ValueError('xi1 has not been calculated. '
                              'Please run the filter() method with calc_xi=True before calling xi.')
@@ -207,7 +216,7 @@ class RLSAlssm:
 
     @property
     def kappa(self):
-        """:class:`~numpy.ndarray` : Signal energy :math:`\\kappa_k = \\xi^{(0)}(k,y)`. Shape ``(...,)``."""
+        r"""[`ndarray`][numpy.ndarray] : Signal energy $\kappa_k$. Shape ``(...,)``."""
         if self._xi0 is None:
             raise ValueError('xi0 has not been calculated. '
                              'Please run the filter() method with calc_kappa=True before calling kappa.')
@@ -215,18 +224,18 @@ class RLSAlssm:
 
     @property
     def nu(self):
-        """:class:`~numpy.ndarray` : Effective number of weighted samples :math:`\\nu_k` in the window. Not yet implemented."""
+        r"""[`ndarray`][numpy.ndarray] : Effective number of weighted samples $\nu_k$ in the window. Not yet implemented."""
         # TODO nu implementation
         raise NotImplementedError("nu calculation is not yet implemented.")
 
     def _build_parallel_plan(self, _sub_costs):
         r"""
         Pre-build per-ALSSM transfer-function coefficients for the parallel
-        :math:`\xi^{(1)}` realization (lfilter parallel backend only).
+        $\xi^{(1)}$ realization (lfilter parallel backend only).
 
         Returns a 3-D structure ``plan[dim_index][seg_index]`` where each leaf is
         the list of ``(n0, n1, numdenom)`` tuples produced by
-        :func:`~lmlib.statespace.backends.rec_lfilter.build_parallel_numdenom`
+        [`build_parallel_numdenom`][lmlib.statespace.backends.rec_lfilter.build_parallel_numdenom]
         (one entry per active ALSSM block).  Returns ``None`` for every other
         backend/filter-form combination (nothing to pre-build).
 
@@ -260,55 +269,28 @@ class RLSAlssm:
 
     def filter(self, y, sample_weights=None, dim_order=None):
         r"""
-        Compute the three ALSSM cost parameters from the input signal :math:`y`.
+        Compute the ALSSM cost parameters $\xi^{(q)}(k,y)$ for $q \in \{0,1,2\}$ and $\nu_k$ for the input signal $y$.
 
-        The cost function at signal index :math:`k` is:
-
-        .. math::
-
-            J_k(x) = x^\top W_k x - 2\,x^\top \xi_k + \kappa_k
-
-        where :math:`W_k`, :math:`\xi_k`, and :math:`\kappa_k` are computed here as
-        the three :math:`\xi^{(q)}` terms for :math:`q \in \{0, 1, 2\}`:
-
-        .. list-table::
-            :header-rows: 1
-            :widths: 8 20 55
-
-            * - :math:`q`
-              - Symbol
-              - Meaning
-            * - 0
-              - :math:`\kappa_k = \xi^{(0)}_k`
-              - Weighted signal energy :math:`\sum_i \alpha^{k+\delta}(i)\,w_i\,\|y_i\|^2`
-            * - 1
-              - :math:`\xi_k = \xi^{(1)}_k`
-              - Cross-correlation of :math:`y` with the ALSSM basis; the right-hand
-                side of the normal equations :math:`W_k x = \xi_k`
-            * - 2
-              - :math:`W_k = \xi^{(2)}_k`
-              - Gram matrix (independent of :math:`y` in the LTI / steady-state case)
-
-        For :class:`CostSegment` and :class:`CompositeCost` (1-D) each quantity is
-        computed via the recursive equations (22–25) in [Wildhaber2018]_ by the
+        For [`CostSegment`][lmlib.statespace.cost.CostSegment] and [`CompositeCost`][lmlib.statespace.cost.CompositeCost] (1-D) each quantity is
+        computed via the recursive equations (22–25) in [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) for each cost segment by the
         selected backend.
 
-        For :class:`NDCompositeCost` (multi-dimensional) the ND cost separates as a
-        Kronecker product over the per-dimension sub-costs.  The computation is
-        therefore chained over dimensions:
+        For [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost] (multi-dimensional) the ND cost separates as a
+        Kronecker product over the per-dimension sub-costs, see Table III in [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025).
+        The computation is therefore chained over dimensions:
 
-        1. :meth:`_nd_xi_q_recursion` processes the first axis in ``dim_order``,
+        1. `_nd_xi_q_recursion` processes the first axis in ``dim_order``,
            reading directly from ``y`` and producing ``xi_prev`` of shape
            ``(*Ks, N_0**q)``.
         2. For each subsequent axis ``dim_order[l]``,
-           :meth:`_nd_xi_q_asterisk_l_recursion` extends the trailing axis of
+           `_nd_xi_q_asterisk_l_recursion` extends the trailing axis of
            ``xi_prev`` from ``Nq_prev`` to ``Nq_prev * N_l**q``, accumulating the
            Kronecker structure dimension by dimension.
         3. After all ``L`` axes are processed the trailing axis has size
-           :math:`(N_0 \cdots N_{L-1})^q = N_\text{total}^q`.
+           $(N_0 \cdots N_{L-1})^q = N_\text{total}^q$.
 
-        The final results are stored in :attr:`W` (:math:`\xi^{(2)}`),
-        :attr:`xi` (:math:`\xi^{(1)}`), and :attr:`kappa` (:math:`\xi^{(0)}`).
+        The final results are stored in [`W`][lmlib.statespace.rls.RLSAlssm.W],
+        [`xi`][lmlib.statespace.rls.RLSAlssm.xi], and [`kappa`][lmlib.statespace.rls.RLSAlssm.kappa].
 
         Parameters
         ----------
@@ -327,78 +309,59 @@ class RLSAlssm:
 
         sample_weights : array_like of shape matching ``y`` without the trailing
             ``Q`` axis, optional.
-            Per-sample scalar weights :math:`w_i \in [0, 1]` applied to each
+            Per-sample scalar weights $w_i \in [0, 1]$ applied to each
             observation before accumulation.  Must broadcast to the spatial shape
             of ``y``.  Default: all ones (uniform weighting).
 
         dim_order : array_like of int of length ``L``, optional
-            Processing order of the signal axes for :class:`NDCompositeCost`.
+            Processing order of the signal axes for [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost].
 
-            ``dim_order[0]`` is processed first by :meth:`_nd_xi_q_recursion`;
+            ``dim_order[0]`` is processed first by `_nd_xi_q_recursion`;
             ``dim_order[1], dim_order[2], ...`` are each processed in turn by
-            :meth:`_nd_xi_q_asterisk_l_recursion`.
+            `_nd_xi_q_asterisk_l_recursion`.
 
             The Kronecker structure of the output state vector follows this order:
             with ``dim_order = [d_0, d_1, ..., d_{L-1}]``, the trailing axis of
-            the minimiser result ``xs`` (see :meth:`minimize_x`) is arranged as:
+            the minimiser result ``xs`` (see [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x]) is arranged as:
 
-            .. math::
+            $$
+            x_{d_0} \otimes x_{d_1} \otimes \cdots \otimes x_{d_{L-1}}
+            $$
 
-                x_{d_0} \otimes x_{d_1} \otimes \cdots \otimes x_{d_{L-1}}
+            where $x_{d_l}$ is the per-dimension state vector for axis
+            $d_l$.  Changing ``dim_order`` therefore permutes the Kronecker
+            blocks in ``xs``, but does not change the scalar cost $J_k(x)$.
 
-            where :math:`x_{d_l}` is the per-dimension state vector for axis
-            :math:`d_l`.  Changing ``dim_order`` therefore permutes the Kronecker
-            blocks in ``xs``, but does not change the scalar cost :math:`J_k(x)`.
-
-            Has no effect for :class:`CostSegment` or :class:`CompositeCost`
+            Has no effect for [`CostSegment`][lmlib.statespace.cost.CostSegment] or [`CompositeCost`][lmlib.statespace.cost.CompositeCost]
             (those are inherently 1-D).  Default: ``np.arange(L)`` (axes in
             natural order).
 
         Notes
         -----
         **Steady-state mode** (``steady_state=True``, the default):
-            :math:`W_k` is constant and precomputed once via
-            :meth:`~lmlib.CompositeCost.get_steady_state_W` before the signal
-            recursion starts.  This is valid whenever the window is
-            time-invariant (:math:`w_k = w`, :math:`\gamma_k = \gamma`), which
-            holds for all standard :class:`Segment` definitions without
-            sample-dependent weights.  See Section III-I.2 in [Wildhaber2018]_.
+            $W_k$ is constant and precomputed once via
+            [`get_steady_state_W`][lmlib.statespace.cost.CompositeCost.get_steady_state_W] before the other
+            recursions start.  This is valid whenever the window is
+            time-invariant ($w_k = w$, $\gamma_k = \gamma$), which
+            holds for all standard [`Segment`][lmlib.statespace.segment.Segment] definitions without
+            sample-dependent weights.  See Section III-I.2 in [\[Wildhaber2018\]](../bibliography.md#wildhaber2018).
             The ``calc_W`` flag is ignored in this mode.
 
         **Time-varying mode** (``steady_state=False``):
-            :math:`W_k` is computed sample-by-sample via the :math:`q = 2`
+            $W_k$ is computed sample-by-sample via the $q = 2$
             recursion, which carries the same computational cost as the
-            :math:`q = 1` recursion.  Required near signal boundaries or when
+            $q = 1$ recursion.  Required near signal boundaries or when
             ``sample_weights`` varies over time.  Only supported for 1-D costs;
             multi-dimensional costs require ``steady_state=True`` (the ND
-            :math:`W` recursion is not yet implemented).
-
-        **ND Kronecker product structure**:
-            For an :class:`NDCompositeCost` with sub-costs of orders
-            :math:`N_0, N_1, \ldots, N_{L-1}`:
-
-            * ``xi`` (shape ``(*Ks, N_0 \cdots N_{L-1})``) is the cross-correlation
-              vector arranged as a Kronecker-product of the per-dimension basis
-              vectors, consistent with a separable cost function over all dimensions.
-            * ``W`` (steady-state, shape ``(N_\text{total}^2,)`` flattened then
-              reshaped to ``(N_\text{total}, N_\text{total})`` by :attr:`W`) is the
-              Kronecker product of the per-dimension Gram matrices.
-            * The minimiser ``xs = W^{-1} \xi`` therefore recovers the full
-              multi-dimensional Kronecker-product state at every sample location.
+            $W$ recursion is not yet implemented).
 
         Returns
         -------
         None
-            Results are stored in-place.  Access via:
+            Results are stored in-place.  Access via [`W`][lmlib.statespace.rls.RLSAlssm.W] (shape ``(N, N)`` steady-state, or ``(*Ks, N, N)`` time-varying),
+            [`xi`][lmlib.statespace.rls.RLSAlssm.xi] (shape ``(*Ks, N)``), and [`kappa`][lmlib.statespace.rls.RLSAlssm.kappa] (shape ``(*Ks,)``),
 
-            * :attr:`W`     — Gram matrix :math:`W_k` or :math:`W`
-              (shape ``(N, N)`` steady-state, or ``(*Ks, N, N)`` time-varying)
-            * :attr:`xi`    — cross-correlation :math:`\xi_k`
-              (shape ``(*Ks, N)``)
-            * :attr:`kappa` — signal energy :math:`\kappa_k`
-              (shape ``(*Ks,)``)
-
-            where :math:`N = N_0 \cdots N_{L-1}` is the total model order.
+            where $N = N_0 \cdots N_{L-1}$ is the total model order.
 
         Raises
         ------
@@ -532,57 +495,58 @@ class RLSAlssm:
 
     def minimize_v(self, H=None, h=None, solver='lstsq'):
         r"""
-        Minimizes the cost :math:`J_k(x)` subject to a linear constraint on the state vector,
-        returning the reduced-dimensional free parameter :math:`v`.
+        Minimizes the cost $J_k(x)$ subject to a linear constraint on the state vector, returning the reduced-dimensional free parameter $v$.
 
-        The state vector :math:`x` is constrained to the affine subspace
+        The state vector $x$ is constrained to the affine subspace
 
-        .. math::
-            x = Hv + h,
+        $$
+        x = Hv + h,
+        $$
 
-        with known :math:`H \in \mathbb{R}^{N \times M}` and :math:`h \in \mathbb{R}^N`, and
-        unknown :math:`v \in \mathbb{R}^M`. Substituting into the cost function (Eq. (21)
-        [Wildhaber2018]_) and minimizing over :math:`v` yields the closed-form solution
-        (Eq. (69) [Wildhaber2018]_):
+        with known $H \in \mathbb{R}^{N \times M}$ and $h \in \mathbb{R}^N$, and
+        unknown $v \in \mathbb{R}^M$. Substituting into the cost function (Eq. (21)
+        [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)) and minimizing over $v$ yields the closed-form solution
+        (Eq. (69) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)):
 
-        .. math::
-            \hat{v}_k = (H^T W_k H)^{-1} H^T (\xi_k - W_k h).
+        $$
+        \hat{v}_k = (H^T W_k H)^{-1} H^T (\xi_k - W_k h).
+        $$
 
-        When ``H=None`` and ``h=None`` (defaults), the constraint reduces to :math:`x = v`
-        (unconstrained minimization), so :math:`\hat{v}_k = W_k^{-1} \xi_k`.
+        When ``H=None`` and ``h=None`` (defaults), the constraint reduces to $x = v$
+        (unconstrained minimization), so $\hat{v}_k = W_k^{-1} \xi_k$.
 
         Parameters
         ----------
         H : array_like of shape (N, M), optional
-            Constraint matrix mapping the free parameter :math:`v \in \mathbb{R}^M` to the
-            state space :math:`\mathbb{R}^N`. If ``None``, defaults to the identity matrix
-            :math:`I_N` (unconstrained, :math:`M = N`).
+            Constraint matrix mapping the free parameter $v \in \mathbb{R}^M$ to the
+            state space $\mathbb{R}^N$. If ``None``, defaults to the identity matrix
+            $I_N$ (unconstrained, $M = N$).
         h : array_like of shape (N,), optional
-            Constraint offset vector :math:`h \in \mathbb{R}^N`. If ``None``, defaults to
+            Constraint offset vector $h \in \mathbb{R}^N$. If ``None``, defaults to
             the zero vector (no offset).
         solver : {'lstsq', 'solve', 'inv'}, optional
             Linear-system solver strategy (default: ``'lstsq'``).
 
         Notes
         -----
-        The distinction between :meth:`minimize_v` and :meth:`minimize_x` is:
+        The distinction between [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v] and [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x] is:
 
-        - :meth:`minimize_v` returns :math:`v \in \mathbb{R}^M` (the free parameter, dimension M).
-        - :meth:`minimize_x` returns :math:`x = Hv + h \in \mathbb{R}^N` (the full state vector,
+        - [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v] returns $v \in \mathbb{R}^M$ (the free parameter, dimension M).
+        - [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x] returns $x = Hv + h \in \mathbb{R}^N$ (the full state vector,
           dimension N).
 
-        When ``H=None``, both methods return the same result since :math:`x = v`.
+        When ``H=None``, both methods return the same result since $x = v$.
 
-        When ``steady_state=True``, :math:`W_k = W` is constant, so :math:`H^T W H` is
-        inverted once. When ``steady_state=False``, samples where :math:`H^T W_k H` is
+        When ``steady_state=True``, $W_k = W$ is constant, so $H^T W H$ is
+        inverted once. When ``steady_state=False``, samples where $H^T W_k H$ is
         ill-conditioned (singular to machine precision) are left as ``NaN``.
 
         Returns
         -------
-        v : :class:`~numpy.ndarray` of shape (..., M)
-            Free parameter :math:`\hat{v}_k` minimizing :math:`J_k(Hv + h)`. The leading
+        v : ndarray of shape (..., M)
+            Free parameter $\hat{v}_k$ minimizing $J_k(Hv + h)$. The leading
             dimensions match the signal length and any parallel dimensions of the input.
-            Entries are ``NaN`` where :math:`H^T W_k H` is ill-conditioned
+            Entries are ``NaN`` where $H^T W_k H$ is ill-conditioned
             (only possible when ``steady_state=False``).
 
         Raises
@@ -598,42 +562,42 @@ class RLSAlssm:
         Three strategies are available via the ``solver`` keyword.  All are
         **closed-form** (no iterative steps).
 
-        ``'lstsq'`` *(default)*
-            **Steady-state** — Computes the economy SVD of :math:`H^\top W H`
-            *once* and stores the resulting pseudoinverse as an attribute
-            ``_pinv_HTWH``.  Subsequent calls with the same ``H`` and ``h``
-            reuse this cached pseudoinverse, reducing the cost to a single
-            matrix–vector multiply per time step.  This is typically **4–22×
-            faster** than calling ``numpy.linalg.lstsq`` with all right-hand
-            sides at once, because that function recomputes the SVD on every
-            call even when the matrix has not changed.
+        **``'lstsq'`` (default)**
 
-            **Non-steady-state** — Attempts a batched LU solve
-            (``numpy.linalg.solve``) on the full :math:`(K, N, N)` stack of
-            matrices.  If any matrix is singular, falls back to a fully
-            vectorised batched SVD pseudoinverse (``numpy.linalg.svd`` over
-            the batch dimension) — no Python loop required.  This gives a
-            **5–70× speedup** over the previous per-sample ``lstsq`` loop.
+        **Steady-state** — Computes the economy SVD of $H^\top W H$
+        *once* and stores the resulting pseudoinverse as an attribute
+        ``_pinv_HTWH``.  Subsequent calls with the same ``H`` and ``h``
+        reuse this cached pseudoinverse, reducing the cost to a single
+        matrix–vector multiply per time step.  This is typically **4–22×
+        faster** than calling ``numpy.linalg.lstsq`` with all right-hand
+        sides at once, because that function recomputes the SVD on every
+        call even when the matrix has not changed.
 
-            Handles rank-deficient :math:`H^\top W H` gracefully in both
-            modes by returning the minimum-norm least-squares solution
-            (Moore–Penrose pseudoinverse).
+        **Non-steady-state** — Attempts a batched LU solve
+        (``numpy.linalg.solve``) on the full $(K, N, N)$ stack of
+        matrices.  If any matrix is singular, falls back to a fully
+        vectorised batched SVD pseudoinverse (``numpy.linalg.svd`` over
+        the batch dimension) — no Python loop required.  This gives a
+        **5–70× speedup** over the previous per-sample ``lstsq`` loop.
 
-        ``'solve'``
-            Uses ``numpy.linalg.solve`` (LU factorisation) on the invertible
-            subset and falls back to ``'lstsq'`` for rank-deficient blocks.
-            Slightly faster than ``'lstsq'`` when :math:`H^\top W H` is always
-            full-rank (the common case), but equally robust otherwise.  Does
-            **not** cache a pseudoinverse.
+        Handles rank-deficient $H^\top W H$ gracefully in both
+        modes by returning the minimum-norm least-squares solution
+        (Moore–Penrose pseudoinverse).
 
-        ``'inv'`` *(legacy)*
-            Explicit matrix inversion — the original behaviour.  Raises an
-            ``AssertionError`` (steady-state) or leaves entries as ``nan``
-            (non-steady-state) when :math:`H^\top W H` is not invertible.
-            Kept for backward compatibility and benchmarking.
+        **``'solve'``**
 
+        Uses ``numpy.linalg.solve`` (LU factorisation) on the invertible
+        subset and falls back to ``'lstsq'`` for rank-deficient blocks.
+        Slightly faster than ``'lstsq'`` when $H^\top W H$ is always
+        full-rank (the common case), but equally robust otherwise.  Does
+        **not** cache a pseudoinverse.
 
+        **``'inv'`` (legacy)**
 
+        Explicit matrix inversion — the original behaviour.  Raises an
+        ``AssertionError`` (steady-state) or leaves entries as ``nan``
+        (non-steady-state) when $H^\top W H$ is not invertible.
+        Kept for backward compatibility and benchmarking.
         """
 
         _H = np.eye(self._N) if H is None else np.asarray(H)
@@ -794,50 +758,50 @@ class RLSAlssm:
 
     def minimize_x(self, H=None, h=None, solver='lstsq'):
         r"""
-        Minimizes the cost :math:`J_k(x)` subject to a linear constraint on the state vector,
-        returning the full N-dimensional state vector :math:`x`.
+        Minimizes the cost $J_k(x)$ subject to a linear constraint on the state vector, returning the full N-dimensional state vector $x$.
 
-        Internally calls :meth:`minimize_v` to obtain :math:`\hat{v}_k`, then reconstructs
-        the state vector via the constraint (Eq. (66) [Wildhaber2018]_):
+        Internally calls [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v] to obtain $\hat{v}_k$, then reconstructs
+        the state vector via the constraint (Eq. (66) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)):
 
-        .. math::
-            \hat{x}_k = H \hat{v}_k + h.
+        $$
+        \hat{x}_k = H \hat{v}_k + h.
+        $$
 
-        When ``H=None`` and ``h=None`` (defaults), the constraint reduces to :math:`x = v`,
-        so :math:`\hat{x}_k = W_k^{-1} \xi_k` (Table V row 1, [Wildhaber2018]_).
+        When ``H=None`` and ``h=None`` (defaults), the constraint reduces to $x = v$,
+        so $\hat{x}_k = W_k^{-1} \xi_k$ (Table V row 1, [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)).
 
         Parameters
         ----------
         H : array_like of shape (N, M), optional
-            Constraint matrix mapping the free parameter :math:`v \in \mathbb{R}^M` to the
-            state space :math:`\mathbb{R}^N`. If ``None``, defaults to the identity matrix
-            :math:`I_N` (unconstrained, :math:`M = N`).
+            Constraint matrix mapping the free parameter $v \in \mathbb{R}^M$ to the
+            state space $\mathbb{R}^N$. If ``None``, defaults to the identity matrix
+            $I_N$ (unconstrained, $M = N$).
         h : array_like of shape (N,), optional
-            Constraint offset vector :math:`h \in \mathbb{R}^N`. If ``None``, defaults to
+            Constraint offset vector $h \in \mathbb{R}^N$. If ``None``, defaults to
             the zero vector (no offset).
 
         Notes
         -----
-        The distinction between :meth:`minimize_v` and :meth:`minimize_x` is:
+        The distinction between [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v] and [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x] is:
 
-        - :meth:`minimize_v` returns :math:`v \in \mathbb{R}^M` (the free parameter, dimension M).
-        - :meth:`minimize_x` returns :math:`x = Hv + h \in \mathbb{R}^N` (the full state vector,
+        - [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v] returns $v \in \mathbb{R}^M$ (the free parameter, dimension M).
+        - [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x] returns $x = Hv + h \in \mathbb{R}^N$ (the full state vector,
           dimension N).
 
-        When ``H=None``, both methods return the same result since :math:`x = v`.
+        When ``H=None``, both methods return the same result since $x = v$.
 
         Returns
         -------
-        x : :class:`~numpy.ndarray` of shape (..., N)
-            Optimal state vector :math:`\hat{x}_k = H\hat{v}_k + h`. The leading dimensions
+        x : ndarray of shape (..., N)
+            Optimal state vector $\hat{x}_k = H\hat{v}_k + h$. The leading dimensions
             match the signal length and any parallel dimensions of the input.
-            Entries are ``NaN`` where :math:`H^T W_k H` is ill-conditioned
+            Entries are ``NaN`` where $H^T W_k H$ is ill-conditioned
             (only possible when ``steady_state=False``).
 
         Raises
         ------
         AssertionError
-            Propagated from :meth:`minimize_v`:
+            Propagated from [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v]:
             If ``H`` does not have ``N`` rows.
             If ``h`` does not have length ``N``.
             If ``H.T @ W @ H`` is not invertible (only when ``steady_state=True``).
@@ -857,20 +821,21 @@ class RLSAlssm:
 
     def eval_errors(self, xs):
         r"""
-        Evaluates the cost function :math:`J_k(x)` at given state vectors `xs`.
+        Evaluates the cost function $J_k(x)$ at given state vectors `xs`.
 
-        Using the expanded form of the cost (Eq. (21) [Wildhaber2018]_):
+        Using the expanded form of the cost (Eq. (21) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)):
 
-        .. math::
-            J_k(x) = x^T W_k x - 2 x^T \xi_k + \kappa_k,
+        $$
+        J_k(x) = x^T W_k x - 2 x^T \xi_k + \kappa_k,
+        $$
 
         this method computes the scalar cost for each provided state vector without
         performing any minimization. It is useful for comparing the fit quality of
         different candidate state vectors, e.g. for computing error ratios or
-        log-cost ratios (LCR) as in Section III.F [Wildhaber2018]_.
+        log-cost ratios (LCR) as in Section III.F [\[Wildhaber2018\]](../bibliography.md#wildhaber2018).
 
-        Requires :attr:`W`, :attr:`xi`, and :attr:`kappa` to be available, i.e.
-        :meth:`filter` must have been called with ``calc_W=True``, ``calc_xi=True``,
+        Requires [`W`][lmlib.statespace.rls.RLSAlssm.W], [`xi`][lmlib.statespace.rls.RLSAlssm.xi], and [`kappa`][lmlib.statespace.rls.RLSAlssm.kappa] to be available, i.e.
+        [`filter`][lmlib.statespace.rls.RLSAlssm.filter] must have been called with ``calc_W=True``, ``calc_xi=True``,
         and ``calc_kappa=True`` (all defaults).
 
         Parameters
@@ -882,8 +847,8 @@ class RLSAlssm:
 
         Returns
         -------
-        J : :class:`~numpy.ndarray` of shape (...)
-            Cost :math:`J_k(x)` evaluated at each state vector in `xs`. Same shape
+        J : ndarray of shape (...)
+            Cost $J_k(x)$ evaluated at each state vector in `xs`. Same shape
             as `xs` with the last axis removed.
         """
 
@@ -896,46 +861,45 @@ class RLSAlssm:
 
     def fit(self, y, output='y_hat', sample_weights=None, dim_order=None, H=None, h=None, eval_alssm_weights=None, solver='lstsq'):
         r"""
-        Method that chains :meth:`filter`, :meth:`minimize_v`, and signal
-        reconstruction into a single call.
+        Method that chains [`filter`][lmlib.statespace.rls.RLSAlssm.filter], [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v], and signal reconstruction into a single call.
 
         Executes the following steps in order:
 
-        1. :meth:`filter` — computes the recursive filter quantities :math:`W_k`,
-           :math:`\xi_k`, :math:`\kappa_k` from the input signal `y`.
-        2. :meth:`minimize_v` — solves the constrained minimization
-           :math:`\hat{v}_k = (H^T W_k H)^{-1} H^T (\xi_k - W_k h)`.
-        3. Reconstruction — builds :math:`\hat{x}_k = H\hat{v}_k + h` and/or the
-           signal estimate :math:`\hat{y}_k = C A^j \hat{x}_k` depending on `output`.
+        1. [`filter`][lmlib.statespace.rls.RLSAlssm.filter] — computes the recursive filter quantities $W_k$,
+           $\xi_k$, $\kappa_k$ from the input signal `y`.
+        2. [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v] — solves the constrained minimization
+           $\hat{v}_k = (H^T W_k H)^{-1} H^T (\xi_k - W_k h)$.
+        3. Reconstruction — builds $\hat{x}_k = H\hat{v}_k + h$ and/or the
+           signal estimate $\hat{y}_k = C A^j \hat{x}_k$ depending on `output`.
 
         Parameters
         ----------
         y : array_like of shape (K, [Q])
-            Input signal. See :meth:`filter` for shape details.
+            Input signal. See [`filter`][lmlib.statespace.rls.RLSAlssm.filter] for shape details.
         output : str or tuple of str, optional
             Selects what is returned. One or more of:
 
-            - ``'y_hat'`` *(default)* — signal estimate :math:`\hat{y}_k = CA^j\hat{x}_k`
-              evaluated via :class:`~lmlib.statespace.model.AlssmSum`.
-            - ``'x'`` — full state vector :math:`\hat{x}_k = H\hat{v}_k + h`,
+            - ``'y_hat'`` *(default)* — signal estimate $\hat{y}_k = CA^j\hat{x}_k$
+              evaluated via [`AlssmSum`][lmlib.statespace.model.AlssmSum].
+            - ``'x'`` — full state vector $\hat{x}_k = H\hat{v}_k + h$,
               shape ``(..., N)``.
-            - ``'v'`` — free parameter :math:`\hat{v}_k`, shape ``(..., M)``.
+            - ``'v'`` — free parameter $\hat{v}_k$, shape ``(..., M)``.
 
             Pass a tuple to return multiple outputs, e.g. ``output=('x', 'y_hat')``.
         sample_weights : array_like of shape (K,), optional
-            Per-sample weights :math:`w_i \in [0,1]`. Passed to :meth:`filter`.
+            Per-sample weights $w_i \in [0,1]$. Passed to [`filter`][lmlib.statespace.rls.RLSAlssm.filter].
             Default: all ones.
         dim_order : array_like of int, optional
-            Dimension processing order for :class:`~lmlib.statespace.cost.NDCompositeCost`.
-            Passed to :meth:`filter`. Default: ``np.arange(L)``.
+            Dimension processing order for [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost].
+            Passed to [`filter`][lmlib.statespace.rls.RLSAlssm.filter]. Default: ``np.arange(L)``.
         H : array_like of shape (N, M), optional
-            Constraint matrix. Passed to :meth:`minimize_v`. Default: identity (unconstrained).
+            Constraint matrix. Passed to [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v]. Default: identity (unconstrained).
         h : array_like of shape (N,), optional
-            Constraint offset. Passed to :meth:`minimize_v`. Default: zero vector.
+            Constraint offset. Passed to [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v]. Default: zero vector.
         eval_alssm_weights : array_like, optional
-            Per-ALSSM output weights used when evaluating :math:`\hat{y}` from a
-            :class:`~lmlib.statespace.cost.CompositeCost` with multiple models.
-            Passed to :class:`~lmlib.statespace.model.AlssmSum`. If ``None``, all
+            Per-ALSSM output weights used when evaluating $\hat{y}$ from a
+            [`CompositeCost`][lmlib.statespace.cost.CompositeCost] with multiple models.
+            Passed to [`AlssmSum`][lmlib.statespace.model.AlssmSum]. If ``None``, all
             models contribute equally.
 
         Returns
@@ -952,13 +916,13 @@ class RLSAlssm:
         ------
         AssertionError
             If `output` is empty or contains unknown entries.
-            Propagated from :meth:`minimize_v` if ``H`` / ``h`` have wrong shape or
+            Propagated from [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v] if ``H`` / ``h`` have wrong shape or
             ``H.T @ W @ H`` is not invertible (when ``steady_state=True``).
 
-        Examples
+        Example
         --------
         Fit a degree-2 polynomial and return the signal estimate:
-
+        ```python
         >>> import numpy as np
         >>> import lmlib as lm
         >>> K = 200
@@ -967,10 +931,11 @@ class RLSAlssm:
         >>> seg = lm.Segment(a=-20, b=0, direction=lm.FORWARD, g=10)
         >>> rls = lm.RLSAlssm(lm.CostSegment(alssm, seg))
         >>> y_hat = rls.fit(y)
-
+        ```
         Return both the state vector and the signal estimate:
-
+        ```python
         >>> x, y_hat = rls.fit(y, output=('x', 'y_hat'))
+        ```
         """
 
         # ----------- check output parameter -----------
@@ -1021,10 +986,10 @@ class RLSAlssm:
 
     def _nd_xi_q_recursion(self, q, y, sample_weights, model_dimension):
         r"""
-        Defines the recursion to calculate the ALSSM cost parameters :math:`\xi^{(q)}(k,y)` for a given :math:`q \in \{0,1,2\}` based on an input signal :math:`y`.
+        Defines the recursion to calculate the ALSSM cost parameters $\xi^{(q)}(k,y)$ for a given $q \in \{0,1,2\}$ based on an input signal $y$.
 
-        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`.
-        They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
+        The cost parameters $\xi^{(q)}(k,y)$ for $q \in \{0,1,2\}$ are equivalent to $\kappa_k$, $\xi_k$ and $W_k$.
+        They are calculated through the recursive equations (22-25) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) for each cost segment defined by the different backends.
         We iterate over each individual ALSSM m within every segment p and write the result into the appropriate sub-slice of xi_curr.
         Because A is block-diagonal, the blocks are independent and can be computed separately.
         Each ALSSM m is wrapped in a single-element AlssmSum with weight F[m,p] so that:
@@ -1035,16 +1000,16 @@ class RLSAlssm:
         ----------
         q : int
             Order of the cost parameter. Must be 0, 1, or 2, corresponding to
-            :math:`\kappa_k` (signal energy), :math:`\xi_k` (signal projection), and
-            :math:`W_k` (Gram matrix), respectively.
-            Determines the trailing size of the output: :math:`N_l^q`, where :math:`N_l`
+            $\kappa_k$ (signal energy), $\xi_k$ (signal projection), and
+            $W_k$ (Gram matrix), respectively.
+            Determines the trailing size of the output: $N_l^q$, where $N_l$
             is the model order of the sub-cost associated with ``model_dimension``.
         y : array_like of shape (\*Ks, Q)
             Input signal, where ``Ks`` are the signal length dimensions (one per ND axis)
             and ``Q`` is the ALSSM output dimension. For scalar ALSSMs ``Q=0`` after
-            preprocessing in :meth:`filter`.
+            preprocessing in [`filter`][lmlib.statespace.rls.RLSAlssm.filter].
         sample_weights : array_like of shape (\*Ks,)
-            Per-sample weights :math:`w_i \in [0,1]`.
+            Per-sample weights $w_i \in [0,1]$.
         model_dimension : int
             Index of the signal axis along which the 1-D state-space recursion is applied.
             All other signal axes are flattened into a batch and iterated over
@@ -1054,23 +1019,23 @@ class RLSAlssm:
 
         Notes
         -----
-        The difference between this function and :meth:`_nd_xi_q_asterisk_l_recursion()` is
+        The difference between this function and [`_nd_xi_q_asterisk_l_recursion()`][lmlib.statespace.rls._nd_xi_q_asterisk_l_recursion()] is
         that this function is the **first** recursion step: it reads directly from the input
-        signal `y` and initialises :math:`\xi^{(q)}` from scratch with shape
+        signal `y` and initialises $\xi^{(q)}$ from scratch with shape
         ``(*Ks, N_l**q)``.
 
-        :meth:`_nd_xi_q_asterisk_l_recursion()` is used for every **subsequent** dimension:
+        [`_nd_xi_q_asterisk_l_recursion()`][lmlib.statespace.rls._nd_xi_q_asterisk_l_recursion()] is used for every **subsequent** dimension:
         it takes the accumulated ``xi_prev`` (shape ``(*Ks, Nq_prev)``) from the previous step
         and extends the trailing axis to ``Nq_prev * N_l**q``, realising the tensor-product
         (Kronecker) structure over ND dimensions. After processing all L dimensions the
-        trailing axis has size :math:`(N_0 \cdots N_{L-1})^q = N_\mathrm{total}^q`.
+        trailing axis has size $(N_0 \cdots N_{L-1})^q = N_\mathrm{total}^q$.
 
         Returns
         -------
-        xi_curr : :class:`~numpy.ndarray` of shape (\*Ks, N_l**q)
-            :math:`\xi^{(q)}(k,y)` cost parameter with the same leading shape as `y`
-            (all signal dimensions) and a trailing axis of size :math:`N_l^q`, where
-            :math:`N_l` is the model order of the sub-cost for ``model_dimension``.
+        xi_curr : ndarray of shape (\*Ks, N_l**q)
+            $\xi^{(q)}(k,y)$ cost parameter with the same leading shape as `y`
+            (all signal dimensions) and a trailing axis of size $N_l^q$, where
+            $N_l$ is the model order of the sub-cost for ``model_dimension``.
         """
         segments, alssms, F, betas = _cost_parts(
             self._cost_terms._get_sub_cost_term(model_dimension))
@@ -1112,37 +1077,37 @@ class RLSAlssm:
 
     def _nd_xi_q_asterisk_l_recursion(self, xi_prev, q, y, sample_weights, model_dimension):
         r"""
-        Defines the recursion for one additional dimension to calculate the ALSSM cost parameters :math:`\xi^{(q)*}(k,y)` for a given :math:`q \in \{0,1,2\}` based on an input signal :math:`y`.
+        Defines the recursion for one additional dimension to calculate the ALSSM cost parameters $\xi^{(q)*}(k,y)$ for a given $q \in \{0,1,2\}$ based on an input signal $y$.
 
-        The cost parameters :math:`\xi^{(q)}(k,y)` for :math:`q \in \{0,1,2\}` are equivalent to :math:`\kappa_k`, :math:`\xi_k` and :math:`W_k`.
-        They are calculated through the recursive equations (22-25) [Wildhaber2018]_ for each cost segment defined by the different backends.
+        The cost parameters $\xi^{(q)}(k,y)$ for $q \in \{0,1,2\}$ are equivalent to $\kappa_k$, $\xi_k$ and $W_k$.
+        They are calculated through the recursive equations (22-25) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) for each cost segment defined by the different backends.
         This function subdivides the calculation into cost segments (for-loop). The same per-ALSSM decomposition as _nd_xi_q_recursion is applied:
         each ALSSM m in the CompositeCost for this dimension is processed independently, writing into the corresponding sub-slice of xi_curr.
 
         Parameters
         ----------
-        xi_prev : :class:`~numpy.ndarray` of shape (\*Ks, Nq_prev)
+        xi_prev : ndarray of shape (\*Ks, Nq_prev)
             Accumulated cost parameter from the previous dimension step, where
             ``Nq_prev`` is the trailing size built up so far (e.g. ``N_0**q`` after
             the first step, ``N_0**q * N_1**q`` after the second, etc.).
         q : int
             Order of the cost parameter. Must be 0, 1, or 2, corresponding to
-            :math:`\kappa_k` (signal energy), :math:`\xi_k` (signal projection), and
-            :math:`W_k` (Gram matrix), respectively.
-            The trailing axis of the output grows by a factor :math:`N_l^q`, where
-            :math:`N_l` is the model order of the sub-cost for ``model_dimension``.
+            $\kappa_k$ (signal energy), $\xi_k$ (signal projection), and
+            $W_k$ (Gram matrix), respectively.
+            The trailing axis of the output grows by a factor $N_l^q$, where
+            $N_l$ is the model order of the sub-cost for ``model_dimension``.
         y : array_like of shape (\*Ks, Q)
             Input signal (only its shape is used; values enter via ``xi_prev``).
         sample_weights : array_like of shape (\*Ks,)
-            Per-sample weights :math:`w_i \in [0,1]`.
+            Per-sample weights $w_i \in [0,1]$.
         model_dimension : int
             Signal axis processed in this step.
 
         Returns
         -------
-        xi_curr : :class:`~numpy.ndarray` of shape (\*Ks, Nq_prev \* N_l**q)
+        xi_curr : ndarray of shape (\*Ks, Nq_prev \* N_l**q)
             Extended cost parameter. The leading shape matches `y`; the trailing axis
-            is the product of all accumulated sub-cost orders raised to :math:`q`.
+            is the product of all accumulated sub-cost orders raised to $q$.
         """
         segments, alssms, F, betas = _cost_parts(
             self._cost_terms._get_sub_cost_term(model_dimension))

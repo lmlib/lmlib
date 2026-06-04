@@ -1,4 +1,4 @@
-# scripts/build_gallery.py
+# docs/scripts_docs/create_gallery.py
 import os
 import sys
 import glob
@@ -12,9 +12,17 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # Adjust paths
-BASE_DIR = Path(__file__).parent.parent
-DOC_DIR = BASE_DIR / "docs" 
-OUTPUT_DIR = DOC_DIR / "generated_galleries"
+# This script now lives at: <repo>/docs/scripts_docs/create_gallery.py
+#   __file__.parent        -> docs/scripts_docs
+#   __file__.parent.parent -> docs
+#   .parent.parent.parent  -> repo root
+SCRIPT_DIR = Path(__file__).parent              # docs/scripts_docs
+DOC_DIR = SCRIPT_DIR.parent                     # docs
+BASE_DIR = DOC_DIR.parent                       # repo root (examples/ and coding/ live here)
+
+# All generated content (markdown + PNGs) goes into this single folder, grouped by
+# category. It is a build artifact: add `docs/_generated/` to .gitignore.
+GENERATED_DIR = DOC_DIR / "_generated"          # docs/_generated
 
 # Ensure lmlib is found
 sys.path.insert(0, str(BASE_DIR))
@@ -93,7 +101,9 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str):
         return " ".join(words[:max_words]) + "..."
 
     folder_name = folder_path.name
-    target_output_dir = DOC_DIR / folder_parent / "_generated_galleries"
+    # Everything generated lands under docs/_generated/<category>/<folder_name>/,
+    # regardless of where the source .py files are read from.
+    target_output_dir = GENERATED_DIR / folder_parent
     output_folder = target_output_dir / folder_name
     output_folder.mkdir(parents=True, exist_ok=True)
     
@@ -148,7 +158,12 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str):
         elif has_plot_import:
             modified_code = code + f'\nplt.savefig(r"{plot_path}", dpi=150, bbox_inches="tight"); plt.close()'
         
-        temp_file = output_folder / f"_temp_{base_name}.py"
+        # Write the temp script INTO the source folder (not the output folder) so that
+        # __file__-relative and cwd-relative data loads inside the example resolve
+        # correctly (e.g. np.load of a .npy/.csv sitting next to the example). The plot
+        # is saved to an absolute path below, so it still lands in the output folder
+        # regardless of the working directory.
+        temp_file = folder_path / f"_temp_{base_name}.py"
         with open(temp_file, 'w', encoding='utf-8') as f:
             f.write(modified_code)
             
@@ -156,7 +171,7 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str):
         console_output = ""
         
         try:
-            result = subprocess.run([sys.executable, str(temp_file)], check=True, env=env, cwd=str(output_folder), capture_output=True, text=True)
+            result = subprocess.run([sys.executable, str(temp_file)], check=True, env=env, cwd=str(folder_path), capture_output=True, text=True)
             if result.stdout: console_output = result.stdout.strip()
             if result.stderr:
                 console_output = (console_output + "\n\n" + result.stderr.strip()) if console_output else result.stderr.strip()
@@ -214,12 +229,20 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str):
 
 # Main logic
 if __name__ == "__main__":
+    # Ensure the top-level generated dir exists up front, so downstream steps (e.g.
+    # the Makefile's `.stamp` marker) always have a home even if nothing is generated.
+    GENERATED_DIR.mkdir(parents=True, exist_ok=True)
+
     # Scan folders
-    # Define paths explicitly
+    # Define paths explicitly.
+    #
+    # NOTE: `coding/` and `examples/` now live at the repo root (BASE_DIR), they are
+    # no longer part of `docs/`. Only their *generated* galleries get written into
+    # docs/ (see process_folder). `catalog/` still lives inside docs/.
     coding_folders = [
-        DOC_DIR / "coding" / "10-windowed-state-space-filters-basic",
-        DOC_DIR / "coding" / "13-backend",
-        DOC_DIR / "coding" / "20-polynomials-basics",
+        BASE_DIR / "coding" / "10-windowed-state-space-filters-basic",
+        BASE_DIR / "coding" / "13-backend",
+        BASE_DIR / "coding" / "20-polynomials-basics",
     ]
     
     catalog_folders = [
@@ -228,13 +251,13 @@ if __name__ == "__main__":
     ]
 
     examples_folders = [
-        DOC_DIR / "examples" / "11-detection",
-        DOC_DIR / "examples" / "12-filtering",
-        DOC_DIR / "examples" / "21-polynomials-calculus",
-        DOC_DIR / "examples" / "40-app-changepoint-detection",
-        DOC_DIR / "examples" / "50-convolution",
-        DOC_DIR / "examples" / "70-localized-polynomials",
-        DOC_DIR / "examples" / "80-nDimensional",
+        BASE_DIR / "examples" / "11-detection",
+        BASE_DIR / "examples" / "12-filtering",
+        BASE_DIR / "examples" / "21-polynomials-calculus",
+        BASE_DIR / "examples" / "40-app-changepoint-detection",
+        BASE_DIR / "examples" / "50-convolution",
+        BASE_DIR / "examples" / "70-localized-polynomials",
+        BASE_DIR / "examples" / "80-nDimensional",
     ]
     
     # Process Coding folders

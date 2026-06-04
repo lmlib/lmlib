@@ -1,6 +1,6 @@
 # Lmlib Documentation
 
-**Version:** 2.1.2 — Open-Source and for Python.
+**Version:** 3.0.0 — Open-Source and for Python.
 
 This is the official documentation for [lmlib](https://pypi.org/project/lmLib/), a signal processing library to efficiently analyze single- and multi-channel time series using linear state space models.
 
@@ -17,7 +17,7 @@ This is the official documentation for [lmlib](https://pypi.org/project/lmLib/),
 - Correlation, Convolution, and Matched Filters in low-dimensional vector spaces
 - and others
 
-This library also supports JIT (Just-in-Time) compilation for fast processing.
+This library is optimized for fast processing using scipy, JIT (Just-in-Time) compilation, GPU, and other.
 
-This library is the result of many years of research 
-documented in various publications (see [Bibliography](getting_started/bibliography.md)).
+This library is the essence of many years of research
+documented in many publications (see [Bibliography](bibliography.md)).

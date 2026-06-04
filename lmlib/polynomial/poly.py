@@ -1,4 +1,9 @@
-"This module provides a calculus for uni- and multivariate polynomials using the vector exponent notation."
+r"""This module provides a calculus for uni- and multivariate polynomials using the vector exponent notation
+from [\[Wildhaber2019\]](../bibliography.md#wildhaber2019), Chapter 6.
+This calculus simplifies to use polynomials in (squared error) cost functions, e.g., as localized signal models.
+
+In the text below, return parameters of the functions are highlighted in $\color{blue}{blue}$.
+"""
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -50,8 +55,9 @@ def kron_sequence(arrays, sparse=False):
     r"""
     Kroneker product of a sequence of matrices
 
-    .. math::
-        B = A_0 \otimes A_1 \otimes A_2 \otimes A_3 \otimes \dots A_N
+    $$
+    B = A_0 \otimes A_1 \otimes A_2 \otimes A_3 \otimes \dots A_N
+    $$
 
     Parameters
     ----------
@@ -120,7 +126,7 @@ class _PolyBase(ABC):
 
     @property
     def coefs(self):
-        """tuple of :class:`~numpy.ndarray` : Coefficient vector (i.e., not factorized)"""
+        r"""tuple of [`ndarray`][numpy.ndarray] : Coefficient vector (i.e., not factorized)"""
         return self._coefs
 
     @coefs.setter
@@ -133,7 +139,7 @@ class _PolyBase(ABC):
 
     @property
     def expos(self):
-        """tuple of :class:`~numpy.ndarray` : Exponent vectors"""
+        r"""tuple of [`ndarray`][numpy.ndarray] : Exponent vectors"""
         return self._expos
 
     @expos.setter
@@ -148,7 +154,7 @@ class _PolyBase(ABC):
 
     @property
     def coefs_fac(self):
-        """:class:`~numpy.ndarray, None` : Factorized coefficient vectors"""
+        r"""[`ndarray, None`][numpy.ndarray, None] : Factorized coefficient vectors"""
         return self._coefs_fac
 
     @coefs_fac.setter
@@ -178,7 +184,7 @@ class _PolyBase(ABC):
                     'Number of factorized coefficients elements and number of exponent elements doesn\'t match.')
 
     def eval(self, variables):
-        """
+        r"""
         Evaluates the polynomial for given values (variables)
 
         Parameters
@@ -189,18 +195,18 @@ class _PolyBase(ABC):
 
         Returns
         -------
-        out : :class:`~numpy.ndarray`
+        out : ndarray
             Output of evaluated polynomial.
             Shape is identical as a dependent variable
 
         Example
         -------
-
-        >>> # evaluate bivariate polynomial at multiple positions (x=.1 ... .4, y=.5)
+        ```python
+        # evaluate bivariate polynomial at multiple positions (x=.1 ... .4, y=.5)
         >>> l = MPoly(([.2, .7], [1.3, 1.4, -.9],), ([0, 1], [0, 1, 2]))
         >>> l.eval(([.1, .2, .3, .4], [.5, .5, .5, .5]))
         array([0.47925, 0.6035, 0.72775, 0.852])
-
+        ```
         """
 
 
@@ -223,36 +229,36 @@ class _PolyBase(ABC):
 
 class MPoly(_PolyBase):
     r"""
-    Multivariate polynomials :math:`{\tilde{\alpha}}^\mathsf{T} (x^q \otimes y^r)`, or with *factorized* coefficient
-    vector  :math:`(\alpha \otimes \beta )^\mathsf{T} (x^q \otimes y^r)`.
+    Multivariate polynomials ${\tilde{\alpha}}^\mathsf{T} (x^q \otimes y^r)$, or with *factorized* coefficient
+    vector  $(\alpha \otimes \beta )^\mathsf{T} (x^q \otimes y^r)$.
 
-    This polynomial class is for multivariate polynomials in vector exponent notation, see [Wildhaber2019]_, Chapter 6.
+    This polynomial class is for multivariate polynomials in vector exponent notation, see [\[Wildhaber2019\]](../bibliography.md#wildhaber2019), Chapter 6.
 
     Such a multivariate polynomial is in general given by
 
-    .. math::
+    $$
+    p(x) = \tilde{\alpha}^\mathsf{T}(x^q \otimes y^r) \ ,
+    $$
 
-        p(x) = \tilde{\alpha}^\mathsf{T}(x^q \otimes y^r) \ ,
-
-    where :math:`\tilde{\alpha} \in \mathbb{R}^{Q \times R}` is the coefficient vectors,
-    :math:`q \in \mathbb{Z}_{\geq 0}^Q` and :math:`r \in \mathbb{Z}_{\geq 0}^R` the exponent vectors,
-    and :math:`x \in \mathbb{R}` and :math:`y \in \mathbb{R}` the independent variables.
+    where $\tilde{\alpha} \in \mathbb{R}^{Q \times R}$ is the coefficient vectors,
+    $q \in \mathbb{Z}_{\geq 0}^Q$ and $r \in \mathbb{Z}_{\geq 0}^R$ the exponent vectors,
+    and $x \in \mathbb{R}$ and $y \in \mathbb{R}$ the independent variables.
 
     As a special case,
     if the coefficient vector is in the form of a Kronecker product, i.e.,
 
-    .. math::
+    $$
+    p(x) = (\alpha \otimes \beta)^\mathsf{T}(x^q \otimes y^r) \ ,
+    $$
 
-        p(x) = (\alpha \otimes \beta)^\mathsf{T}(x^q \otimes y^r) \ ,
-
-    where :math:`\alpha \in \mathbb{R}^Q` and :math:`\beta \in \mathbb{R}^R` are coefficient vectors,
+    where $\alpha \in \mathbb{R}^Q$ and $\beta \in \mathbb{R}^R$ are coefficient vectors,
     we denote a polynomial as **factorized**.
     This form often leads to algebraic simplifications (if it exists).
 
 
-    Examples
+    Example
     --------
-
+    ```python
     >>> # Bivariate (x,y) polynomial with factorized coefficients ([.2,.7],[-1.0,2.0,.1]) and terms x^1, x^2, y^1, y^2, y^3, and cross terms
     >>> l= MPoly(([.2,.7],[-1.0,2.0,.1]),([1,2],[1,2,3]))
     >>> l.coefs # gets coefficients
@@ -261,12 +267,13 @@ class MPoly(_PolyBase):
     array([-0.2 ,  0.4 ,  0.02, -0.7 ,  1.4 ,  0.07])
     >>> l.eval([.3,.7])  # evaluating polynomial for x=.3 and y=.7
     array(0.0386589)
-
+    ```
+    ```python
     >>> # Bivariate (x,y) polynomial with non-factorized coefficients ([.2,.7,1.3,1.4,.2,-1.6]) and terms x^1, x^2, y^1, y^2, y^3, and cross terms
     >>> l= MPoly(([.2,.7,1.3,1.4,.2,-1.6],),([1,2],[1,2,3]))
     >>> l.eval([.3,.7])  # evaluating polynomial for x=.3 and y=.7
     array(0.326298)
-
+    ```
 
     Parameters
     ----------
@@ -274,7 +281,6 @@ class MPoly(_PolyBase):
         Set of coefficient vector(s)
     expos : tuple of array_like
         Set of exponent vector(s)
-
     """
 
     def __init__(self, coefs, expos):
@@ -288,21 +294,23 @@ class MPoly(_PolyBase):
 
 class Poly(_PolyBase):
     r"""
-    Univariate polynomial in vector exponent notation: :math:`\alpha^\mathsf{T} x^q`
+    Univariate polynomial in vector exponent notation: $\alpha^\mathsf{T} x^q$
 
-    Polynomial class for univariate polynomials in vector exponent notation; see [Wildhaber2019]_, Chapter 6.
+    Polynomial class for univariate polynomials in vector exponent notation; see [\[Wildhaber2019\]](../bibliography.md#wildhaber2019), Chapter 6.
 
     Such a polynomial `p(x)` in `x` is defined as
 
-    .. math::
+    $$
+    \begin{aligned}
+    p(x) &= \alpha^\mathsf{T}x^q = \begin{bmatrix}a_0& a_1& \cdots& a_{Q-1}\end{bmatrix}
+         \begin{bmatrix}x^{q_0}\\ x^{q_1}\\ \vdots\\ x^{q_{Q-1}}\end{bmatrix}\\
+         &= a_0 x^{q_0} + a_1 x^{q_1}+ \dots + a_{Q-1} x^{q_{Q-1}} \ ,
+    \end{aligned}
+    $$
 
-        p(x) &= \alpha^\mathsf{T}x^q = \begin{bmatrix}a_0& a_1& \cdots& a_{Q-1}\end{bmatrix}
-             \begin{bmatrix}x^{q_0}\\ x^{q_1}\\ \vdots\\ x^{q_{Q-1}}\end{bmatrix}\\
-             &= a_0 x^{q_0} + a_1 x^{q_1}+ \dots + a_{Q-1} x^{q_{Q-1}} \ ,
-
-    with coefficient vector :math:`\alpha \in \mathbb{R}^Q`,
-    exponent vector :math:`q \in \mathbb{Z}_{\geq 0}^Q`,
-    and function variable :math:`x \in \mathbb{R}`.
+    with coefficient vector $\alpha \in \mathbb{R}^Q$,
+    exponent vector $q \in \mathbb{Z}_{\geq 0}^Q$,
+    and function variable $x \in \mathbb{R}$.
 
     Parameters
     ----------
@@ -312,15 +320,16 @@ class Poly(_PolyBase):
         Exponent vector
 
 
-    |def_Q|
+    `Q` : output order / number of signal channels <br>
 
 
-    Examples
+    Example
     --------
+    ```python
     >>> import lmlib as lm
     >>> p = Poly([0, 0.2, 3], [0, 1, 2])
     >>> print(p)
-
+    ```
     """
 
     def __init__(self, coef, expo):
@@ -333,21 +342,21 @@ class Poly(_PolyBase):
 
     @property
     def coef(self):
-        """:class:`~numpy.ndarray` : Coefficient vector :math:`\\alpha`"""
+        r"""[`ndarray`][numpy.ndarray] : Coefficient vector $\alpha$"""
         return self._coefs[0]
 
     @property
     def expo(self):
-        """:class:`~numpy.ndarray` : Exponent vector :math:`q`"""
+        r"""[`ndarray`][numpy.ndarray] : Exponent vector $q$"""
         return self._expos[0]
 
     @property
     def Q(self):
-        """int : Number of elements in exponent vector :math:`Q`"""
+        r"""int : Number of elements in exponent vector $Q$"""
         return self.expo.shape[0]
 
     def eval(self, variable):
-        """
+        r"""
         Evaluates the polynomial
 
         Parameters
@@ -357,7 +366,7 @@ class Poly(_PolyBase):
 
         Returns
         -------
-        out : :class:`~numpy.ndarray`
+        out : ndarray
             Output of evaluated polynomial.
             Shape is identical as a dependent variable
         """
@@ -367,7 +376,8 @@ class Poly(_PolyBase):
 
 
 def poly_sum(polys):
-    r""" :math:`\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}`
+    r"""
+    $\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}$
 
     Sum of univariate polynomials ``Poly(alpha,q),... , Poly(beta,r)``, all of common variable *x*
 
@@ -386,16 +396,16 @@ def poly_sum(polys):
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.4)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.4)
     """
     return Poly(poly_sum_coef(polys), poly_sum_expo([poly.expo for poly in polys]))
 
 
 def poly_sum_coef(polys):
-    r""" :math:`\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = \color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}`
+    r"""
+    $\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = \color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}$
 
-    Coefficient vector :math:`\tilde{q}` to sum of univariate polynomials ``polys``, all of common variable *x*
+    Coefficient vector $\tilde{q}$ to sum of univariate polynomials ``polys``, all of common variable *x*
 
     Parameters
     ----------
@@ -404,27 +414,27 @@ def poly_sum_coef(polys):
 
     Returns
     -------
-    coef : :class:`~numpy.ndarray`
-        ``alpha_tilde`` - Coefficient vector :math:`\tilde{\alpha}`
+    coef : ndarray
+        ``alpha_tilde`` - Coefficient vector $\tilde{\alpha}$
 
     Note
     ----
-    To get :math:`\tilde{q}`, see :func:`poly_sum_expo`.
+    To get $\tilde{q}$, see [`poly_sum_expo`][lmlib.polynomial.poly.poly_sum_expo].
 
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.4)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.4)
     """
     Ls = poly_sum_coef_Ls([poly.expo for poly in polys])
     return np.sum([np.dot(L, coef) for L, coef in zip(Ls, [poly.coef for poly in polys])], axis=0)
 
 
 def poly_sum_coef_Ls(expos):
-    r""" :math:`\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = (\color{blue}{\Lambda_1} \alpha + \dots + \color{blue}{\Lambda_N}\beta)^\mathsf{T} x^{\tilde{q}}`
+    r"""
+    $\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = (\color{blue}{\Lambda_1} \alpha + \dots + \color{blue}{\Lambda_N}\beta)^\mathsf{T} x^{\tilde{q}}$
 
-    Exponent manipulation matrices :math:`\Lambda_1, ...., Lambda_N` to  sum univariate polynomials ``polys``,
+    Exponent manipulation matrices $\Lambda_1, ...., Lambda_N$ to  sum univariate polynomials ``polys``,
     all of common variable *x*
 
     Parameters
@@ -434,19 +444,19 @@ def poly_sum_coef_Ls(expos):
 
     Returns
     -------
-    Ls : list of :class:`~numpy.ndarray`
+    Ls : list of ndarray
         ``(Lambda_1, ..., Lambda_N)``,
         Coefficient manipulation matrices,
-        see also :func:`poly_sum`
+        see also [`poly_sum`][lmlib.polynomial.poly.poly_sum]
 
 
     Note
     ----
-    To get :math:`\tilde{q}`, see :func:`poly_sum_expo`.
+    To get $\tilde{q}$, see [`poly_sum_expo`][lmlib.polynomial.poly.poly_sum_expo].
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.4)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.4)
     """
     indices_or_sections = np.cumsum([len(expo) for expo in expos[0:-1]])
     Q = sum(len(expo) for expo in expos)
@@ -454,9 +464,10 @@ def poly_sum_coef_Ls(expos):
 
 
 def poly_sum_expo(expos):
-    r""" :math:`\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = \tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}`
+    r"""
+    $\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = \tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}$
 
-    Exponent vector :math:`\tilde{1}` of  sum  of univariate polynomials with exponent vectors ``expos``, all of common variable *x*
+    Exponent vector $\tilde{1}$ of  sum  of univariate polynomials with exponent vectors ``expos``, all of common variable *x*
 
     Parameters
     ----------
@@ -465,28 +476,29 @@ def poly_sum_expo(expos):
 
     Returns
     -------
-    expo : :class:`~numpy.ndarray`
+    expo : ndarray
         ``q_tilde``,
-        exponent vector :math:`\tilde{q}`
+        exponent vector $\tilde{q}$
 
     Note
     ----
-    To get :math:`\tilde{\alpha}`, see :func:`poly_sum_coef`.
+    To get $\tilde{\alpha}$, see [`poly_sum_coef`][lmlib.polynomial.poly.poly_sum_coef].
 
 
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.4)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.4)
     """
     Ms = poly_sum_coef_Ls(expos)
     return np.sum([np.dot(M, expo) for M, expo in zip(Ms, expos)], axis=0)
 
 
 def poly_sum_expo_Ms(expos):
-    r""" :math:`\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = \tilde{\alpha}^\mathsf{T} x^{\color{blue}{M_1} q + \dots +\color{blue}{M_N} r}`
+    r"""
+    $\alpha^\mathsf{T} x^q + \dots + \beta^\mathsf{T} x^r = \tilde{\alpha}^\mathsf{T} x^{\color{blue}{M_1} q + \dots +\color{blue}{M_N} r}$
 
-    Exponent manipulation matrices :math:`M_1, ... , M_N` to sum univariate polynomials with exponent vectors ``expos``, all of common variable *x*
+    Exponent manipulation matrices $M_1, ... , M_N$ to sum univariate polynomials with exponent vectors ``expos``, all of common variable *x*
 
 
     Parameters
@@ -496,14 +508,14 @@ def poly_sum_expo_Ms(expos):
 
     Returns
     -------
-    Ms : list of :class:`~numpy.ndarray`
+    Ms : list of ndarray
         ``(M_1, ..., M_N)``,
         list of exponent manipulation matrices,
-        see also :func:`poly_sum`.
+        see also [`poly_sum`][lmlib.polynomial.poly.poly_sum].
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.4)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.4)
     """
     indices_or_sections = np.cumsum([len(expo) for expo in expos[0:-1]])
     Q = sum(len(expo) for expo in expos)
@@ -511,7 +523,8 @@ def poly_sum_expo_Ms(expos):
 
 
 def poly_prod(polys):
-    r""" :math:`\alpha^\mathsf{T} x^q \cdot \beta^\mathsf{T} x^q = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}`
+    r"""
+    $\alpha^\mathsf{T} x^q \cdot \beta^\mathsf{T} x^q = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}$
 
     Product of two univariate polynomials of common variable `x`
 
@@ -524,12 +537,11 @@ def poly_prod(polys):
     Returns
     -------
     out : Poly
-        ``poly_tilde``, product as polynomial :math:`\tilde{\alpha}^\mathsf{T} x^\tilde{q}`
+        ``poly_tilde``, product as polynomial $\tilde{\alpha}^\mathsf{T} x^\tilde{q}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.14)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.14)
     """
     assert len(polys) <= 2, 'Not yet implemented. Only two polynomials allowed'
     coef = poly_prod_coef(polys)
@@ -538,9 +550,10 @@ def poly_prod(polys):
 
 
 def poly_prod_coef(polys):
-    r""" :math:`\alpha^\mathsf{T} x^q \cdot \beta^\mathsf{T} x^r = \color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}`
+    r"""
+    $\alpha^\mathsf{T} x^q \cdot \beta^\mathsf{T} x^r = \color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}$
 
-    Coefficient vector :math:`\tilde{\alpha}` of product of two univariate polynomials of common variable `x`
+    Coefficient vector $\tilde{\alpha}$ of product of two univariate polynomials of common variable `x`
 
 
     Parameters
@@ -551,22 +564,22 @@ def poly_prod_coef(polys):
 
     Returns
     -------
-    coef :class:`~numpy.ndarray`
-        ``alpha_tilde``,  coefficient vector :math:`\tilde{\alpha}` of product polynomial :math:`\tilde{\alpha}^\mathsf{T} x^\tilde{q}`, see :func:`poly_prod`
+    coef [`ndarray`][numpy.ndarray]
+        ``alpha_tilde``,  coefficient vector $\tilde{\alpha}$ of product polynomial $\tilde{\alpha}^\mathsf{T} x^\tilde{q}$, see [`poly_prod`][lmlib.polynomial.poly.poly_prod]
 
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.12)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.12)
     """
     return np.kron(polys[0].coef, polys[1].coef)
 
 
 def poly_prod_expo_Ms(expos):
-    r""" :math:`\alpha^\mathsf{T} x^q \cdot \beta^\mathsf{T} x^r = \tilde{\alpha}^\mathsf{T} x^{\color{blue}{M_1} q + \color{blue}{M_2} r}`
+    r"""
+    $\alpha^\mathsf{T} x^q \cdot \beta^\mathsf{T} x^r = \tilde{\alpha}^\mathsf{T} x^{\color{blue}{M_1} q + \color{blue}{M_2} r}$
 
-    Exponent manipulation matrices :math:`M_1, M_2` of product of two univariate polynomials of common variable `x`
+    Exponent manipulation matrices $M_1, M_2$ of product of two univariate polynomials of common variable `x`
 
     Parameters
     ----------
@@ -576,17 +589,16 @@ def poly_prod_expo_Ms(expos):
 
     Returns
     -------
-    Ms : list of :class:`~numpy.ndarray`
+    Ms : list of ndarray
         ``(M_1, ..., M_N)``,
         list of exponent manipulation matrices
-        for the two polynomial exponent vectors, i.e., the new exponent vector results from :math:`\tilde{q} = M_1 q + M_2 r`.
-        See :func:`poly_prod`.
+        for the two polynomial exponent vectors, i.e., the new exponent vector results from $\tilde{q} = M_1 q + M_2 r$.
+        See [`poly_prod`][lmlib.polynomial.poly.poly_prod].
 
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.16)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.16)
     """
     Q = len(expos[0])
     R = len(expos[1])
@@ -594,9 +606,10 @@ def poly_prod_expo_Ms(expos):
 
 
 def poly_prod_expo(expos):
-    r""" :math:`\alpha^\mathsf{T} x^q \cdot \beta^\mathsf{T} x^r = \tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}`
+    r"""
+    $\alpha^\mathsf{T} x^q \cdot \beta^\mathsf{T} x^r = \tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}$
 
-    Exponent vector :math:`\tilde{q}` of product of two univariate polynomials of common variable `x`
+    Exponent vector $\tilde{q}$ of product of two univariate polynomials of common variable `x`
 
     Parameters
     ----------
@@ -606,47 +619,23 @@ def poly_prod_expo(expos):
 
     Returns
     -------
-    coef :class:`~numpy.ndarray`
-        ``q_tilde``,  exponent vector :math:`\tilde{q}` of product polynomial :math:`\tilde{\alpha}^\mathsf{T} x^\tilde{q}`, see :func:`poly_prod`
+    coef [`ndarray`][numpy.ndarray]
+        ``q_tilde``,  exponent vector $\tilde{q}$ of product polynomial $\tilde{\alpha}^\mathsf{T} x^\tilde{q}$, see [`poly_prod`][lmlib.polynomial.poly.poly_prod]
 
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.16)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.16)
     """
     M1, M2 = poly_prod_expo_Ms(expos)
     return np.add(np.dot(M1, expos[0]), np.dot(M2, expos[1]))
 
 
 def poly_square(poly):
-    r""" :math:`(\alpha^\mathsf{T} x^q)^2 = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}`
+    r"""
+    $(\alpha^\mathsf{T} x^q)^2 = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}$
 
     Square of a univariate polynomial
-
-    Parameters
-    ----------
-    poly : :class:`Poly`
-        ``poly``,
-        polynomial to be squared
-
-    Returns
-    -------
-    out : :class:`Poly`
-        squared polynomial
-
-    References
-    ----------
-    [Wildhaber2019]_ (Eq. 6.11)
-
-    """
-    return poly_prod((poly, poly))
-
-
-def poly_square_coef(poly):
-    r""" :math:`\color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}`
-
-    Coefficient vector :math:`\tilde{\alpha}` of squared polynomial, see :func:`poly_square`
 
     Parameters
     ----------
@@ -656,145 +645,168 @@ def poly_square_coef(poly):
 
     Returns
     -------
-    coef :class:`~numpy.ndarray`,
-        ``alpha_tilde`` Coefficient vector :math:`\tilde{\alpha}`
+    out : Poly
+        squared polynomial
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.12)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.11)
+    """
+    return poly_prod((poly, poly))
 
+
+def poly_square_coef(poly):
+    r"""
+    $\color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}$
+
+    Coefficient vector $\tilde{\alpha}$ of squared polynomial, see [`poly_square`][lmlib.polynomial.poly.poly_square]
+
+    Parameters
+    ----------
+    poly : Poly
+        ``poly``,
+        polynomial to be squared
+
+    Returns
+    -------
+    coef [`ndarray`][numpy.ndarray],
+        ``alpha_tilde`` Coefficient vector $\tilde{\alpha}$
+
+    References
+    ----------
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.12)
     """
     return np.kron(poly.coef, poly.coef)
 
 
 def poly_square_expo_M(expo):
-    r""" :math:`\tilde{\alpha}^\mathsf{T} x^{\color{blue}{M} q}`
+    r"""
+    $\tilde{\alpha}^\mathsf{T} x^{\color{blue}{M} q}$
 
-    Exponent manipulation matrix :math:`M` of squared polynomial, see :func:`poly_square`
+    Exponent manipulation matrix $M$ of squared polynomial, see [`poly_square`][lmlib.polynomial.poly.poly_square]
 
     Parameters
     ----------
     expo : array_like,
         `q`,
-        exponent vector :math:`q`
+        exponent vector $q$
 
     Returns
     -------
-    M : :class:`~numpy.ndarray`,
+    M : ndarray,
         ``M``,
-        exponent manipulation matrix :math:`M`
+        exponent manipulation matrix $M$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.10, Eq. 6.13)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.10, Eq. 6.13)
     """
     return np.add(*poly_prod_expo_Ms((expo, expo)))
 
 
 def poly_square_expo(expo):
-    r""" :math:`\tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}`
+    r"""
+    $\tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}$
 
-    Exponent vector :math:`\tilde{q}` of squared polynomial, see :func:`poly_square`.
+    Exponent vector $\tilde{q}$ of squared polynomial, see [`poly_square`][lmlib.polynomial.poly.poly_square].
 
     Parameters
     ----------
     expo : array_like,
         ``q``,
-        exponent vector :math:`q`
+        exponent vector $q$
 
     Returns
     -------
-    out :class:`~numpy.ndarray`,
+    out [`ndarray`][numpy.ndarray],
         ``q_tilde``,
-        exponent vector :math:`\tilde{q}`
+        exponent vector $\tilde{q}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.12)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.12)
     """
     return np.dot(np.add(*poly_prod_expo_Ms((expo, expo))), expo)
 
 
 def poly_shift(poly, gamma):
-    r""" :math:`\alpha^\mathsf{T} (x+ \gamma)^q = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}`
+    r"""
+    $\alpha^\mathsf{T} (x+ \gamma)^q = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}$
 
-    Shifting an univariate polynomial by constant value :math:`\gamma \in \mathbb{R}`
+    Shifting an univariate polynomial by constant value $\gamma \in \mathbb{R}$
 
     Parameters
     ----------
-    poly : :class:`Poly`
+    poly : Poly
         polynomial to be shifted
     gamma : float
         ``gamma``,
-        shift parameter :math:`\gamma`
+        shift parameter $\gamma$
 
     Returns
     -------
-    out : :class:`Poly`
+    out : Poly
         shifted polynomial,
-        :math:`\tilde{\alpha}^\mathsf{T} x^\tilde{q}`
+        $\tilde{\alpha}^\mathsf{T} x^\tilde{q}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.28)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.28)
     """
     return Poly(coef=poly_shift_coef(poly, gamma), expo=poly_shift_expo(poly.expo))
 
 
 def poly_shift_coef(poly, gamma):
-    r""" :math:`\color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}`
+    r"""
+    $\color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}$
 
-    Coefficient vector of shifted polynomial, see :func:`poly_shift`
+    Coefficient vector of shifted polynomial, see [`poly_shift`][lmlib.polynomial.poly.poly_shift]
 
     Parameters
     ----------
-    poly : :class:`Poly`
+    poly : Poly
         polynomial to be shifted
     gamma : float
         ``gamma``,
-        shift parameter :math:`\gamma`
+        shift parameter $\gamma$
 
     Returns
     -------
-    coef : :class:`~numpy.ndarray`
+    coef : ndarray
         ``alpha_tilde``
-        Coefficient vector :math:`\tilde{\alpha}`
+        Coefficient vector $\tilde{\alpha}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.29)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.29)
     """
     return np.dot(poly_shift_coef_L(poly.expo, gamma), poly.coef)
 
 
 def poly_shift_coef_L(expo, gamma):
-    r""" :math:`\color{blue}{\Lambda} \alpha^\mathsf{T} x^{\tilde{q}}`
+    r"""
+    $\color{blue}{\Lambda} \alpha^\mathsf{T} x^{\tilde{q}}$
 
-    Coefficient manipulation :math:`\Lambda}` for shifted polynomial, see :func:`poly_shift`
+    Coefficient manipulation $\Lambda$ for shifted polynomial, see [`poly_shift`][lmlib.polynomial.poly.poly_shift]
 
     Parameters
     ----------
     expo : array_like
         ``q``,
-        Exponent vector :math:`q`
+        Exponent vector $q$
     gamma : float
         ``gamma``,
-        shift parameter :math:`\gamma`
+        shift parameter $\gamma$
 
     Returns
     -------
-    L : :class:`~numpy.ndarray`
+    L : ndarray
         ``L``,
-        coefficient manipulation matrices :math:`\Lambda`.
+        coefficient manipulation matrices $\Lambda$.
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.32)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.32)
     """
     Q = len(expo)
     q_tilde = poly_shift_expo(expo)
@@ -806,213 +818,219 @@ def poly_shift_coef_L(expo, gamma):
 
 
 def poly_shift_expo(expo):
-    r""" :math:`\tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}`
+    r"""
+    $\tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}$
 
-    Exponent vector :math:`\tilde{q}` for shifted polynomial, see :func:`poly_shift`
+    Exponent vector $\tilde{q}$ for shifted polynomial, see [`poly_shift`][lmlib.polynomial.poly.poly_shift]
 
     Parameters
     ----------
     expo : array_like
         ``q``,
-        Exponent vector :math:`q`
+        Exponent vector $q$
 
     Returns
     -------
-    expo : :class:`~numpy.ndarray`
+    expo : ndarray
         ``q_tilde``,
-        exponent vector :math:`\tilde{q}`.
+        exponent vector $\tilde{q}$.
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.30)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.30)
     """
     return np.arange(max(expo) + 1)
 
 
 def poly_dilation(poly, eta):
-    r""" :math:`\alpha^\mathsf{T} (\eta x)^q = \color{blue}{\tilde{\alpha}^\mathsf{T} x^q}`
+    r"""
+    $\alpha^\mathsf{T} (\eta x)^q = \color{blue}{\tilde{\alpha}^\mathsf{T} x^q}$
 
-    Dilation of a polynomial by scaling `x` by constant value :math:`\eta \in \mathbb{R}`
+    Dilation of a polynomial by scaling `x` by constant value $\eta \in \mathbb{R}$
 
     Parameters
     ----------
-    poly : :class:`Poly`
+    poly : Poly
         polynomial to be scaled
 
     eta : float
         ``eta``,
-        dilation factor :math:`\eta`
+        dilation factor $\eta$
 
 
     Returns
     -------
-    out : :class:`Poly`
+    out : Poly
         dilated polynomial,
-        :math:`\tilde{\alpha}^\mathsf{T} x^\tilde{q}`
+        $\tilde{\alpha}^\mathsf{T} x^\tilde{q}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.33)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.33)
     """
     return Poly(coef=poly_dilation_coef(poly, eta), expo=poly.expo)
 
 
 def poly_dilation_coef(poly, eta):
-    r""" :math:`\alpha^\mathsf{T} (\eta x)^q =\color{blue}{\tilde{\alpha}}^\mathsf{T} x^q`
+    r"""
+    $\alpha^\mathsf{T} (\eta x)^q =\color{blue}{\tilde{\alpha}}^\mathsf{T} x^q$
 
 
-    Coefficient vector :math:`\tilde{\alpha}` of dilated polynomial by scaling `x` by constant value :math:`\eta \in \mathbb{R}`, see  :func:`poly_dilation`.
+    Coefficient vector $\tilde{\alpha}$ of dilated polynomial by scaling `x` by constant value $\eta \in \mathbb{R}$, see  [`poly_dilation`][lmlib.polynomial.poly.poly_dilation].
 
     Parameters
     ----------
-    poly : :class:`Poly`
+    poly : Poly
         polynomial to be scaled
 
     eta : float
         ``eta``,
-        dilation factor :math:`\eta`
+        dilation factor $\eta$
 
 
     Returns
     -------
-    coef :class:`~numpy.ndarray`
-        Coefficient vector :math:`\tilde{\alpha}`
+    coef [`ndarray`][numpy.ndarray]
+        Coefficient vector $\tilde{\alpha}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.34)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.34)
     """
     return np.dot(poly_dilation_coef_L(poly.expo, eta), poly.coef)
 
 
 def poly_dilation_coef_L(expo, eta):
-    r""" :math:`\alpha^\mathsf{T} (\eta x)^q =\color{blue}{\Lambda} \alpha^\mathsf{T} x^{q}`
+    r"""
+    $\alpha^\mathsf{T} (\eta x)^q =\color{blue}{\Lambda} \alpha^\mathsf{T} x^{q}$
 
-    Coefficient manipulation matrix :math:`\tilde{\Lambda}` to dilated polynomial by scaling `x` by constant value :math:`\eta \in \mathbb{R}`, see  :func:`poly_dilation`.
+    Coefficient manipulation matrix $\tilde{\Lambda}$ to dilated polynomial by scaling `x` by constant value $\eta \in \mathbb{R}$, see  [`poly_dilation`][lmlib.polynomial.poly.poly_dilation].
 
     Parameters
     ----------
     expo : array_like
         ``q``,
-        Exponent vector :math:`q`
+        Exponent vector $q$
     eta : float
         ``eta``,
-        dilation factor :math:`\eta`
+        dilation factor $\eta$
 
     Returns
     -------
-    L : :class:`~numpy.ndarray`
+    L : ndarray
         ``L``,
-        Coefficient Manipulation Matrices :math:`\Lambda`
+        Coefficient Manipulation Matrices $\Lambda$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.35)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.35)
     """
     return np.diag(np.power(eta, expo))
 
 
 def poly_int(poly):
-    r""" :math:`\int \big(\alpha^{\mathsf{T}}x^q\big) dx = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}`
+    r"""
+    $\int \big(\alpha^{\mathsf{T}}x^q\big) dx = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}$
 
     Indefinite integral of a polynomial
 
     Parameters
     ----------
-    poly : :class:`Poly`
+    poly : Poly
         polynomial to be integrated
 
     Returns
     -------
-    out : :class:`Poly`
+    out : Poly
         polynomial,
-        :math:`\tilde{\alpha}^\mathsf{T} x^\tilde{q}`
+        $\tilde{\alpha}^\mathsf{T} x^\tilde{q}$
 
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.17)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.17)
     """
     return Poly(poly_int_coef(poly), poly_int_expo(poly.expo))
 
 
 def poly_int_coef(poly):
-    r""" :math:`\int \big(\alpha^{\mathsf{T}}x^q\big) dx  = \color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}`
+    r"""
+    $\int \big(\alpha^{\mathsf{T}}x^q\big) dx  = \color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}$
 
-    Coefficient vector :math:`\tilde{\alpha}` of indefinite integral of a polynomial, see :func:`poly_int`
+    Coefficient vector $\tilde{\alpha}$ of indefinite integral of a polynomial, see [`poly_int`][lmlib.polynomial.poly.poly_int]
 
     Parameters
     ----------
-    poly : :class:`Poly`
+    poly : Poly
         polynomial to be integrated
 
 
     Returns
     -------
-    coef : :class:`~numpy.ndarray`,
+    coef : ndarray,
         ``alpha_tilde``,
-        Coefficient vector :math:`\tilde{\alpha}`
+        Coefficient vector $\tilde{\alpha}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.18)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.18)
     """
     return mpoly_int_coef(poly, 0)
 
 
 def poly_int_coef_L(expo):
-    r""" :math:`\int \big(\alpha^{\mathsf{T}}x^q\big) dx  = \color{blue}{\Lambda} \alpha^\mathsf{T} x^{\tilde{q}}`
+    r"""
+    $\int \big(\alpha^{\mathsf{T}}x^q\big) dx  = \color{blue}{\Lambda} \alpha^\mathsf{T} x^{\tilde{q}}$
 
-    Coefficient manipulation matrix :math:`\Lambda` of indefinite integral of a polynomial, see  :func:`poly_int`.
+    Coefficient manipulation matrix $\Lambda$ of indefinite integral of a polynomial, see  [`poly_int`][lmlib.polynomial.poly.poly_int].
 
     Parameters
     ----------
     expo : array_like
         ``q``,
-        Exponent vector :math:`q`
+        Exponent vector $q$
 
     Returns
     -------
-    L : :class:`~numpy.ndarray`
+    L : ndarray
         ``L``,
-        coefficient Manipulation Matrices :math:`\Lambda`
+        coefficient Manipulation Matrices $\Lambda$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.20-21)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.20-21)
     """
     return mpoly_int_coef_L((expo,), 0)
 
 
 def poly_int_expo(expo):
-    r""" :math:`\int \big(\alpha^{\mathsf{T}}x^q\big) dx  = \tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}`
+    r"""
+    $\int \big(\alpha^{\mathsf{T}}x^q\big) dx  = \tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}$
 
-    Exponent vector :math:`\tilde{q}` of indefinite integral of a polynomial, see :func:`poly_int`.
+    Exponent vector $\tilde{q}$ of indefinite integral of a polynomial, see [`poly_int`][lmlib.polynomial.poly.poly_int].
 
     Parameters
     ----------
     expo : array_like
         ``q``,
-        exponent vector :math:`q`
+        exponent vector $q$
 
     Returns
     -------
-    expo : :class:`~numpy.ndarray`
+    expo : ndarray
         ``q_tilde``,
-        exponent vector :math:`\tilde{q}`
+        exponent vector $\tilde{q}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.19)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.19)
     """
     return mpoly_int_expos((expo,), 0)[0]
 
 
 def poly_diff(poly):
-    r""" :math:`\frac{d}{dx} \big(\alpha^{\mathsf{T}}x^q\big) = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}`
+    r"""
+    $\frac{d}{dx} \big(\alpha^{\mathsf{T}}x^q\big) = \color{blue}{\tilde{\alpha}^\mathsf{T} x^\tilde{q}}$
 
     Derivative of a polynomial
 
@@ -1025,19 +1043,20 @@ def poly_diff(poly):
     -------
     out : Poly
         derivative polynomial
-        :math:`\tilde{\alpha}^\mathsf{T} x^\tilde{q}`
+        $\tilde{\alpha}^\mathsf{T} x^\tilde{q}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.24)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.24)
     """
     return Poly(poly_diff_coef(poly), poly_diff_expo(poly.expo))
 
 
 def poly_diff_coef(poly):
-    r""" :math:`\frac{d}{dx} \big(\alpha^{\mathsf{T}}x^q\big) =\color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}`
+    r"""
+    $\frac{d}{dx} \big(\alpha^{\mathsf{T}}x^q\big) =\color{blue}{\tilde{\alpha}}^\mathsf{T} x^\tilde{q}$
 
-    Coefficient vector :math:`\tilde{\alpha}` of the derivative of a polynomial; see :func:`poly_diff`
+    Coefficient vector $\tilde{\alpha}$ of the derivative of a polynomial; see [`poly_diff`][lmlib.polynomial.poly.poly_diff]
 
     Parameters
     ----------
@@ -1046,80 +1065,81 @@ def poly_diff_coef(poly):
 
     Returns
     -------
-    coef : :class:`~numpy.ndarray`
+    coef : ndarray
         ``alpha_tilde``,
-        coefficient vector :math:`\tilde{\alpha}`
+        coefficient vector $\tilde{\alpha}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.25)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.25)
     """
     return np.dot(poly_diff_coef_L(poly.expo), poly.coef)
 
 
 def poly_diff_coef_L(expo):
-    r""" :math:`\frac{d}{dx} \big(\alpha^{\mathsf{T}}x^q\big) =\color{blue}{\Lambda} \alpha^\mathsf{T} x^{\tilde{q}}`
+    r"""
+    $\frac{d}{dx} \big(\alpha^{\mathsf{T}}x^q\big) =\color{blue}{\Lambda} \alpha^\mathsf{T} x^{\tilde{q}}$
 
-    Coefficient manipulation matrix :math:`\Lambda` of polynomial derivation, see :func:`poly_diff`
+    Coefficient manipulation matrix $\Lambda$ of polynomial derivation, see [`poly_diff`][lmlib.polynomial.poly.poly_diff]
 
     Parameters
     ----------
     expo : array_like
-        Exponent vector :math:`q`
+        Exponent vector $q$
 
     Returns
     -------
-    L : :class:`~numpy.ndarray`
+    L : ndarray
         ``L``,
-        coefficient manipulation matrices :math:`\Lambda`
+        coefficient manipulation matrices $\Lambda$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.27)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.27)
     """
     return np.diag(expo)
 
 
 def poly_diff_expo(expo):
-    r""" :math:`\frac{d}{dx} \big(\alpha^{\mathsf{T}}x^q\big) =\tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}`
+    r"""
+    $\frac{d}{dx} \big(\alpha^{\mathsf{T}}x^q\big) =\tilde{\alpha}^\mathsf{T} x^{\color{blue}{\tilde{q}}}$
 
-    Exponent vector  :math:`\tilde{q}` of polynomial derivation, see :func:`poly_diff`
+    Exponent vector  $\tilde{q}$ of polynomial derivation, see [`poly_diff`][lmlib.polynomial.poly.poly_diff]
 
     Parameters
     ----------
     expo : array_like
-        Exponent vector :math:`q`
+        Exponent vector $q$
 
     Returns
     -------
-    expo : :class:`~numpy.ndarray`
+    expo : ndarray
         ``q_tilde``,
-        exponent vector :math:`\tilde{q}`
+        exponent vector $\tilde{q}$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.26)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.26)
     """
     return np.subtract(expo, 1).clip(min=0)
 
 
 def mpoly_int(mpoly, position):
-    """
+    r"""
     Integral of a multivariate polynomial with respect to the scalar at a position
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
     position : int
 
     Returns
     -------
-    out : :class:`~lmlib.polynomial.poly.MPoly`
+    out : MPoly
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.60 - 6.61)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.60 - 6.61)
     """
     coefs = (mpoly_int_coef(mpoly, position),)
     expos = mpoly_int_expos(mpoly.expos, position)
@@ -1127,29 +1147,28 @@ def mpoly_int(mpoly, position):
 
 
 def mpoly_int_coef(mpoly, position):
-    """
-    Coefficient vector for :func:`mpoly_int`
+    r"""
+    Coefficient vector for [`mpoly_int`][lmlib.polynomial.poly.mpoly_int]
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
     position : int
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.61)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.61)
     """
     return np.dot(mpoly_int_coef_L(mpoly.expos, position), mpoly.coefs[0])
 
 
 def mpoly_int_coef_L(expos, position, sparse=False):
-    """
-    Coefficient manipulation matrix for :func:`mpoly_int`
+    r"""
+    Coefficient manipulation matrix for [`mpoly_int`][lmlib.polynomial.poly.mpoly_int]
 
     Parameters
     ----------
@@ -1158,12 +1177,11 @@ def mpoly_int_coef_L(expos, position, sparse=False):
 
     Returns
     -------
-    L : :class:`~numpy.ndarray`
+    L : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.61)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.61)
     """
     data = kron_sequence([np.ones((len(expo),)) if n != position else (1 / (expo + 1)) for n, expo in enumerate(expos)],
                          sparse=sparse)
@@ -1174,8 +1192,8 @@ def mpoly_int_coef_L(expos, position, sparse=False):
 
 
 def mpoly_int_expos(expos, position):
-    """
-    Exponent vectors for :func:`mpoly_int`
+    r"""
+    Exponent vectors for [`mpoly_int`][lmlib.polynomial.poly.mpoly_int]
 
     Parameters
     ----------
@@ -1184,36 +1202,34 @@ def mpoly_int_expos(expos, position):
 
     Returns
     -------
-    expos : tuple of :class:`~numpy.ndarray`
+    expos : tuple of ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.61, Eq.6.19)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.61, Eq.6.19)
     """
 
     return expos[0:position] + (np.add(expos[position], 1),) + expos[position + 1::]
 
 
 def mpoly_diff(mpoly, position, sparse=False):
-    """
+    r"""
     Derivative of a multivariate polynomial with respect to the variable at the given position.
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
         Multivariate polynomial to differentiate.
     position : int
         Index of the variable with respect to which the derivative is taken.
 
     Returns
     -------
-    out : :class:`~lmlib.polynomial.poly.MPoly`
+    out : MPoly
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.24, multivariate generalisation)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.24, multivariate generalisation)
     """
     coefs = (mpoly_diff_coef(mpoly, position, sparse),)
     expos = mpoly_diff_expos(mpoly.expos, position)
@@ -1221,12 +1237,12 @@ def mpoly_diff(mpoly, position, sparse=False):
 
 
 def mpoly_diff_coef(mpoly, position, sparse=False):
-    """
-    Coefficient vector for :func:`mpoly_diff`.
+    r"""
+    Coefficient vector for [`mpoly_diff`][lmlib.polynomial.poly.mpoly_diff].
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
         Multivariate polynomial to differentiate.
     position : int
         Index of the differentiation variable.
@@ -1235,19 +1251,18 @@ def mpoly_diff_coef(mpoly, position, sparse=False):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.25, multivariate generalisation)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.25, multivariate generalisation)
     """
     return np.dot(mpoly_diff_coef_L(mpoly.expos, position, sparse), mpoly.coefs[0])
 
 
 def mpoly_diff_coef_L(expos, position, sparse=False):
-    """
-    Coefficient manipulation matrix for :func:`mpoly_diff`.
+    r"""
+    Coefficient manipulation matrix for [`mpoly_diff`][lmlib.polynomial.poly.mpoly_diff].
 
     Parameters
     ----------
@@ -1260,12 +1275,11 @@ def mpoly_diff_coef_L(expos, position, sparse=False):
 
     Returns
     -------
-    L : :class:`~numpy.ndarray`
+    L : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.27, multivariate generalisation)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.27, multivariate generalisation)
     """
     if sparse:
         return kron_sequence(
@@ -1276,8 +1290,8 @@ def mpoly_diff_coef_L(expos, position, sparse=False):
 
 
 def mpoly_diff_expos(expos, position):
-    """
-    Exponent vectors for :func:`mpoly_diff`.
+    r"""
+    Exponent vectors for [`mpoly_diff`][lmlib.polynomial.poly.mpoly_diff].
 
     Parameters
     ----------
@@ -1288,34 +1302,32 @@ def mpoly_diff_expos(expos, position):
 
     Returns
     -------
-    expos : tuple of :class:`~numpy.ndarray`
+    expos : tuple of ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.26, multivariate generalisation)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.26, multivariate generalisation)
     """
 
     return expos[0:position] + (poly_diff_expo(expos[position]),) + expos[position + 1::]
 
 
 def mpoly_add(poly1, poly2):
-    """
+    r"""
     Sum of two univariate polynomials different variables
 
     Parameters
     ----------
-    poly1 : :class:`~lmlib.polynomial.poly.Poly`
-    poly2 : :class:`~lmlib.polynomial.poly.Poly`
+    poly1 : Poly
+    poly2 : Poly
 
     Returns
     -------
-    out : :class:`~lmlib.polynomial.poly.MPoly`
+    out : MPoly
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.37)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.37)
     """
     coefs = mpoly_add_coefs(poly1, poly2)
     expos = mpoly_add_expos(poly1, poly2)
@@ -1323,22 +1335,22 @@ def mpoly_add(poly1, poly2):
 
 
 def mpoly_add_coefs(poly1, poly2):
-    """
-    Coefficients for :func:`mpoly_add`
+    r"""
+    Coefficients for [`mpoly_add`][lmlib.polynomial.poly.mpoly_add]
 
     Parameters
     ----------
-    poly1 : :class:`~lmlib.polynomial.poly.Poly`
-    poly2 : :class:`~lmlib.polynomial.poly.Poly`
+    poly1 : Poly
+    poly2 : Poly
 
     Returns
     -------
-    out : tuple of :class:`~numpy.ndarray`
+    out : tuple of ndarray
         Tuple of coefficient vectors
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.38-39)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.38-39)
     """
     Q = len(poly1.coefs)
     R = len(poly2.coefs)
@@ -1348,64 +1360,61 @@ def mpoly_add_coefs(poly1, poly2):
 
 
 def mpoly_add_expos(poly1, poly2):
-    """
-    Exponents for :func:`mpoly_add`
+    r"""
+    Exponents for [`mpoly_add`][lmlib.polynomial.poly.mpoly_add]
 
     Parameters
     ----------
-    poly1 : :class:`~lmlib.polynomial.poly.Poly`
-    poly2 : :class:`~lmlib.polynomial.poly.Poly`
+    poly1 : Poly
+    poly2 : Poly
 
     Returns
     -------
-    out : tuple of :class:`~numpy.ndarray`
+    out : tuple of ndarray
         Tuple of exponent vectors
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.38-39)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.38-39)
     """
     return np.concatenate([[0], poly1.expo], axis=0), np.concatenate([[0], poly2.expo], axis=0)
 
 
 def mpoly_multiply(poly1, poly2):
-    """
+    r"""
     Product of two univariate polynomials different variables
 
     Parameters
     ----------
-    poly1 : :class:`~lmlib.polynomial.poly.Poly` or :class:`~lmlib.polynomial.poly.MPoly`
-    poly2 : :class:`~lmlib.polynomial.poly.Poly` or :class:`~lmlib.polynomial.poly.MPoly`
+    poly1 : Poly or MPoly
+    poly2 : Poly or MPoly
 
     Returns
     -------
-    out : :class:`~lmlib.polynomial.poly.MPoly`
+    out : MPoly
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.40)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.40)
     """
     return MPoly(coefs=poly1.coefs + poly2.coefs, expos=poly1.expos + poly2.expos)
 
 
 def mpoly_prod(polys):
-    """
+    r"""
     Product of univariate polynomials different variables
 
     Parameters
     ----------
-    polys : list of :class:`~lmlib.polynomial.poly.Poly` or :class:`~lmlib.polynomial.poly.MPoly`
+    polys : list of Poly or MPoly
 
     Returns
     -------
-    out : :class:`~lmlib.polynomial.poly.MPoly`
+    out : MPoly
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.40)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.40)
     """
     coefs = sum(poly.coefs for poly in polys)
     expos = sum(poly.expo for poly in polys)
@@ -1413,21 +1422,20 @@ def mpoly_prod(polys):
 
 
 def mpoly_square(mpoly, sparse=False):
-    """
+    r"""
     Square of multivariate polynomial
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
 
     Returns
     -------
-    out : :class:`~lmlib.polynomial.poly.MPoly`
+    out : MPoly
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.42 - 6.43)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.42 - 6.43)
     """
     if len(mpoly.coefs) == 2:
 
@@ -1445,8 +1453,8 @@ def mpoly_square(mpoly, sparse=False):
 
 
 def mpoly_square_coef_L(expos, sparse=False):
-    """
-    Coefficient manipulation matrix for :func:`mpoly_square`.
+    r"""
+    Coefficient manipulation matrix for [`mpoly_square`][lmlib.polynomial.poly.mpoly_square].
 
     Parameters
     ----------
@@ -1457,12 +1465,11 @@ def mpoly_square_coef_L(expos, sparse=False):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.44)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.44)
     """
     if len(expos) == 1:
         return np.eye(len(expos[0])**2)
@@ -1502,21 +1509,20 @@ def mpoly_square_coef_L(expos, sparse=False):
 
 
 def mpoly_square_coef(mpoly, sparse=False):
-    """
-    Non-factorized coefficient vector for :func:`mpoly_square`
+    r"""
+    Non-factorized coefficient vector for [`mpoly_square`][lmlib.polynomial.poly.mpoly_square]
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.44)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.44)
     """
     if not sparse:
         return np.dot(mpoly_square_coef_L(mpoly.expos, sparse=False), np.kron(mpoly.coefs[0], mpoly.coefs[0]))
@@ -1526,8 +1532,8 @@ def mpoly_square_coef(mpoly, sparse=False):
 
 
 def mpoly_square_expos(expos):
-    """
-    Exponent vectors for :func:`mpoly_square`
+    r"""
+    Exponent vectors for [`mpoly_square`][lmlib.polynomial.poly.mpoly_square]
 
     Parameters
     ----------
@@ -1535,19 +1541,18 @@ def mpoly_square_expos(expos):
 
     Returns
     -------
-    expos : tuple of :class:`~numpy.ndarray`
+    expos : tuple of ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.45)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.45)
     """
     return tuple(M @ expo for M, expo in zip(mpoly_square_expo_Ms(expos), expos))
 
 
 def mpoly_square_expo_Ms(expos):
     r"""
-    Exponent manipulation matrices :math:`M_1, M_2, \dots M_N` for the square of an *N*-variate polynomial.
+    Exponent manipulation matrices $M_1, M_2, \dots M_N$ for the square of an *N*-variate polynomial.
 
     Parameters
     ----------
@@ -1557,14 +1562,13 @@ def mpoly_square_expo_Ms(expos):
 
     Returns
     -------
-    Ms : list of :class:`~numpy.ndarray`
+    Ms : list of ndarray
         ``(M_1, ..., M_N)``,
         list of exponent manipulation matrices
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.45)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.45)
     """
     out = []
     for expo in expos:
@@ -1573,21 +1577,20 @@ def mpoly_square_expo_Ms(expos):
 
 
 def mpoly_shift(poly):
-    """
+    r"""
     Polynomial with variable shift
 
     Parameters
     ----------
-    poly : :class:`~lmlib.polynomial.poly.Poly`
+    poly : Poly
 
     Returns
     -------
-    out : :class:`~lmlib.polynomial.poly.MPoly`
+    out : MPoly
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.49)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.49)
     """
     expos = mpoly_shift_expos(poly.expo)
     coefs = (mpoly_shift_coef(poly),)
@@ -1595,28 +1598,27 @@ def mpoly_shift(poly):
 
 
 def mpoly_shift_coef(poly):
-    """
-    Coefficient vector for :func:`mpoly_shift`
+    r"""
+    Coefficient vector for [`mpoly_shift`][lmlib.polynomial.poly.mpoly_shift]
 
     Parameters
     ----------
-    poly : :class:`~lmlib.polynomial.poly.Poly`
+    poly : Poly
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.50)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.50)
     """
     return np.dot(mpoly_shift_coef_L(poly.expo), poly.coef)
 
 
 def mpoly_shift_coef_L(expo):
-    """
-    Coefficient manipulation matrix for :func:`mpoly_shift`
+    r"""
+    Coefficient manipulation matrix for [`mpoly_shift`][lmlib.polynomial.poly.mpoly_shift]
 
     Parameters
     ----------
@@ -1624,12 +1626,11 @@ def mpoly_shift_coef_L(expo):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.52-6.53)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.52-6.53)
     """
     q_tilde = mpoly_shift_expos(expo)[0]
     L = []
@@ -1644,8 +1645,8 @@ def mpoly_shift_coef_L(expo):
 
 
 def mpoly_shift_expos(expo):
-    """
-    Exponent vector for :func:`mpoly_shift`
+    r"""
+    Exponent vector for [`mpoly_shift`][lmlib.polynomial.poly.mpoly_shift]
 
     Parameters
     ----------
@@ -1653,23 +1654,22 @@ def mpoly_shift_expos(expo):
 
     Returns
     -------
-    out : tuple of :class:`~numpy.ndarray`
+    out : tuple of ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.51)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.51)
     """
     return (np.arange(max(expo) + 1),) * 2
 
 
 def mpoly_def_int(mpoly, position, a, b):
-    """
+    r"""
     Definite integral of a multivariate polynomial with respect to the scalar at a position
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
     position : int
     a : scalar
         lower integration boundary
@@ -1678,12 +1678,11 @@ def mpoly_def_int(mpoly, position, a, b):
 
     Returns
     -------
-    out : :class:`~lmlib.polynomial.poly.MPoly`
+    out : MPoly
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.62 - 6.63)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.62 - 6.63)
     """
     coefs = (mpoly_def_int_coef(mpoly, position, a, b),)
     expos = mpoly_def_int_expos(mpoly.expos, position)
@@ -1691,12 +1690,12 @@ def mpoly_def_int(mpoly, position, a, b):
 
 
 def mpoly_def_int_coef(mpoly, position, a, b):
-    """
-    Coefficient vector for :func:`mpoly_def_int`
+    r"""
+    Coefficient vector for [`mpoly_def_int`][lmlib.polynomial.poly.mpoly_def_int]
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
     position : int
     a : scalar
         lower integration boundary
@@ -1705,19 +1704,18 @@ def mpoly_def_int_coef(mpoly, position, a, b):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.61), (Eq. 6.58)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.61), (Eq. 6.58)
     """
     return np.dot(mpoly_def_int_coef_L(mpoly.expos, position, a, b), mpoly.coefs[0])
 
 
 def mpoly_def_int_coef_L(expos, position, a, b, sparse=False):
-    """
-    Coefficient manipulation matrix for :func:`mpoly_def_int`
+    r"""
+    Coefficient manipulation matrix for [`mpoly_def_int`][lmlib.polynomial.poly.mpoly_def_int]
 
     Parameters
     ----------
@@ -1730,12 +1728,11 @@ def mpoly_def_int_coef_L(expos, position, a, b, sparse=False):
 
     Returns
     -------
-    L : :class:`~numpy.ndarray`
+    L : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.61), (Eq. 6.58)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.61), (Eq. 6.58)
     """
     L_int = mpoly_int_coef_L(expos, position, sparse=sparse)
     expos_int = mpoly_int_expos(expos, position)
@@ -1748,8 +1745,8 @@ def mpoly_def_int_coef_L(expos, position, a, b, sparse=False):
 
 
 def mpoly_def_int_expos(expos, position):
-    """
-    Exponent vectors for :func:`mpoly_def_int`
+    r"""
+    Exponent vectors for [`mpoly_def_int`][lmlib.polynomial.poly.mpoly_def_int]
 
     Parameters
     ----------
@@ -1758,34 +1755,32 @@ def mpoly_def_int_expos(expos, position):
 
     Returns
     -------
-    expos : tuple of :class:`~numpy.ndarray`
+    expos : tuple of ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.61, Eq.6.19)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.61, Eq.6.19)
     """
     return mpoly_substitute_expos(expos, position)
 
 
 def mpoly_substitute(mpoly, position, substitute):
-    """
+    r"""
     Substituting a variable of a multivariate polynomial by a constant
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
     position : int
     substitute : scalar
 
     Returns
     -------
-    out : :class:`~lmlib.polynomial.poly.MPoly`
+    out : MPoly
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.62 - 6.63)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.62 - 6.63)
     """
     coefs = (mpoly_substitute_coef(mpoly, position, substitute),)
     expos = mpoly_substitute_expos(mpoly.expos, position)
@@ -1793,30 +1788,29 @@ def mpoly_substitute(mpoly, position, substitute):
 
 
 def mpoly_substitute_coef(mpoly, position, substitute):
-    """
-    Coefficient vector for :func:`mpoly_def_int`
+    r"""
+    Coefficient vector for [`mpoly_def_int`][lmlib.polynomial.poly.mpoly_def_int]
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
     position : int
     substitute : scalar
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.58)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.58)
     """
     return np.dot(mpoly_substitute_coef_L(mpoly.expos, position, substitute), mpoly.coefs[0])
 
 
 def mpoly_substitute_coef_L(expos, position, substitute):
-    """
-    Coefficient manipulation matrix for :func:`mpoly_def_int`
+    r"""
+    Coefficient manipulation matrix for [`mpoly_def_int`][lmlib.polynomial.poly.mpoly_def_int]
 
     Parameters
     ----------
@@ -1826,12 +1820,11 @@ def mpoly_substitute_coef_L(expos, position, substitute):
 
     Returns
     -------
-    L : :class:`~numpy.ndarray`
+    L : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.58)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.58)
     """
     return kron_sequence(
         [np.eye(len(expo)) if n != position else np.atleast_2d(np.power(substitute, expo)) for n, expo in
@@ -1839,8 +1832,8 @@ def mpoly_substitute_coef_L(expos, position, substitute):
 
 
 def mpoly_substitute_expos(expos, position):
-    """
-    Exponent vectors for :func:`mpoly_substitute`
+    r"""
+    Exponent vectors for [`mpoly_substitute`][lmlib.polynomial.poly.mpoly_substitute]
 
     Parameters
     ----------
@@ -1849,34 +1842,32 @@ def mpoly_substitute_expos(expos, position):
 
     Returns
     -------
-    expos : tuple of :class:`~numpy.ndarray`
+    expos : tuple of ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.58)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.58)
     """
     return tuple(expo for n, expo in enumerate(expos) if n != position)
 
 
 def mpoly_dilate(mpoly, position, eta):
-    """
+    r"""
     Dilate a multivariate polynomial by a constant eta
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
     position : int
     eta: scalar
 
     Returns
     -------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.55)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.55)
     """
     coefs = mpoly_dilate_coefs(mpoly, position, eta)
     expos = mpoly_dilate_expos(mpoly.expos)
@@ -1884,30 +1875,29 @@ def mpoly_dilate(mpoly, position, eta):
 
 
 def mpoly_dilate_coefs(mpoly, position, eta):
-    """
-    Coefficient vectros for :func:`mpoly_dilate`
+    r"""
+    Coefficient vectros for [`mpoly_dilate`][lmlib.polynomial.poly.mpoly_dilate]
 
     Parameters
     ----------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
+    mpoly : MPoly
     position : int
     eta: scalar
 
     Returns
     -------
-    out : tuple of :class:`~numpy.ndarray`
+    out : tuple of ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.55)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.55)
     """
     return np.dot(mpoly_dilate_coef_L(mpoly.expos, position, eta), mpoly.coefs[0]),
 
 
 def mpoly_dilate_coef_L(expos, position, eta):
-    """
-    Coefficient manipulation matrix for :func:`mpoly_dilate`
+    r"""
+    Coefficient manipulation matrix for [`mpoly_dilate`][lmlib.polynomial.poly.mpoly_dilate]
 
     Parameters
     ----------
@@ -1917,20 +1907,19 @@ def mpoly_dilate_coef_L(expos, position, eta):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.55)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.55)
     """
     return np.diag(kron_sequence(
         [np.ones_like(expo) if n != position else np.power(eta, expo) for n, expo in enumerate(expos)]))
 
 
 def mpoly_dilate_expos(expos):
-    """
-    Exponent vectors for :func:`mpoly_dilate`
+    r"""
+    Exponent vectors for [`mpoly_dilate`][lmlib.polynomial.poly.mpoly_dilate]
 
     Parameters
     ----------
@@ -1938,35 +1927,34 @@ def mpoly_dilate_expos(expos):
 
     Returns
     -------
-    expos : tuple of :class:`~numpy.ndarray`
+    expos : tuple of ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.55)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.55)
     """
     return expos
 
 
 def mpoly_dilate_ind(poly):
-    r""" :math:`\alpha^{mathsf{T}}(xy)^q = (\Delta_Q\alpha)^{mathsf{T}}(x^q \otimes y^q)`
+    r"""
+    $\alpha^{mathsf{T}}(xy)^q = (\Delta_Q\alpha)^{mathsf{T}}(x^q \otimes y^q)$
 
     Dilates a univariate polynomial `poly` by an indeterminate y
 
     Parameters
     ----------
-    poly : :class:`~lmlib.polynomial.poly.Poly`
+    poly : Poly
         Univariate polynomial ``Poly(alpha, q)``
 
     Returns
     -------
-    mpoly : :class:`~lmlib.polynomial.poly.MPoly`
-        Multivariate polynomial ``Poly((alpha_tilde,), (q, q))`` with dilation variable :math:`y`
+    mpoly : MPoly
+        Multivariate polynomial ``Poly((alpha_tilde,), (q, q))`` with dilation variable $y$
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.55)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.55)
     """
     coefs = mpoly_dilate_ind_coefs(poly)
     expos = mpoly_dilate_ind_expos(poly.expo)
@@ -1974,28 +1962,27 @@ def mpoly_dilate_ind(poly):
 
 
 def mpoly_dilate_ind_coefs(poly):
-    """
-    Coefficient vectros for :func:`mpoly_dilate`
+    r"""
+    Coefficient vectros for [`mpoly_dilate`][lmlib.polynomial.poly.mpoly_dilate]
 
     Parameters
     ----------
-    poly : :class:`~lmlib.polynomial.poly.Poly`
+    poly : Poly
 
     Returns
     -------
-    out : tuple of :class:`~numpy.ndarray`
+    out : tuple of ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.55)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.55)
     """
     return np.dot(mpoly_dilate_ind_coef_L(poly.expo), poly.coef),
 
 
 def mpoly_dilate_ind_coef_L(expo):
-    """
-    Coefficient manipulation matrix for :func:`mpoly_dilate`
+    r"""
+    Coefficient manipulation matrix for [`mpoly_dilate`][lmlib.polynomial.poly.mpoly_dilate]
 
     Parameters
     ----------
@@ -2003,35 +1990,33 @@ def mpoly_dilate_ind_coef_L(expo):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.57)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.57)
     """
     return np.kron(np.eye(len(expo)), np.ones((len(expo), 1))) * np.kron(
         np.atleast_2d(np.eye(len(expo)).flatten('F')).T, np.ones_like(expo).T)
 
 
 def mpoly_dilate_ind_expos(expo):
-    """
-    Exponent vectors for :func:`mpoly_dilate`
+    r"""
+    Exponent vectors for [`mpoly_dilate`][lmlib.polynomial.poly.mpoly_dilate]
 
     Parameters
     ----------
     expo : array_like,
         `q`,
-        exponent vector :math:`q`
+        exponent vector $q$
 
     Returns
     -------
-    expos : tuple of :class:`~numpy.ndarray`
+    expos : tuple of ndarray
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.55)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.55)
     """
     return expo, expo
 
@@ -2042,12 +2027,10 @@ def extend_basis(mpoly, new_expos):
 
     The new basis / variable are appended.
 
-    .. math::
-
-        \alpha^T x^q = (A\alpha)^T(x^q \otimes y^r \otimes z^s) =
-
-        A = (I^q \otimes 0^r \otimes 0^s)
-
+    $$
+    \alpha^T x^q = (A\alpha)^T(x^q \otimes y^r \otimes z^s) =
+    A = (I^q \otimes 0^r \otimes 0^s)
+    $$
 
     Parameters
     ----------
@@ -2067,7 +2050,6 @@ def extend_basis(mpoly, new_expos):
     References
     ----------
     TODO: Ref
-
     """
 
     _tmp = []
@@ -2086,16 +2068,17 @@ def permutation_matrix(m, n, i, j, sparse=False):
 
     The permutation is given by
 
-    .. math::
-
-        vec(A\otimes B) = R_{m,n;i,j} \big(vec(A) \otimes vec(B)\big)
+    $$
+    vec(A\otimes B) = R_{m,n;i,j} \big(vec(A) \otimes vec(B)\big)
+    $$
 
     with permutation matrix
 
-    .. math::
-        R_{m,n;i,j} = I_n \otimes K_{m,j} \otimes I_i \in \mathbb{R}^{mnij \times mnij}
+    $$
+    R_{m,n;i,j} = I_n \otimes K_{m,j} \otimes I_i \in \mathbb{R}^{mnij \times mnij}
+    $$
 
-    and :math:`A_{\{m,n\}} \in \mathbb{R}` and :math:`B_{\{i,j\}} \in \mathbb{R}`
+    and $A_{\{m,n\}} \in \mathbb{R}$ and $B_{\{i,j\}} \in \mathbb{R}$
 
     Parameters
     ----------
@@ -2110,17 +2093,16 @@ def permutation_matrix(m, n, i, j, sparse=False):
 
     Returns
     -------
-    R : :class:`~numpy.ndarray`
+    R : ndarray
         Commutation matrix
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.100-6.102)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.100-6.102)
 
     See Also
     --------
     permutation_matrix_square
-
     """
     K = commutation_matrix(m, j, sparse=sparse)
     return kron_sequence([np.eye(n, dtype=int), K, np.eye(i, dtype=int)], sparse=sparse)
@@ -2132,17 +2114,17 @@ def permutation_matrix_square(m, i, sparse=False):
 
     The permutation is given by
 
-    .. math::
-
-        vec(A\otimes B) = R_{m,n;i,j} \big(vec(A) \otimes vec(B)\big)
+    $$
+    vec(A\otimes B) = R_{m,n;i,j} \big(vec(A) \otimes vec(B)\big)
+    $$
 
     with permutation matrix
 
-    .. math::
+    $$
+    R_{m;i} = R_{m,m;i,i}
+    $$
 
-        R_{m;i} = R_{m,m;i,i}
-
-    and :math:`A_{\{m,m\}} \in \mathbb{R}` and :math:`B_{\{i,i\}} \in \mathbb{R}`
+    and $A_{\{m,m\}} \in \mathbb{R}$ and $B_{\{i,i\}} \in \mathbb{R}$
 
     Parameters
     ----------
@@ -2153,17 +2135,16 @@ def permutation_matrix_square(m, i, sparse=False):
 
     Returns
     -------
-    R : :class:`~numpy.ndarray`
+    R : ndarray
         Commutation matrix
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.101-6.103)
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.101-6.103)
 
     See Also
     --------
     permutation_matrix
-
     """
     return permutation_matrix(m, m, i, i, sparse=sparse)
 
@@ -2172,11 +2153,11 @@ def commutation_matrix(m, n, sparse=False):
     r"""
     Returns commutation matrix
 
-    .. math::
+    $$
+    K_{m,n}vec(A) = vec(A^\mathsf{T}) \in \mathbb{R}^{mn \times mn}
+    $$
 
-        K_{m,n}vec(A) = vec(A^\mathsf{T}) \in \mathbb{R}^{mn \times mn}
-
-    where :math:`A_{\{m,n\}} \in \mathbb{R}`
+    where $A_{\{m,n\}} \in \mathbb{R}$
 
     Parameters
     ----------
@@ -2187,13 +2168,12 @@ def commutation_matrix(m, n, sparse=False):
 
     Returns
     -------
-    K : :class:`~numpy.ndarray`
+    K : ndarray
         Commutation matrix squared
 
     References
     ----------
-    [Wildhaber2019]_ (Eq. 6.114-6.115)
-
+    [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) (Eq. 6.114-6.115)
     """
     if sparse:
         row = range(m * n)
@@ -2211,7 +2191,7 @@ def commutation_matrix(m, n, sparse=False):
 
 
 def remove_redundancy(expo):
-    """
+    r"""
     Returns the exponent vector without redundancy and the matrix to add up the coefficients of the same exponent.
 
     Parameters
@@ -2221,11 +2201,10 @@ def remove_redundancy(expo):
 
     Returns
     -------
-    L : :class:`~numpy.ndarray` of shape=(R,Q) of int
+    L : ndarray of shape=(R,Q) of int
         Coefficient matrix
-    r : :class:`~numpy.ndarray` of shape=(R,) of int
+    r : ndarray of shape=(R,) of int
         Exponent vector
-
     """
     r, indices = np.unique(expo, return_inverse=True)
     L = np.zeros((len(r), len(indices)))
@@ -2235,7 +2214,7 @@ def remove_redundancy(expo):
 
 
 def mpoly_remove_redundancy(expos, sparse=False):
-    """
+    r"""
     Returns the tuple of exponent vectors without redundancy and
     the matrix to add up the coefficients of the same exponent.
 
@@ -2250,11 +2229,12 @@ def mpoly_remove_redundancy(expos, sparse=False):
 
     Returns
     -------
-    L : :class:`~numpy.ndarray` of shape=(Rn,Qn) of int
+    L : ndarray of shape=(Rn,Qn) of int
         Coefficient matrix
-    expos_out : tuple of :class:`~numpy.ndarray` of shape=(Rn,) of int
+    expos_out : tuple of ndarray of shape=(Rn,) of int
         Tuple of exponent vectors
-        """
+
+    """
     expos_red = ()
     tmp_ = []
     for expo in expos:
@@ -2267,9 +2247,10 @@ def mpoly_remove_redundancy(expos, sparse=False):
 def mpoly_transformation_coef_L(q, c=0):
     r"""
     transformation of a uniform polynomial into the form
-    .. math::
 
-        \lambda \alpha^\mathsf{T}(\eta(x + c + \delta))^q = (\Lambda\alpha)^\mathsf{T}(x^q \otimes \eta^q \otimes \delta^q \otimes \lambda^s)
+    $$
+    \lambda \alpha^\mathsf{T}(\eta(x + c + \delta))^q = (\Lambda\alpha)^\mathsf{T}(x^q \otimes \eta^q \otimes \delta^q \otimes \lambda^s)
+    $$
 
     for $s = [0, 1]$
 
@@ -2278,7 +2259,7 @@ def mpoly_transformation_coef_L(q, c=0):
     ----------
     expo : array_like,
         `q`,
-        exponent vector :math:`q`
+        exponent vector $q$
     c : scalar
         x-offset
     """
@@ -2315,16 +2296,16 @@ def mpoly_transformation_expos(q):
 
 
 def mpoly_extend_coef_L(expos, pos, sparse=False):
-    r"""Extends the polynomial by additional variables without changing its value.
+    r"""
+    Extends the polynomial by additional variables without changing its value.
 
     Basis expansion:
 
-    .. math::
+    $$
+    \alpha^\mathsf{T}x^q = (\Lambda\alpha)^\mathsf{T}(x^q \otimes y^r \otimes \cdots \otimes z^s)
+    $$
 
-        \alpha^\mathsf{T}x^q = (\Lambda\alpha)^\mathsf{T}(x^q \otimes y^r \otimes \cdots \otimes z^s)
-
-    for :math:`s = [0, 1]`.
-
+    for $s = [0, 1]$.
     """
     tmp_ = []
     for n, expo in enumerate(expos):

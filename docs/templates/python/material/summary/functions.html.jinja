@@ -1,0 +1,33 @@
+{#- Summary of functions/methods.
+
+   Customised for lmlib: dunder methods (``__str__``, ``__iter__``, ``__init__``,
+   ...) are excluded from the auto-summary so it matches the detailed members
+   section, which already filters them out in ``children.html.jinja``. Without
+   this, ``__str__`` showed up in the "Methods:" overview but had no
+   corresponding detail block, which read as an inconsistency.
+
+   ``is_special`` is True for any ``__dunder__`` member, so ``rejectattr`` here
+   mirrors the ``name.startswith("__") and name.endswith("__")`` test used for
+   the detailed methods.
+-#}
+
+{% block logs scoped %}
+  {{ log.debug("Rendering functions summary (dunders excluded)") }}
+{% endblock logs %}
+
+{% if not obj.docstring.parsed | selectattr("kind.value", "eq", "functions") | list %}
+  {% with section = obj.functions
+      |filter_objects(
+        filters=config.filters,
+        members_list=members_list,
+        inherited_members=config.inherited_members,
+        keep_no_docstrings=config.show_if_no_docstring,
+      )
+      |rejectattr("is_special")
+      |list
+      |order_members(config.members_order, members_list)
+      |as_functions_section(check_public=not members_list)
+    %}
+    {% if section %}{% include "docstring/functions.html.jinja" with context %}{% endif %}
+  {% endwith %}
+{% endif %}

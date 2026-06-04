@@ -11,7 +11,8 @@ import numpy as np
 __all__ = ['kron_q', 'common_C_dim', 'ss2zpk_qz']
 
 def _sanitize_zeros(zeros, tol=1e-6):
-    """Snap numerical noise in QZ-computed zeros so that zpk2sos always receives
+    r"""
+    Snap numerical noise in QZ-computed zeros so that zpk2sos always receives
     valid input.
 
     The QZ algorithm can return two kinds of numerical noise:
@@ -31,7 +32,7 @@ def _sanitize_zeros(zeros, tol=1e-6):
         Zeros as returned by the QZ decomposition.
     tol : float
         Relative tolerance for declaring a zero "nearly real":
-        ``|imag| / (|real| + 1e-300) < tol``.
+        ``$\mathrm{Im}$ / ($\mathrm{Re}$ + 1e-300) < tol``.
 
     Returns
     -------
@@ -124,18 +125,18 @@ def _transform_x(xs, P):
 
 
 def kron_q(x, q):
-    """
-    Compute the Kronecker power :math:`x^{\\otimes q}` of an array.
+    r"""
+    Compute the Kronecker power $x^{\otimes q}$ of an array.
 
     For a vector or matrix ``x``, this returns
 
-    .. math::
+    $$
+    x^{\otimes 0} = I_1, \quad
+    x^{\otimes 1} = x, \quad
+    x^{\otimes q} = x \otimes x^{\otimes (q-1)} \; (q \geq 2).
+    $$
 
-        x^{\\otimes 0} = I_1, \\quad
-        x^{\\otimes 1} = x, \\quad
-        x^{\\otimes q} = x \\otimes x^{\\otimes (q-1)} \\; (q \\geq 2).
-
-    For reference, see [Baeriswyl2025]_ [Eq. 6].
+    For reference, see [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) [Eq. 6].
 
     Parameters
     ----------
@@ -149,7 +150,6 @@ def kron_q(x, q):
     out : ndarray
         ``x`` raised to the Kronecker power ``q``.  Shape is
         ``(x.shape[0]**q, x.shape[1]**q)`` for a 2-D input.
-
     """
     if q == 0:
         return np.eye(1)

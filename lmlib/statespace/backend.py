@@ -1,4 +1,4 @@
-"""Selection tool to switch between Python interpreter (default) and JIT (Just-in-Time) compilation execution for time-critical routines in package :mod:`lmlib.statespace`. """
+r"""Selection tool to switch between Python interpreter (default) and JIT (Just-in-Time) compilation execution for time-critical routines in the `statespace` package. """
 
 import importlib.util
 import sys
@@ -9,26 +9,29 @@ __all__ = ['set_backend', 'is_backend_available', 'get_backend', 'BACKEND_TYPES'
 _backend = 'lfilter' # current backend selection (global)
 
 BACKEND_TYPES = ('jit', 'numpy', 'lfilter') # known backends
+r"""tuple of str : All backend names known to lmlib (``'jit'``, ``'numpy'``, ``'lfilter'``), whether or not they are installed on this system."""
+
 available_backends = ('numpy', 'lfilter') # available backends
+r"""tuple of str : Backend names actually available on this system. ``'jit'`` is appended at import time when the optional ``numba`` package is installed."""
 
 
 def set_backend(backend):
-    """
+    r"""
     Selects one out of multiple available backends (to optimize execution performance).
 
     Parameters
     ----------
     backend : str ("jit", "py", "python", "numpy", "lfilter")
-        
+
           - "numpy" : for State Space Backend in Python (default)
           - "lfilter" : for Transfer Function Backend in Python
           - "jit": Just-in-Time compilation (if available)
           - "python" or "py" : Deprecated. (same as numpy)
- 
-    
+
+
     If the selected backend is not available, an assert is risen. 
-    Use :meth:`is_backend_available` to check availability first. 
-    """    
+    Use [`is_backend_available`][lmlib.statespace.backend.is_backend_available] to check availability first. 
+    """
     backend = backend.lower()
     global _backend
     assert backend in BACKEND_TYPES, "Unknown backend name."
@@ -44,31 +47,31 @@ def set_backend(backend):
         _backend = 'lfilter'
 
 def is_backend_available(backend):
-    """
-    Checks if the backend :code:`backend` is available on this system. 
+    r"""
+    Checks if the backend `backend` is available on this system. 
 
     Parameters
     ----------
     backend : str 
-              or a list of valid backends, see :meth:`set_backend`
+              or a list of valid backends, see [`set_backend`][lmlib.statespace.backend.set_backend]
 
     Returns
     ----------
     output : bool
-             :code:`True` or :code:`False`
-    """    
+             `True` or `False`
+    """
     
     return backend in available_backends
 
 def get_backend(cost_term):
-    """
+    r"""
     Returns the name of the currently selected backend.
 
 
     Returns
     ----------
     output : str
-             for a list of valid backends, see :meth:`set_backend`
+             for a list of valid backends, see [`set_backend`][lmlib.statespace.backend.set_backend]
     """
         
     global _backend

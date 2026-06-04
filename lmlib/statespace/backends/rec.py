@@ -13,8 +13,8 @@ __all__ = ['xi_q_recursion', 'xi_q_asterisk_l_recursion']
 
 
 def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, backend, filter_form, block_sizes=None):
-    """
-    Run the :math:`\\xi^{(q)*l}` multi-dimensional recursion (Eq. 47 in [Baeriswyl2025]).
+    r"""
+    Run the $\xi^{(q)*l}$ multi-dimensional recursion (Eq. 47 in [Baeriswyl2025]).
 
     Computes the cross-dimensional xi terms for N-dimensional cost functions via
     the Kronecker-structured recursion.  One combined ``AlssmSum`` per segment is
@@ -121,8 +121,8 @@ def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, back
 
 
 def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, block_sizes=None, parallel_plan=None):
-    """
-    Run the :math:`\\xi^{(q)}` recursion on the selected backend (Eq. 18 in [Baeriswyl2025]).
+    r"""
+    Run the $\xi^{(q)}$ recursion on the selected backend (Eq. 18 in [Baeriswyl2025]).
 
     A single combined ``AlssmSum`` (block-diagonal ``A``) is passed per segment;
     the backend chooses the realization:
@@ -132,7 +132,7 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, bloc
       lets it skip the structurally-zero cross-block feed-forward terms).
     - ``lfilter`` / ``parallel`` : per-ALSSM split (``parallel_plan`` carries the
       pre-built per-block transfer-function coefficients from
-      :func:`build_parallel_numdenom`).
+      [`build_parallel_numdenom`][lmlib.statespace.backends.rec_lfilter.build_parallel_numdenom]).
 
     Parameters
     ----------
@@ -158,7 +158,7 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, bloc
         Per-ALSSM state orders of the combined ``A`` (lfilter cascade, q==1).
     parallel_plan : list or None
         Per-block transfer-function coefficients (lfilter parallel, q==1);
-        see :func:`build_parallel_numdenom`.
+        see [`build_parallel_numdenom`][lmlib.statespace.backends.rec_lfilter.build_parallel_numdenom].
     """
 
     if backend == 'numpy':

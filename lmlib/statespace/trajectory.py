@@ -147,8 +147,8 @@ class Trajectory:
 
     @staticmethod
     def _eval_nd(cost, xs, thd=1e-6, merged_ks=True, merged_seg=True):
-        """
-        ND variant of :meth:`eval` for :class:`NDCompositeCost`.
+        r"""
+        ND variant of [`eval`][lmlib.statespace.trajectory.Trajectory.eval] for [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost].
 
         Parameters
         ----------
@@ -228,7 +228,7 @@ class Trajectory:
 
     @staticmethod
     def eval_y(cost, xs, ks, K, F=None, thd=1e-6, merged_ks=True, merged_seg=True, fill_value=np.nan):
-        """
+        r"""
         Evaluate trajectories at anchor positions ``ks`` and map them into a
         length-``K`` output array.
 
@@ -282,7 +282,7 @@ class Trajectory:
         ValueError
             If ``len(xs)`` matches neither ``len(ks)`` nor ``K``.
         NotImplementedError
-            If ``cost`` is an :class:`NDCompositeCost`.
+            If ``cost`` is an [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost].
         """
         if isinstance(cost, NDCompositeCost):
             return Trajectory._eval_y_nd(cost, xs, ks, K, thd=thd,
@@ -335,8 +335,8 @@ class Trajectory:
     @staticmethod
     def _eval_y_nd(cost, xs, ks, K, thd=1e-6, merged_ks=True, merged_seg=True,
                    fill_value=np.nan):
-        """
-        ND variant of :meth:`eval_y` for :class:`NDCompositeCost`.
+        r"""
+        ND variant of [`eval_y`][lmlib.statespace.trajectory.Trajectory.eval_y] for [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost].
 
         Maps ND ALSSM trajectories centred at anchor positions ``ks`` into a
         multi-dimensional output array of shape ``K``.

@@ -1,0 +1,84 @@
+{#- Template for "Attributes" sections in docstrings.
+
+   Customised for lmlib: the redundant *type annotation* is intentionally NOT
+   rendered here. Attribute docstrings in this code base already begin with a
+   descriptive type (e.g. ``ndarray, shape=([Q,] N) : ...`` or ``str : ...``),
+   which is more informative than the bare Python annotation (``NDArray`` does
+   not carry the array shape). Rendering both produced a duplicated type
+   (``C_init (NDArray) – ndarray, shape=([Q,] N) : ...``); we keep only the
+   descriptive docstring so every attribute reads uniformly as
+   ``name – <type>, shape=... : <description>``.
+
+   Context:
+     section (griffe.DocstringSectionAttributes): The section to render.
+-#}
+
+{% block logs scoped %}
+  {{ log.debug("Rendering attributes section") }}
+{% endblock logs %}
+
+{% import "language.html.jinja" as lang with context %}
+
+{% if config.docstring_section_style == "table" %}
+  {% block table_style scoped %}
+    <p><span class="doc-section-title">{{ section.title or lang.t("Attributes:") }}</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>{{ lang.t("Name") }}</th>
+          <th>{{ lang.t("Description") }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attribute in section.value %}
+          <tr class="doc-section-item">
+            <td><code><autoref identifier="{{ obj.path }}.{{ attribute.name }}" optional hover>{{ attribute.name }}</autoref></code></td>
+            <td>
+              <div class="doc-md-description">
+                {{ attribute.description|convert_markdown(heading_level, html_id, autoref_hook=autoref_hook) }}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endblock table_style %}
+{% elif config.docstring_section_style == "list" %}
+  {% block list_style scoped %}
+    <p><span class="doc-section-title">{{ section.title or lang.t("Attributes:") }}</span></p>
+    <ul>
+      {% for attribute in section.value %}
+        <li class="doc-section-item field-body">
+          <b><code><autoref identifier="{{ obj.path }}.{{ attribute.name }}" optional hover>{{ attribute.name }}</autoref></code></b>
+          –
+          <div class="doc-md-description">
+            {{ attribute.description|convert_markdown(heading_level, html_id, autoref_hook=autoref_hook) }}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endblock list_style %}
+{% elif config.docstring_section_style == "spacy" %}
+  {% block spacy_style scoped %}
+    <table>
+      <thead>
+        <tr>
+          <th><span class="doc-section-title">{{ (section.title or lang.t("ATTRIBUTE")).rstrip(":").upper() }}</span></th>
+          <th><span>{{ lang.t("DESCRIPTION") }}</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attribute in section.value %}
+          <tr class="doc-section-item">
+            <td><code><autoref identifier="{{ obj.path }}.{{ attribute.name }}" optional hover>{{ attribute.name }}</autoref></code></td>
+            <td class="doc-attribute-details">
+              <div class="doc-md-description">
+                {{ attribute.description|convert_markdown(heading_level, html_id, autoref_hook=autoref_hook) }}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endblock spacy_style %}
+{% endif %}

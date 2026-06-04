@@ -4,7 +4,7 @@ import numpy as np
 
 __all__ = ['is_square', 'is_2dim', 'is_1dim', 'is_array_like', 'is_string',
            'info_str_found_shape', 'info_str_found_type',
-           'deprecated', 'DeprecationHelper']
+           'deprecated']
 
 
 def is_2dim(arr): return True if np.ndim(arr) == 2 else False

@@ -5,13 +5,13 @@ import numpy as np
 __all__ = ['FW', 'FORWARD', 'BW', 'BACKWARD', 'Segment']
 
 BACKWARD = 'bw'
-"""str : Sets the recursion direction in a :class:`Segment` to backward, use :const:`BACKWARD` or :const:`BW`"""
+r"""str : Sets the recursion direction in a [`Segment`][lmlib.statespace.segment.Segment] to backward, use [`BACKWARD`][lmlib.statespace.segment.BACKWARD] or [`BW`][lmlib.statespace.segment.BW]"""
 BW = BACKWARD
-"""str : Sets the recursion direction in a :class:`Segment` to backward, use :const:`BACKWARD` or :const:`BW`"""
+r"""str : Sets the recursion direction in a [`Segment`][lmlib.statespace.segment.Segment] to backward, use [`BACKWARD`][lmlib.statespace.segment.BACKWARD] or [`BW`][lmlib.statespace.segment.BW]"""
 FORWARD = 'fw'
-"""str : Sets the recursion direction in a :class:`Segment` to forward, use :const:`FORWARD` or :const:`FW`"""
+r"""str : Sets the recursion direction in a [`Segment`][lmlib.statespace.segment.Segment] to forward, use [`FORWARD`][lmlib.statespace.segment.FORWARD] or [`FW`][lmlib.statespace.segment.FW]"""
 FW = FORWARD
-"""str : Sets the recursion direction in a :class:`Segment` to forward, use :const:`FORWARD` or :const:`FW`"""
+r"""str : Sets the recursion direction in a [`Segment`][lmlib.statespace.segment.Segment] to forward, use [`FORWARD`][lmlib.statespace.segment.FORWARD] or [`FW`][lmlib.statespace.segment.FW]"""
 
 
 class Segment:
@@ -19,25 +19,27 @@ class Segment:
     Segment defining a window interval for weighting signal samples in a cost function.
 
     Segments are commonly used in combination with ALSSM signal models to select and
-    weight the samples in cost functions; see :class:`CostSegment` or
-    :class:`CompositeCost`. The window has an exponentially decaying shape controlled
-    by the decay factor :math:`\gamma`. The direction of the window also determines
+    weight the samples in cost functions; see [`CostSegment`][lmlib.statespace.cost.CostSegment] or
+    [`CompositeCost`][lmlib.statespace.cost.CompositeCost]. The window has an exponentially decaying shape controlled
+    by the decay factor $\gamma$. The direction of the window also determines
     whether the recursive cost computation runs forward or backward.
 
     In conjunction with an ALSSM, a Segment leads to a cost function of the form
 
-    .. math::
-        J_k(x) = \sum_{i=k+a}^{k+b} \gamma^{i-k-\delta}\big(CA^{i-k}x - y_i\big)^2 \ ,
+    $$
+    J_k(x) = \sum_{i=k+a}^{k+b} \gamma^{i-k-\delta}\big(CA^{i-k}x - y_i\big)^2 \ ,
+    $$
 
-    and when additionally using sample weights :math:`v_k`, of the form
+    and when additionally using sample weights $v_k$, of the form
 
-    .. math::
-        J_k(x) = \sum_{i=k+a}^{k+b} v_k  {\alpha}_{k+\delta}(k+\delta) \big(CA^{i-k}x - y_i\big)^2 \ ,
+    $$
+    J_k(x) = \sum_{i=k+a}^{k+b} v_k  {\alpha}_{k+\delta}(k+\delta) \big(CA^{i-k}x - y_i\big)^2 \ ,
+    $$
 
-    with the sample weights :math:`v_k`
-    and the window weight :math:`\alpha_k(j)` which depends on the sample weights, see Equation (14) in [Wildhaber2018]_
+    with the sample weights $v_k$
+    and the window weight $\alpha_k(j)$ which depends on the sample weights, see Equation (14) in [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)
 
-    See also [Wildhaber2018]_ [Wildhaber2019]_
+    See also [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) [\[Wildhaber2019\]](../bibliography.md#wildhaber2019)
 
     Parameters
     ----------
@@ -47,13 +49,13 @@ class Segment:
         Right boundary of the segment's interval (inclusive).
     direction : str
         Recursion direction for the cost computation; also selects whether the
-        window decays toward the left or the right. |br|
-        :data:`statespace.FORWARD` or ``'fw'``: forward computation (window decays to the left). |br|
-        :data:`statespace.BACKWARD` or ``'bw'``: backward computation (window decays to the right).
+        window decays toward the left or the right. <br>
+        [`FORWARD`][lmlib.statespace.FORWARD] or ``'fw'``: forward computation (window decays to the left). <br>
+        [`BACKWARD`][lmlib.statespace.BACKWARD] or ``'bw'``: backward computation (window decays to the right).
     g : int, float, or None
-        Effective number of samples under the window, :math:`g > 1`. Used as a
-        more readable surrogate for the window decay factor; see [Wildhaber2018]_. |br|
-        :math:`g` is counted to the right of :math:`k+\delta` for forward direction
+        Effective number of samples under the window, $g > 1$. Used as a
+        more readable surrogate for the window decay factor; see [\[Wildhaber2018\]](../bibliography.md#wildhaber2018). <br>
+        $g$ is counted to the right of $k+\delta$ for forward direction
         and to the left for backward direction. Must be ``None`` when ``gamma`` is
         provided instead.
     delta : int, optional
@@ -62,14 +64,14 @@ class Segment:
         Window decay factor (alternative to ``g``). When set, ``g`` must be ``None``.
         For forward direction, ``gamma > 1`` is required for stability; a warning is
         issued for ``gamma <= 1``. For backward direction, ``gamma < 1`` is required;
-        a warning is issued for ``gamma >= 1``. See [Wildhaber2018]_ Table IV.
+        a warning is issued for ``gamma >= 1``. See [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Table IV.
     label : str or None, optional
         Segment label, useful for debugging in more complex systems. Default: None.
 
     Notes
     -----
     The interval includes both boundaries ``a`` and ``b``, so the sum runs over
-    :math:`b - a + 1` samples when both are finite.
+    $b - a + 1$ samples when both are finite.
 
     Examples
     --------
@@ -117,25 +119,26 @@ class Segment:
 
     @property
     def a(self):
-        """int, np.inf: Left boundary of the segment's interval :math:`a`"""
+        r"""int, np.inf: Left boundary of the segment's interval $a$"""
         return self._a
 
     @property
     def b(self):
-        """int, np.inf : Right boundary of the segment's interval :math:`b`"""
+        r"""int, np.inf : Right boundary of the segment's interval $b$"""
         return self._b
 
     @property
     def g(self):
-        r"""int or float : Effective number of samples :math:`g`, setting the window width.
+        r"""
+        int or float : Effective number of samples $g$, setting the window width.
 
-        The effective number of samples :math:`g` is used to derive and set the window
-        decay factor :math:`\gamma` internally:
+        The effective number of samples $g$ is used to derive and set the window
+        decay factor $\gamma$ internally:
 
-        - forward direction: :math:`\gamma = g / (g - 1) > 1`
-        - backward direction: :math:`\gamma = (g - 1) / g < 1`
+        - forward direction: $\gamma = g / (g - 1) > 1$
+        - backward direction: $\gamma = (g - 1) / g < 1$
 
-        Must satisfy :math:`g > 0`. See [Wildhaber2018]_ Section III.A.
+        Must satisfy $g > 0$. See [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Section III.A.
         """
         return self._g
 
@@ -147,19 +150,21 @@ class Segment:
 
     @property
     def direction(self):
-        """str : returns the segment's recursion computation `direction`
+        r"""
+        str : returns the segment's recursion computation `direction`
 
-            - :data:`FORWARD`, :data:`FW` or `'fw'` use forward computation with forward recursions
-            - :data:`BACKWARD`, :data:`BW` or `'bw'` use backward computation with backward recursions
+        - [`FORWARD`][lmlib.statespace.segment.FORWARD], [`FW`][lmlib.statespace.segment.FW] or `'fw'` use forward computation with forward recursions
+        - [`BACKWARD`][lmlib.statespace.segment.BACKWARD], [`BW`][lmlib.statespace.segment.BW] or `'bw'` use backward computation with backward recursions
         """
         return self._direction
 
     @direction.setter
     def direction(self, direction):
-        """str : Sets the segment's recursion computation `direction`
+        r"""
+        str : Sets the segment's recursion computation `direction`
 
-            - :data:`FORWARD`, :data:`FW` or `'fw'` use forward computation with forward recursions
-            - :data:`BACKWARD`, :data:`BW` or `'bw'` use backward computation with backward recursions
+        - [`FORWARD`][lmlib.statespace.segment.FORWARD], [`FW`][lmlib.statespace.segment.FW] or `'fw'` use forward computation with forward recursions
+        - [`BACKWARD`][lmlib.statespace.segment.BACKWARD], [`BW`][lmlib.statespace.segment.BW] or `'bw'` use backward computation with backward recursions
         """
         assert isinstance(direction, str), 'Computation direction is not of type string.'
         assert direction in (BW, FW), f'Unknown direction parameter: {self.direction}'
@@ -167,10 +172,11 @@ class Segment:
 
     @property
     def delta(self):
-        r"""int : Window normalisation index :math:`\delta`.
+        r"""
+        int : Window normalisation index $\delta$.
 
-        The window weight :math:`\gamma^{i - k - \delta}` equals 1 at relative index
-        :math:`i - k = \delta`.
+        The window weight $\gamma^{i - k - \delta}$ equals 1 at relative index
+        $i - k = \delta$.
         """
         return self._delta
 
@@ -190,15 +196,16 @@ class Segment:
 
     @property
     def gamma(self):
-        r"""float : Window decay factor :math:`\gamma`.
+        r"""
+        float : Window decay factor $\gamma$.
 
-        The window decay factor :math:`\gamma` is set during initialisation and is
-        derived from the effective number of samples :attr:`Segment.g` as follows:
+        The window decay factor $\gamma$ is set during initialisation and is
+        derived from the effective number of samples [`g`][lmlib.statespace.segment.Segment.g] as follows:
 
-        - forward direction: :math:`\gamma = \frac{g}{g-1} > 1`
-        - backward direction: :math:`\gamma = \frac{g-1}{g} < 1`
+        - forward direction: $\gamma = \frac{g}{g-1} > 1$
+        - backward direction: $\gamma = \frac{g-1}{g} < 1$
 
-        See [Wildhaber2018]_ Table IV.
+        See [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Table IV.
         """
         return self._gamma
 
@@ -236,13 +243,14 @@ class Segment:
         r"""
         Returns the per-sample window weighs
 
-        The return values are the window weights :math:`\alpha_{\delta}(i) \quad \forall i \in [a, b]` for a constant
-        :math:`\gamma`. The window weight function is defined as
+        The return values are the window weights $\alpha_{\delta}(i) \quad \forall i \in [a, b]$ for a constant
+        $\gamma$. The window weight function is defined as
 
-        .. math::
-            w_i = \gamma^{i-\delta}
+        $$
+        w_i = \gamma^{i-\delta}
+        $$
 
-        For more details see [Wildhaber2018]_.
+        For more details see [\[Wildhaber2018\]](../bibliography.md#wildhaber2018).
 
         Parameters
         ----------
@@ -256,10 +264,9 @@ class Segment:
             Relative index range of shape ``(JR,)``, covering the indices at
             which the window weight exceeds ``thd``.
         weights : ndarray of float, shape ``(JR,)``
-            Per-sample window weights :math:`\gamma^{i - \delta}` over ``ab_range``.
+            Per-sample window weights $\gamma^{i - \delta}$ over ``ab_range``.
 
-        |def_JR|
-
+        `JR` : index range length <br>
         """
 
         ab_range = self._ab_range(thd=thd)

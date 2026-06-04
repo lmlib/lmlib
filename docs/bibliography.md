@@ -20,3 +20,7 @@ N. Zalmai, "A State Space World for Detecting and Estimating Events and Learning
 
 <a id="loeliger2016"></a>**[Loeliger2016]**
 H.-A. Loeliger, L. Bruderer, H. Malmberg, F. Wadehn, and N. Zalmai, "On Sparsity by NUV-EM, Gaussian Message Passing, and Kalman Smoothing", *CoRR*, vol. abs/1602.02673, 2016. arXiv: 1602.02673. [Online]. Available: [arXiv](http://arxiv.org/abs/1602.02673)
+
+<a id="baeriswyl2025"></a>**[Baeriswyl2025]**
+C. Baeriswyl, F. Waldmann, A. Bertrand, and R. A. Wildhaber, "Multi-Resolution Autonomous Linear State Space Filters for N-Dimensional Signals", *IEEE Transactions on Signal Processing*.
+

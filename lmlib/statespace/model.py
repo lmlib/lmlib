@@ -1,13 +1,5 @@
-"""
+r"""
 This module provides methods to define linear state space models and methods to use them as signal models in recursive least squares problems.
-
-
-.. currentmodule:: lmlib.statespace.model
-
-.. inheritance-diagram:: lmlib.statespace.model
-   :top-classes: lmlib.statespace.model.ModelBase
-   :parts: 1
-
 """
 
 from abc import ABC, abstractmethod
@@ -20,6 +12,7 @@ from scipy.linalg import block_diag, pascal
 from numpy.polynomial.legendre import legder as _legder
 
 from lmlib.utils import *
+from lmlib.utils.check import DeprecationHelper
 from lmlib.statespace.backends.statespace_tools import *
 from lmlib.statespace.segment import Segment, FORWARD, BACKWARD
 
@@ -28,7 +21,7 @@ __all__ = ['Alssm', 'AlssmPoly', 'AlssmPolyJordan', 'AlssmPolyLegendre', 'AlssmP
 
 
 class ModelBase(ABC):
-    """
+    r"""
     Abstract base class for autonomous linear state space models (ALSSMs).
 
     Parameters
@@ -36,7 +29,7 @@ class ModelBase(ABC):
     label : str, optional
         Label of the ALSSM. Default: ``'n/a'``.
     C_init : array_like or None, optional
-        Initial output matrix stored for use by :meth:`update`. Default: None.
+        Initial output matrix stored for use by [`update`][lmlib.statespace.model.ModelBase.update]. Default: None.
     force_MC : bool, optional
         If True, broadcasts a 1-dimensional ``C`` vector to a 2-dimensional
         array of shape ``(1, N)`` (multi-channel form). Default: False.
@@ -60,10 +53,10 @@ class ModelBase(ABC):
 
     @abstractmethod
     def update(self):
-        """
+        r"""
         Recompute the internal model matrices A and C.
 
-        Updates :attr:`A` and :attr:`C` from the stored initialisation parameters
+        Updates [`A`][lmlib.statespace.model.ModelBase.A] and [`C`][lmlib.statespace.model.ModelBase.C] from the stored initialisation parameters
         (e.g. ``poly_degree``, ``omega``, ``gamma``). Called automatically during
         ``__init__`` and should be called again after manually changing any parameter.
         """
@@ -71,7 +64,7 @@ class ModelBase(ABC):
 
     @property
     def A(self) -> npt.NDArray:
-        """:class:`~numpy.ndarray`, shape=(N, N) : State matrix :math:`A \\in \\mathbb{R}^{N \\times N}`"""
+        r"""[`ndarray`][numpy.ndarray], shape=(N, N) : State matrix $A \in \mathbb{R}^{N \times N}$"""
         return self._A
 
     @A.setter
@@ -83,7 +76,7 @@ class ModelBase(ABC):
 
     @property
     def C(self) -> npt.NDArray:
-        """:class:`~numpy.ndarray`, shape=([Q,] N) : Output matrix :math:`C \\in \\mathbb{R}^{Q \\times N}`"""
+        r"""[`ndarray`][numpy.ndarray], shape=([Q,] N) : Output matrix $C \in \mathbb{R}^{Q \times N}$"""
         return self._C
 
     @C.setter
@@ -95,12 +88,12 @@ class ModelBase(ABC):
 
     @property
     def C_init(self) -> npt.NDArray:
-        """:class:`~numpy.ndarray`, shape=([Q,] N) : Initialized Output matrix :math:`C \\in \\mathbb{R}^{Q \\times N}`"""
+        r"""[`ndarray`][numpy.ndarray], shape=([Q,] N) : Initialized Output matrix $C \in \mathbb{R}^{Q \times N}$"""
         return self._C_init
 
     @C_init.setter
     def C_init(self, C):
-        """Store the initial output matrix used by :meth:`update`."""
+        r"""Store the initial output matrix used by [`update`][lmlib.statespace.model.ModelBase.update]."""
         if C is None:
             self._C_init = None
         else:
@@ -121,26 +114,27 @@ class ModelBase(ABC):
 
     @property
     def N(self) ->int:
-        """int : Model order :math:`N`"""
+        r"""int : Model order $N$"""
         return self._A.shape[0]
 
     @property
     def Q(self):
-        """int : Number of output channels :math:`Q`.
+        r"""
+        int : Number of output channels $Q$.
 
-        Returns the first dimension of :attr:`C` when ``C`` is 2-D (multi-channel),
+        Returns the first dimension of [`C`][lmlib.statespace.model.ModelBase.C] when ``C`` is 2-D (multi-channel),
         or ``0`` when ``C`` is 1-D (single scalar output channel).
 
         Note: ``Q=0`` is used as a sentinel meaning "scalar output" (a single channel).
         It does **not** mean zero channels.
 
-        See also :attr:`is_MC`.
+        See also [`is_MC`][lmlib.statespace.model.ModelBase.is_MC].
         """
         return self._C.shape[0] if np.ndim(self._C) == 2 else 0
 
     @property
     def alssms(self) -> list:
-        """list : Sub-ALSSMs that compose this model (empty for leaf nodes such as :class:`Alssm`)."""
+        r"""list : Sub-ALSSMs that compose this model (empty for leaf nodes such as [`Alssm`][lmlib.statespace.model.Alssm])."""
         return self._alssms
 
     @alssms.setter
@@ -153,7 +147,7 @@ class ModelBase(ABC):
 
     @property
     def lambdas(self) -> npt.NDArray:
-        """:class:`np.ndarray` : Per-ALSSM scalar output scaling factors :math:`\\lambda_m` applied to each sub-model's output matrix :math:`C_m`."""
+        r"""[`ndarray`][numpy.ndarray] : Per-ALSSM scalar output scaling factors $\lambda_m$ applied to each sub-model's output matrix $C_m$."""
         return self._lambdas
 
     @lambdas.setter
@@ -189,18 +183,20 @@ class ModelBase(ABC):
         return np.ndim(self._C) == 2
 
     def eval_output(self, xs, js=None):
-        """
+        r"""
         Evaluate the ALSSM output for one or more state vectors.
 
         Without evaluation index (``js=None``):
 
-        .. math::
-            s(x) = C x
+        $$
+        s(x) = C x
+        $$
 
         With evaluation indices (``js`` provided):
 
-        .. math::
-            s_j(x) = C A^j x
+        $$
+        s_j(x) = C A^j x
+        $$
 
         Parameters
         ----------
@@ -208,14 +204,14 @@ class ModelBase(ABC):
             State vector(s). The last dimension must equal the model order N.
         js : array_like of shape (J,) or None, optional
             Sequence of integer evaluation indices. If None, evaluates at
-            :math:`j = 0` only (i.e. returns :math:`Cx`).
+            $j = 0$ only (i.e. returns $Cx$).
 
         Returns
         -------
         s : ndarray
             If ``js`` is None: shape ``(..., [Q])``.
             If ``js`` is provided: shape ``(J, ..., [Q])``.
-            The ``[Q]`` dimension is present only when :attr:`is_MC` is True.
+            The ``[Q]`` dimension is present only when [`is_MC`][lmlib.statespace.model.ModelBase.is_MC] is True.
         """
         xs = np.asarray(xs)
 
@@ -242,8 +238,9 @@ class ModelBase(ABC):
         out : str
             Multi-line string representing the nested ALSSM structure.
 
-        Examples
+        Example
         --------
+        ```python
         >>> import lmlib as lm
         >>> import numpy as np
         >>> alssm_poly = lm.AlssmPoly(4, label="high order polynomial")
@@ -252,18 +249,19 @@ class ModelBase(ABC):
         >>> alssm_line = lm.Alssm(A, C, label="line")
         >>> stacked_alssm = lm.AlssmStacked((alssm_poly, alssm_line), label='stacked model')
         >>> print(stacked_alssm.dump_tree())
-        AlssmStacked, A: (7, 7), C: (2, 7), label: stacked model
-          └-AlssmPoly, A: (5, 5), C: (1, 5), label: high order polynomial
+        └-AlssmStacked, A: (7, 7), C: (2, 7), label: stacked model
+          └-AlssmPoly, A: (5, 5), C: (5,), label: high order polynomial
           └-Alssm, A: (2, 2), C: (1, 2), label: line
+        ```
         """
         return self._rec_tree(level=0)
 
     def set_state_var_label(self, label:str, indices:tuple[int]):
-        """
+        r"""
         Register a label for one or more state vector indices.
 
         Labels allow state components to be referenced by name rather than by
-        numeric index; see :meth:`get_state_var_indices`.
+        numeric index; see [`get_state_var_indices`][lmlib.statespace.model.ModelBase.get_state_var_indices].
 
         Parameters
         ----------
@@ -272,13 +270,15 @@ class ModelBase(ABC):
         indices : tuple of int
             State vector indices associated with this label.
 
-        Examples
+        Example
         --------
+        ```python
         >>> import lmlib as lm
         >>> alssm = lm.AlssmPoly(poly_degree=1, label='slope_with_offset')
         >>> alssm.set_state_var_label('slope', (1,))
         >>> alssm.get_state_var_indices('slope_with_offset.slope')
         (1,)
+        ```
         """
         self._state_var_labels[label] = indices
 
@@ -310,11 +310,11 @@ class ModelBase(ABC):
         return str_tree
 
     def get_state_var_labels(self):
-        """
+        r"""
         Return all registered state-variable labels together with their index tuples.
 
         Labels are accumulated recursively from all nested sub-ALSSMs, with
-        each label prefixed by the current model's :attr:`label`.  The state
+        each label prefixed by the current model's [`label`][lmlib.statespace.model.ModelBase.label].  The state
         indices are adjusted to reflect the position within the combined
         (block-diagonal) state vector.
 
@@ -337,14 +337,14 @@ class ModelBase(ABC):
         return state_list
 
     def get_state_var_indices(self, label):
-        """
+        r"""
         Return the state-vector indices for a state variable identified by its label.
 
         Parameters
         ----------
         label : str
             Fully qualified state label (dot-separated path), as returned by
-            :meth:`get_state_var_labels`.
+            [`get_state_var_labels`][lmlib.statespace.model.ModelBase.get_state_var_labels].
 
         Returns
         -------
@@ -359,7 +359,7 @@ class ModelBase(ABC):
         return []
 
     def get_alssm_output_dimension(self):
-        """Return the ALSSM output dimension :math:`Q` (number of output channels)."""
+        r"""Return the ALSSM output dimension $Q$ (number of output channels)."""
         return self.Q
 
     def _broadcast_C_to_multichannel(self):
@@ -379,16 +379,19 @@ class Alssm(ModelBase):
     This class holds the parameters of a discrete-time, autonomous (i.e., input-free), single- or multi-output linear
     state space model, defined recursively by
 
-    .. math::
-       x[k+1] &= A\,x[k]
-       s_k(x) = y[k] &= C\,x[k],
+    $$
+    \begin{aligned}
+    x[k+1] &= A\,x[k] \\
+    s_k(x) = y[k] &= C\,x[k],
+    \end{aligned}
+    $$
 
-    where :math:`A \in \mathbb{R}^{N\times N}, C \in \mathbb{R}^{Q \times N}` are the fixed model parameters (matrices),
-    :math:`k` the time index,
-    :math:`y[k] \in \mathbb{R}^{Q \times 1}` the output vector,
-    and :math:`x[k] \in \mathbb{R}^{N}` the state vector.
+    where $A \in \mathbb{R}^{N\times N}, C \in \mathbb{R}^{Q \times N}$ are the fixed model parameters (matrices),
+    $k$ the time index,
+    $y[k] \in \mathbb{R}^{Q \times 1}$ the output vector,
+    and $x[k] \in \mathbb{R}^{N}$ the state vector.
 
-    For more details, see also [Wildhaber2019]_ [Eq. 4.1].
+    For more details, see also [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [Eq. 4.1].
 
     Parameters
     ----------
@@ -398,7 +401,7 @@ class Alssm(ModelBase):
         Output matrix. Use shape ``(N,)`` for a scalar (single-channel) output
         or shape ``(Q, N)`` for a Q-channel output.
     **kwargs
-        Forwarded to :class:`.ModelBase`
+        Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase]
 
     Note
     ----
@@ -406,27 +409,28 @@ class Alssm(ModelBase):
     must be a scalar. When ``C`` has shape ``(Q, N)``, each sample must be a
     vector of length Q.
 
-    |def_N|
-    |def_Q|
+    `N` : ALSSM system order, corresponding to the number of state variables <br>
+    `Q` : output order / number of signal channels <br>
 
-    Examples
+    Example
     --------
+    ```python
     >>> import lmlib as lm
     >>>
     >>> A = [[1, 1], [0, 1]]
     >>> C = [1, 0]
     >>> alssm = lm.Alssm(A, C, label='line')
     >>> print(alssm)
-    AlssmPoly(A=[[1 1],[0 1]], C=[1 0], label=line)
-
-    >>> alssm
-    Alssm(A=[[1 1],[0 1]], C=[1 0], label=line)
+    Alssm(A=[[1 1] [0 1]], C=[1 0], label=line)
+    ```
     """
 
     def __init__(self, A, C, **kwargs):
         super().__init__(C_init=C, **kwargs)
         self.A = A
+        r"""[`ndarray`][numpy.ndarray], shape=(N, N) : State matrix $A \in \mathbb{R}^{N \times N}$"""
         self.C = C
+        r"""[`ndarray`][numpy.ndarray], shape=([Q,] N) : Output matrix $C \in \mathbb{R}^{Q \times N}$"""
         self.update()
 
     def update(self):
@@ -440,73 +444,81 @@ class AlssmPoly(ModelBase):
     r"""
     ALSSM with discrete-time polynomial output sequence.
 
-    Represents a degree-D polynomial in the propagation index :math:`i`:
+    Represents a degree-D polynomial in the propagation index $i$:
 
-    .. math::
-        P_Q(i) = x_0 i^0 + x_1 i^1 + \cdots + x_D i^D
+    $$
+    P_Q(i) = x_0 i^0 + x_1 i^1 + \cdots + x_D i^D
+    $$
 
-    as an ALSSM with Pascal upper-triangular transition matrix, e.g. for :math:`D = 2`:
+    as an ALSSM with Pascal upper-triangular transition matrix, e.g. for $D = 2$:
 
-    .. math::
-        A =
-        \begin{bmatrix}
-            1 & 1 & 1 \\
-            0 & 1 & 2 \\
-            0 & 0 & 1
-        \end{bmatrix}
+    $$
+    \begin{aligned}
+    A =
+    \begin{bmatrix}
+        1 & 1 & 1 \\
+        0 & 1 & 2 \\
+        0 & 0 & 1
+    \end{bmatrix}
+    \end{aligned}
+    $$
 
     and state vector
 
-    .. math::
-        x =
-        \begin{bmatrix}
-            x_0 & x_1 & ... & x_N \\
-        \end{bmatrix}^T
+    $$
+    \begin{aligned}
+    x =
+    \begin{bmatrix}
+        x_0 & x_1 & ... & x_N \\
+    \end{bmatrix}^T
+    \end{aligned}
+    $$
 
-    where :math:`x_n` is the coefficient of the :math:`i^n` term.
+    where $x_n$ is the coefficient of the $i^n$ term.
 
-    For more details see [Wildhaber2019]_ :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
+    For more details see [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
 
 
     Parameters
     ----------
     poly_degree : int
-        Polynomial degree :math:`D`. The model order is :math:`N = D + 1`.
+        Polynomial degree $D$. The model order is $N = D + 1$.
     C : array_like of shape ([Q,] N), optional
-        Output matrix. If not given, defaults to ``[1, 0, ..., 0]`` of shape ``(N,)``,
-        selecting the constant term :math:`x_0`. With ``force_MC=True`` the shape
+        Output matrix. If not given, defaults to ``[1, 0, ..., 0]`` of shape ``(N,)``.
+        With ``force_MC=True`` the shape
         is broadcast to ``(1, N)``. Default: None.
     **kwargs
-        Forwarded to :class:`.ModelBase`
+        Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase]
 
     Notes
     -----
-    |def_N|
-    |def_Q|
+    `N` : ALSSM system order, corresponding to the number of state variables <br>
+    `Q` : output order / number of signal channels <br>
 
 
-    Examples
+    Example
     --------
     Setting up a degree-3 polynomial ALSSM:
-
+    ```python
     >>> import lmlib as lm
     >>> alssm = lm.AlssmPoly(poly_degree=3, label="poly")
     >>> print(alssm)
     AlssmPoly(A=[[1 1 1 1],[0 1 2 3],[0 0 1 3],[0 0 0 1]], C=[1 0 0 0], label=poly)
+    ```
 
     Setting up a degree-2 polynomial ALSSM with two output channels:
-
+    ```python
     >>> import numpy as np
     >>> C = np.array([[1, 0, 0], [0, 1, 0]])
     >>> alssm = lm.AlssmPoly(poly_degree=2, C=C, label="poly")
     >>> print(alssm)
     AlssmPoly(A=[[1 1 1],[0 1 2],[0 0 1]], C=[[1 0 0],[0 1 0]], label=poly)
+    ```
     """
 
     def __init__(self, poly_degree:int, C=None, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(C_init=C, **kwargs)
         self.poly_degree = poly_degree
-        self.C_init = C
         self.update()
 
     def update(self):
@@ -521,7 +533,7 @@ class AlssmPoly(ModelBase):
 
     @property
     def poly_degree(self) -> int:
-        """int : Polynomial degree :math:`D` (highest exponent / model order - 1)."""
+        r"""int : Polynomial degree $D$ (highest exponent / model order - 1)."""
         return self._poly_degree
 
     @poly_degree.setter
@@ -537,48 +549,50 @@ class AlssmPolyJordan(ModelBase):
     ALSSM with a discrete-time polynomial output sequence in Jordan normal form.
 
     Discrete-time polynomial ALSSM with a shift-register (Jordan) transition matrix;
-    see [Zalmai2017]_
-    :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/176652/zalmai_thesis.pdf#page=41>`.
+    see [\[Zalmai2017\]](../bibliography.md#zalmai2017)
+    [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/176652/zalmai_thesis.pdf#page=41).
 
 
-    .. math::
-        A =
-        \begin{bmatrix}
-            1 & 1 & 0 \\
-            0 & 1 & 1 \\
-            0 & 0 & 1
-        \end{bmatrix}
-
+    $$
+    \begin{aligned}
+    A =
+    \begin{bmatrix}
+        1 & 1 & 0 \\
+        0 & 1 & 1 \\
+        0 & 0 & 1
+    \end{bmatrix}
+    \end{aligned}
+    $$
 
     Parameters
     ----------
     poly_degree : int
-        Polynomial degree :math:`D`. The model order is :math:`N = D + 1`.
+        Polynomial degree $D$. The model order is $N = D + 1$.
     C : array_like of shape ([Q,] N), optional
         Output matrix. If not given, defaults to ``[1, 0, ..., 0]`` of shape ``(N,)``.
         Default: None.
     **kwargs
-        Forwarded to :class:`.ModelBase`
+        Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase]
 
 
-    |def_N|
-    |def_Q|
+    `N` : ALSSM system order, corresponding to the number of state variables <br>
+    `Q` : output order / number of signal channels <br>
 
 
-    Examples
+    Example
     --------
     Setting up a degree-3 polynomial ALSSM in Jordan normal form:
-
+    ```python
     >>> import lmlib as lm
     >>> alssm = lm.AlssmPolyJordan(3, label="poly")
     >>> print(alssm)
     AlssmPolyJordan(A=[[1. 1. 0. 0.],[0. 1. 1. 0.],[0. 0. 1. 1.],[0. 0. 0. 1.]], C=[1. 0. 0. 0.], label=poly)
+    ```
     """
 
     def __init__(self, poly_degree:int, C=None, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(C_init=C, **kwargs)
         self.poly_degree = poly_degree
-        self.C_init = C
         self.update()
 
     def update(self):
@@ -593,7 +607,7 @@ class AlssmPolyJordan(ModelBase):
 
     @property
     def poly_degree(self) -> int:
-        """int : Polynomial degree :math:`D` (highest exponent / model order - 1)."""
+        r"""int : Polynomial degree $D$ (highest exponent / model order - 1)."""
         return self._poly_degree
 
     @poly_degree.setter
@@ -608,103 +622,97 @@ class AlssmPolyLegendre(ModelBase):
     r"""
     ALSSM whose output basis is the discrete Legendre polynomials on a finite window.
 
-    Unlike :class:`AlssmPoly` (Pascal/monomial basis) and :class:`AlssmPolyJordan`
+    Unlike [`AlssmPoly`][lmlib.statespace.model.AlssmPoly] (Pascal/monomial basis) and [`AlssmPolyJordan`][lmlib.statespace.model.AlssmPolyJordan]
     (Jordan/binomial basis), the Legendre ALSSM maps time indices to the interval
-    :math:`[-1, +1]` and uses the classical Legendre polynomials
-    :math:`P_0, P_1, \ldots, P_D` as its basis functions.  This keeps the Gram
-    matrix :math:`W` well-conditioned regardless of the window length :math:`W_{\rm size}`:
+    $[-1, +1]$ and uses the classical Legendre polynomials
+    $P_0, P_1, \ldots, P_D$ as its basis functions.  This keeps the Gram
+    matrix $W$ well-conditioned regardless of the window length $W_{\rm size}$:
 
-    .. math::
-
-        \kappa(W_{\rm Legendre}) \approx 2D + 1
-        \qquad \text{vs.} \qquad
-        \kappa(W_{\rm Pascal}) = \mathcal{O}\!\left(W_{\rm size}^{2D}\right)
+    $$
+    \kappa(W_{\rm Legendre}) \approx 2D + 1
+    \qquad \text{vs.} \qquad
+    \kappa(W_{\rm Pascal}) = \mathcal{O}\!\left(W_{\rm size}^{2D}\right)
+    $$
 
     For a window of 500 samples and polynomial degree 4, the Gram matrix condition
-    number is :math:`\approx 9` instead of :math:`\approx 10^{22}`, an improvement
+    number is $\approx 9$ instead of $\approx 10^{22}$, an improvement
     of more than 20 orders of magnitude.
 
     **State-space parametrisation**
 
-    The window of :math:`W_{\rm size}` samples is mapped to
-    :math:`t_{\rm sc} \in [-1, +1]` via
+    The window of $W_{\rm size}$ samples is mapped to
+    $t_{\rm sc} \in [-1, +1]$ via
 
-    .. math::
+    $$
+    t_{\rm sc}(j) = \frac{2j}{W_{\rm size}-1} - 1,
+    \qquad j = 0 \;(\text{newest}) \;\ldots\; W_{\rm size}-1 \;(\text{oldest}).
+    $$
 
-        t_{\rm sc}(j) = \frac{2j}{W_{\rm size}-1} - 1,
-        \qquad j = 0 \;(\text{newest}) \;\ldots\; W_{\rm size}-1 \;(\text{oldest}).
-
-    The state vector :math:`x \in \mathbb{R}^N` (with :math:`N = D+1`) holds the
-    Legendre expansion coefficients :math:`[c_0, \ldots, c_D]` of the fitted
+    The state vector $x \in \mathbb{R}^N$ (with $N = D+1$) holds the
+    Legendre expansion coefficients $[c_0, \ldots, c_D]$ of the fitted
     polynomial:
 
-    .. math::
+    $$
+    \hat{y}(t_{\rm sc}) = \sum_{n=0}^{D} c_n P_n(t_{\rm sc}).
+    $$
 
-        \hat{y}(t_{\rm sc}) = \sum_{n=0}^{D} c_n P_n(t_{\rm sc}).
-
-    **Transition matrix** :math:`A`
+    **Transition matrix** $A$
 
     Advancing one step from the newest sample toward the past corresponds to
-    shifting :math:`t_{\rm sc}` by :math:`h = 2/(W_{\rm size}-1)`.  The resulting
-    constant upper-triangular shift matrix :math:`L` satisfies
+    shifting $t_{\rm sc}$ by $h = 2/(W_{\rm size}-1)$.  The resulting
+    constant upper-triangular shift matrix $L$ satisfies
 
-    .. math::
-
-        \phi(t_{\rm sc} + h) = \phi(t_{\rm sc})\,L,
-        \qquad \phi(t) = [P_0(t),\, P_1(t),\, \ldots,\, P_D(t)],
+    $$
+    \phi(t_{\rm sc} + h) = \phi(t_{\rm sc})\,L,
+    \qquad \phi(t) = [P_0(t),\, P_1(t),\, \ldots,\, P_D(t)],
+    $$
 
     and is computed analytically via a term-by-term Taylor expansion in the
-    Legendre basis using :func:`numpy.polynomial.legendre.legder`:
+    Legendre basis using [`legder`][numpy.polynomial.legendre.legder]:
 
-    .. math::
+    $$
+    L_{:,n} = \sum_{m=0}^{n} \frac{h^m}{m!}
+              \bigl[\text{Legendre coefficients of } P_n^{(m)}\bigr].
+    $$
 
-        L_{:,n} = \sum_{m=0}^{n} \frac{h^m}{m!}
-                  \bigl[\text{Legendre coefficients of } P_n^{(m)}\bigr].
+    $\kappa(L) \approx 1$ for all practical window sizes.
 
-    :math:`\kappa(L) \approx 1` for all practical window sizes.
+    **Output vector** $C$
 
-    **Output vector** :math:`C`
-
-    The newest sample (reference point, :math:`j = 0 \Rightarrow t_{\rm sc} = -1`)
+    The newest sample (reference point, $j = 0 \Rightarrow t_{\rm sc} = -1$)
     is evaluated by
 
-    .. math::
-
-        C = \phi(-1) = \bigl[P_0(-1),\, P_1(-1),\, \ldots,\, P_D(-1)\bigr]
-          = \bigl[1,\, {-1},\, 1,\, {-1},\, \ldots\bigr].
+    $$
+    C = \phi(-1) = \bigl[P_0(-1),\, P_1(-1),\, \ldots,\, P_D(-1)\bigr]
+      = \bigl[1,\, {-1},\, 1,\, {-1},\, \ldots\bigr].
+    $$
 
     **Compatibility**
 
-    :class:`AlssmPolyLegendre` is a drop-in replacement for :class:`AlssmPoly` in any
-    :class:`~lmlib.statespace.cost.CostSegment` or composite cost.  All lmlib
-    infrastructure (:meth:`~lmlib.statespace.rls.RLSAlssm.filter`,
-    :meth:`~lmlib.statespace.rls.RLSAlssm.minimize_v`,
-    :meth:`eval_output`) works unchanged.
-
     The state vector is in Legendre coefficient space, not monomial coefficient
-    space, so the numerical values of :math:`x[k]` differ from those returned by
-    :class:`AlssmPoly`.  The *output* :math:`\hat{y}[k] = Cx[k]` and the
-    full-window trajectory via :meth:`eval_output` with ``js`` are identical in
+    space, so the numerical values of $x[k]$ differ from those returned by
+    [`AlssmPoly`][lmlib.statespace.model.AlssmPoly].  The *output* $\hat{y}[k] = Cx[k]$ and the
+    full-window trajectory via [`eval_output`][lmlib.statespace.model.ModelBase.eval_output] with ``js`` are identical in
     meaning (predicted signal value at each lag).
 
     Notes
     -----
-    |def_N|
+    `N` : ALSSM system order, corresponding to the number of state variables <br>
 
     The Legendre polynomials used here are the *standard* (unnormalised)
-    Legendre polynomials satisfying :math:`P_n(1) = 1`, identical to those
-    returned by :func:`numpy.polynomial.legendre.legval`.  They are *not*
-    normalised to :math:`\|P_n\|_{L^2} = 1`; the orthonormality factor is
-    :math:`\sqrt{(2n+1)/2}`.  Because the RLS filter works with
-    :math:`W = V^\top V` (where :math:`V` contains the Legendre design-matrix
+    Legendre polynomials satisfying $P_n(1) = 1$, identical to those
+    returned by [`legval`][numpy.polynomial.legendre.legval].  They are *not*
+    normalised to $\|P_n\|_{L^2} = 1$; the orthonormality factor is
+    $\sqrt{(2n+1)/2}$.  Because the RLS filter works with
+    $W = V^\top V$ (where $V$ contains the Legendre design-matrix
     rows), the normalisation cancels out in the coefficient recovery and does
     not need to be applied explicitly.
 
-    To convert recovered Legendre coefficients :math:`c` back to standard
+    To convert recovered Legendre coefficients $c$ back to standard
     monomial coefficients, premultiply by the change-of-basis matrix
-    :math:`T^{-1}` where :math:`T` satisfies :math:`V_{\rm pascal}\,T = V_{\rm Legendre}`.
+    $T^{-1}$ where $T$ satisfies $V_{\rm pascal}\,T = V_{\rm Legendre}$.
 
-    Examples
+    Example
     --------
     Setting up a degree-3 Legendre ALSSM for a 500-sample window:
 
@@ -712,9 +720,10 @@ class AlssmPolyLegendre(ModelBase):
     >>> alssm = lm.AlssmPolyLegendre(poly_degree=3, a_seg=0, b_seg=499, label='legendre')
     >>> print(alssm)
     AlssmPolyLegendre(A=..., C=..., label=legendre)
+    ```
 
     Using it inside a cost segment (drop-in replacement for AlssmPoly):
-
+    ```python
     >>> import numpy as np, lmlib as lm
     >>> from lmlib.utils.generator import gen_wgn, gen_rect
     >>> K = 1000
@@ -725,6 +734,7 @@ class AlssmPolyLegendre(ModelBase):
     >>> rls.filter(y)
     >>> xs = rls.minimize_x()
     >>> y_hat = alssm.eval_output(xs)
+    ```
     """
 
     def __init__(self, poly_degree: int, a_seg: int = 0, b_seg: int = None,
@@ -733,26 +743,26 @@ class AlssmPolyLegendre(ModelBase):
         Parameters
         ----------
         poly_degree : int
-            Polynomial degree :math:`D \geq 0`.  The model order is :math:`N = D+1`.
+            Polynomial degree $D \geq 0$.  The model order is $N = D+1$.
         a_seg : int, optional
             Left boundary of the target segment (default ``0``).
-            Together with ``b_seg`` this defines the window :math:`[a, b]`:
+            Together with ``b_seg`` this defines the window $[a, b]$:
 
-            * The step size :math:`h = 2 / (b - a)` maps :math:`[a, b]` to
-              :math:`[-1, +1]` in the Legendre domain.
+            * The step size $h = 2 / (b - a)$ maps $[a, b]$ to
+              $[-1, +1]$ in the Legendre domain.
             * The output vector is shifted to
-              :math:`C_{\rm new} = \phi(-1)\,A^{-a}` so that the filter
+              $C_{\rm new} = \phi(-1)\,A^{-a}$ so that the filter
               naturally accumulates the segment-relative Gram matrix
-              :math:`W_{\rm rel}` with :math:`\kappa(W_{\rm rel}) \approx 2D+1`
-              — regardless of where :math:`[a, b]` sits relative to :math:`j=0`.
-            * The output :math:`C_{\rm new}\,x[k]` evaluates the polynomial at
-              :math:`j = 0` (the current sample :math:`y[k]`).
+              $W_{\rm rel}$ with $\kappa(W_{\rm rel}) \approx 2D+1$
+              — regardless of where $[a, b]$ sits relative to $j=0$.
+            * The output $C_{\rm new}\,x[k]$ evaluates the polynomial at
+              $j = 0$ (the current sample $y[k]$).
 
         b_seg : int
             Right boundary of the target segment.  Must satisfy ``b_seg > a_seg``.
             The window width is ``b_seg - a_seg + 1``.
         **kwargs
-            Forwarded to :class:`ModelBase`.
+            Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase].
 
         Examples
         --------
@@ -762,7 +772,7 @@ class AlssmPolyLegendre(ModelBase):
             seg   = lm.Segment(0, 500, lm.BW, g=100)
 
         Backward window shifted 200 samples into the past — same window size,
-        same :math:`h`, same :math:`\kappa(W) \approx 2D+1`::
+        same $h$, same $\kappa(W) \approx 2D+1$::
 
             alssm = lm.AlssmPolyLegendre(poly_degree=3, a_seg=-200, b_seg=300)
             seg   = lm.Segment(-200, 300, lm.BW, g=100)
@@ -795,7 +805,7 @@ class AlssmPolyLegendre(ModelBase):
 
     @property
     def poly_degree(self) -> int:
-        """int : Polynomial degree :math:`D`."""
+        r"""int : Polynomial degree $D$."""
         return self._poly_degree
 
     @poly_degree.setter
@@ -826,7 +836,7 @@ class AlssmPolyLegendre(ModelBase):
 
     @property
     def h(self) -> float:
-        r"""float : Legendre step size :math:`h = 2\,/\,(b\_seg - a\_seg)`."""
+        r"""float : Legendre step size $h = 2\,/\,(b\_seg - a\_seg)$."""
         return 2.0 / (self._b_seg - self._a_seg)
 
     # ------------------------------------------------------------------
@@ -834,20 +844,21 @@ class AlssmPolyLegendre(ModelBase):
     # ------------------------------------------------------------------
 
     def update(self):
-        r"""Recompute :math:`A` and :math:`C` from ``poly_degree``, ``a_seg``, ``b_seg``.
+        r"""
+        Recompute $A$ and $C$ from ``poly_degree``, ``a_seg``, ``b_seg``.
 
-        Step 1 — build shift matrix :math:`A = L` for step size :math:`h = 2/(b-a)`.
+        Step 1 — build shift matrix $A = L$ for step size $h = 2/(b-a)$.
 
-        Step 2 — set :math:`C = \phi(-1) = [1,\,-1,\,1,\,-1,\,\ldots]`.
+        Step 2 — set $C = \phi(-1) = [1,\,-1,\,1,\,-1,\,\ldots]$.
 
         Step 3 — apply segment-relative shift (only when ``a_seg != 0``):
 
-        .. math::
-
-            C \;\leftarrow\; C\,A^{-a_{\rm seg}}
+        $$
+        C \;\leftarrow\; C\,A^{-a_{\rm seg}}
+        $$
 
         For ``a_seg < 0`` (common backward window case) this is a *positive*
-        power of :math:`A` — always stable.
+        power of $A$ — always stable.
         """
         N = self._poly_degree + 1
         self.A = self._legendre_shift_matrix(N, self.h)
@@ -865,31 +876,31 @@ class AlssmPolyLegendre(ModelBase):
     @staticmethod
     def _legendre_shift_matrix(N: int, h: float) -> np.ndarray:
         r"""
-        Compute the :math:`N \times N` upper-triangular Legendre shift matrix
-        :math:`L` such that
+        Compute the $N \times N$ upper-triangular Legendre shift matrix
+        $L$ such that
 
-        .. math::
+        $$
+        \phi(t + h) = \phi(t)\,L,
+        \quad \phi(t) = [P_0(t),\, \ldots,\, P_{N-1}(t)].
+        $$
 
-            \phi(t + h) = \phi(t)\,L,
-            \quad \phi(t) = [P_0(t),\, \ldots,\, P_{N-1}(t)].
+        Each column $L_{:,n}$ is obtained by Taylor-expanding
+        $P_n(t + h)$ around $t$:
 
-        Each column :math:`L_{:,n}` is obtained by Taylor-expanding
-        :math:`P_n(t + h)` around :math:`t`:
+        $$
+        P_n(t + h)
+        = \sum_{m=0}^{n} \frac{h^m}{m!} P_n^{(m)}(t)
+        = \sum_{m=0}^{n} \frac{h^m}{m!}
+          \sum_{j} \bigl[\operatorname{legder}^m(e_n)\bigr]_j P_j(t),
+        $$
 
-        .. math::
+        where $e_n$ is the $n$-th standard basis vector in the
+        Legendre coefficient representation and $\operatorname{legder}^m$
+        denotes $m$ successive applications of
+        [`legder`][numpy.polynomial.legendre.legder].
 
-            P_n(t + h)
-            = \sum_{m=0}^{n} \frac{h^m}{m!} P_n^{(m)}(t)
-            = \sum_{m=0}^{n} \frac{h^m}{m!}
-              \sum_{j} \bigl[\operatorname{legder}^m(e_n)\bigr]_j P_j(t),
-
-        where :math:`e_n` is the :math:`n`-th standard basis vector in the
-        Legendre coefficient representation and :math:`\operatorname{legder}^m`
-        denotes :math:`m` successive applications of
-        :func:`numpy.polynomial.legendre.legder`.
-
-        The formula is exact (not a numerical fit) and costs :math:`O(N^2)`
-        operations.  :math:`\kappa(L) \approx 1` for all practical window
+        The formula is exact (not a numerical fit) and costs $O(N^2)$
+        operations.  $\kappa(L) \approx 1$ for all practical window
         sizes.
 
         Parameters
@@ -897,7 +908,7 @@ class AlssmPolyLegendre(ModelBase):
         N : int
             Matrix dimension (= poly_degree + 1).
         h : float
-            Step size in the scaled coordinate :math:`t_{\rm sc}`.
+            Step size in the scaled coordinate $t_{\rm sc}$.
 
         Returns
         -------
@@ -924,66 +935,65 @@ class AlssmPolyLegendre(ModelBase):
 class AlssmPolyMeixner(ModelBase):
     r"""
     ALSSM whose output basis is the Meixner polynomials, orthogonal under the
-    geometric (exponential) weight :math:`\gamma^j` on :math:`j = 0, 1, 2, \ldots`
+    geometric (exponential) weight $\gamma^j$ on $j = 0, 1, 2, \ldots$
 
-    Unlike :class:`AlssmPoly` (Pascal/monomial basis), which suffers from Gram
-    matrix condition numbers of :math:`\mathcal{O}(g^{2D})`, and
-    :class:`AlssmPolyLegendre`, which requires a *finite* window specification,
-    :class:`AlssmPolyMeixner` is designed for **infinite or semi-infinite exponential
+    Unlike [`AlssmPoly`][lmlib.statespace.model.AlssmPoly] (Pascal/monomial basis), which suffers from Gram
+    matrix condition numbers of $\mathcal{O}(g^{2D})$, and
+    [`AlssmPolyLegendre`][lmlib.statespace.model.AlssmPolyLegendre], which requires a *finite* window specification,
+    [`AlssmPolyMeixner`][lmlib.statespace.model.AlssmPolyMeixner] is designed for **infinite or semi-infinite exponential
     windows** and keeps the composite Gram matrix near the theoretical minimum.
 
     **Mathematical background**
 
-    The Meixner polynomials :math:`M_n(j;\,1,\gamma)` satisfy
+    The Meixner polynomials $M_n(j;\,1,\gamma)$ satisfy
 
-    .. math::
+    $$
+    \sum_{j=0}^{\infty} \gamma^j\, M_m(j)\, M_n(j) = W_{n}\,\delta_{mn},
+    \qquad W_n = g\!\left(\frac{g}{g-1}\right)^{\!n} = \frac{1}{(1-\gamma)\,\gamma^n},
+    $$
 
-        \sum_{j=0}^{\infty} \gamma^j\, M_m(j)\, M_n(j) = W_{n}\,\delta_{mn},
-        \qquad W_n = g\!\left(\frac{g}{g-1}\right)^{\!n} = \frac{1}{(1-\gamma)\,\gamma^n},
-
-    where :math:`\gamma = (g-1)/g < 1` is the exponential decay of the backward
-    segment and :math:`g > 1` is its effective window length.  The norms
-    :math:`W_n` are **exact and closed-form**, growing by the constant factor
-    :math:`g/(g-1)` per degree. :math: `delta_{mn}` is the kronecker delta.
+    where $\gamma = (g-1)/g < 1$ is the exponential decay of the backward
+    segment and $g > 1$ is its effective window length.  The norms
+    $W_n$ are **exact and closed-form**, growing by the constant factor
+    $g/(g-1)$ per degree. $\delta_{mn}$ is the kronecker delta.
 
     **Accepting a Segment**
 
     The recommended constructor is ``AlssmPolyMeixner(poly_degree, segment)`` which
-    infers all parameters from the :class:`Segment`:
+    infers all parameters from the [`Segment`][lmlib.statespace.segment.Segment]:
 
-    * ``segment.direction`` → selects :math:`A`:
+    * ``segment.direction`` → selects $A$:
 
-      * ``'bw'`` (backward): :math:`A = A_{\rm bw} = I - \tfrac{1}{g-1}\triu(\mathbf{1},1)`
-        — basis :math:`C A_{\rm bw}^j x = M_n(j;\gamma)` at lag :math:`j \ge 0`.
+      * ``'bw'`` (backward): $A = A_{\rm bw} = I - \tfrac{1}{g-1}\operatorname{triu}(\mathbf{1},1)$
+        — basis $C A_{\rm bw}^j x = M_n(j;\gamma)$ at lag $j \ge 0$.
 
-      * ``'fw'`` (forward): :math:`A = A_{\rm fw} = A_{\rm bw}^{-1}`
-        — the forward filter's internal :math:`A^{-1} = A_{\rm bw}` step recovers
-        the decaying Meixner basis at lags :math:`j \le 0`.
+      * ``'fw'`` (forward): $A = A_{\rm fw} = A_{\rm bw}^{-1}$
+        — the forward filter's internal $A^{-1} = A_{\rm bw}$ step recovers
+        the decaying Meixner basis at lags $j \le 0$.
 
-    * ``segment.a`` (backward) or ``segment.b`` (forward) → shifts :math:`C` so
-      that the Gram matrix remains :math:`W_{\rm ss}` (diagonal) even when the
-      segment does not start at :math:`j=0`:
+    * ``segment.a`` (backward) or ``segment.b`` (forward) → shifts $C$ so
+      that the Gram matrix remains $W_{\rm ss}$ (diagonal) even when the
+      segment does not start at $j=0$:
 
-      * Backward :math:`[a, \infty)`:
-        :math:`C \leftarrow [1,\ldots,1]\,A_{\rm bw}^{-a}`
-        (makes :math:`C A^j x = M_n(j-a;\gamma)` for :math:`j \ge a`).
+      * Backward $[a, \infty)$:
+        $C \leftarrow [1,\ldots,1]\,A_{\rm bw}^{-a}$
+        (makes $C A^j x = M_n(j-a;\gamma)$ for $j \ge a$).
 
-      * Forward :math:`(-\infty, b]`:
-        :math:`C \leftarrow [1,\ldots,1]\,A_{\rm bw}^{-b}`
-        (makes the relative basis start at the boundary :math:`j=b`).
+      * Forward $(-\infty, b]$:
+        $C \leftarrow [1,\ldots,1]\,A_{\rm bw}^{-b}$
+        (makes the relative basis start at the boundary $j=b$).
 
-    The :attr:`g` and :attr:`direction` attributes are always available.
+    The [`g`][lmlib.statespace.model.AlssmPolyMeixner.g] and [`direction`][lmlib.statespace.model.AlssmPolyMeixner.direction] attributes are always available.
 
     **Condition number**
 
-    :math:`\kappa(W) = (g/(g-1))^D`, independent of the segment shift.
+    $\kappa(W) = (g/(g-1))^D$, independent of the segment shift.
 
 
     Notes
     -----
     The Meixner polynomials used here are the standard (monic normalisation)
-    :math:`M_n(x;\,1,\gamma) = {}_2F_1(-n,\,-x;\,1;\,1 - 1/\gamma)`.
-
+    $M_n(x;\,1,\gamma) = {}_2F_1(-n,\,-x;\,1;\,1 - 1/\gamma)$.
     """
 
     def __init__(self, poly_degree: int, segment, **kwargs):
@@ -991,22 +1001,23 @@ class AlssmPolyMeixner(ModelBase):
         Parameters
         ----------
         poly_degree : int
-            Polynomial degree :math:`D \geq 0`.  The model order is :math:`N = D+1`.
-        segment : :class:`Segment`
-            Target segment.  Encodes direction, :math:`g`, and boundary shift:
+            Polynomial degree $D \geq 0$.  The model order is $N = D+1$.
+        segment : Segment
+            Target segment.  Encodes direction, $g$, and boundary shift:
 
-            * ``segment.g`` → window size :math:`g` (giving decay
-              :math:`\gamma = (g-1)/g`).
-            * ``segment.direction`` → ``'bw'`` selects :math:`A_{\rm bw}`;
-              ``'fw'`` selects :math:`A_{\rm fw} = A_{\rm bw}^{-1}`.
+            * ``segment.g`` → window size $g$ (giving decay
+              $\gamma = (g-1)/g$).
+            * ``segment.direction`` → ``'bw'`` selects $A_{\rm bw}$;
+              ``'fw'`` selects $A_{\rm fw} = A_{\rm bw}^{-1}$.
             * ``segment.a`` (BW, if finite) or ``segment.b`` (FW, if finite)
-              → shifts :math:`C` to restore Gram matrix orthogonality when the
+              → shifts $C$ to restore Gram matrix orthogonality when the
               segment does not start at the canonical origin.
 
             Meixner orthogonality requires a semi-infinite support, so the
             segment must be backward with ``b=+inf`` or forward with ``a=-inf``.
         **kwargs
-            Forwarded to :class:`ModelBase` (e.g. ``label``). """
+            Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase] (e.g. ``label``).
+        """
 
         super().__init__(**kwargs)
         assert isinstance(poly_degree, int) and poly_degree >= 0, \
@@ -1055,7 +1066,7 @@ class AlssmPolyMeixner(ModelBase):
 
     @property
     def poly_degree(self) -> int:
-        """int : Polynomial degree :math:`D`."""
+        r"""int : Polynomial degree $D$."""
         return self._poly_degree
 
     @poly_degree.setter
@@ -1066,7 +1077,7 @@ class AlssmPolyMeixner(ModelBase):
 
     @property
     def g(self) -> float:
-        r"""float : Effective window size :math:`g` (read-only; from the segment)."""
+        r"""float : Effective window size $g$ (read-only; from the segment)."""
         return self._g
 
     @property
@@ -1076,12 +1087,12 @@ class AlssmPolyMeixner(ModelBase):
 
     @property
     def shift(self) -> int:
-        r"""int : Boundary shift applied to :math:`C`; 0 for the canonical origin."""
+        r"""int : Boundary shift applied to $C$; 0 for the canonical origin."""
         return self._shift
 
     @property
     def gamma(self) -> float:
-        r"""float : Exponential decay :math:`\gamma = (g-1)/g`."""
+        r"""float : Exponential decay $\gamma = (g-1)/g$."""
         return (self._g - 1.0) / self._g
 
     # ------------------------------------------------------------------
@@ -1089,24 +1100,25 @@ class AlssmPolyMeixner(ModelBase):
     # ------------------------------------------------------------------
 
     def update(self):
-        r"""Recompute :math:`A` and :math:`C` from all stored parameters.
+        r"""
+        Recompute $A$ and $C$ from all stored parameters.
 
-        **Transition matrix** :math:`A`:
+        **Transition matrix** $A$:
 
         * direction ``'bw'``:
-          :math:`A = A_{\rm bw} = I_N - \tfrac{1}{g-1}\,\triu(\mathbf{1}_N, 1)`
+          $A = A_{\rm bw} = I_N - \tfrac{1}{g-1}\,\operatorname{triu}(\mathbf{1}_N, 1)$
         * direction ``'fw'``:
-          :math:`A = A_{\rm fw} = A_{\rm bw}^{-1}`
+          $A = A_{\rm fw} = A_{\rm bw}^{-1}$
 
-        **Output vector** :math:`C` (before shift):
-        :math:`C_{\rm base} = [1,\ldots,1]`.
+        **Output vector** $C$ (before shift):
+        $C_{\rm base} = [1,\ldots,1]$.
 
         **Shift** (when ``shift != 0``):
-        :math:`C \leftarrow C_{\rm base}\,A_{\rm bw}^{-\text{shift}}`.
+        $C \leftarrow C_{\rm base}\,A_{\rm bw}^{-\text{shift}}$.
 
-        This ensures that for a backward segment :math:`[a, \infty)` with
-        ``shift = a``, the output at absolute lag :math:`j` is
-        :math:`M_n(j - a;\,\gamma)` — orthogonal under the shifted window weight.
+        This ensures that for a backward segment $[a, \infty)$ with
+        ``shift = a``, the output at absolute lag $j$ is
+        $M_n(j - a;\,\gamma)$ — orthogonal under the shifted window weight.
         """
         N = self._poly_degree + 1
         A_bw = np.eye(N) - (1.0 / (self._g - 1.0)) * np.triu(np.ones((N, N)), 1)
@@ -1130,27 +1142,30 @@ class AlssmSin(ModelBase):
     r"""
     ALSSM with a discrete-time (damped) sinusoidal output sequence.
 
-    Generates a sinusoidal sequence with angular frequency :math:`\omega` (radians
-    per sample) and per-sample amplitude decay factor :math:`\rho`:
+    Generates a sinusoidal sequence with angular frequency $\omega$ (radians
+    per sample) and per-sample amplitude decay factor $\rho$:
 
-    .. math::
-        A =
-        \begin{bmatrix}
-            \rho \cos\omega & -\rho \sin\omega \\
-            \rho \sin\omega &  \rho \cos\omega
-        \end{bmatrix}
+    $$
+    \begin{aligned}
+    A =
+    \begin{bmatrix}
+        \rho \cos\omega & -\rho \sin\omega \\
+        \rho \sin\omega &  \rho \cos\omega
+    \end{bmatrix}
+    \end{aligned}
+    $$
 
-    The state vector holds :math:`[a\cos, a\sin]` components at the current sample.
-    With the default output :math:`C = [1, 0]`, the output is the cosine component.
+    The state vector holds $[a\cos, a\sin]$ components at the current sample.
+    With the default output $C = [1, 0]$, the output is the cosine component.
 
-    For more details see [Wildhaber2019]_ :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
+    For more details see [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
 
     Parameters
     ----------
     omega : float
-        Normalised discrete-time angular frequency :math:`\omega = 2\pi f / f_s`
-        (radians per sample), where :math:`f` is the signal frequency and
-        :math:`f_s` is the sampling frequency.
+        Normalised discrete-time angular frequency $\omega = 2\pi f / f_s$
+        (radians per sample), where $f$ is the signal frequency and
+        $f_s$ is the sampling frequency.
     rho : float, optional
         Per-sample amplitude decay factor. ``rho = 1.0`` gives an undamped
         oscillation. Default: 1.0.
@@ -1159,39 +1174,43 @@ class AlssmSin(ModelBase):
         component. With ``force_MC=True`` the shape is broadcast to ``(1, N)``.
         Default: None.
     **kwargs
-        Forwarded to :class:`.ModelBase`.
+        Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase].
 
     Notes
     -----
-    |def_N|
-    |def_Q|
+    `N` : ALSSM system order, corresponding to the number of state variables <br>
+    `Q` : output order / number of signal channels <br>
 
     To convert a signal period in samples to a normalised angular frequency, use
-    :func:`~lmlib.utils.generator.k_period_to_omega`:
+    [`k_period_to_omega`][lmlib.utils.generator.k_period_to_omega]:
 
-    >>> import lmlib as lm
-    >>> from lmlib.utils.generator import k_period_to_omega
-    >>> k_period = 20
-    >>> alssm = lm.AlssmSin(k_period_to_omega(k_period), rho=0.9)
+    ```python
+    import lmlib as lm
+    from lmlib.utils.generator import k_period_to_omega
 
-    Examples
+    k_period = 20
+    alssm = lm.AlssmSin(k_period_to_omega(k_period), rho=0.9)
+    ```
+
+    Example
     --------
+    ```python
     >>> alssm = lm.AlssmSin(omega=0.1, rho=0.9)
     >>> print(alssm)
     AlssmSin(A=[[ 0.89550375 -0.08985007],[ 0.08985007  0.89550375]], C=[1 0], label=n/a)
+    ```
     """
 
     def __init__(self, omega:float, rho:float=1.0, C=None, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(C_init=C, **kwargs)
         self.omega = omega
         self.rho = rho
-        self.C_init = C
         self.update()
         self.set_state_var_label('cos', (0,))
         self.set_state_var_label('sin', (1,))
 
     def update(self):
-        """Recompute the 2×2 rotation/decay matrix A and default C from :math:`\\omega` and :math:`\\rho`."""
+        r"""Recompute the 2×2 rotation/decay matrix A and default C from $\omega$ and $\rho$."""
         if self.C_init is None:
             self.C = np.array([1, 0])
         else:
@@ -1203,7 +1222,7 @@ class AlssmSin(ModelBase):
 
     @property
     def omega(self) -> float:
-        r"""float : Normalised angular frequency :math:`\omega = 2\pi f / f_s` (radians per sample)."""
+        r"""float : Normalised angular frequency $\omega = 2\pi f / f_s$ (radians per sample)."""
         return self._omega
 
     @omega.setter
@@ -1213,7 +1232,7 @@ class AlssmSin(ModelBase):
 
     @property
     def rho(self) -> float:
-        """float : Decay factor :math:`\\rho`"""
+        r"""float : Decay factor $\rho$"""
         return self._rho
 
     @rho.setter
@@ -1223,47 +1242,49 @@ class AlssmSin(ModelBase):
 
 
 class AlssmExp(ModelBase):
-    """
+    r"""
     ALSSM with a discrete-time exponential output sequence.
 
-    Generates a scalar exponential sequence :math:`\\gamma^j` with per-sample
-    factor :math:`\\gamma`:
+    Generates a scalar exponential sequence $\gamma^j$ with per-sample
+    factor $\gamma$:
 
-    .. math::
-        A = [\\gamma], \\qquad s_j(x) = \\gamma^j \\cdot x
+    $$
+    A = [\gamma], \qquad s_j(x) = \gamma^j \cdot x
+    $$
 
-    where :math:`x` is the scalar initial amplitude. Values of :math:`|\\gamma| < 1`
-    give a decaying sequence and :math:`|\\gamma| > 1` a growing sequence.
+    where $x$ is the scalar initial amplitude. Values of $|\gamma| < 1$
+    give a decaying sequence and $|\gamma| > 1$ a growing sequence.
 
-    For more details see [Wildhaber2019]_ :download:`PDF <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
+    For more details see [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
 
 
     Parameters
     ----------
     gamma : float
-        Per-sample exponential factor :math:`\\gamma`.
+        Per-sample exponential factor $\gamma$.
     C : array_like of shape ([Q,] N), optional
         Output matrix. If not given, defaults to ``[1.]``. Default: None.
     **kwargs
-        Forwarded to :class:`.ModelBase`.
+        Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase].
 
     Notes
     -----
-    |def_N|
-    |def_Q|
+    `N` : ALSSM system order, corresponding to the number of state variables <br>
+    `Q` : output order / number of signal channels <br>
 
-    Examples
+    Example
     --------
+    ```python
     >>> import lmlib as lm
     >>> alssm = lm.AlssmExp(gamma=0.8)
     >>> print(alssm)
     AlssmExp(A=[[0.8]], C=[1.], label=n/a)
+    ```
     """
 
     def __init__(self, gamma:float, C=None, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(C_init=C, **kwargs)
         self.gamma = gamma
-        self.C_init = C
         self.update()
 
     def update(self):
@@ -1278,12 +1299,12 @@ class AlssmExp(ModelBase):
 
     @property
     def gamma(self) -> float:
-        """float : Per-sample exponential decay factor :math:`\\gamma`."""
+        r"""float : Per-sample exponential decay factor $\gamma$."""
         return self._gamma
 
     @gamma.setter
     def gamma(self, gamma: float):
-        """Validate and set the decay factor :math:`\\gamma`."""
+        r"""Validate and set the decay factor $\gamma$."""
         assert np.isscalar(gamma), 'Decay factor gamma is not scalar'
         self._gamma = gamma
 
@@ -1292,77 +1313,85 @@ class AlssmStacked(ModelBase):
     r"""
     Creates a joined ALSSM generating a stacked output signal of multiple ALSSMs.
 
-    For :math:`M` ALSSMs as in :class:`Alssm`,
-    we get the stacked model's output  :math:`\tilde{s}_k(\tilde{x}) = \tilde{y}_k`
+    For $M$ ALSSMs as in [`Alssm`][lmlib.statespace.model.Alssm],
+    we get the stacked model's output  $\tilde{s}_k(\tilde{x}) = \tilde{y}_k$
 
-    .. math::
-        \tilde{s}_k(\tilde{x}) = \begin{bmatrix}
-            s_k^{(1)}(x_1) \\
-            \vdots \\
-            s_k^{(M)}(x_M) \\
-        \end{bmatrix} =
-        \begin{bmatrix}
-            y_1[k] \\
-            \vdots \\
-            y_M[k] \\
-        \end{bmatrix} =
-        \tilde{y}[k] =
-         \tilde{c} \tilde{A}^k \tilde{x} \  \ ,
+    $$
+    \begin{aligned}
+    \tilde{s}_k(\tilde{x}) = \begin{bmatrix}
+        s_k^{(1)}(x_1) \\
+        \vdots \\
+        s_k^{(M)}(x_M) \\
+    \end{bmatrix} =
+    \begin{bmatrix}
+        y_1[k] \\
+        \vdots \\
+        y_M[k] \\
+    \end{bmatrix} =
+    \tilde{y}[k] =
+     \tilde{c} \tilde{A}^k \tilde{x} \  \ ,
+    \end{aligned}
+    $$
 
-    where :math:`y_m[k]` denotes the output of the m-th joined ALSSM.
-    :math:`y_m[k]`  is either a scalar (for single-channel ALSSMs) or a column vector (for multi-channel ALSSMs).
+    where $y_m[k]$ denotes the output of the m-th joined ALSSM.
+    $y_m[k]$  is either a scalar (for single-channel ALSSMs) or a column vector (for multi-channel ALSSMs).
     Accordingly, the initial state vector is
 
-    .. math::
-        \tilde{x} =
-        \begin{bmatrix}
-            x_1 \\
-            \vdots \\
-            x_M \\
-        \end{bmatrix}
+    $$
+    \begin{aligned}
+    \tilde{x} =
+    \begin{bmatrix}
+        x_1 \\
+        \vdots \\
+        x_M \\
+    \end{bmatrix}
+    \end{aligned}
+    $$
 
-    where :math:`x_m[k]` is the state vector of the m-th joined ALSSM.
+    where $x_m[k]$ is the state vector of the m-th joined ALSSM.
 
     Therefore, the internal model matrices of the joined model are set to the block diagonals
 
-    .. math::
-        \tilde{A} =
-        \left[\begin{array}{c|c|c}
-            A_1 & 0 & 0 \\ \hline
-            0 & \ddots & 0 \\ \hline
-            0 & 0 & A_{M}
-        \end{array}\right]
+    $$
+    \tilde{A} =
+    \left[\begin{array}{c|c|c}
+        A_1 & 0 & 0 \\ \hline
+        0 & \ddots & 0 \\ \hline
+        0 & 0 & A_{M}
+    \end{array}\right]
+    $$
 
-        \tilde{C} =
-        \left[\begin{array}{c|c|c}
-            \lambda_1 C_1 & 0 & 0 \\ \hline
-            0 & \ddots & 0 \\ \hline
-            0 & 0 & \lambda_M C_{M}
-        \end{array}\right]
+    $$
+    \tilde{C} =
+    \left[\begin{array}{c|c|c}
+        \lambda_1 C_1 & 0 & 0 \\ \hline
+        0 & \ddots & 0 \\ \hline
+        0 & 0 & \lambda_M C_{M}
+    \end{array}\right]
+    $$
 
+    where $A_m$ and $C_m$ are the transition matrices and the output vectors of the joined models, respectively, and
+    $\lambda_1 ... \lambda_M  \in \mathcal{R}$ are additional factors to weight each output individually.
 
-    where :math:`A_m` and :math:`C_m` are the transition matrices and the output vectors of the joined models, respectively, and
-    :math:`\lambda_1 ... \lambda_M  \in \mathcal{R}` are additional factors to weight each output individually.
-
-    For more details see [Wildhaber2019]_ :download:`PDF Sec: Linear Combination of M Systems <https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48>`
+    For more details see [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [PDF Sec: Linear Combination of M Systems](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
 
     Parameters
     ----------
     alssms : iterable of ModelBase, length M
         Set of M autonomous linear state space models whose outputs are stacked.
     lambdas : list of float or None, optional
-        List of M scalar factors :math:`\\lambda_m` weighting each ALSSM's output
-        matrix :math:`C_m`. Default: None (all factors set to 1).
+        List of M scalar factors $\\lambda_m$ weighting each ALSSM's output
+        matrix $C_m$. Default: None (all factors set to 1).
     **kwargs
-        Forwarded to :class:`.ModelBase`.
+        Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase].
 
     Notes
     -----
-    |def_M|
+    `M` : number of ALSSMs <br>
 
-    Examples
+    Example
     --------
-
+    ```python
     >>> import lmlib as lm
     >>>
     >>> alssm_poly = lm.AlssmPoly(poly_degree=4, label="high order polynomial")
@@ -1383,13 +1412,15 @@ class AlssmStacked(ModelBase):
     C =
     [[1. 0. 0. 0. 0. 0. 0.]
      [0. 0. 0. 0. 0. 1. 0.]]
-
+    ```
     """
 
     def __init__(self, alssms, lambdas=None, **kwargs):
         super().__init__(**kwargs)
         self.alssms = alssms
+        r"""list of ModelBase : The $M$ sub-ALSSMs whose outputs are stacked."""
         self.lambdas = lambdas
+        r"""ndarray : Per-ALSSM output scaling factors $\lambda_m$ (one per sub-ALSSM)."""
         self.update()
 
     def update(self):
@@ -1406,33 +1437,34 @@ class AlssmStacked(ModelBase):
 
 class AlssmSum(ModelBase):
     r"""
-    ALSSM combining multiple sub-ALSSMs by summing their outputs.
+    Joins multiple ALSSMs generating the output sum.
 
-    Generates the summed output signal of :math:`M` ALSSMs:
+    Generates the summed output signal of $M$ ALSSMs:
 
-    .. math::
-        \tilde{s}_k(\tilde{x}) = s_k^{(1)}(x_1) + \cdots + s_k^{(M)}(x_M)
-        = \tilde{C}\,\tilde{A}^k\,\tilde{x}
+    $$
+    \tilde{s}_k(\tilde{x}) = s_k^{(1)}(x_1) + \cdots + s_k^{(M)}(x_M)
+    = \tilde{C}\,\tilde{A}^k\,\tilde{x}
+    $$
 
-    with block-diagonal transition matrix :math:`\tilde{A}` and horizontally
-    stacked output matrix :math:`\tilde{C} = [\lambda_1 C_1 \;\cdots\; \lambda_M C_M]`.
+    with block-diagonal transition matrix $\tilde{A}$ and horizontally
+    stacked output matrix $\tilde{C} = [\lambda_1 C_1 \;\cdots\; \lambda_M C_M]$.
 
     Parameters
     ----------
     alssms : iterable of ModelBase, length M
         Set of M autonomous linear state space models. All ALSSMs must share the
-        same output dimension; see :meth:`~ModelBase.get_alssm_output_dimension`.
+        same output dimension; see [`get_alssm_output_dimension`][lmlib.statespace.model.ModelBase.get_alssm_output_dimension].
     lambdas : list of float or None, optional
-        List of M scalar factors :math:`\lambda_m` applied to each output matrix.
+        List of M scalar factors $\lambda_m$ applied to each output matrix.
         Default: None (all factors set to 1).
     **kwargs
-        Forwarded to :class:`.ModelBase`.
+        Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase].
 
-    |def_M|
+    `M` : number of ALSSMs <br>
 
-    Examples
+    Example
     --------
-
+    ```python
     >>> import lmlib as lm
     >>>
     >>> alssm_poly = lm.AlssmPoly(poly_degree=3)
@@ -1451,13 +1483,15 @@ class AlssmSum(ModelBase):
      [0. 0. 0. 0. 0. 1.]]
     C =
     [[1. 0. 0. 0. 1. 0.]]
-
+    ```
     """
 
     def __init__(self, alssms, lambdas=None, **kwargs):
         super().__init__(**kwargs)
         self.alssms = alssms
+        r"""list of ModelBase : The $M$ sub-ALSSMs whose outputs are summed."""
         self.lambdas = lambdas if lambdas is not None else [1.0] * len(self.alssms)
+        r"""ndarray : Per-ALSSM output scaling factors $\lambda_m$ (one per sub-ALSSM)."""
         self.update()
 
     def update(self):
@@ -1480,17 +1514,19 @@ class AlssmProd(ModelBase):
     r"""
     Joins multiple ALSSMs generating the output product.
 
-    Creating a joined ALSSM generating the product of all output signals of :math:`M` ALSSMs, e.g., on the example of :math:`M=2`,
+    Creating a joined ALSSM generating the product of all output signals of $M$ ALSSMs, e.g., on the example of $M=2$,
 
-    .. math::
+    $$
+    \begin{aligned}
+    \tilde{s}_k (\tilde{x}) = s_k^{(1)}(x_1) \cdot s_k^{(2)}(x_2) &= (C_1 A_1^k x_1)(C_2 A_2^k x_2)\\
+    &= (C_1 A_1^k x_1) \otimes (C_2 A_2^k x_2)\\
+    &= (C_1 \otimes C_2) (A_1^k \otimes A_2^k) (x_1 \otimes  x_2) \ ,
+    \end{aligned}
+    $$
 
-         \tilde{s}_k (\tilde{x}) = s_k^{(1)}(x_1) \cdot s_k^{(2)}(x_2) &= (C_1 A_1^k x_1)(C_2 A_2^k x_2)\\
-         &= (C_1 A_1^k x_1) \otimes (C_2 A_2^k x_2)\\
-         &= (C_1 \otimes C_2) (A_1^k \otimes A_2^k) (x_1 \otimes  x_2) \ ,
+    where $s_k^{(1)}(x_1) = C_1 A_1^k x_1$ is the first and $s_k^{(2)}(x_2) = C_2 A_2^k x_2$ the second ALSSM.
 
-    where :math:`s_k^{(1)}(x_1) = C_1 A_1^k x_1` is the first and :math:`s_k^{(2)}(x_2) = C_2 A_2^k x_2` the second ALSSM.
-
-    For more details, see also [Zalmai2017]_ [Proposition 2],  [Wildhaber2019]_ [Eq. 4.21].
+    For more details, see also [\[Zalmai2017\]](../bibliography.md#zalmai2017) [Proposition 2],  [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [Eq. 4.21].
 
     Parameters
     ----------
@@ -1502,13 +1538,14 @@ class AlssmProd(ModelBase):
         List of M scalar factors applied to each output matrix.
         Default: None (all factors set to 1).
     **kwargs
-        Forwarded to :class:`.ModelBase`.
+        Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase].
 
 
-    |def_M|
+    `M` : number of ALSSMs <br>
 
-    Examples
+    Example
     --------
+    ```python
     Multiply two ALSSMs
 
     >>> import lmlib as lm
@@ -1526,16 +1563,19 @@ class AlssmProd(ModelBase):
      [ 0.          0.          0.09588511  0.          0.          0.17551651]]
     C =
     [[1. 0. 0. 0. 0. 0.]]
-
+    ```
     """
 
     def __init__(self, alssms, lambdas=None, **kwargs):
         super().__init__(**kwargs)
         self.alssms = alssms
+        r"""list of ModelBase : The $M$ sub-ALSSMs whose outputs are multiplied."""
         self.lambdas = lambdas
+        r"""ndarray : Per-ALSSM output scaling factors $\lambda_m$ (one per sub-ALSSM)."""
         self.update()
 
     def update(self):
+        r"""Recompute the Kronecker-product A and C from the sub-ALSSMs and their lambda scaling factors."""
         for alssm in self.alssms:
             alssm.update()
         A = [1]

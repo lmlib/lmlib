@@ -22,7 +22,7 @@ __all__ = ['mpoly_fit_subspace1',
 
 
 def constrain_matrix_for_exponents(expos, threshold):
-    """
+    r"""
     Creates a matrix which reduces exponents which are summed higher than the threshold
 
     Parameters
@@ -34,7 +34,7 @@ def constrain_matrix_for_exponents(expos, threshold):
 
     Returns
     -------
-    H : :class:`np.ndarray`
+    H : [`ndarray`][np.ndarray]
         H matrix
     """
     prod = list(itertools.product(*expos))

@@ -83,28 +83,29 @@ def _compute_cascade_params(A, C, a, b, delta, gamma, direction):
 # xi2 lfilter cascade
 def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
     r"""
-    Computes the second-order cost parameter :math:`\xi^{(2)}(k, \mathbf{1})` in-place,
-    which equals the vectorized Gram matrix :math:`\mathrm{vec}(W_k)`.
+    Computes the second-order cost parameter $\xi^{(2)}(k, \mathbf{1})$ in-place,
+    which equals the vectorized Gram matrix $\mathrm{vec}(W_k)$.
 
-    :math:`W_k \in \mathbb{R}^{N \times N}` is independent of the signal `y` (it depends
+    $W_k \in \mathbb{R}^{N \times N}$ is independent of the signal `y` (it depends
     only on the model and window), so `y` is replaced by an all-ones array internally.
     The Kronecker product identity
 
-    .. math::
-        \mathrm{vec}(A^T c^T c A) = (A \otimes A)^T \mathrm{vec}(c^T c)
+    $$
+    \mathrm{vec}(A^T c^T c A) = (A \otimes A)^T \mathrm{vec}(c^T c)
+    $$
 
-    allows the :math:`W_k` recursion to be recast as a standard :math:`\xi^{(1)}` recursion
-    with substitutions :math:`A \to A \otimes A` and :math:`C \to C \otimes C`.
-    The result is stored in `xi2` as a flat vector of length :math:`N^2`
-    (i.e. :math:`\mathrm{vec}(W_k)`).
+    allows the $W_k$ recursion to be recast as a standard $\xi^{(1)}$ recursion
+    with substitutions $A \to A \otimes A$ and $C \to C \otimes C$.
+    The result is stored in `xi2` as a flat vector of length $N^2$
+    (i.e. $\mathrm{vec}(W_k)$).
 
-    See also [Wildhaber2018]_ Eq. (22) and [Baeriswyl2025]_ Table I.
+    See also [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Eq. (22) and [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) Table I.
 
     Parameters
     ----------
     xi2 : np.ndarray, shape=(K, N**2, [S])
-        Output array, modified in-place. Stores :math:`\mathrm{vec}(W_k)` for each
-        time step k. Reshaped to ``(K, N, N)`` by the caller to recover :math:`W_k`.
+        Output array, modified in-place. Stores $\mathrm{vec}(W_k)$ for each
+        time step k. Reshaped to ``(K, N, N)`` by the caller to recover $W_k$.
     A : np.ndarray, shape=(N, N)
         State-transition matrix of the ALSSM.
     C : np.ndarray, shape=([L,] N)
@@ -118,20 +119,20 @@ def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sample_weig
     delta : int
         Window normalization shift (window equals 1 at relative index ``delta``).
     gamma : float
-        Window decay factor :math:`\gamma`.
+        Window decay factor $\gamma$.
     y : np.ndarray, shape=(K, [L], [S]) or scalar
         Input signal. Only the shape is used (values are replaced by 1); `y` is
         passed solely to determine the number of time steps K.
     sample_weights : np.ndarray, shape=(K,) or scalar
-        Per-sample weights :math:`w_i`.
+        Per-sample weights $w_i$.
     beta : float
-        Cost segment weight :math:`\beta`.
+        Cost segment weight $\beta$.
 
     Notes
     -----
-    The underlying :func:`lfilter_forward_cascade_xi` /
-    :func:`lfilter_backward_cascade_xi` implement the recursion as a **cascade of
-    1-D IIR filters**: each state dimension ``n`` is solved by one :func:`scipy.signal.lfilter`
+    The underlying [`lfilter_forward_cascade_xi`][lmlib.statespace.backends.rec_lfilter.lfilter_forward_cascade_xi] /
+    [`lfilter_backward_cascade_xi`][lmlib.statespace.backends.rec_lfilter.lfilter_backward_cascade_xi] implement the recursion as a **cascade of
+    1-D IIR filters**: each state dimension ``n`` is solved by one [`lfilter`][scipy.signal.lfilter]
     call, and its output is fed forward into the next dimension ``n+1``. This is possible
     because ``A`` must be upper-triangular, so the state equations are lower-dimensional and
     can be solved in order.
@@ -156,19 +157,19 @@ def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sample_weig
 # xi1 lfilter cascade
 def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weights, beta, block_sizes=None):
     r"""
-    Computes the first-order cost parameter :math:`\xi^{(1)}(k, y)` in-place,
-    which equals the signal projection vector :math:`\xi_k`.
+    Computes the first-order cost parameter $\xi^{(1)}(k, y)$ in-place,
+    which equals the signal projection vector $\xi_k$.
 
-    :math:`\xi_k \in \mathbb{R}^{N}` depends on the signal `y` and is computed
+    $\xi_k \in \mathbb{R}^{N}$ depends on the signal `y` and is computed
     directly using the ALSSM matrices ``A`` and ``C`` without any substitution.
-    The result is stored in `xi1` as a vector of length :math:`N`.
+    The result is stored in `xi1` as a vector of length $N$.
 
-    See also [Wildhaber2018]_ Eq. (23) and [Baeriswyl2025]_ Table I.
+    See also [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Eq. (23) and [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) Table I.
 
     Parameters
     ----------
     xi1 : np.ndarray, shape=(K, N, [S])
-        Output array, modified in-place. Stores :math:`\xi_k` for each time step k.
+        Output array, modified in-place. Stores $\xi_k$ for each time step k.
     A : np.ndarray, shape=(N, N)
         State-transition matrix of the ALSSM.
     C : np.ndarray, shape=([L,] N)
@@ -182,19 +183,19 @@ def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weig
     delta : int
         Window normalization shift (window equals 1 at relative index ``delta``).
     gamma : float
-        Window decay factor :math:`\gamma`.
+        Window decay factor $\gamma$.
     y : np.ndarray, shape=(K, [L], [S]) or scalar
         Input signal. Signal values are used directly in the recursion.
     sample_weights : np.ndarray, shape=(K,) or scalar
-        Per-sample weights :math:`w_i`.
+        Per-sample weights $w_i$.
     beta : float
-        Cost segment weight :math:`\beta`.
+        Cost segment weight $\beta$.
 
     Notes
     -----
-    The underlying :func:`lfilter_forward_cascade_xi` /
-    :func:`lfilter_backward_cascade_xi` implement the recursion as a **cascade of
-    1-D IIR filters**: each state dimension ``n`` is solved by one :func:`scipy.signal.lfilter`
+    The underlying [`lfilter_forward_cascade_xi`][lmlib.statespace.backends.rec_lfilter.lfilter_forward_cascade_xi] /
+    [`lfilter_backward_cascade_xi`][lmlib.statespace.backends.rec_lfilter.lfilter_backward_cascade_xi] implement the recursion as a **cascade of
+    1-D IIR filters**: each state dimension ``n`` is solved by one [`lfilter`][scipy.signal.lfilter]
     call, and its output is fed forward into the next dimension ``n+1``. This is possible
     because ``A`` must be upper-triangular, so the state equations are lower-dimensional and
     can be solved in order.
@@ -202,9 +203,9 @@ def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weig
     ``block_sizes`` is the list of per-ALSSM state orders making up the (combined,
     block-diagonal) ``A``.  When given, the cross-block feed-forward terms — which
     are structurally zero for a block-diagonal ``A`` — are skipped, so the work
-    drops from :math:`O(K N^2)` to :math:`O(K \\sum_m N_m^2)` in a single pass
+    drops from $O(K N^2)$ to $O(K \\sum_m N_m^2)$ in a single pass
     (no per-block function-call overhead).  ``cascade_params`` are computed here
-    from ``A``/``C`` (mirroring :func:`lfilter_cascade_xi2`).
+    from ``A``/``C`` (mirroring [`lfilter_cascade_xi2`][lmlib.statespace.backends.rec_lfilter.lfilter_cascade_xi2]).
 
     Raises
     ------
@@ -223,28 +224,29 @@ def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weig
 # xi0 lfilter cascade
 def lfilter_cascade_xi0(xi0, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
     r"""
-    Computes the zeroth-order cost parameter :math:`\xi^{(0)}(k, y)` in-place,
-    which equals the weighted signal energy :math:`\kappa_k`.
+    Computes the zeroth-order cost parameter $\xi^{(0)}(k, y)$ in-place,
+    which equals the weighted signal energy $\kappa_k$.
 
-    :math:`\kappa_k \in \mathbb{R}` is a scalar representing the accumulated weighted
+    $\kappa_k \in \mathbb{R}$ is a scalar representing the accumulated weighted
     energy of the signal `y` within the window. It is computed by reducing the recursion
     to a scalar IIR filter via the substitutions
 
-    .. math::
-        A \to [[1]], \quad C \to [[1]], \quad y \to y^2
+    $$
+    A \to [[1]], \quad C \to [[1]], \quad y \to y^2
+    $$
 
-    so that the standard :math:`\xi^{(1)}` recursion accumulates
-    :math:`\kappa_k = \sum_i w_i \, y_i^2`.
+    so that the standard $\xi^{(1)}$ recursion accumulates
+    $\kappa_k = \sum_i w_i \, y_i^2$.
     The result is stored in `xi0` with shape ``(K, 1, [S])``.
 
     Parameters ``A`` and ``C`` are accepted for interface consistency but are not used.
 
-    See also [Wildhaber2018]_ Eq. (24) and [Baeriswyl2025]_ Table I.
+    See also [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Eq. (24) and [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) Table I.
 
     Parameters
     ----------
     xi0 : np.ndarray, shape=(K, 1, [S])
-        Output array, modified in-place. Stores :math:`\kappa_k` for each time step k.
+        Output array, modified in-place. Stores $\kappa_k$ for each time step k.
     A : np.ndarray, shape=(N, N)
         State-transition matrix of the ALSSM. Not used; accepted for interface consistency.
     C : np.ndarray, shape=([L,] N)
@@ -258,13 +260,13 @@ def lfilter_cascade_xi0(xi0, A, C, a, b, direction, delta, gamma, y, sample_weig
     delta : int
         Window normalization shift (window equals 1 at relative index ``delta``).
     gamma : float
-        Window decay factor :math:`\gamma`.
+        Window decay factor $\gamma$.
     y : np.ndarray, shape=(K, [L], [S]) or scalar
         Input signal. Values are squared internally (``_y = y**2``) before the recursion.
     sample_weights : np.ndarray, shape=(K,) or scalar
-        Per-sample weights :math:`w_i`.
+        Per-sample weights $w_i$.
     beta : float
-        Cost segment weight :math:`\beta`.
+        Cost segment weight $\beta$.
 
     Raises
     ------
@@ -492,25 +494,25 @@ def _compute_cascade_params_asterisk(A, C, a, b, delta, gamma, Nprev, direction)
 
     Called once per (ALSSM, segment, Nprev) triple before the asterisk
     recursion loop.  The returned dict is passed directly to
-    :func:`lfilter_xi_asterisk_l_forward_cascade_recursion` or
-    :func:`lfilter_xi_asterisk_l_backward_cascade_recursion`.
+    [`lfilter_xi_asterisk_l_forward_cascade_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_forward_cascade_recursion] or
+    [`lfilter_xi_asterisk_l_backward_cascade_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_backward_cascade_recursion].
 
     The effective system for the asterisk recursion uses
-    :math:`A_\mathrm{ast} = I_{N_\mathrm{prev}} \otimes A`, which is
-    block-diagonal with :math:`N_\mathrm{prev}` copies of ``A`` on the
+    $A_\mathrm{ast} = I_{N_\mathrm{prev}} \otimes A$, which is
+    block-diagonal with $N_\mathrm{prev}$ copies of ``A`` on the
     diagonal.  Because ``A`` is upper triangular, ``A_ast`` is also upper
     triangular, so the cascade structure (lower-triangular
-    :math:`\gamma^{-1} A_\mathrm{ast}^{-\mathrm{T}}`) is preserved.
+    $\gamma^{-1} A_\mathrm{ast}^{-\mathrm{T}}$) is preserved.
 
     The ``Aac`` / ``Abc`` entries are stored as ravelled 1-D vectors so that
     the driving-input computation
 
-    .. code-block:: python
-
-        y_diff = (xi_N_b[..., :, None] * Abc_1d).reshape(L, *S_shape, Nprev*N)
+    ```python
+    y_diff = (xi_N_b[..., :, None] * Abc_1d).reshape(L, *S_shape, Nprev*N)
+    ```
 
     works for both 1-D ``C`` (shape ``(N,)``) and 2-D ``C`` (shape ``(1, N)``
-    as produced by :class:`AlssmSum`).
+    as produced by [`AlssmSum`][lmlib.statespace.model.AlssmSum]).
 
     Parameters
     ----------
@@ -525,7 +527,7 @@ def _compute_cascade_params_asterisk(A, C, a, b, delta, gamma, Nprev, direction)
     gamma : float
         Window decay factor.
     Nprev : int
-        Trailing state dimension of ``xi_prev`` (i.e. :math:`N_\mathrm{prev}`).
+        Trailing state dimension of ``xi_prev`` (i.e. $N_\mathrm{prev}$).
     direction : str
         ``'fw'`` or ``'bw'``.
 
@@ -573,26 +575,27 @@ def _compute_cascade_params_asterisk(A, C, a, b, delta, gamma, Nprev, direction)
 @profile
 def lfilter_xi_asterisk_l_forward_cascade_recursion(xi, cascade_params_ast, a, b, xi_N, v, beta):
     r"""
-    IIR forward cascade for the asterisk-l recursion :math:`\xi^{(1)*l}`.
+    IIR forward cascade for the asterisk-l recursion $\xi^{(1)*l}$.
 
     Computes the cross-dimensional xi term
 
-    .. math::
-        \xi^{(1)*l}(k) \mathrel{+}=
-        \text{(boundary-b)} - \text{(boundary-a)}
+    $$
+    \xi^{(1)*l}(k) \mathrel{+}=
+    \text{(boundary-b)} - \text{(boundary-a)}
+    $$
 
     using the same cascade-of-1-D-IIR structure as
-    :func:`lfilter_forward_cascade_xi`, but driven by the previously
+    [`lfilter_forward_cascade_xi`][lmlib.statespace.backends.rec_lfilter.lfilter_forward_cascade_xi], but driven by the previously
     accumulated ``xi_N`` (a state vector from the lower-dimensional
     recursion) rather than the raw signal ``y``.
 
-    The effective system matrix is :math:`A_\mathrm{ast} = I_{N_p} \otimes A`
+    The effective system matrix is $A_\mathrm{ast} = I_{N_p} \otimes A$
     (block-diagonal, upper triangular), so the cascade can process all
-    :math:`N_p` blocks simultaneously.  For each model state dimension
-    ``n``, one :func:`scipy.signal.lfilter` call handles all
-    :math:`N_p \times \prod(S)` channels in a single pass.
+    $N_p$ blocks simultaneously.  For each model state dimension
+    ``n``, one [`lfilter`][scipy.signal.lfilter] call handles all
+    $N_p \times \prod(S)$ channels in a single pass.
 
-    See [Baeriswyl2025]_ Eq. (47).
+    See [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) Eq. (47).
 
     Parameters
     ----------
@@ -600,7 +603,7 @@ def lfilter_xi_asterisk_l_forward_cascade_recursion(xi, cascade_params_ast, a, b
         Output buffer, updated in-place.
     cascade_params_ast : dict
         Precomputed parameters from
-        :func:`_compute_cascade_params_asterisk` with ``direction='fw'``.
+        [`_compute_cascade_params_asterisk`][lmlib.statespace.backends.rec_lfilter._compute_cascade_params_asterisk] with ``direction='fw'``.
         Required keys: ``gamma_inv``, ``gamma_a``, ``gamma_b``,
         ``gAinvT``, ``Aac``, ``Abc``, ``N``, ``Nprev``.
     a : int or inf
@@ -621,12 +624,13 @@ def lfilter_xi_asterisk_l_forward_cascade_recursion(xi, cascade_params_ast, a, b
     -----
     The driving input for each output state ``n_`` = ``j * N + n`` is
 
-    .. math::
-        d[k,\,j,\,n] =
-          \gamma_b \cdot \mathrm{Abc}[n] \cdot \xi_N[k+b,\,j]
-          - \gamma_a \cdot \mathrm{Aac}[n] \cdot \xi_N[k+a-1,\,j]
+    $$
+    d[k,\,j,\,n] =
+      \gamma_b \cdot \mathrm{Abc}[n] \cdot \xi_N[k+b,\,j]
+      - \gamma_a \cdot \mathrm{Aac}[n] \cdot \xi_N[k+a-1,\,j]
+    $$
 
-    where ``j`` indexes the :math:`N_p` blocks and ``n`` indexes the
+    where ``j`` indexes the $N_p$ blocks and ``n`` indexes the
     model state dimension within each block.  After computing ``y_diff``
     with shape ``(L, \*S, Nprev, N)``, the inner cascade loop adds the
     lower-triangular coupling ``gAinvT[n, :n]`` from previously computed
@@ -705,14 +709,14 @@ def lfilter_xi_asterisk_l_forward_cascade_recursion(xi, cascade_params_ast, a, b
 @profile
 def lfilter_xi_asterisk_l_backward_cascade_recursion(xi, cascade_params_ast, a, b, xi_N, v, beta):
     r"""
-    IIR backward cascade for the asterisk-l recursion :math:`\xi^{(1)*l}`.
+    IIR backward cascade for the asterisk-l recursion $\xi^{(1)*l}$.
 
-    Mirror of :func:`lfilter_xi_asterisk_l_forward_cascade_recursion` for
+    Mirror of [`lfilter_xi_asterisk_l_forward_cascade_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_forward_cascade_recursion] for
     backward segments (direction ``'bw'``).
 
     The time axis of ``xi_N`` is reversed before the cascade, and the
     accumulated result is reversed again before being written back, exactly
-    mirroring how :func:`lfilter_backward_cascade_xi` handles the regular
+    mirroring how [`lfilter_backward_cascade_xi`][lmlib.statespace.backends.rec_lfilter.lfilter_backward_cascade_xi] handles the regular
     xi recursion.
 
     Parameters
@@ -721,7 +725,7 @@ def lfilter_xi_asterisk_l_backward_cascade_recursion(xi, cascade_params_ast, a, 
         Output buffer, updated in-place.
     cascade_params_ast : dict
         Precomputed parameters from
-        :func:`_compute_cascade_params_asterisk` with ``direction='bw'``.
+        [`_compute_cascade_params_asterisk`][lmlib.statespace.backends.rec_lfilter._compute_cascade_params_asterisk] with ``direction='bw'``.
         Required keys: ``gamma``, ``gamma_a``, ``gamma_b``,
         ``gAT``, ``Aac``, ``Abc``, ``N``, ``Nprev``.
     a : int or inf
@@ -799,7 +803,8 @@ def lfilter_xi_asterisk_l_backward_cascade_recursion(xi, cascade_params_ast, a, 
 
 
 def _apply_fir_batched(sos, extra_delay, y_sig_2d, Lout):
-    """Batched variant of :func:`_apply_fir` for 2-D input.
+    r"""
+    Batched variant of [`_apply_fir`][lmlib.statespace.backends.rec_lfilter._apply_fir] for 2-D input.
 
     Parameters
     ----------
@@ -849,11 +854,11 @@ def _build_parallel_ast_sos(A, C, a, b, delta, gamma, direction):
     Build the per-row SOS structure for the parallel asterisk-l recursion.
 
     Produces the same 11-element list as ``_numdenom[dim][p][m]`` (see
-    :meth:`~lmlib.statespace.rls.RLSAlssm._build_numdenom`), but for a
+    [`_build_numdenom`][lmlib.statespace.rls.RLSAlssm._build_numdenom]), but for a
     single ALSSM block and without the ``AlssmSum`` wrapper.
 
-    Called once inside :func:`lfilter_xi_asterisk_l_forward_parallel_recursion`
-    and :func:`lfilter_xi_asterisk_l_backward_parallel_recursion` the first
+    Called once inside [`lfilter_xi_asterisk_l_forward_parallel_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_forward_parallel_recursion]
+    and [`lfilter_xi_asterisk_l_backward_parallel_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_backward_parallel_recursion] the first
     time those functions are invoked for a given ``(A, C, a, b, gamma,
     direction)`` combination.  The result is identical to what
     ``_build_numdenom`` would compute if the asterisk ALSSM were an ordinary
@@ -924,21 +929,21 @@ def _build_parallel_ast_sos(A, C, a, b, delta, gamma, direction):
 def lfilter_xi_asterisk_l_forward_parallel_recursion(xi, nd, a, b, delta, gamma, xi_N, v, beta):
     r"""
     SOS-based forward parallel filter for the asterisk-l recursion
-    :math:`\xi^{(1)*l}`.
+    $\xi^{(1)*l}$.
 
     Applies the same per-row SOS structure as
-    :func:`lfilter_forward_parallel_xi`, but driven by ``xi_N`` (the
+    [`lfilter_forward_parallel_xi`][lmlib.statespace.backends.rec_lfilter.lfilter_forward_parallel_xi], but driven by ``xi_N`` (the
     accumulated cost vector from the previous dimension) rather than by the
     raw signal ``y``.
 
     Because the effective system matrix for the asterisk recursion is
-    :math:`A_\mathrm{ast} = I_{N_p} \otimes A` (block-diagonal), each of the
-    :math:`N_p` blocks shares exactly the same transfer function as the
+    $A_\mathrm{ast} = I_{N_p} \otimes A$ (block-diagonal), each of the
+    $N_p$ blocks shares exactly the same transfer function as the
     base-model xi recursion.  This function therefore applies the **same**
     ``nd`` SOS structure once per input channel ``j`` of ``xi_N``, writing
     the ``N``-dimensional result into output rows ``j \cdot N \ldots (j+1)N-1``.
 
-    All :math:`N_p` input channels (and any extra spatial dimensions ``\*S``)
+    All $N_p$ input channels (and any extra spatial dimensions ``\*S``)
     are batched into a single 2-D array so that each ``sosfilt`` / FIR call
     processes all channels simultaneously.
 
@@ -947,7 +952,7 @@ def lfilter_xi_asterisk_l_forward_parallel_recursion(xi, nd, a, b, delta, gamma,
     xi : ndarray, shape (K, \*S, Nprev \* N)
         Output buffer, updated in-place.
     nd : list
-        11-element SOS list from :func:`_build_parallel_ast_sos` with
+        11-element SOS list from [`_build_parallel_ast_sos`][lmlib.statespace.backends.rec_lfilter._build_parallel_ast_sos] with
         ``direction='fw'``.
     a : int or inf
         Left segment boundary.
@@ -1050,19 +1055,19 @@ def lfilter_xi_asterisk_l_forward_parallel_recursion(xi, nd, a, b, delta, gamma,
 def lfilter_xi_asterisk_l_backward_parallel_recursion(xi, nd, a, b, delta, gamma, xi_N, v, beta):
     r"""
     SOS-based backward parallel filter for the asterisk-l recursion
-    :math:`\xi^{(1)*l}`.
+    $\xi^{(1)*l}$.
 
-    Mirror of :func:`lfilter_xi_asterisk_l_forward_parallel_recursion` for
+    Mirror of [`lfilter_xi_asterisk_l_forward_parallel_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_forward_parallel_recursion] for
     backward segments.  The time axis of ``xi_N`` is reversed before the SOS
     filter pass, and the output is reversed again before accumulation, exactly
-    mirroring :func:`lfilter_backward_parallel_xi`.
+    mirroring [`lfilter_backward_parallel_xi`][lmlib.statespace.backends.rec_lfilter.lfilter_backward_parallel_xi].
 
     Parameters
     ----------
     xi : ndarray, shape (K, \*S, Nprev \* N)
         Output buffer, updated in-place.
     nd : list
-        11-element SOS list from :func:`_build_parallel_ast_sos` with
+        11-element SOS list from [`_build_parallel_ast_sos`][lmlib.statespace.backends.rec_lfilter._build_parallel_ast_sos] with
         ``direction='bw'``.
     a : int or inf
         Left segment boundary.
@@ -1159,7 +1164,7 @@ def lfilter_xi_asterisk_l_backward_parallel_recursion(xi, nd, a, b, delta, gamma
 def lfilter_parallel_xi_asterisk_split(xi_curr, A, C, a, b, delta, gamma, direction,
                                        xi_prev, v, beta, block_sizes):
     r"""
-    Per-ALSSM-block parallel asterisk-l recursion (:math:`\xi^{(1)*l}`, Option A).
+    Per-ALSSM-block parallel asterisk-l recursion ($\xi^{(1)*l}$, Option A).
 
     For each ALSSM block of the current dimension the (small) block transfer
     function is built and filtered independently — avoiding the ill-conditioned
@@ -1168,7 +1173,7 @@ def lfilter_parallel_xi_asterisk_split(xi_curr, A, C, a, b, delta, gamma, direct
     Kronecker layout of ``xi_curr``.
 
     A single-ALSSM current dimension reduces to one block, so the scatter is the
-    identity and this matches :func:`lfilter_xi_asterisk_l_forward_parallel_recursion`
+    identity and this matches [`lfilter_xi_asterisk_l_forward_parallel_recursion`][lmlib.statespace.backends.rec_lfilter.lfilter_xi_asterisk_l_forward_parallel_recursion]
     applied directly.
 
     Layout
@@ -1205,7 +1210,7 @@ def lfilter_parallel_xi_asterisk_split(xi_curr, A, C, a, b, delta, gamma, direct
 def build_parallel_numdenom(A, C, a, b, delta, gamma, direction, block_sizes):
     r"""
     Build the per-ALSSM transfer-function (SOS) coefficients consumed by the
-    parallel :math:`\xi^{(1)}` filter.
+    parallel $\xi^{(1)}$ filter.
 
     The combined ``A`` is block-diagonal and ``C`` is block-partitioned
     (``C[:, n0:n1] == f_m C_m`` for ALSSM ``m``).  Each block is decomposed
@@ -1218,13 +1223,13 @@ def build_parallel_numdenom(A, C, a, b, delta, gamma, direction, block_sizes):
     list of (n0, n1, numdenom_m)
         One entry per *active* ALSSM block (a block is inactive when its ``C``
         slice is all-zero, i.e. ``F[m, p] == 0``).  ``numdenom_m`` is the
-        11-element coefficient list expected by :func:`lfilter_parallel_xi1`.
+        11-element coefficient list expected by [`lfilter_parallel_xi1`][lmlib.statespace.backends.rec_lfilter.lfilter_parallel_xi1].
 
     Notes
     -----
     Relocated here (was ``RLSAlssm._build_numdenom``) so the parallel realization
     lives entirely in the backend.  The ``numdenom_m`` layout is documented in
-    :func:`lfilter_forward_parallel_xi`.
+    [`lfilter_forward_parallel_xi`][lmlib.statespace.backends.rec_lfilter.lfilter_forward_parallel_xi].
     """
     from lmlib.statespace.backends.statespace_tools import ss2zpk_qz
 
@@ -1279,12 +1284,12 @@ def build_parallel_numdenom(A, C, a, b, delta, gamma, direction, block_sizes):
 
 def lfilter_parallel_xi1_split(xi1, plan, a, b, direction, delta, gamma, y, sample_weights, beta):
     r"""
-    Per-ALSSM parallel :math:`\xi^{(1)}` recursion.
+    Per-ALSSM parallel $\xi^{(1)}$ recursion.
 
-    ``plan`` is the list produced by :func:`build_parallel_numdenom`; each active
+    ``plan`` is the list produced by [`build_parallel_numdenom`][lmlib.statespace.backends.rec_lfilter.build_parallel_numdenom]; each active
     ALSSM block is filtered independently and written into its sub-slice
     ``xi1[..., n0:n1]`` (block-diagonal ``A`` ⇒ blocks are independent for
-    :math:`q = 1`).
+    $q = 1$).
     """
     for n0, n1, nd in plan:
         _iir_b = nd[5] if len(nd) > 5 else None
@@ -1300,7 +1305,7 @@ def lfilter_parallel_xi1_split(xi1, plan, a, b, direction, delta, gamma, y, samp
 
 # xi2 lfilter parallel
 def lfilter_parallel_xi2(xi2, denom, num_b, num_a, a, b, direction, delta, gamma, y, sample_weights, beta):
-    """Compute :math:`\\xi^{(2)}` using the parallel lfilter backend (transfer-function form)."""
+    r"""Compute $\xi^{(2)}$ using the parallel lfilter backend (transfer-function form)."""
     raise NotImplementedError("lfilter_parallel_xi2 not implemented yet.")
 
 
@@ -1310,7 +1315,7 @@ def lfilter_parallel_xi1(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
                           sos_iir_b_list=None, sos_iir_a_list=None,
                           n_poles_b_list=None, n_poles_a_list=None,
                           advance_b_list=None, advance_a_list=None):
-    """Compute :math:`\\xi^{(1)}` using the parallel lfilter backend (transfer-function form)."""
+    r"""Compute $\xi^{(1)}$ using the parallel lfilter backend (transfer-function form)."""
     if direction == 'fw':
         lfilter_forward_parallel_xi(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
                                      a, b, delta, gamma, y, sample_weights, beta,
@@ -1328,7 +1333,7 @@ def lfilter_parallel_xi1(xi1, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
 
 # xi0 lfilter parallel (delegates to cascade implementation, since the ALSSM is not used for xi0 calculation)
 def lfilter_parallel_xi0(xi0, denom, num_b, num_a, a, b, direction, delta, gamma, y, sample_weights, beta, kappa_diag=True):
-    """Compute :math:`\\xi^{(0)}` using the parallel lfilter backend (delegates to cascade internally)."""
+    r"""Compute $\xi^{(0)}$ using the parallel lfilter backend (delegates to cascade internally)."""
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     lfilter_cascade_xi0(xi0,_A,_C,a,b,direction,delta,gamma,y,sample_weights,beta)
@@ -1336,7 +1341,7 @@ def lfilter_parallel_xi0(xi0, denom, num_b, num_a, a, b, direction, delta, gamma
 
 # nu lfilter parallel
 def lfilter_parallel_nu(nu, A, C, a, b, direction, delta, gamma, y, sample_weights, beta):
-    """Compute :math:`\\nu` using the parallel lfilter backend (delegates to cascade internally)."""
+    r"""Compute $\nu$ using the parallel lfilter backend (delegates to cascade internally)."""
     _A = np.ones((1, 1))
     _C = np.ones((1, 1))
     _y = np.broadcast_to(1., np.shape(y))  # create an array of shape Ks, but contains only a single 1.0 in memory

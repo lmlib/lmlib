@@ -20,7 +20,7 @@ data_path = os.path.join(this_dir, "data/")
 
 
 def gen_sine(K, k_periods, amplitudes=None, k0s=None):
-    """
+    r"""
     Generates multiple sinusoidal signals and adds them to one
 
     Parameters
@@ -36,13 +36,16 @@ def gen_sine(K, k_periods, amplitudes=None, k0s=None):
 
     Returns
     -------
-    out : :class:`numpy.ndarray`
+    out : ndarray
         Sum of Sinusoidal signals of length **K**.
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_sinusoidal_plot.py
-        :include-source:
+    ![Sinusoidal Signal](../_generated/catalog/generators/example-gen_sinusoidal_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_sinusoidal_plot.py:5"
+    ```
     """
 
     if np.isscalar(k_periods):
@@ -67,35 +70,38 @@ def gen_sine(K, k_periods, amplitudes=None, k0s=None):
 
 
 def gen_exp(K, decay, k0=0):
-    """
+    r"""
     Exponentially decaying signal generator
 
-    :math:`y_k = \gamma^{k-k_0}`
+    $y_k = \gamma^{k-k_0}$
 
     Parameters
     ----------
     K : int
         Signal length
     decay : float
-        decay factor :math:`\gamma`
+        decay factor $\gamma$
     k0 : int
-        index shift :math:`k_0`; it follows that :math:`y_{k_0} = 1`
+        index shift $k_0$; it follows that $y_{k_0} = 1$
 
     Returns
     -------
-    out : :class:`numpy.ndarray`
+    out : ndarray
         Returns an exponential decaying signal of length **K**, normalized to 1 at index **k0**.
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_exponential_plot.py
-        :include-source:
+    ![Exponential Signal](../_generated/catalog/generators/example-gen_exponential_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_exponential_plot.py:5"
+    ```
     """
     return np.power(decay, np.arange(0 - k0, K - k0))
 
 
 def gen_rect(K, k_period, k_on=None, duty_cycle=None, k0=0):
-    """
+    r"""
     Rectangular (pulse wave) signal generator
 
     Parameters
@@ -113,13 +119,16 @@ def gen_rect(K, k_period, k_on=None, duty_cycle=None, k0=0):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
+    out : ndarray, shape=(K,)
         Returns a rectangular wave signal of length `K`.
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_rectangle_plot.py
-        :include-source:
+    ![Rectangle Signal](../_generated/catalog/generators/example-gen_rectangle_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_rectangle_plot.py:5"
+    ```
     """
 
     assert k_on is None or duty_cycle is None, "Set only k_on or duty_cycle. These cannot be used at the same time."
@@ -137,7 +146,7 @@ def gen_rect(K, k_period, k_on=None, duty_cycle=None, k0=0):
 
 
 def gen_saw(K, k_period):
-    """
+    r"""
     Sawtooth signal generator
 
     Parameters
@@ -149,15 +158,14 @@ def gen_saw(K, k_period):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
+    out : ndarray, shape=(K,)
         Returns a repetitive slope signal of length **K**. Amplitudes are normalize from 0 to 1.
-
     """
     return np.remainder(range(K), k_period) / k_period - 0.5
 
 
 def gen_tri(K, k_period):
-    """
+    r"""
     Triangular signal generator
 
     Parameters
@@ -169,19 +177,22 @@ def gen_tri(K, k_period):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
+    out : ndarray, shape=(K,)
         Returns a triangular signal of length **K** with **k_period** samples per triangle. Amplitudes aer normalize from 0 to 1.
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_triangle_plot.py
-        :include-source:
+    ![Triangle Signal](../_generated/catalog/generators/example-gen_triangle_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_triangle_plot.py:5"
+    ```
     """
     return 1 - abs(np.remainder(range(K), k_period) - 0.5 * k_period) / (0.5 * k_period) - 0.5
 
 
 def gen_pulse(K, ks):
-    """
+    r"""
     Pulse signal generator
 
     Parameters
@@ -193,13 +204,16 @@ def gen_pulse(K, ks):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
+    out : ndarray, shape=(K,)
         Returns a unit impulse signal trail of length **K** with values at indices **ks** set to 1, all others to 0.
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_pulse_plot.py
-        :include-source:
+    ![Unit Impulse Signal](../_generated/catalog/generators/example-gen_pulse_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_pulse_plot.py:5"
+    ```
     """
     out = np.zeros((K,))
     assert all(0 <= k < K for k in ks), "k is not in the range of K."
@@ -208,7 +222,7 @@ def gen_pulse(K, ks):
 
 
 def gen_steps(K, ks, deltas):
-    """
+    r"""
     Step signal generator
 
     Parameters
@@ -222,13 +236,16 @@ def gen_steps(K, ks, deltas):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
+    out : ndarray, shape=(K,)
         Returns a step signal of length **K** with steps of relative amplitudes **deltas** at indexes **ks**.
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_steps_plot.py
-        :include-source:
+    ![Steps Signal](../_generated/catalog/generators/example-gen_steps_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_steps_plot.py:5"
+    ```
     """
     out = np.zeros((K,))
     out[ks] = deltas
@@ -236,7 +253,7 @@ def gen_steps(K, ks, deltas):
 
 
 def gen_slopes(K, ks, deltas):
-    """
+    r"""
     Slopes signal generator
 
     Parameters
@@ -250,19 +267,22 @@ def gen_slopes(K, ks, deltas):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
+    out : ndarray, shape=(K,)
         Returns a signal of length `K` with chances in slope by the values `deltas` at indeces `ks`.
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_slopes_plot.py
-        :include-source:
+    ![Slopes Signal](../_generated/catalog/generators/example-gen_slopes_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_slopes_plot.py:5"
+    ```
     """
     return np.interp(np.arange(K), ks, np.cumsum(deltas))
 
 
 def gen_wgn(size, sigma, seed=None):
-    """
+    r"""
     White Gaussian noise signal generator
 
     Parameters
@@ -276,20 +296,24 @@ def gen_wgn(size, sigma, seed=None):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
         Returns a white Gaussian noise signal of shape like `size`  and variance `sigma`.
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_wgn_plot.py
-        :include-source:
+    ![White Gaussian Noise Signal](../_generated/catalog/generators/example-gen_wgn_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_wgn_plot.py:5"
+    ```
     """
     np.random.seed(seed)
     return np.random.normal(0, sigma, size)
 
 
 def gen_rand_walk(size, seed=None):
-    """Random walk generator
+    r"""
+    Random walk generator
 
     Parameters
     ----------
@@ -300,13 +324,16 @@ def gen_rand_walk(size, seed=None):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
         Returns a signal of shape `size` with a random walk
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_rand_walk_plot.py
-        :include-source:
+    ![Random Walk Signal](../_generated/catalog/generators/example-gen_rand_walk_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_rand_walk_plot.py:5"
+    ```
     """
     np.random.seed(seed)
     size = (size,) if isinstance(size, int) else size
@@ -314,7 +341,7 @@ def gen_rand_walk(size, seed=None):
 
 
 def gen_rand_pulse(size, n_pulses, length=1, seed=None):
-    """
+    r"""
     Random pulse signal generator
 
     Parameters
@@ -331,13 +358,16 @@ def gen_rand_pulse(size, n_pulses, length=1, seed=None):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`
+    out : ndarray
         Returns signal of shape `size` with exactly `N` unity pulses of length `N` at random positions per signal
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_rand_pulse_plot.py
-        :include-source:
+    ![Random Pulse Signal](../_generated/catalog/generators/example-gen_rand_pulse_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_rand_pulse_plot.py:5"
+    ```
     """
     np.random.seed(seed)
     K = size[0] if isinstance(size, tuple) else size
@@ -353,7 +383,7 @@ def gen_rand_pulse(size, n_pulses, length=1, seed=None):
 
 
 def gen_conv(base, template):
-    """
+    r"""
     Convolves two signals. The output signal shape (number of channels and signal length)  is preserved from the `base` signal.
 
     Parameters
@@ -365,7 +395,7 @@ def gen_conv(base, template):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
+    out : ndarray, shape=(K,)
         If `template` is a single-channel signal,
         the convolution is applied to each channel of `base`, otherwise the convolution between `base` and `template`  is applied per-channel.
         The output signal is of the same dimension as `base` signal, cf. ``numpy.convolve(..., mode='same')``.
@@ -373,8 +403,11 @@ def gen_conv(base, template):
 
     Example
     -------
-    .. plot:: static/generator_func_plots_src/gen_convolve_plot.py
-        :include-source:
+    ![Convolution of Two Signals](../_generated/catalog/generators/example-gen_convolve_plot.png)
+
+    ```python
+    --8<-- "catalog/generators/example-gen_convolve_plot.py:5"
+    ```
     """
     y1 = np.asarray(base)
     y2 = np.asarray(template)
@@ -389,8 +422,8 @@ def gen_conv(base, template):
 
 @deprecated
 def load_data(name, K=-1, kstart=0, chIdx=0):
-    """
-    Loads a single channel signal from the signal catalog, see :ref:`biosignals_catalog`.
+    r"""
+    Loads a single channel signal from the signal catalog, see biosignals_catalog.
 
     Parameters
     ----------
@@ -408,9 +441,8 @@ def load_data(name, K=-1, kstart=0, chIdx=0):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K,)
+    out : ndarray, shape=(K,)
         Signal with shape=(K,)
-
     """
     warn('load_data will be deprecated, use load_lib_csv instead.', DeprecationWarning, stacklevel=2)
 
@@ -420,8 +452,8 @@ def load_data(name, K=-1, kstart=0, chIdx=0):
 
 @deprecated
 def load_data_mc(name, K=-1, kstart=0, chIdxs=None):
-    """
-    Loads a multi-channel signal from the signal catalog, see :ref:`biosignals_catalog`.
+    r"""
+    Loads a multi-channel signal from the signal catalog, see biosignals_catalog.
 
     Parameters
     ----------
@@ -440,13 +472,12 @@ def load_data_mc(name, K=-1, kstart=0, chIdxs=None):
 
     Returns
     -------
-    out : :class:`~numpy.ndarray`, shape=(K, M)
+    out : ndarray, shape=(K, M)
         else shape=(K, M) for multichannel signals or uf `channels` is an array_like of length `M`
 
     Note
     ----
     If a file contains only one signal it will be loaded in a shape of a multi-channel signal (K, 1)
-
     """
     warn('load_data_mc will be deprecated, use load_lib_csv_mc instead.', DeprecationWarning, stacklevel=2)
 
@@ -466,7 +497,7 @@ def load_data_mc(name, K=-1, kstart=0, chIdxs=None):
 
 
 def k_period_to_omega(k_period):
-    """
+    r"""
     Converts sample base period  (samples per cycle) to the normalized frequency
 
     Parameters
@@ -477,8 +508,7 @@ def k_period_to_omega(k_period):
     Returns
     -------
     w : float
-        Normalized frequency, :math:`\omega = {2 \pi}/{k_\mathrm{period}}`
-
+        Normalized frequency, $\omega = {2 \pi}/{k_\mathrm{period}}$
     """
     return 2 * np.pi / k_period
 
@@ -549,16 +579,16 @@ def load_csv_mc(file, K=-1, k_start=0, channels=None, ds_rate=1, **kwargs):
 
 
 def load_lib_csv(filename, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
-    """
+    r"""
     loads a library-internal csv data file from the signal catalog as a single-channel data shape
 
-    See filenames as :ref:`biosignals_catalog`
-    `load_lib_csv` calls :class:`numpy.genfromtxt` with a different interface.
+    See filenames as biosignals_catalog
+    `load_lib_csv` calls [`genfromtxt`][numpy.genfromtxt] with a different interface.
 
     Parameters
     ----------
     filename : str
-        filename (with '.csv' ending ) See :ref:`biosignals_catalog`.
+        filename (with '.csv' ending ) See biosignals_catalog.
     K : int, optional
         signal length, default loads whole data (K=-1)
     k_start : int, optional
@@ -569,7 +599,7 @@ def load_lib_csv(filename, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
     ds_rate : int
         down-sample rate (ds_rate >= 1)
     kwargs : optional
-        keyword arguments passed to :class:`numpy.genfromtxt`
+        keyword arguments passed to [`genfromtxt`][numpy.genfromtxt]
         to exclude header add `skip_header=numbers_of_header_lines`
 
     Returns
@@ -581,16 +611,16 @@ def load_lib_csv(filename, K=-1, k_start=0, channel=0, ds_rate=1, **kwargs):
 
 
 def load_lib_csv_mc(filename, K=-1, k_start=0, channels=None, ds_rate=1, **kwargs):
-    """
+    r"""
     loads a library-internal csv data file from the signal catalog as a multi-channel data shape
 
-    See filenames as :ref:`biosignals_catalog`
+    See filenames as biosignals_catalog
     `load_csv_mc` calls numpy.genfromtxt with a different interface.
 
     Parameters
     ----------
     filename : str
-        filename (with '.csv' ending ) See :ref:`biosignals_catalog`.
+        filename (with '.csv' ending ) See biosignals_catalog.
     K : int, optional
         signal length, default loads whole data (K=-1)
     k_start : int, optional

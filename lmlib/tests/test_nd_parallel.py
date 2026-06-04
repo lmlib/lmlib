@@ -1,7 +1,7 @@
-"""
+r"""
 Tests for the lfilter *parallel* backend on N-dimensional cost functions.
 
-The parallel filter form realises both the first-dimension :math:`\\xi^{(1)}`
+The parallel filter form realises both the first-dimension $\xi^{(1)}$
 recursion and the cross-dimensional (asterisk) step via per-ALSSM transfer
 functions (Option A).  The asterisk step uses a per-ALSSM-block split followed
 by a Kronecker scatter (``lfilter_parallel_xi_asterisk_split``); ``q==0`` (kappa)
