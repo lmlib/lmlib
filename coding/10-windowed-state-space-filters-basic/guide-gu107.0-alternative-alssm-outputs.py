@@ -22,6 +22,7 @@ from lmlib.utils import gen_wgn, gen_sine, gen_rand_walk, k_period_to_omega
 # create signal
 seed = 12345
 K = 1000
+k = np.arange(K)
 k_periods = 300
 ys = gen_sine(K, k_periods) + 0.05 * gen_rand_walk(K, seed=seed) + gen_wgn(K, 0.1, seed=seed)
 
@@ -41,6 +42,19 @@ xs = rls.minimize_x()
 ys_hat_normal = cost.eval_alssm_output(xs)
 
 # ------------------------------
-# alternative outputs with alssm weights parameter
-ys_hat_aw = cost.eval_alssm_output(xs, alssm_weights=(0, 1))
+# alternative outputs with alssm weights parameter, Sinusoidal Model only
+ys_hat_sinus = cost.eval_alssm_output(xs, alssm_weights=(0, 1))
+
+# alternative outputs with alssm weights parameter, Polynomial Model only
+ys_hat_poly = cost.eval_alssm_output(xs, alssm_weights=(1, 0))
+
+plt.title('Signal Estimate Reconstruction with ALSSM')
+plt.plot(k,ys, lw=0.3, c='k', label=r'$y$')
+plt.plot(k,ys_hat_normal, lw=2, c='b', label=r'$y_{hat}$')
+plt.plot(k,ys_hat_sinus, lw=2, ls= ':', c='b', label=r'$y_{hat,sine}$')
+plt.plot(k,ys_hat_poly,  lw=1, ls='--', c='b',label=r'$y_{hat,poly}$')
+#plt.ylim([-3, 3])
+plt.legend(loc=1)
+plt.xlabel(r'$k$')
+plt.show()
 

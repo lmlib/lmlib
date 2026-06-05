@@ -397,13 +397,18 @@ class CompositeCost(BaseCost, BaseCost1d):
 
     Parameters
     ----------
-    alssms : iterable of ModelBase, length M
-        Set of M ALSSM models.
-    segments : iterable of Segment, length P
-        Set of P Segments.
-    F : array_like of shape (M, P)
+    alssms : iterable of ModelBase (length M), or a single ModelBase
+        Set of M ALSSM models. A single ALSSM may be passed directly instead of
+        wrapping it in an iterable (it is treated as ``M = 1``).
+    segments : iterable of Segment (length P), or a single Segment
+        Set of P Segments. A single Segment may be passed directly instead of
+        wrapping it in an iterable (it is treated as ``P = 1``).
+    F : array_like of shape (M, P), optional
         Mapping matrix. ``F[m, p]`` is the scalar weight of ALSSM ``m`` in Segment ``p``.
-        Set to 0 to disable a grid node.
+        Set to 0 to disable a grid node. If omitted, ``F`` defaults to
+        ``np.ones((M, P))``; this default is only allowed when there is a single
+        ALSSM (``M = 1``) or a single Segment (``P = 1``). With at least two
+        ALSSMs and two Segments, ``F`` is mandatory.
     betas : array_like of shape (P,), optional
         Per-segment scaling factors $\beta_p$. Default: all ones.
     label : str, optional
@@ -430,22 +435,36 @@ class CompositeCost(BaseCost, BaseCost1d):
     CompositeCost(label=spike_baseline)
       └- ['AlssmPoly(A=..., C=..., label=spike)', 'AlssmPoly(A=..., C=..., label=baseline)'],
       └- [Segment(a=-50, ..., label=finite left), Segment(a=0, ..., label=finite middle), Segment(a=10, ..., label=finite right)]
+
+    A single ALSSM and a single Segment may be passed directly; ``F`` then
+    defaults to ``np.ones((1, 1))``.
+
+    >>> cost = lm.CompositeCost(lm.AlssmPoly(poly_degree=3), lm.Segment(0, 200, lm.BW, 100))
     """
 
-    def __init__(self, alssms, segments, F, betas=None, label='n/a'):
-        # set alssms
+    def __init__(self, alssms, segments, F=None, betas=None, label='n/a'):
+        # set alssms (accept a single ALSSM in place of an iterable)
+        if isinstance(alssms, ModelBase):
+            alssms = [alssms]
         assert isinstance(alssms, Iterable), 'alssms is not iterable'
         for alssm in alssms:
             assert isinstance(alssm, ModelBase), 'element in alssms is not of instance ModelBase'
         self._alssms = list(alssms)
 
-        # set segments
+        # set segments (accept a single Segment in place of an iterable)
+        if isinstance(segments, Segment):
+            segments = [segments]
         assert isinstance(segments, Iterable), 'segments is not iterable'
         for segment in segments:
             assert isinstance(segment, Segment), 'element in segments is not instance of Segment'
         self._segments = list(segments)
 
-        # set F
+        # set F (default to all-ones when there is a single ALSSM or a single
+        # Segment; F is mandatory once there are at least two of each)
+        if F is None:
+            assert not (self.M >= 2 and self.P >= 2), \
+                'F is mandatory when there are at least two ALSSMs and two Segments'
+            F = np.ones((self.M, self.P))
         self.F = F
 
         # set betas

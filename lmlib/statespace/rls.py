@@ -25,19 +25,6 @@ def create_rls(cost, multi_channel_set=False, steady_state=False, kappa_diag=Tru
     return RLSAlssm(cost, steady_state=steady_state, **kwargs)
 
 
-def _cost_parts(cost): #TODO remove this function and directly insert the code at the corresponding calls.
-    """
-    Return ``(segments, alssms, F, betas)`` for a CostSegment or CompositeCost.
-
-    A CostSegment is the degenerate single-ALSSM / single-segment case; it is
-    unpacked here directly (``F = [[1]]``) so the recursion drivers never branch
-    on the concrete cost type and never have to build a throw-away CompositeCost.
-    """
-    if isinstance(cost, CostSegment):
-        return [cost.segment], [cost.alssm], np.ones((1, 1)), np.array([cost.beta])
-    return list(cost.segments), list(cost.alssms), cost.F, cost.betas
-
-
 class RLSAlssm:
     r"""
     Recursive Least Square Alssm Class to compute and minimize Alssm Cost Functions.
@@ -165,7 +152,7 @@ class RLSAlssm:
         # ------------------------------------------------------------------
         if self._backend == 'lfilter' and self._filter_form == 'cascade':
             for ct in _sub_costs:
-                _, _alssms, _, _ = _cost_parts(ct)
+                _alssms = [ct.alssm] if isinstance(ct, CostSegment) else list(ct.alssms)
                 for alssm in _alssms:
                     if not np.allclose(alssm.A, np.triu(alssm.A)):
                         self._filter_form = 'parallel'
@@ -249,7 +236,10 @@ class RLSAlssm:
 
         plan = []
         for ct in _sub_costs:
-            segments, alssms, F, _ = _cost_parts(ct)
+            if isinstance(ct, CostSegment):
+                segments, alssms, F = [ct.segment], [ct.alssm], np.ones((1, 1))
+            else:
+                segments, alssms, F = list(ct.segments), list(ct.alssms), ct.F
             block_sizes = [al.N for al in alssms]
             seg_plans = []
             for p, segment in enumerate(segments):
@@ -880,7 +870,8 @@ class RLSAlssm:
             Selects what is returned. One or more of:
 
             - ``'y_hat'`` *(default)* — signal estimate $\hat{y}_k = CA^j\hat{x}_k$
-              evaluated via [`AlssmSum`][lmlib.statespace.model.AlssmSum].
+              evaluated via the cost term's
+              [`eval_alssm_output`][lmlib.statespace.cost.CompositeCost.eval_alssm_output].
             - ``'x'`` — full state vector $\hat{x}_k = H\hat{v}_k + h$,
               shape ``(..., N)``.
             - ``'v'`` — free parameter $\hat{v}_k$, shape ``(..., M)``.
@@ -899,8 +890,10 @@ class RLSAlssm:
         eval_alssm_weights : array_like, optional
             Per-ALSSM output weights used when evaluating $\hat{y}$ from a
             [`CompositeCost`][lmlib.statespace.cost.CompositeCost] with multiple models.
-            Passed to [`AlssmSum`][lmlib.statespace.model.AlssmSum]. If ``None``, all
-            models contribute equally.
+            Forwarded to the cost term's
+            [`eval_alssm_output`][lmlib.statespace.cost.CompositeCost.eval_alssm_output]
+            (which in turn passes them to [`AlssmSum`][lmlib.statespace.model.AlssmSum]).
+            If ``None``, all models contribute equally.
 
         Returns
         -------
@@ -968,17 +961,11 @@ class RLSAlssm:
         if 'y_hat' not in _output:
             return (out_dict[_] for _ in _output)
 
-        alssms = self._cost_terms.get_alssms()
-        weights = eval_alssm_weights if eval_alssm_weights is not None else [1.0] * len(alssms)
-        out_dict['y_hat'] = AlssmSum(alssms, weights).eval_output(x)
+        out_dict['y_hat']  = self._cost_terms.eval_alssm_output(x, alssm_weights= eval_alssm_weights if eval_alssm_weights is not None else [1.0] * len(self._cost_terms.get_alssms()))
 
         if _output == ('y_hat',):
             return out_dict['y_hat']
         return tuple(out_dict[_] for _ in _output)
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
 
     # ------------------------------------------------------------------
     # Recursion: _nd_xi_q_recursion (first dimension)
@@ -1037,8 +1024,11 @@ class RLSAlssm:
             (all signal dimensions) and a trailing axis of size $N_l^q$, where
             $N_l$ is the model order of the sub-cost for ``model_dimension``.
         """
-        segments, alssms, F, betas = _cost_parts(
-            self._cost_terms._get_sub_cost_term(model_dimension))
+        ct = self._cost_terms._get_sub_cost_term(model_dimension)
+        if isinstance(ct, CostSegment):
+            segments, alssms, F, betas = [ct.segment], [ct.alssm], np.ones((1, 1)), np.array([ct.beta])
+        else:
+            segments, alssms, F, betas = list(ct.segments), list(ct.alssms), ct.F, ct.betas
         dim_index = model_dimension if isinstance(self._cost_terms, NDCompositeCost) else 0
         N = sum(al.N for al in alssms)
         block_sizes = [al.N for al in alssms]
@@ -1109,8 +1099,11 @@ class RLSAlssm:
             Extended cost parameter. The leading shape matches `y`; the trailing axis
             is the product of all accumulated sub-cost orders raised to $q$.
         """
-        segments, alssms, F, betas = _cost_parts(
-            self._cost_terms._get_sub_cost_term(model_dimension))
+        ct = self._cost_terms._get_sub_cost_term(model_dimension)
+        if isinstance(ct, CostSegment):
+            segments, alssms, F, betas = [ct.segment], [ct.alssm], np.ones((1, 1)), np.array([ct.beta])
+        else:
+            segments, alssms, F, betas = list(ct.segments), list(ct.alssms), ct.F, ct.betas
         N = sum(al.N for al in alssms)
         block_sizes = [al.N for al in alssms]
         Nq_prev = xi_prev.shape[-1]
