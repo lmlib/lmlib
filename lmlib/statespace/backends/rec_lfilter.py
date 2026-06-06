@@ -300,7 +300,7 @@ def lfilter_cascade_xi2(xi2, A, C, a, b, direction, delta, gamma, y, sample_weig
     The result is stored in `xi2` as a flat vector of length $N^2$
     (i.e. $\mathrm{vec}(W_k)$).
 
-    See also [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Eq. (22) and [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) Table I.
+    See also [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) Eq. (22) and [\[Baeriswyl2025\]](../../bibliography.md#baeriswyl2025) Table I.
 
     Parameters
     ----------
@@ -365,7 +365,7 @@ def lfilter_cascade_xi1(xi1, A, C, a, b, direction, delta, gamma, y, sample_weig
     directly using the ALSSM matrices ``A`` and ``C`` without any substitution.
     The result is stored in `xi1` as a vector of length $N$.
 
-    See also [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Eq. (23) and [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) Table I.
+    See also [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) Eq. (23) and [\[Baeriswyl2025\]](../../bibliography.md#baeriswyl2025) Table I.
 
     Parameters
     ----------
@@ -442,7 +442,7 @@ def lfilter_cascade_xi0(xi0, A, C, a, b, direction, delta, gamma, y, sample_weig
 
     Parameters ``A`` and ``C`` are accepted for interface consistency but are not used.
 
-    See also [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Eq. (24) and [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) Table I.
+    See also [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) Eq. (24) and [\[Baeriswyl2025\]](../../bibliography.md#baeriswyl2025) Table I.
 
     Parameters
     ----------
@@ -821,7 +821,7 @@ def lfilter_xi_asterisk_l_forward_cascade_recursion(xi, cascade_params_ast, a, b
     ``n``, one [`lfilter`][scipy.signal.lfilter] call handles all
     $N_p \times \prod(S)$ channels in a single pass.
 
-    See [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) Eq. (47).
+    See [\[Baeriswyl2025\]](../../bibliography.md#baeriswyl2025) Eq. (47).
 
     Parameters
     ----------

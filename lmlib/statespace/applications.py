@@ -12,68 +12,68 @@ __all__ = ['TSLM']
 
 class TSLM(ABC):
     r"""
-    Full implementation of the Two-Sided Line Model (TSLM) as published in "Onset Detection of Pulse-Shaped Bioelectrical Signals Using Linear State Space Models" [\[Waldmann2022\]](../bibliography.md#waldmann2022).
+    Full implementation of the Two-Sided Line Model (TSLM) as published in "Onset Detection of Pulse-Shaped Bioelectrical Signals Using Linear State Space Models" [\[Waldmann2022\]](../../bibliography.md#waldmann2022).
 
     Comprehensive examples on how to apply TSLMs are provided at Onset and Peak Detection With Two-Sided Line Models (TSLMs).
 
-    ![Two-Sided Line Model figure](../images/tslm_fig1.png)
+    ![Two-Sided Line Model figure](../../images/tslm_fig1.png)
 
 
-    ![Two-Sided Line Model constraint table](../images/tslm_tab2.png)
+    ![Two-Sided Line Model constraint table](../../images/tslm_tab2.png)
     """
 
     H_Free = np.array([[1, 0, 0, 0],  # x_A,left : offset of left line
                        [0, 1, 0, 0],  # x_B,left : slope of left line
                        [0, 0, 1, 0],  # x_A,right : offset of right line
                        [0, 0, 0, 1]])  # x_B,right : slope of right line
-    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Free"`, see [\[Waldmann2022\]](../bibliography.md#waldmann2022)."""
+    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Free"`, see [\[Waldmann2022\]](../../bibliography.md#waldmann2022)."""
 
     H_Continuous = np.array(
         [[1, 0, 0],  # x_A,left : offset of left line
          [0, 1, 0],  # x_B,left : slope of left line
          [1, 0, 0],  # x_A,right : offset of right line
          [0, 0, 1]])  # x_B,right : slope of right line
-    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Continuous"`, see [\[Waldmann2022\]](../bibliography.md#waldmann2022)."""
+    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Continuous"`, see [\[Waldmann2022\]](../../bibliography.md#waldmann2022)."""
 
     H_Straight = np.array(
         [[1, 0],  # x_A,left : offset of left line
          [0, 1],  # x_B,left : slope of left line
          [1, 0],  # x_A,right : offset of right line
          [0, 1]])  # x_B,right : slope of right line
-    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Straight"`, see [\[Waldmann2022\]](../bibliography.md#waldmann2022)."""
+    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Straight"`, see [\[Waldmann2022\]](../../bibliography.md#waldmann2022)."""
 
     H_Horizontal = np.array(
         [[1],  # x_A,left : offset of left line
          [0],  # x_B,left : slope of left line
          [1],  # x_A,right : offset of right line
          [0]])  # x_B,right : slope of right line
-    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Horizontal"`, see [\[Waldmann2022\]](../bibliography.md#waldmann2022)."""
+    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Horizontal"`, see [\[Waldmann2022\]](../../bibliography.md#waldmann2022)."""
 
     H_Left_Horizontal = np.array(
         [[1, 0],  # x_A,left : offset of left line
          [0, 0],  # x_B,left : slope of left line
          [1, 0],  # x_A,right : offset of right line
          [0, 1]])  # x_B,right : slope of right line
-    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Left_Horizontal"`, see [\[Waldmann2022\]](../bibliography.md#waldmann2022)."""
+    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Left_Horizontal"`, see [\[Waldmann2022\]](../../bibliography.md#waldmann2022)."""
 
     H_Right_Horizontal = np.array(
         [[1, 0],  # x_A,left : offset of left line
          [0, 1],  # x_B,left : slope of left line
          [1, 0],  # x_A,right : offset of right line
          [0, 0]])  # x_B,right : slope of right line
-    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Right_Horizontal"`, see [\[Waldmann2022\]](../bibliography.md#waldmann2022)."""
+    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Right_Horizontal"`, see [\[Waldmann2022\]](../../bibliography.md#waldmann2022)."""
 
     H_Peak = np.array([[1, 0],  # x_A,left : offset of left line
                        [0, 1],  # x_B,left : slope of left line
                        [1, 0],  # x_A,right : offset of right line
                        [0, -1]])  # x_B,right : slope of right line
-    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Peak"`, see [\[Waldmann2022\]](../bibliography.md#waldmann2022)."""
+    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Peak"`, see [\[Waldmann2022\]](../../bibliography.md#waldmann2022)."""
 
     H_Step = np.array([[1, 0],  # x_A,left : offset of left line
                        [0, 0],  # x_B,left : slope of left line
                        [0, 1],  # x_A,right : offset of right line
                        [0, 0]])  # x_B,right : slope of right line
-    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Step"`, see [\[Waldmann2022\]](../bibliography.md#waldmann2022)."""
+    r"""[`ndarray`][numpy.ndarray] : Defines constrain matrix $H$ of type `"Step"`, see [\[Waldmann2022\]](../../bibliography.md#waldmann2022)."""
                        
                        
                        

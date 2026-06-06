@@ -391,7 +391,7 @@ class Alssm(ModelBase):
     $y[k] \in \mathbb{R}^{Q \times 1}$ the output vector,
     and $x[k] \in \mathbb{R}^{N}$ the state vector.
 
-    For more details, see also [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [Eq. 4.1].
+    For more details, see also [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019) [Eq. 4.1].
 
     Parameters
     ----------
@@ -476,7 +476,7 @@ class AlssmPoly(ModelBase):
 
     where $x_n$ is the coefficient of the $i^n$ term.
 
-    For more details see [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
+    For more details see [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019) [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
 
 
     Parameters
@@ -549,7 +549,7 @@ class AlssmPolyJordan(ModelBase):
     ALSSM with a discrete-time polynomial output sequence in Jordan normal form.
 
     Discrete-time polynomial ALSSM with a shift-register (Jordan) transition matrix;
-    see [\[Zalmai2017\]](../bibliography.md#zalmai2017)
+    see [\[Zalmai2017\]](../../bibliography.md#zalmai2017)
     [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/176652/zalmai_thesis.pdf#page=41).
 
 
@@ -1158,7 +1158,7 @@ class AlssmSin(ModelBase):
     The state vector holds $[a\cos, a\sin]$ components at the current sample.
     With the default output $C = [1, 0]$, the output is the cosine component.
 
-    For more details see [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
+    For more details see [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019) [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
 
     Parameters
     ----------
@@ -1255,7 +1255,7 @@ class AlssmExp(ModelBase):
     where $x$ is the scalar initial amplitude. Values of $|\gamma| < 1$
     give a decaying sequence and $|\gamma| > 1$ a growing sequence.
 
-    For more details see [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
+    For more details see [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019) [PDF](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
 
 
     Parameters
@@ -1373,7 +1373,7 @@ class AlssmStacked(ModelBase):
     where $A_m$ and $C_m$ are the transition matrices and the output vectors of the joined models, respectively, and
     $\lambda_1 ... \lambda_M  \in \mathcal{R}$ are additional factors to weight each output individually.
 
-    For more details see [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [PDF Sec: Linear Combination of M Systems](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
+    For more details see [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019) [PDF Sec: Linear Combination of M Systems](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=48)
 
     Parameters
     ----------
@@ -1526,7 +1526,7 @@ class AlssmProd(ModelBase):
 
     where $s_k^{(1)}(x_1) = C_1 A_1^k x_1$ is the first and $s_k^{(2)}(x_2) = C_2 A_2^k x_2$ the second ALSSM.
 
-    For more details, see also [\[Zalmai2017\]](../bibliography.md#zalmai2017) [Proposition 2],  [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [Eq. 4.21].
+    For more details, see also [\[Zalmai2017\]](../../bibliography.md#zalmai2017) [Proposition 2],  [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019) [Eq. 4.21].
 
     Parameters
     ----------

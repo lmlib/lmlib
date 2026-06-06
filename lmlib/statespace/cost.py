@@ -153,7 +153,7 @@ class CostSegment(BaseCost, BaseCost1d):
     r"""
     Quadratic cost function defined by an ALSSM and a Segment.
 
-    A CostSegment is an implementation of [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [PDF (Cost Segment)](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=117)
+    A CostSegment is an implementation of [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019) [PDF (Cost Segment)](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=117)
 
     ```text
     ==================
@@ -186,7 +186,7 @@ class CostSegment(BaseCost, BaseCost1d):
     over a fixed interval $\{a, \dots, b\}$ with $a \in \mathbb{Z} \cup \{ - \infty \}$,
     $b \in \mathbb{Z} \cup \{ + \infty\}$, and $a < b$,
     and with initial state vector $x \in \mathbb{R}^{N \times 1}$.
-    For more details, see Section 4.2.6  and Chapter 9 in [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) .
+    For more details, see Section 4.2.6  and Chapter 9 in [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019) .
 
     Parameters
     ----------
@@ -349,7 +349,7 @@ class CompositeCost(BaseCost, BaseCost1d):
     The mapping matrix ``F`` enables or disables each ALSSM/Segment pair at each grid
     node; multiple active ALSSMs in one column are superimposed.
 
-    A CompositeCost is an implementation of [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) [PDF (Composite Cost)](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=118)
+    A CompositeCost is an implementation of [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019) [PDF (Composite Cost)](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/357916/thesis-book-final.pdf#page=118)
 
 
     ```text
@@ -384,7 +384,7 @@ class CompositeCost(BaseCost, BaseCost1d):
     This figure shows the internal relationships between Segments, ALSSMs, and the
     mapping matrix ``F``.
 
-    For more details, see Chapter 9 in [\[Wildhaber2019\]](../bibliography.md#wildhaber2019).
+    For more details, see Chapter 9 in [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019).
     The cost function of a composite cost is defined as
 
     $$

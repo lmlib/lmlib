@@ -136,7 +136,7 @@ def kron_q(x, q):
     x^{\otimes q} = x \otimes x^{\otimes (q-1)} \; (q \geq 2).
     $$
 
-    For reference, see [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) [Eq. 6].
+    For reference, see [\[Baeriswyl2025\]](../../bibliography.md#baeriswyl2025) [Eq. 6].
 
     Parameters
     ----------

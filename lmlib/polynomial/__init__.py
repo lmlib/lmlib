@@ -1,6 +1,6 @@
 r"""
 This module provides a calculus for uni- and multivariate polynomials using the vector exponent notation
-[\[Wildhaber2019\]](../bibliography.md#wildhaber2019), Chapter 6.
+[\[Wildhaber2019\]](../../bibliography.md#wildhaber2019), Chapter 6.
 This calculus simplifies to use polynomials in (squared error) cost functions, e.g., as localized signal models.
 
 .. _lmlib_api_polynomial:

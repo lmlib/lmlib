@@ -1,10 +1,13 @@
 # Bibliography
 
+<a id="baeriswyl2025"></a>**[Baeriswyl2025]**
+C. Baeriswyl, F. Waldmann, A. Bertrand, and R. A. Wildhaber, "Multi-Resolution Autonomous Linear State Space Filters for N-Dimensional Signals", *IEEE Transactions on Signal Processing*.
+
 <a id="baeriswyl2022"></a>**[Baeriswyl2022]**
-C. Baeriswyl, A. Bertrand, and R. A. Wildhaber, "Windowed State Space Filters for Peak Interference Suppression in Neural Spike Sorting", *30th European Signal Processing Conference (EUSIPCO 2022)*, Belgrad, Spain. (accepted)
+C. Baeriswyl, A. Bertrand, and R. A. Wildhaber, "Windowed State Space Filters for Peak Interference Suppression in Neural Spike Sorting", *30th European Signal Processing Conference (EUSIPCO 2022)*, Belgrad, Spain.
 
 <a id="waldmann2022"></a>**[Waldmann2022]**
-F. Waldmann, Ch. Baeriswyl, R. Andonie, and R. Wildhaber, "Onset Detection of Pulse-Shaped Bioelectrical Signals Using Linear State Space Models", (accepted for *BMT2022*, Austria)
+F. Waldmann, Ch. Baeriswyl, R. Andonie, and R. Wildhaber, "Onset Detection of Pulse-Shaped Bioelectrical Signals Using Linear State Space Models", *BMT2022*, Austria
 
 <a id="wildhaber2020"></a>**[Wildhaber2020]**
 R. A. Wildhaber, E. Ren, F. Waldmann, and H.-A. Loeliger, "Signal Analysis Using Local Polynomial Approximations," *EUSIPCO 2020*.
@@ -20,7 +23,3 @@ N. Zalmai, "A State Space World for Detecting and Estimating Events and Learning
 
 <a id="loeliger2016"></a>**[Loeliger2016]**
 H.-A. Loeliger, L. Bruderer, H. Malmberg, F. Wadehn, and N. Zalmai, "On Sparsity by NUV-EM, Gaussian Message Passing, and Kalman Smoothing", *CoRR*, vol. abs/1602.02673, 2016. arXiv: 1602.02673. [Online]. Available: [arXiv](http://arxiv.org/abs/1602.02673)
-
-<a id="baeriswyl2025"></a>**[Baeriswyl2025]**
-C. Baeriswyl, F. Waldmann, A. Bertrand, and R. A. Wildhaber, "Multi-Resolution Autonomous Linear State Space Filters for N-Dimensional Signals", *IEEE Transactions on Signal Processing*.
-

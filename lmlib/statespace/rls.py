@@ -31,7 +31,7 @@ class RLSAlssm:
 
     This class uses either a [`CostSegment`][lmlib.statespace.cost.CostSegment], [`CompositeCost`][lmlib.statespace.cost.CompositeCost] or [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost].
 
-    The cost function is (Eq. (20) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)):
+    The cost function is (Eq. (20) [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018)):
 
     $$\begin{aligned}
     J_k(x) &= \sum_{i=k+a}^{k+b} \alpha^{k+\delta}(i) w_i \big(y_i - CA^{i-k}x\big)^2 \\
@@ -44,11 +44,11 @@ class RLSAlssm:
     $\kappa_k \in \mathbb{R}$ the signal energy weighted under $\alpha$ and $w$.
     Additionally, $\nu_k$ is the number of weighted samples in the window.
 
-    The quantities $W_k$, $\xi_k$, $\kappa_k$ and $\nu_k$ can be computed either as a forward or as a backward recursion as defined in Eq. (22-25) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018).
+    The quantities $W_k$, $\xi_k$, $\kappa_k$ and $\nu_k$ can be computed either as a forward or as a backward recursion as defined in Eq. (22-25) [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018).
 
     !!! info
-        See also [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) [\[Wildhaber2019\]](../bibliography.md#wildhaber2019).
-        Eq. (19)-(21) in [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025) define the quantities $\xi^{(q)}(k,y), q\in\{0,1,2\}$, with the following correspondence:
+        See also [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019).
+        Eq. (19)-(21) in [\[Baeriswyl2025\]](../../bibliography.md#baeriswyl2025) define the quantities $\xi^{(q)}(k,y), q\in\{0,1,2\}$, with the following correspondence:
         $\mathrm{vec}(W_k) \triangleq \xi^{(2)}(k,\mathbf{1})$ (with $\mathbf{1}$ the all ones vector),
         $\xi_k \triangleq \xi^{(1)}(k,y)$, and
         $\kappa_k \triangleq \xi^{(0)}(k,y)$.
@@ -59,7 +59,7 @@ class RLSAlssm:
         Cost function to be minimized recursively. See [`CostSegment`][lmlib.statespace.cost.CostSegment], [`CompositeCost`][lmlib.statespace.cost.CompositeCost] or [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost].
     steady_state : bool, optional
         Defines if the ALSSM is steady state (not time-varying, e.g. LTI). If so, $W_k$ reduces to $W$. Default: True.
-        This happens in case $w_k = w$, $\gamma_k = \gamma$ (see Sec. III-I.2 [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)).
+        This happens in case $w_k = w$, $\gamma_k = \gamma$ (see Sec. III-I.2 [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018)).
         Setting this incorrectly may produce silently wrong results.
     calc_W : bool, optional
         If True, compute [`W`][lmlib.statespace.rls.RLSAlssm.W].
@@ -262,11 +262,11 @@ class RLSAlssm:
         Compute the ALSSM cost parameters $\xi^{(q)}(k,y)$ for $q \in \{0,1,2\}$ and $\nu_k$ for the input signal $y$.
 
         For [`CostSegment`][lmlib.statespace.cost.CostSegment] and [`CompositeCost`][lmlib.statespace.cost.CompositeCost] (1-D) each quantity is
-        computed via the recursive equations (22–25) in [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) for each cost segment by the
+        computed via the recursive equations (22–25) in [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) for each cost segment by the
         selected backend.
 
         For [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost] (multi-dimensional) the ND cost separates as a
-        Kronecker product over the per-dimension sub-costs, see Table III in [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025).
+        Kronecker product over the per-dimension sub-costs, see Table III in [\[Baeriswyl2025\]](../../bibliography.md#baeriswyl2025).
         The computation is therefore chained over dimensions:
 
         1. `_nd_xi_q_recursion` processes the first axis in ``dim_order``,
@@ -334,7 +334,7 @@ class RLSAlssm:
             recursions start.  This is valid whenever the window is
             time-invariant ($w_k = w$, $\gamma_k = \gamma$), which
             holds for all standard [`Segment`][lmlib.statespace.segment.Segment] definitions without
-            sample-dependent weights.  See Section III-I.2 in [\[Wildhaber2018\]](../bibliography.md#wildhaber2018).
+            sample-dependent weights.  See Section III-I.2 in [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018).
             The ``calc_W`` flag is ignored in this mode.
 
         **Time-varying mode** (``steady_state=False``):
@@ -495,8 +495,8 @@ class RLSAlssm:
 
         with known $H \in \mathbb{R}^{N \times M}$ and $h \in \mathbb{R}^N$, and
         unknown $v \in \mathbb{R}^M$. Substituting into the cost function (Eq. (21)
-        [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)) and minimizing over $v$ yields the closed-form solution
-        (Eq. (69) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)):
+        [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018)) and minimizing over $v$ yields the closed-form solution
+        (Eq. (69) [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018)):
 
         $$
         \hat{v}_k = (H^T W_k H)^{-1} H^T (\xi_k - W_k h).
@@ -751,14 +751,14 @@ class RLSAlssm:
         Minimizes the cost $J_k(x)$ subject to a linear constraint on the state vector, returning the full N-dimensional state vector $x$.
 
         Internally calls [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v] to obtain $\hat{v}_k$, then reconstructs
-        the state vector via the constraint (Eq. (66) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)):
+        the state vector via the constraint (Eq. (66) [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018)):
 
         $$
         \hat{x}_k = H \hat{v}_k + h.
         $$
 
         When ``H=None`` and ``h=None`` (defaults), the constraint reduces to $x = v$,
-        so $\hat{x}_k = W_k^{-1} \xi_k$ (Table V row 1, [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)).
+        so $\hat{x}_k = W_k^{-1} \xi_k$ (Table V row 1, [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018)).
 
         Parameters
         ----------
@@ -813,7 +813,7 @@ class RLSAlssm:
         r"""
         Evaluates the cost function $J_k(x)$ at given state vectors `xs`.
 
-        Using the expanded form of the cost (Eq. (21) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)):
+        Using the expanded form of the cost (Eq. (21) [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018)):
 
         $$
         J_k(x) = x^T W_k x - 2 x^T \xi_k + \kappa_k,
@@ -822,7 +822,7 @@ class RLSAlssm:
         this method computes the scalar cost for each provided state vector without
         performing any minimization. It is useful for comparing the fit quality of
         different candidate state vectors, e.g. for computing error ratios or
-        log-cost ratios (LCR) as in Section III.F [\[Wildhaber2018\]](../bibliography.md#wildhaber2018).
+        log-cost ratios (LCR) as in Section III.F [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018).
 
         Requires [`W`][lmlib.statespace.rls.RLSAlssm.W], [`xi`][lmlib.statespace.rls.RLSAlssm.xi], and [`kappa`][lmlib.statespace.rls.RLSAlssm.kappa] to be available, i.e.
         [`filter`][lmlib.statespace.rls.RLSAlssm.filter] must have been called with ``calc_W=True``, ``calc_xi=True``,
@@ -976,7 +976,7 @@ class RLSAlssm:
         Defines the recursion to calculate the ALSSM cost parameters $\xi^{(q)}(k,y)$ for a given $q \in \{0,1,2\}$ based on an input signal $y$.
 
         The cost parameters $\xi^{(q)}(k,y)$ for $q \in \{0,1,2\}$ are equivalent to $\kappa_k$, $\xi_k$ and $W_k$.
-        They are calculated through the recursive equations (22-25) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) for each cost segment defined by the different backends.
+        They are calculated through the recursive equations (22-25) [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) for each cost segment defined by the different backends.
         We iterate over each individual ALSSM m within every segment p and write the result into the appropriate sub-slice of xi_curr.
         Because A is block-diagonal, the blocks are independent and can be computed separately.
         Each ALSSM m is wrapped in a single-element AlssmSum with weight F[m,p] so that:
@@ -1070,7 +1070,7 @@ class RLSAlssm:
         Defines the recursion for one additional dimension to calculate the ALSSM cost parameters $\xi^{(q)*}(k,y)$ for a given $q \in \{0,1,2\}$ based on an input signal $y$.
 
         The cost parameters $\xi^{(q)}(k,y)$ for $q \in \{0,1,2\}$ are equivalent to $\kappa_k$, $\xi_k$ and $W_k$.
-        They are calculated through the recursive equations (22-25) [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) for each cost segment defined by the different backends.
+        They are calculated through the recursive equations (22-25) [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) for each cost segment defined by the different backends.
         This function subdivides the calculation into cost segments (for-loop). The same per-ALSSM decomposition as _nd_xi_q_recursion is applied:
         each ALSSM m in the CompositeCost for this dimension is processed independently, writing into the corresponding sub-slice of xi_curr.
 

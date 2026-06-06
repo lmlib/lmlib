@@ -8,8 +8,8 @@ The output of such a deterministic model is then used as the signal model in qua
 Cost functions based on ALSSM  are internally efficiently computed using recursive computation rules.
 
 This module implements the methods published in
-[\[Wildhaber2018\]](../bibliography.md#wildhaber2018)  [PDF](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8355586#page=5),
-with extensions from [\[Zalmai2017\]](../bibliography.md#zalmai2017) , [\[Wildhaber2019\]](../bibliography.md#wildhaber2019) and [\[Baeriswyl2025\]](../bibliography.md#baeriswyl2025).
+[\[Wildhaber2018\]](../../bibliography.md#wildhaber2018)  [PDF](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8355586#page=5),
+with extensions from [\[Zalmai2017\]](../../bibliography.md#zalmai2017) , [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019) and [\[Baeriswyl2025\]](../../bibliography.md#baeriswyl2025).
 
 
 

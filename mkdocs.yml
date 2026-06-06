@@ -1,6 +1,7 @@
-site_name: Lmlib Documenation
+site_name: lmlib Documentation
 theme:
   name: material
+  custom_dir: docs/overrides
   favicon: images/favicon.png
   logo: images/logo.svg
   palette:
@@ -8,7 +9,7 @@ theme:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: blue grey
-      accent: blue grey 
+      accent: blue grey
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
@@ -23,12 +24,20 @@ theme:
   features:
     - navigation.tabs       # Top tabs for categories
     - navigation.sections   # Sections in sidebar
+    - navigation.indexes    # Section labels link to their index page (clickable)
     - navigation.tracking   # Highlights active section
     - navigation.top        # Back to top button
     - toc.follow
     - content.code.copy
 extra:
   manifest: null
+  # Maps API sidebar group labels (which have no index page of their own) to a
+  # jump link into the API overview page. Consumed by overrides/partials/nav-item.html
+  # so these group headers become clickable instead of dead labels.
+  api_section_links:
+    State Space: api/index.html#state-space
+    Polynomial: api/index.html#polynomial
+    Utils: api/index.html#utils
 use_directory_urls: false
 # Keep build-only scripts out of the built site (they live under docs/ for
 # convenience but are not pages/assets). Both the API page generator
@@ -39,27 +48,19 @@ exclude_docs: |
   scripts_docs/
 
 nav:
-  - Home: index.md
-  - Getting Started:
-    - What is LMLib?: getting_started/whats_lmlib.md
+  - Home:
+    - index.md
+    - What is lmlib?: getting_started/whats_lmlib.md
+    - Installation: getting_started/installation.md
+  - API Reference: api/
+  - Teaching:
+    - teaching/index.md
     - State-Space Tutorial: getting_started/state-space-tutorial.md
-    - Coding Examples:
-      - Windowed State Space Filters: _generated/coding/10-windowed-state-space-filters-basic/index.md
-      - Backend: _generated/coding/13-backend/index.md
-      - Polynomials Basics: _generated/coding/20-polynomials-basics/index.md
-  - Installation: getting_started/installation.md
-  - Catalog:
-    - Biosignals: _generated/catalog/biosignals/index.md
-    - Generators: _generated/catalog/generators/index.md
-  - Examples: 
-    - Detection: _generated/examples/11-detection/index.md
-    - Filtering: _generated/examples/12-filtering/index.md
-    - Polynomials Calculus: _generated/examples/21-polynomials-calculus/index.md
-    - APP Changepoint Detection: _generated/examples/40-app-changepoint-detection/index.md
-    - Convolution: _generated/examples/50-convolution/index.md
-    - Localized Polynpmials: _generated/examples/70-localized-polynomials/index.md
-    - N Dimensional: _generated/examples/80-nDimensional/index.md
-  - API: api/
+    - Windowed State Space Filters: _generated/coding/10-windowed-state-space-filters-basic/index.md
+    - Backend: _generated/coding/13-backend/index.md
+    - Polynomials Basics: _generated/coding/20-polynomials-basics/index.md
+  - Application Examples: _generated/examples/index.md
+  - Test Signals: _generated/catalog/biosignals/index.md
   - Bibliography: bibliography.md
   - About Us: about_us.md
 
@@ -81,7 +82,7 @@ plugins:
             - https://docs.scipy.org/doc/scipy/objects.inv
           options:
             show_root_heading: true
-            show_source: false
+            show_source: true
             show_root_full_path: false
             heading_level: 2
             parameter_headings: false
@@ -107,7 +108,8 @@ plugins:
 
  # --- better layout ---
 extra_css:
-  - css/mkdocstrings.css   
+  - css/mkdocstrings.css
+  - css/custom.css
 
 # --- Math rendering ---
 markdown_extensions:

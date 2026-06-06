@@ -1,4 +1,4 @@
-# Lmlib Documentation
+# lmlib Documentation
 
 **Version:** 3.0.0 — Open-Source and for Python.
 

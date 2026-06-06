@@ -37,9 +37,9 @@ class Segment:
     $$
 
     with the sample weights $v_k$
-    and the window weight $\alpha_k(j)$ which depends on the sample weights, see Equation (14) in [\[Wildhaber2018\]](../bibliography.md#wildhaber2018)
+    and the window weight $\alpha_k(j)$ which depends on the sample weights, see Equation (14) in [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018)
 
-    See also [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) [\[Wildhaber2019\]](../bibliography.md#wildhaber2019)
+    See also [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) [\[Wildhaber2019\]](../../bibliography.md#wildhaber2019)
 
     Parameters
     ----------
@@ -54,7 +54,7 @@ class Segment:
         [`BACKWARD`][lmlib.statespace.BACKWARD] or ``'bw'``: backward computation (window decays to the right).
     g : int, float, or None
         Effective number of samples under the window, $g > 1$. Used as a
-        more readable surrogate for the window decay factor; see [\[Wildhaber2018\]](../bibliography.md#wildhaber2018). <br>
+        more readable surrogate for the window decay factor; see [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018). <br>
         $g$ is counted to the right of $k+\delta$ for forward direction
         and to the left for backward direction. Must be ``None`` when ``gamma`` is
         provided instead.
@@ -64,7 +64,7 @@ class Segment:
         Window decay factor (alternative to ``g``). When set, ``g`` must be ``None``.
         For forward direction, ``gamma > 1`` is required for stability; a warning is
         issued for ``gamma <= 1``. For backward direction, ``gamma < 1`` is required;
-        a warning is issued for ``gamma >= 1``. See [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Table IV.
+        a warning is issued for ``gamma >= 1``. See [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) Table IV.
     label : str or None, optional
         Segment label, useful for debugging in more complex systems. Default: None.
 
@@ -138,7 +138,7 @@ class Segment:
         - forward direction: $\gamma = g / (g - 1) > 1$
         - backward direction: $\gamma = (g - 1) / g < 1$
 
-        Must satisfy $g > 0$. See [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Section III.A.
+        Must satisfy $g > 0$. See [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) Section III.A.
         """
         return self._g
 
@@ -205,7 +205,7 @@ class Segment:
         - forward direction: $\gamma = \frac{g}{g-1} > 1$
         - backward direction: $\gamma = \frac{g-1}{g} < 1$
 
-        See [\[Wildhaber2018\]](../bibliography.md#wildhaber2018) Table IV.
+        See [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018) Table IV.
         """
         return self._gamma
 
@@ -250,7 +250,7 @@ class Segment:
         w_i = \gamma^{i-\delta}
         $$
 
-        For more details see [\[Wildhaber2018\]](../bibliography.md#wildhaber2018).
+        For more details see [\[Wildhaber2018\]](../../bibliography.md#wildhaber2018).
 
         Parameters
         ----------
