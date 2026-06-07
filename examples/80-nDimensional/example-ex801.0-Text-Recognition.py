@@ -20,99 +20,144 @@ import copy
 import matplotlib
 import os
 
-# # import colorcet as cc
-#
-#
-# # Create a reference / interferer image with a given letter
-# def create_letter_image(letter):
-#     img = Image.new('RGBA', (100, 100), color=(255, 255, 255, 0))  #
-#     draw = ImageDraw.Draw(img)
-#
-#     # Load a font
-#     # font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 80, encoding="unic")
-#     font = ImageFont.truetype("/System/Library/Fonts/Courier.ttc", 80, encoding="unic")
-#
-#     # Calculate the size of the text to center it
-#     text = letter
-#     position = (10, 0)
-#
-#     # Draw the letter 'A' in the center
-#     draw.text(position, text, font=font, fill=(0, 0, 0, 255), align='center')  # Fill with white color
-#
-#     return img
-#
-#
-# # Create the synthetic image
-# def create_synthetic_image_randomletters(grid_size=(8, 4), cell_size=(100, 100)):
-#     grid_image = Image.new('RGBA', (grid_size[0] * cell_size[0], grid_size[1] * cell_size[1]), color=(255, 255, 255, 0))
-#     # refletter='Z'
-#     refletter = 'B'
-#     for i in range(grid_size[0]):
-#         for j in range(grid_size[1]):
-#             # Randomly rotate and stretch the reference image
-#             angle = random.uniform(-5, 5)  # Random rotation between -30 and 30 degrees
-#             scale = random.uniform(1.0, 1.3)  # Random scaling between 80% and 120%
-#             xpos = random.uniform(-30, 30)  # random position
-#             ypos = random.uniform(-30, 30)  # random position
-#             letter = random.choice(alphabet)
-#
-#             if i == 0 and j == 0:
-#                 angle = 0;
-#                 scale = 1;
-#                 xpos = 0;
-#                 ypos = 0  # fix for reference image
-#                 letter = refletter
-#             if (i == 5 and j == 1) or (i == 1 and j == 2) or (i == 3 and j == 3):
-#                 letter = refletter
-#             if (i == 6 and j == 0):
-#                 letter = refletter
-#                 angle = -10
-#                 scale = 1.0  # 1.05
-#             image = create_letter_image(letter)
-#             transformed_image = image.rotate(angle, resample=Image.BICUBIC, expand=True)
-#             transformed_image = transformed_image.resize(
-#                 (int(transformed_image.width * scale), int(transformed_image.height * scale)), Image.BICUBIC)
-#
-#             # Calculate position to paste the transformed image into the grid
-#             pos_x = int(xpos) + i * cell_size[0] + (cell_size[0] - transformed_image.width) // 2
-#             pos_y = int(ypos) + j * cell_size[1] + (cell_size[1] - transformed_image.height) // 2
-#
-#             # grid_image.paste(transformed_image, (pos_x, pos_y))
-#             grid_image.alpha_composite(transformed_image, (pos_x, pos_y))
-#
-#     return grid_image
-#
-#
-# alphabet = 'abcdefghijklmnopqrstuvwxyzBCDEFGHIJKLMNOPQRSTUVWXYZ'
-#
-# dpi = 300
-# # plt.close("all")
-# celllength = 120
-# synthetic_image = create_synthetic_image_randomletters(cell_size=(celllength, celllength))
-# Y_nonoise = np.array(synthetic_image)[:, :, 3] * 1.0
-# Y_nonoise = Y_nonoise / np.nanmax(Y_nonoise)
-
 try:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 except NameError:
     SCRIPT_DIR = os.getcwd()
+
 npy_file_letters = os.path.join(SCRIPT_DIR, "image_letters.npy")
-Y_nonoise = np.load(npy_file_letters)
-
-
-# Y_image_gaussian = np.copy(Y_nonoise)
-#
-# # Gaussian Noise (row-wise)
-# rows, cols = Y_image_gaussian.shape[:2]
-# for i in range(rows):
-#     std_dev = (i / rows) * 1.0 * 0.125  # Noise level increases with row index
-#     noise = np.random.normal(0.0, std_dev, cols)
-#     Y_image_gaussian[i] = np.clip(Y_image_gaussian[i] + noise, 0, 1)
-
-# Y = Y_image_gaussian.copy()
 npy_file_letters_noise = os.path.join(SCRIPT_DIR, "image_letters_noise.npy")
 
-Y = np.load(npy_file_letters_noise)
+
+def generate_letter_images():
+    """Generate the clean and noisy synthetic letter images.
+
+    Returns
+    -------
+    Y_nonoise : np.ndarray
+        Clean image (normalized alpha channel of the rendered letter grid).
+    Y : np.ndarray
+        Noisy image (row-wise Gaussian noise added to ``Y_nonoise``).
+
+    Notes
+    -----
+    Requires Pillow (PIL).  A fixed random seed is used so that the
+    generated image (and therefore the reference position ``K1_REF`` /
+    ``K2_REF`` below) is reproducible across runs.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+    import random
+
+    # Fixed seeds -> reproducible image and reference position.
+    random.seed(1)
+    np.random.seed(1)
+
+    # Pillow >= 9.1 moved resampling constants into Image.Resampling.
+    try:
+        RESAMPLE = Image.Resampling.BICUBIC
+    except AttributeError:
+        RESAMPLE = Image.BICUBIC
+
+    alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+    def load_font(size=80):
+        """Load a usable TrueType font, trying common system paths."""
+        candidates = [
+            "/System/Library/Fonts/Courier.ttc",                       # macOS
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",         # Debian/Ubuntu
+            "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+            "C:\\Windows\\Fonts\\cour.ttf",                            # Windows
+            "C:\\Windows\\Fonts\\arial.ttf",
+        ]
+        for path in candidates:
+            try:
+                return ImageFont.truetype(path, size, encoding="unic")
+            except (OSError, IOError):
+                continue
+        # Fallback (note: the default bitmap font does not honor `size`).
+        return ImageFont.load_default()
+
+    # Create a reference / interferer image with a given letter
+    def create_letter_image(letter):
+        img = Image.new('RGBA', (100, 100), color=(255, 255, 255, 0))
+        draw = ImageDraw.Draw(img)
+        font = load_font(80)
+        position = (10, 0)
+        draw.text(position, letter, font=font, fill=(0, 0, 0, 255), align='center')
+        return img
+
+    # Create the synthetic image
+    def create_synthetic_image_randomletters(grid_size=(8, 4), cell_size=(100, 100)):
+        grid_image = Image.new(
+            'RGBA',
+            (grid_size[0] * cell_size[0], grid_size[1] * cell_size[1]),
+            color=(255, 255, 255, 0),
+        )
+        # refletter = 'Z'
+        refletter = 'A'
+        for i in range(grid_size[0]):
+            for j in range(grid_size[1]):
+                # Randomly rotate and stretch the reference image
+                angle = random.uniform(-5, 5)   # random rotation (deg)
+                scale = random.uniform(1.0, 1.3)  # random scaling
+                xpos = random.uniform(-30, 30)  # random position
+                ypos = random.uniform(-30, 30)  # random position
+                letter = random.choice(alphabet)
+
+                if i == 0 and j == 0:
+                    angle = 0
+                    scale = 1
+                    xpos = 0
+                    ypos = 0  # fix for reference image
+                    letter = refletter
+                if (i == 5 and j == 1) or (i == 1 and j == 2) or (i == 3 and j == 3):
+                    letter = refletter
+                if i == 6 and j == 0:
+                    letter = refletter
+                    angle = -10
+                    scale = 0.95  # 1.05
+
+                image = create_letter_image(letter)
+                transformed_image = image.rotate(angle, resample=RESAMPLE, expand=True)
+                transformed_image = transformed_image.resize(
+                    (int(transformed_image.width * scale), int(transformed_image.height * scale)),
+                    RESAMPLE,
+                )
+
+                # Calculate position to paste the transformed image into the grid
+                pos_x = int(xpos) + i * cell_size[0] + (cell_size[0] - transformed_image.width) // 2
+                pos_y = int(ypos) + j * cell_size[1] + (cell_size[1] - transformed_image.height) // 2
+
+                grid_image.alpha_composite(transformed_image, (pos_x, pos_y))
+
+        return grid_image
+
+    celllength = 120
+    synthetic_image = create_synthetic_image_randomletters(cell_size=(celllength, celllength))
+    Y_nonoise = np.array(synthetic_image)[:, :, 3] * 1.0
+    Y_nonoise = Y_nonoise / np.nanmax(Y_nonoise)
+
+    # Gaussian noise (row-wise): noise level increases with row index
+    Y_image_gaussian = np.copy(Y_nonoise)
+    rows, cols = Y_image_gaussian.shape[:2]
+    for row in range(rows):
+        std_dev = (row / rows) * 1.0 * 0.125
+        noise = np.random.normal(0.0, std_dev, cols)
+        Y_image_gaussian[row] = np.clip(Y_image_gaussian[row] + noise, 0, 1)
+    Y = Y_image_gaussian.copy()
+
+    return Y_nonoise, Y
+
+
+# Generate the images on first run and cache them to disk; load them otherwise.
+if os.path.exists(npy_file_letters) and os.path.exists(npy_file_letters_noise):
+    Y_nonoise = np.load(npy_file_letters)
+    Y = np.load(npy_file_letters_noise)
+else:
+    Y_nonoise, Y = generate_letter_images()
+    np.save(npy_file_letters, Y_nonoise)
+    np.save(npy_file_letters_noise, Y)
+
 K1_REF = 55  # letter pixel position, x
 K2_REF = 47  # letter pixel position, y
 
@@ -124,7 +169,7 @@ k2 = np.arange(K2)
 # ALSSM Definition
 g = 100
 l_side = 35
-poly_degree = 2
+poly_degree = 3
 alssm_poly_legendre_left = lm.AlssmPolyLegendre(poly_degree=poly_degree,a_seg=-l_side,b_seg=-1)
 alssm_poly_legendre_right = lm.AlssmPolyLegendre(poly_degree=poly_degree,a_seg=0,b_seg=l_side)
 segment_left = lm.Segment(a=-l_side, b=-1, direction=lm.FW, g=g)
@@ -155,32 +200,6 @@ J_A = nd_rls.eval_errors(xs_H2)  # get SE (squared error) for hypothesis 1
 cr = J_B / J_A
 
 # ------------ Plotting -------------------------------
-plot_ref = True
-if plot_ref:
-    mappedtraj = lm.Trajectory.eval_y(nd_cost, xs_ref, (K1_REF,K2_REF), (K1,K2))
-
-    width, height = 40, 40 # image cut-outsize
-
-    figsize = (6.5, 4.8)
-    fig = plt.figure(layout='constrained', figsize=figsize, dpi=72)
-    ax = fig.add_subplot(121)
-    cset = ax.imshow(Y, cmap='gray_r')
-    csetlcr = ax.imshow(mappedtraj, cmap='hot', alpha=0.5)
-    ax.axis((K2_REF - height, K2_REF + height, K1_REF + width, K1_REF - width))
-
-    # 3D plot
-    ax = fig.add_subplot(122, projection='3d')
-    k1k1_, k2k2_ = np.meshgrid(range(K1_REF - width, K1_REF + width), range(K2_REF - height, K2_REF + height), indexing='ij')
-    ax.plot_surface(k1k1_, k2k2_, Y[k1k1_, k2k2_], cmap='gray_r', alpha=0.6, zorder=1)
-    ax.plot_surface(k1k1_, k2k2_, mappedtraj[k1k1_, k2k2_], cmap='plasma', alpha=0.7, zorder=3)
-    ax.plot_wireframe(k1k1_, k2k2_, mappedtraj[k1k1_, k2k2_], colors='b', zorder=3)
-
-    ax.set_title("3D Surface Plot of Cropped Section")
-    ax.set_xlabel("Y axis")  # note the swapped axis
-    ax.set_ylabel("X axis")
-    ax.view_init(azim=-1, elev=46)  # Change azimuth (horizontal angle) and elevation (vertical angle)
-    ax.set_zlabel("Intensity")
-
 plot_costratio = True
 if plot_costratio:
     # Convert grayscale image to RGB by stacking it three times along the last dimension
@@ -188,7 +207,7 @@ if plot_costratio:
     crdisplay = copy.copy(cr)
     crdisplayalpha = cr
 
-    cvals = [0, 0.5, 0.8, 0.85, 1]
+    cvals = [0, 0.5, 0.60, 0.65, 1]
     colors = ["white", "yellow", "orange", "red", "red"]
 
     norm = plt.Normalize(min(cvals), max(cvals))
@@ -232,4 +251,32 @@ if plot_costratio:
     axs.plot([k1boxmin, k1boxmin, k1boxmax, k1boxmax, k1boxmin], [k2boxmin, k2boxmax, k2boxmax, k2boxmin, k2boxmin],
              c=col_reference, lw=1, ls='--')
     plt.show()
+    
+plot_ref = True
+if plot_ref:
+    mappedtraj = lm.Trajectory.eval_y(nd_cost, xs_ref, (K1_REF,K2_REF), (K1,K2))
+
+    width, height = 40, 40 # image cut-outsize
+
+    figsize = (6.5, 4.8)
+    fig = plt.figure(layout='constrained', figsize=figsize, dpi=72)
+    ax = fig.add_subplot(121)
+    cset = ax.imshow(Y, cmap='gray_r')
+    csetlcr = ax.imshow(mappedtraj, cmap='hot', alpha=0.5)
+    ax.axis((K2_REF - height, K2_REF + height, K1_REF + width, K1_REF - width))
+
+    # 3D plot
+    ax = fig.add_subplot(122, projection='3d')
+    k1k1_, k2k2_ = np.meshgrid(range(K1_REF - width, K1_REF + width), range(K2_REF - height, K2_REF + height), indexing='ij')
+    ax.plot_surface(k1k1_, k2k2_, Y[k1k1_, k2k2_], cmap='gray_r',alpha=0.6,zorder=1)
+
+    ax.plot_surface(k1k1_, k2k2_, mappedtraj[k1k1_, k2k2_], cmap='plasma',alpha=0.7,zorder=3)
+    ax.plot_wireframe(k1k1_, k2k2_, mappedtraj[k1k1_, k2k2_], colors='b',zorder=3)
+
+    ax.set_xlabel("Y axis") #note the swapped axis
+    ax.set_ylabel("X axis")
+    ax.view_init(azim=-1, elev=46)  # Change azimuth (horizontal angle) and elevation (vertical angle)
+    ax.set_zlabel("Intensity")
+
+
 

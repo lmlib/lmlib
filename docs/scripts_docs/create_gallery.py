@@ -96,6 +96,10 @@ def extract_title_and_description(docstring):
 # blurb can fill roughly the height of its thumbnail (#13).
 GALLERY_BLURB_WORDS = 48
 
+# Per-example execution cap (seconds). A single slow/hanging example is skipped
+# (with a note on its detail page) instead of blocking the whole gallery build.
+EXAMPLE_TIMEOUT = 600
+
 
 def truncate_words(text, max_words=GALLERY_BLURB_WORDS):
     if not text:
@@ -136,56 +140,24 @@ def description_to_plain(text):
     return s
 
 
-def rst_readme_to_md(readme_path, bib_depth="../../"):
-    """Extract the body text of an RST README and convert it to markdown.
+def read_folder_meta(folder_path):
+    """Read a folder's ``README.md`` for its gallery section title and intro.
 
-    Drops the RST target (``.. _label:``), the section title and its underline,
-    keeping only the descriptive sentence(s). RST citations like ``[Cite2022]_``
-    become markdown links into the bibliography (``bib_depth`` is the relative
-    path prefix from the page that will host the text to ``bibliography.md``).
-    Returns an empty string if the README has no body text.
+    The first level-1 heading (``# Title``) is the section/page title; everything
+    after it is the intro markdown, inserted verbatim (no RST conversion -- the
+    READMEs are authored as proper markdown, so any bibliography links must be
+    written relative to the rendered gallery page, e.g. ``../../bibliography.md``).
+    Falls back to a title derived from the folder name and an empty intro.
     """
-    if not readme_path.exists():
-        return ""
-    lines = readme_path.read_text(encoding="utf-8").splitlines()
-    cleaned, j, n = [], 0, len(lines)
-    underline = set("-=~^\"'`#*+.:")
-    while j < n:
-        line = lines[j]
-        st = line.strip()
-        if st.startswith(".. "):                      # RST directive / target
-            j += 1
-            continue
-        # a title line immediately followed by an underline row -> skip both
-        if (st and j + 1 < n and lines[j + 1].strip()
-                and set(lines[j + 1].strip()) <= underline
-                and len(lines[j + 1].strip()) >= 3):
-            j += 2
-            continue
-        cleaned.append(line)
-        j += 1
-    text = re.sub(r'\n{2,}', '\n\n', "\n".join(cleaned)).strip()
-    # RST citation [Key2022]_ -> markdown bibliography link
-    text = re.sub(
-        r'\[([A-Za-z]+\d{4}[a-z]?)\]_',
-        lambda m: f'[\\[{m.group(1)}\\]]({bib_depth}bibliography.md#{m.group(1).lower()})',
-        text,
-    )
-    return text
-
-# Nice section titles for the combined Application Examples page (folder -> title).
-EXAMPLE_SECTION_TITLES = {
-    "11-detection": "Detection",
-    "12-filtering": "Filtering",
-    "21-polynomials-calculus": "Polynomials Calculus",
-    "40-app-changepoint-detection": "Two-Sided Line Models",
-    "50-convolution": "Convolution",
-    "70-localized-polynomials": "Localized Polynomials",
-    "80-nDimensional": "N Dimensional Processing",
-}
-
-# Heading for the combined Application Examples page.
-EXAMPLES_PAGE_TITLE = "Application and Productive Examples"
+    p = folder_path / "README.md"
+    if p.exists():
+        text = p.read_text(encoding="utf-8")
+        m = re.match(r'\s*#\s+(.+)', text)
+        if m:
+            return m.group(1).strip(), text[m.end():].strip()
+        return (folder_path.name.replace('-', ' ').replace('_', ' ').title(),
+                text.strip())
+    return folder_path.name.replace('-', ' ').replace('_', ' ').title(), ""
 
 
 def render_gallery_table(entries, link_prefix="", max_words=GALLERY_BLURB_WORDS):
@@ -229,31 +201,39 @@ def render_gallery_table(entries, link_prefix="", max_words=GALLERY_BLURB_WORDS)
             + "\n</tbody>\n</table>\n")
 
 
-def build_examples_combined_page(sections, output_dir):
-    """Write the single combined Application Examples page.
+def build_combined_gallery_page(page_title, intro_md, sections, output_dir,
+                                lead_sections=None):
+    """Write a single combined gallery page (Application Examples, Teaching, ...).
 
-    One ``## <category>`` heading per folder (so the right-hand TOC becomes the
-    page navigation), each optionally followed by an intro sentence (converted
-    from the folder's README.rst) and then its gallery table. ``sections`` is an
-    ordered list of ``(section_title, folder_name, entries, intro_md)``.
+    ``page_title``/``intro_md`` come from the category's top-level README.md.
+    ``lead_sections`` is an optional list of ``(title, body_md)`` rendered before
+    the galleries (used for the State-Space Tutorial link on the Teaching page).
+    ``sections`` is an ordered list of ``(section_title, folder_name, entries,
+    intro_md)``; one ``## <section_title>`` heading per folder makes the
+    right-hand table of contents the in-page navigation.
     """
-    parts = [f"# {EXAMPLES_PAGE_TITLE}\n"]
-    for section_title, folder_name, entries, intro_md in sections:
+    parts = [f"# {page_title}\n"]
+    if intro_md:
+        parts.append(f"\n{intro_md}\n")
+    for title, body_md in (lead_sections or []):
+        parts.append(f"\n## {title}\n")
+        if body_md:
+            parts.append(f"\n{body_md}\n")
+    for section_title, folder_name, entries, sec_intro in sections:
         parts.append(f"\n## {section_title}\n")
-        if intro_md:
-            parts.append(f"\n{intro_md}\n")
+        if sec_intro:
+            parts.append(f"\n{sec_intro}\n")
         parts.append(render_gallery_table(entries, link_prefix=f"{folder_name}/"))
     output_dir.mkdir(parents=True, exist_ok=True)
     index_file = output_dir / "index.md"
     with open(index_file, "w", encoding="utf-8") as f:
         f.write("\n".join(parts))
     total = sum(len(e) for _, _, e, _ in sections)
-    print(f"Generated combined examples page: {index_file} ({total} entries)")
+    print(f"Generated combined page: {index_file} ({total} entries)")
 
 
 def process_folder(folder_path, folder_parent: str, starting_pattern: str,
-                   write_index: bool = True, new_layout: bool = False,
-                   readme_bib_depth: str = "../../"):
+                   write_index: bool = True, new_layout: bool = False):
     # --- Helper for Truncation (old markdown-table layout uses a short blurb) ---
     def truncate_words(text, max_words=10):
         if not text:
@@ -264,19 +244,24 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         return " ".join(words[:max_words]) + "..."
 
     folder_name = folder_path.name
-    section_title = EXAMPLE_SECTION_TITLES.get(
-        folder_name, folder_name.replace('-', ' ').replace('_', ' ').title()
-    )
+    # Section title and intro come from the folder's README.md (single source of
+    # truth; no hard-coded titles or RST parsing here).
+    section_title, intro_md = read_folder_meta(folder_path)
     # Everything generated lands under docs/_generated/<category>/<folder_name>/,
     # regardless of where the source .py files are read from.
     target_output_dir = GENERATED_DIR / folder_parent
     output_folder = target_output_dir / folder_name
     output_folder.mkdir(parents=True, exist_ok=True)
-    
+
+    # Copy any local data files (CSVs sitting next to the examples) into the
+    # output folder so they are served by the site and can be linked for download
+    # (#16). Library-bundled signals loaded via load_lib_csv are NOT here.
+    local_csvs = {p.name for p in folder_path.glob("*.csv")}
+    for csv in folder_path.glob("*.csv"):
+        shutil.copy2(csv, output_folder / csv.name)
+
     gallery_entries = []
     entries = []  # structured rows for the new gallery layout
-    # Intro sentence(s) for this section, converted from an RST README if present.
-    intro_md = rst_readme_to_md(folder_path / "README.rst", bib_depth=readme_bib_depth)
     pattern = starting_pattern+"*.py"
     py_files = [Path(f) for f in sorted(glob.glob(str(folder_path / pattern)))]
     
@@ -284,13 +269,9 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         print(f"No example files found in {folder_path}")
         return section_title, entries, intro_md
 
-    md_content = f"# {folder_name.replace('-', ' ').replace('_', ' ').title()}\n\n"
-    
-    # Insert README if exists
-    readme_path = folder_path / "README.md"
-    if readme_path.exists():
-        with open(readme_path, 'r', encoding='utf-8') as f:
-            md_content += f.read() + "\n\n---\n\n"
+    md_content = f"# {section_title}\n\n"
+    if intro_md:
+        md_content += intro_md + "\n\n"
 
     # --- Standard Markdown Table ---
     # Custom CSS.
@@ -321,11 +302,29 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         has_show = 'plt.show()' in code
         has_plot_import = 'import matplotlib' in code or 'import pyplot' in code
         modified_code = code
-        
-        if has_show:
-            modified_code = code.replace('plt.show()', f'plt.savefig(r"{plot_path}", dpi=150, bbox_inches="tight"); plt.close()')
-        elif has_plot_import:
-            modified_code = code + f'\nplt.savefig(r"{plot_path}", dpi=150, bbox_inches="tight"); plt.close()'
+
+        # Capture every figure the example produces.
+        # We inject a helper that, at each plt.show() (and once more at the end),
+        # saves all currently-open figures: the first becomes <base>.png (the
+        # gallery thumbnail), the rest <base>_2.png, <base>_3.png, ... (shown on
+        # the detail page). A simple savefig() per show() would only ever keep the
+        # final figure, because every show() wrote to the same file.
+        if has_show or has_plot_import:
+            stem = str(output_folder / base_name).replace('\\', '/')
+            helper = (
+                "\n__lm_fig_paths = []\n"
+                "def __lm_save_open_figs():\n"
+                "    import matplotlib.pyplot as _plt\n"
+                "    for _n in _plt.get_fignums():\n"
+                "        _i = len(__lm_fig_paths) + 1\n"
+                f"        _name = r'{stem}' + ('.png' if _i == 1 else ('_%d.png' % _i))\n"
+                "        _plt.figure(_n).savefig(_name, dpi=150, bbox_inches='tight')\n"
+                "        __lm_fig_paths.append(_name)\n"
+                "    _plt.close('all')\n"
+            )
+            modified_code = (helper + "\n"
+                             + code.replace('plt.show()', '__lm_save_open_figs()')
+                             + "\n__lm_save_open_figs()\n")
         
         # Write the temp script INTO the source folder (not the output folder) so that
         # __file__-relative and cwd-relative data loads inside the example resolve
@@ -340,11 +339,17 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         console_output = ""
         
         try:
-            result = subprocess.run([sys.executable, str(temp_file)], check=True, env=env, cwd=str(folder_path), capture_output=True, text=True)
+            result = subprocess.run([sys.executable, str(temp_file)], check=True,
+                                    env=env, cwd=str(folder_path),
+                                    capture_output=True, text=True,
+                                    timeout=EXAMPLE_TIMEOUT)
             if result.stdout: console_output = result.stdout.strip()
             if result.stderr:
                 console_output = (console_output + "\n\n" + result.stderr.strip()) if console_output else result.stderr.strip()
             if plot_path.exists(): plot_generated = True
+        except subprocess.TimeoutExpired:
+            print(f"Timeout ({EXAMPLE_TIMEOUT}s) executing {file_name}; skipping.")
+            console_output = f"(execution exceeded {EXAMPLE_TIMEOUT}s and was skipped)"
         except subprocess.CalledProcessError as e:
             print(f"Error executing {file_name}: {e.stderr.strip() if e.stderr else 'Unknown'}")
             if e.stdout: console_output = e.stdout.strip()
@@ -353,6 +358,22 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
             print(f"Unexpected error with {file_name}: {e}")
         finally:
             if temp_file.exists(): temp_file.unlink()
+
+        # Collect every figure the example produced: <base>.png plus any
+        # <base>_N.png. The first is the gallery thumbnail; all are shown on the
+        # detail page.
+        def _fig_key(p):
+            m = re.search(r'_(\d+)\.png$', p.name)
+            return int(m.group(1)) if m else 1
+        all_plots = []
+        if plot_path.exists():
+            all_plots.append(plot_filename)
+        extras = sorted(output_folder.glob(f"{base_name}_*.png"), key=_fig_key)
+        all_plots += [p.name for p in extras]
+        plot_generated = bool(all_plots)
+
+        # Local data files referenced by this example (for download links, #16).
+        referenced_csvs = [name for name in sorted(local_csvs) if name in code]
 
         # Extract & Truncate
         docstring_match = re.search(r'"""(.*?)"""', code, re.DOTALL)
@@ -373,13 +394,21 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         md_content += f"| [{cell_content}]({base_name}.md) | {plot_cell} |\n"
         entries.append((title, description_flat, base_name, plot_filename, plot_generated))
             
-        # --- Create Detailed Page (Plot -> Console -> Code) ---
+        # --- Create Detailed Page (Plot -> Data -> Console -> Code) ---
         detail_md = f"# {title}\n\n{description}\n\n"
         
-        if plot_generated:
-            detail_md += f"## Plot\n\n![Plot]({plot_filename})\n\n"
+        if all_plots:
+            detail_md += "## Plot\n\n"
+            for pf in all_plots:
+                detail_md += f"![Plot]({pf})\n\n"
         else:
             detail_md += "> **Note:** No graphical output.\n\n"
+
+        if referenced_csvs:
+            detail_md += "## Data\n\nThis example uses the following data file(s):\n\n"
+            for name in referenced_csvs:
+                detail_md += f"- [`{name}`]({name})\n"
+            detail_md += "\n"
             
         if console_output:
             detail_md += f"## Console Output\n\n```text\n{console_output}\n```\n\n"
@@ -408,7 +437,7 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         print(f"Generated: {index_file} ({len(gallery_entries)} entries)")
     else:
         print(f"Processed {folder_name} ({len(gallery_entries)} entries) "
-              f"-> combined page")
+              f" ")
 
     return section_title, entries, intro_md
 
@@ -418,68 +447,69 @@ if __name__ == "__main__":
     # the Makefile's `.stamp` marker) always have a home even if nothing is generated.
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Scan folders
-    # Define paths explicitly.
-    #
-    # NOTE: `coding/` and `examples/` now live at the repo root (BASE_DIR), they are
-    # no longer part of `docs/`. Only their *generated* galleries get written into
-    # docs/ (see process_folder). `catalog/` still lives inside docs/.
-    coding_folders = [
-        BASE_DIR / "coding" / "10-windowed-state-space-filters-basic",
-        BASE_DIR / "coding" / "13-backend",
-        BASE_DIR / "coding" / "20-polynomials-basics",
-    ]
-    
+    # Scan folders. coding/ and examples/ live at the repo root (BASE_DIR) and are
+    # auto-discovered (sorted by their numeric prefix); only their generated
+    # galleries are written into docs/. catalog/ lives inside docs/.
+    def _subfolders(parent):
+        return [p for p in sorted(parent.iterdir()) if p.is_dir()] if parent.exists() else []
+
+    coding_folders = _subfolders(BASE_DIR / "coding")
+    examples_folders = [p for p in _subfolders(BASE_DIR / "examples") if p.name != "90-beta"] #exclude 90-beta
     catalog_folders = [
         DOC_DIR / "catalog" / "biosignals",
         DOC_DIR / "catalog" / "generators",
     ]
 
-    examples_folders = [
-        BASE_DIR / "examples" / "11-detection",
-        BASE_DIR / "examples" / "12-filtering",
-        BASE_DIR / "examples" / "21-polynomials-calculus",
-        BASE_DIR / "examples" / "40-app-changepoint-detection",
-        BASE_DIR / "examples" / "50-convolution",
-        BASE_DIR / "examples" / "70-localized-polynomials",
-        BASE_DIR / "examples" / "80-nDimensional",
-    ]
-    
-    # Process Coding folders
+    # --- Teaching: combine the coding galleries into one page (#15), with the
+    #     prose State-Space Tutorial linked as the first section. ---
+    coding_sections = []
     for folder in coding_folders:
         if folder.exists():
             print(f"Processing Coding: {folder}")
-            process_folder(folder, "coding", "guide-")
-        else:
-            print(f"Folder not found: {folder}")
-            
-    # Process Catalog folders. Biosignals uses the new gallery layout (#8); the
-    # generators catalog keeps the classic markdown table (its images are linked
-    # from the lmlib.utils.generator docstrings).
-    for folder in catalog_folders:
-        if folder.exists():
-            print(f"Processing Catalog: {folder}")
-            use_new = folder.name == "biosignals"
-            process_folder(folder, "catalog", "example-",
-                           new_layout=use_new, readme_bib_depth="../../../")
+            section_title, entries, intro_md = process_folder(
+                folder, "coding", "guide-", write_index=False
+            )
+            coding_sections.append((section_title, folder.name, entries, intro_md))
         else:
             print(f"Folder not found: {folder}")
 
-    # Examples are combined into a single long page (with a right-hand TOC),
-    # instead of one sub-page per category.
+    if coding_sections:
+        page_title, page_intro = read_folder_meta(BASE_DIR / "coding")
+        tutorial = (
+            "Beginner's tutorial to start using the model-based signal processing library lmlib. \n\n"
+            "[Open the State-Space Tutorial](../../state-space-tutorial.md)"
+        )
+        build_combined_gallery_page(
+            page_title, page_intro, coding_sections, GENERATED_DIR / "coding",
+            lead_sections=[("State-Space Tutorial", tutorial)],
+        )
+
+    # --- Catalog. Biosignals uses the new gallery layout (#8); the generators
+    #     catalog keeps the classic markdown table (its images are linked from the
+    #     lmlib.utils.generator docstrings). ---
+    for folder in catalog_folders:
+        if folder.exists():
+            print(f"Processing Catalog: {folder}")
+            process_folder(folder, "catalog", "example-",
+                           new_layout=(folder.name == "biosignals"))
+        else:
+            print(f"Folder not found: {folder}")
+
+    # --- Application Examples: one combined page with a right-hand TOC (#6). ---
     example_sections = []
     for folder in examples_folders:
         if folder.exists():
             print(f"Processing Examples: {folder}")
             section_title, entries, intro_md = process_folder(
-                folder, "examples", "example-", write_index=False,
-                readme_bib_depth="../../",
+                folder, "examples", "example-", write_index=False
             )
             example_sections.append((section_title, folder.name, entries, intro_md))
         else:
             print(f"Folder not found: {folder}")
 
     if example_sections:
-        build_examples_combined_page(example_sections, GENERATED_DIR / "examples")
-            
+        page_title, page_intro = read_folder_meta(BASE_DIR / "examples")
+        build_combined_gallery_page(
+            page_title, page_intro, example_sections, GENERATED_DIR / "examples")
+
     print("Gallery build completed.")

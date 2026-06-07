@@ -42,3 +42,31 @@ palette.
   generators and signal loaders.
 - [`lmlib.utils.check`](lmlib.utils.check.md) — validation helpers.
 - [`lmlib.utils.colors`](lmlib.utils.colors.md) — color palette.
+
+<!-- gen-api:function-groups
+# Single source of truth for gen_api.py's thematic grouping of a module's
+# functions on its overview page. Maps a module to an ordered list of
+# {section title: [name prefixes]}. A function is placed in the first section
+# whose longest matching name-prefix it starts with; unmatched ones fall into a
+# trailing "Other" section.
+lmlib.polynomial.poly:
+  - "Sum of Polynomials": [poly_sum]
+  - "Product of Polynomials": [poly_prod]
+  - "Square of Polynomials": [poly_square]
+  - "Shift of Polynomials": [poly_shift]
+  - "Dilation of Polynomials": [poly_dilation]
+  - "Integration of Polynomials": [poly_int]
+  - "Differentiation of Polynomials": [poly_diff]
+  - "Addition of Multivariate Polynomials": [mpoly_add]
+  - "Multiplication of Multivariate Polynomials": [mpoly_multiply]
+  - "Product of Multivariate Polynomials": [mpoly_prod]
+  - "Square of Multivariate Polynomials": [mpoly_square]
+  - "Shift of Multivariate Polynomials": [mpoly_shift]
+  - "Integration of Multivariate Polynomials": [mpoly_int]
+  - "Differentiation of Multivariate Polynomials": [mpoly_diff]
+  - "Definite Integration of Multivariate Polynomials": [mpoly_def_int]
+  - "Substitution of Multivariate Polynomials": [mpoly_substitute]
+  - "Independent Dilation of Multivariate Polynomials": [mpoly_dilate_ind]
+  - "Dilation of Multivariate Polynomials": [mpoly_dilate]
+  - "Sequences, Matrices and Basis Utilities": [kron_sequence, extend_basis, permutation_matrix, commutation_matrix, remove_redundancy, mpoly_remove_redundancy, mpoly_transformation, mpoly_extend]
+-->

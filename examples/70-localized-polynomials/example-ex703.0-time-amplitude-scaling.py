@@ -110,6 +110,10 @@ k_min = k_range_mask[np.argmin(cost_ratio[mask])]
 L_dilate = lm.poly_dilation_coef_L(np.arange(Q), time_scaling_hat[k_min])
 alphas_hat = amplitude_hat[k_min] * np.einsum('mn, ksn->ksm', L_dilate, alphas)
 
+# -- Plotting --
+
+
+# Plot A: Trajectories
 offset_channels = np.arange(M) + 1
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, gridspec_kw={'width_ratios': [1, 2, 2]})
 ab_half_ext = int(ab_half * 1.15)
@@ -147,7 +151,7 @@ for ax in fig.axes:
 
 plt.show()
 
-# show cost and estimate over time
+# Plot B: Show cost and estimate over time
 if True:
     fig, axs = plt.subplots(5, 1, sharex='all')
     axs[0].plot(J, c='k', lw=0.6, ls=':', label='cost')

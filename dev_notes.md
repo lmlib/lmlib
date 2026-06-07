@@ -1,14 +1,11 @@
 # Development Notes
 
 ## TODOs
-- Change all function names in examples
-- Add documentation 
-- Optimize code and doc with AI
 - RLSAlssm lcr method implementation
 - Nu implementation
 - Covariance steady state for limited sum
 - Trajectory and Window Class plot method implementation
-- Trajectory and Window Class extended for nd-cost
+- Window Class extended for nd-cost
 - Two dimensional eval function for NDCompositeCost (example)
 
 ## Open Questions / Ideas to Discuss
@@ -17,11 +14,11 @@
   trajs = Trajectory.eval_y(cost, xs, ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan)
   OR
   trajs = Trajectory.eval_y(cost, xs[ks], ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan)
-    
+
   ```
   **Decision:**  when not possible both options then only second one: Trajectory.eval_y(cost, xs[ks], ks, K, m ...)
   **Added**  Both functionalities and as well if ks is of type integer
-- 
+-
 
 - Move beta parameter used in recursions from RLSAlssm to CostSegment/CompositeCost/NDCompositeCost.
   ```
@@ -43,7 +40,7 @@
   ```
   **Decision:** sample_weights as name instead of v rls.minimize_filter_v(y, H, h, sample_weights)
   **Renamed** v to sample_weights.
-- 
+-
 ---
 - Change minimize_v/x to minimize(output='x'/'v') same for filter_minimize_x/v/yhat.
   -> less functions/documentation
@@ -51,7 +48,7 @@
   xs = rls.minimize(H, h, output='x') # for states
   vs = rls.minimize(H, v, output='v') # for constrain stated
   y_hat = rls.minimize(H, v, output='y_hat') # for model output --> new
-  
+
   xs = rls.filter_minimize(y, H, h, output='x')
   vs = rls.filter_minimize(y, H, h, output='x')
   y_hat = rls.filter_minimize(y, H, h, output='y_hat')
@@ -63,14 +60,14 @@
   ```
   rls = RLSAlssm(cost)
   y_hat = rls.solve(y)
-  
-  
+
+
   vs = rls.solve(y, H, output='v')
-  
+
   y_hat, ... = rls.solve(y, output=('y_hat', 'x', 'error'))
   ```
   other names rls.estimate(y) or rls.fit(y) (both imply y_hat as output)
-  
+
   **Decision:**   y_hat, ...  = rls.fit(y, output=str, list of names ()) (fitler, minizimze, alssm_output)
   **Added function**  
 ---
@@ -85,17 +82,17 @@
   trajs = Trajectory.get_mapped(cost, xs, ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan)
   ```
   Window analog.
-  New: merged_ks, merged_seg arguments are set to true, such that a fast plot without indexing is at hand. 
+  New: merged_ks, merged_seg arguments are set to true, such that a fast plot without indexing is at hand.
   If user likes to deep-dive with plot change parameters.
-  
+
   **Decision:**
   ```
   trajs = Trajectory.eval(cost, xs, F=None, thd=1e-6)
   trajs = Trajectory.eval_y(cost, xs, ks, K, merged_ks=True, merged_seg=True, F=None, thd=1e-6, fill_value=np.nan)
   ```
   **Renamed** to eval and eval_y.
-    
---- 
+
+---
 
 - Naming of cost.eval_alssm_output(xs) and alssm.eval_states(xs)?
   Concerns: alssm.eval_states(xs) results in an alssm output. Why not use alssm.output(xs)?
@@ -116,4 +113,3 @@
   **Decision:** nameing cost_terms for nd_costs or cost_model
   **Renamed** to costs to cost_terms
 ---
-

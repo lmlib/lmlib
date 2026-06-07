@@ -1,1 +1,0 @@
-# Teaching and Coding Examples

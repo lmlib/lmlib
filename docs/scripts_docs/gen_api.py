@@ -39,71 +39,65 @@ import mkdocs_gen_files
 # time, so keep griffe quiet here to avoid duplicate log lines.
 logging.getLogger("griffe").setLevel(logging.ERROR)
 
-# (nav section title, [dotted module paths]) -- order defines nav order.
-API_STRUCTURE: list[tuple[str, list[str]]] = [
-    ("State Space", [
-        "lmlib.statespace.model",
-        "lmlib.statespace.cost",
-        "lmlib.statespace.rls",
-        "lmlib.statespace.window",
-        "lmlib.statespace.segment",
-        "lmlib.statespace.trajectory",
-        "lmlib.statespace.backend",
-        "lmlib.statespace.applications",
-    ]),
-    ("Polynomial", [
-        "lmlib.polynomial.poly",
-    ]),
-    ("Utils", [
-        "lmlib.utils.generator",
-        "lmlib.utils.check",
-        "lmlib.utils.colors",
-    ]),
-]
+import re
+from pathlib import Path
 
-# Optional thematic grouping of a module's *functions* on its Overview page.
-#
-# Maps a module's dotted path to an ordered list of ``(section_title, [prefixes])``
-# rules. A function is placed in the first section whose *longest* matching name
-# prefix it starts with (so e.g. ``mpoly_dilate_ind_*`` is matched by
-# ``"mpoly_dilate_ind"`` rather than ``"mpoly_dilate"``). Section order below is
-# the order the sections appear on the page; within a section functions keep
-# their source order.
-#
-# Adding a new function requires NO change here as long as its name starts with
-# an existing prefix -- it lands in the right section automatically. A function
-# matching no prefix is collected into a trailing "Other" section, so it always
-# appears (and is a visible nudge to add a prefix rule if desired).
-FUNCTION_GROUPS: dict[str, list[tuple[str, list[str]]]] = {
-    "lmlib.polynomial.poly": [
-        ("Sum of Polynomials", ["poly_sum"]),
-        ("Product of Polynomials", ["poly_prod"]),
-        ("Square of Polynomials", ["poly_square"]),
-        ("Shift of Polynomials", ["poly_shift"]),
-        ("Dilation of Polynomials", ["poly_dilation"]),
-        ("Integration of Polynomials", ["poly_int"]),
-        ("Differentiation of Polynomials", ["poly_diff"]),
-        ("Addition of Multivariate Polynomials", ["mpoly_add"]),
-        ("Multiplication of Multivariate Polynomials", ["mpoly_multiply"]),
-        ("Product of Multivariate Polynomials", ["mpoly_prod"]),
-        ("Square of Multivariate Polynomials", ["mpoly_square"]),
-        ("Shift of Multivariate Polynomials", ["mpoly_shift"]),
-        ("Integration of Multivariate Polynomials", ["mpoly_int"]),
-        ("Differentiation of Multivariate Polynomials", ["mpoly_diff"]),
-        ("Definite Integration of Multivariate Polynomials", ["mpoly_def_int"]),
-        ("Substitution of Multivariate Polynomials", ["mpoly_substitute"]),
-        ("Independent Dilation of Multivariate Polynomials", ["mpoly_dilate_ind"]),
-        ("Dilation of Multivariate Polynomials", ["mpoly_dilate"]),
-        ("Sequences, Matrices and Basis Utilities", [
-            "kron_sequence", "extend_basis", "permutation_matrix",
-            "commutation_matrix", "remove_redundancy", "mpoly_remove_redundancy",
-            "mpoly_transformation", "mpoly_extend",
-        ]),
-    ],
-}
+import yaml
+
+# Single source of truth: docs/api/index.md. Both the API structure (which
+# modules live under which group, and in what order) and the per-module function
+# grouping are read from it, so adding/moving a module only requires editing that
+# one hand-written page -- no change here.
+_API_INDEX = Path(__file__).resolve().parent.parent / "api" / "index.md"
+
+
+def _parse_api_index(path):
+    """Derive ``API_STRUCTURE`` and ``FUNCTION_GROUPS`` from docs/api/index.md.
+
+    * ``API_STRUCTURE`` -- each ``## Heading`` is a group (document order); the
+      module bullets beneath it (``- [...](<mod>/index.md)`` or ``(<mod>.md)``)
+      give that group's modules.
+    * ``FUNCTION_GROUPS`` -- read from a ``<!-- gen-api:function-groups ... -->``
+      YAML comment (mapping a module to an ordered list of
+      ``{section title: [name prefixes]}``).
+    """
+    text = path.read_text(encoding="utf-8")
+
+    structure: list[tuple[str, list[str]]] = []
+    current = None
+    for line in text.splitlines():
+        heading = re.match(r'^##\s+(.+?)\s*$', line)
+        if heading:
+            current = (heading.group(1).strip(), [])
+            structure.append(current)
+            continue
+        if current is not None:
+            link = re.match(r'^\s*-\s+\[[^\]]*\]\(([^)]+)\)', line)
+            if link:
+                mod = re.sub(r'(/index)?\.md$', '', link.group(1).strip())
+                current[1].append(mod)
+    structure = [(title, mods) for title, mods in structure if mods]
+
+    function_groups: dict[str, list[tuple[str, list[str]]]] = {}
+    comment = re.search(r'<!--\s*gen-api:function-groups\s*(.*?)-->', text, re.DOTALL)
+    if comment:
+        data = yaml.safe_load(comment.group(1)) or {}
+        for mod, groups in data.items():
+            parsed = []
+            for entry in groups:
+                (title, prefixes), = entry.items()
+                parsed.append((title, list(prefixes)))
+            function_groups[mod] = parsed
+
+    return structure, function_groups
+
+
+# (nav section title, [dotted module paths]) -- order defines nav order.
+API_STRUCTURE, FUNCTION_GROUPS = _parse_api_index(_API_INDEX)
 
 # Title used for functions that match no configured prefix.
 UNGROUPED_TITLE = "Other"
+
 
 
 def _group_functions(mod: str, func_names: list[str]) -> list[tuple[str, list[str]]]:

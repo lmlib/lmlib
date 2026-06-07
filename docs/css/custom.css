@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------
-   #2  API sidebar group links (Polynomial / State Space / Utils)
+   API sidebar group links (Polynomial / State Space / Utils)
    When you are on an API page these labels become bold "section" headers, and
    Material disables clicks on them via:
        .md-nav__item--section > .md-nav__link:not(.md-nav__container){pointer-events:none}
@@ -14,21 +14,15 @@
 }
 
 /* ---------------------------------------------------------------------------
-   #5  Header background colour.
-   The tabs bar sits flush beneath the header, so it is colour-matched too;
-   remove the `.md-tabs` rule if you want only the top header recoloured.
+   Header background colour.
 --------------------------------------------------------------------------- */
 .md-header { background-color: #246fbf; }
 .md-tabs   { background-color: #246fbf; }
 
 /* ---------------------------------------------------------------------------
-   #6  Application Examples gallery tables.
+   Application Examples gallery tables.
    These tables carry the `gallery` class so Material's default table styling
    (which only targets class-less tables) does not apply -- we style them here.
-     - columns swapped (plot first, description second)
-     - no header row
-     - larger font than the default table text
-     - thumbnails ~70% of their previous rendered size
 --------------------------------------------------------------------------- */
 .md-typeset table.gallery {
   display: table;
@@ -48,7 +42,7 @@
   text-align: center;
 }
 .md-typeset table.gallery td.gallery-plot img {
-  width: 100%;                  /* of a 50% column ~= 70% of the old 70% column */
+  width: 100%;                  /* of a 50% column  */
   max-width: 460px;
   height: auto;
 }

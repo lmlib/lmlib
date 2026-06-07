@@ -1,9 +1,9 @@
 # State-Space Tutorial
 
-This is a beginner's tutorial to start using the model-based signal
+Beginner's tutorial to start using the model-based signal
 processing library lmlib.
 
-To start, [install lmlib](installation.md) .
+To start, [install lmlib](getting_started/installation.md) .
 
 ``` python
 import numpy as np
@@ -61,7 +61,7 @@ The output sequence of an ALSSM is given, for an initial state $x_0$:
 
 where $s_k(x_0)$ in $\mathbb{R}$
 is the output at time index $c$ in $\mathbb{R}^{1 times N}$ is the output vector
-$A$ in $\mathbb{R}^{N times N}$ is the state-transition matrix, 
+$A$ in $\mathbb{R}^{N times N}$ is the state-transition matrix,
 and $x_k = A^kx_0$ in $\mathbb{R}^N$
 is the state space vector (independent variable).
 
@@ -70,19 +70,19 @@ is the state space vector (independent variable).
 
 We assume here that the signal can be approximated by a 3th order
 polynomial. Such a model corresponds to the following state-transition
-matrix and output vector: 
+matrix and output vector:
 
 \begin{equation}
   A =
-  \begin{bmatrix} 
-    1 & 1 & 1 & 1\\ 
-    0 & 1 & 2 & 3\\ 
-    0 & 0 & 1 & 3\\ 
-    0 & 0 & 0 & 1 
+  \begin{bmatrix}
+    1 & 1 & 1 & 1\\
+    0 & 1 & 2 & 3\\
+    0 & 0 & 1 & 3\\
+    0 & 0 & 0 & 1
   \end{bmatrix}
 \end{equation}
 
-and 
+and
 
 \begin{equation}
   c =
@@ -167,7 +167,7 @@ instance, if we have data that we would like to represent with a
 combination of 2 models (M1, M2) over 3 segments (left, middle, right).
 Assuming that the left and right segments can be modeled with M1, while
 the middle segment is a composite model made of M1 and M2, the mapping
-matrix will have this shape: 
+matrix will have this shape:
 \begin{equation}
   F = \begin{bmatrix} 0 & 1 \\ 1 & 1 \\ 0 & 1 \end{bmatrix} \ ,
 \end{equation}
@@ -201,7 +201,7 @@ every time index k.
 
 This cost function is for one segment only. In case of multiple
 segments, we define the *composite cost*, where `p` runs over the number
-of segments: 
+of segments:
 \begin{equation}
   J_P(k, x_k) = \sum_{p=1}^P J_{a_p}^{b_p} (k,x_k).
 \end{equation}
