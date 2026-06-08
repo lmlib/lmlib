@@ -1,40 +1,159 @@
-name: Deploy MkDocs to GitHub Pages
+name: Deploy Documentation
 
 on:
   push:
-    branches:
-      - develop  # Change to 'master' if your default branch is master
-  workflow_dispatch:   #  
+    branches: [ doc/changelog ]
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
 
 jobs:
-  deploy:
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # Required to push to gh-pages
-
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true  
+  
+      - name: Install GH CLI
+        run: sudo apt-get update && sudo apt-get install -y gh
+  
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          
+          git fetch origin \
+            "refs/tags/${TAG}:refs/tags/${TAG}" \
+            --force
+          
+          MSG=$(git for-each-ref \
+            --format='%(contents)' \
+            "refs/tags/${TAG}" \
+            | head -c 2000)
+          
+          if [ -z "${MSG}" ]; then
+            echo "Warning: No tag annotation found. Falling back to commit message."
+            MSG=$(git log -1 --format=%B "${TAG}")
+          fi
+          
+          echo "Final Message Preview:"
+          echo "$MSG"
+          
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes "${MSG}" \
+            --verify-tag || echo "Release already exists"
 
-      - name: Set up Python
+  build_gallery:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+          cache: 'pip'
 
-      - name: Install dependencies
+      - name: Create Gallery
         run: |
           pip install -r requirements.txt
           pip install -e .
-          
-      - name: Build MkDocs via Makefile
-        working-directory: docs              # run make from the docs/ folder
-        run: make build                      # 
-  
-          
-      - name: Build and Deploy
-        uses: mhausenblas/mkdocs-deploy-gh-pages@master
+          python3 docs/scripts_docs/create_gallery.py
+
+      - name: Upload Generated Docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-docs
+          path: docs/_generated
+          if-no-files-found: error
+
+  build_mkdocs:
+    needs: build_gallery
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+
+      - name: Download Generated Docs
+        uses: actions/download-artifact@v4
+        with:
+          name: generated-docs
+          path: docs/_generated
+
+      - name: Generate Changelog from Releases
         env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CONFIG_FILE: mkdocs.yml
-          # Optional: Extra requirements file if you have one
-          # EXTRA_PACKAGES: build-base
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tree
+          tree -L 4 . 
+          pip install -r requirements.txt
+          pip install -e .
+          python docs/scripts_docs/generate_changelog.py
+
+      - name: Update Version Placeholder
+        run: |
+          git fetch --tags --force
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            V="${GITHUB_REF#refs/tags/}"
+          else
+            V=$(git tag --sort=-creatordate | head -n 1)
+          fi
+          sed -i "s|{{VERSION}}|${V}|g" docs/index.md
+
+      - name: Build Site
+        run: mkdocs build -c
+
+      - name: Upload Site Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: ./site
+
+  deploy:
+    needs: build_mkdocs
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Site Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages

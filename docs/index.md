@@ -1,6 +1,6 @@
 # lmlib Documentation
 
-**Version:** 3.0.0 — Open-Source and for Python.
+**Version:** {{VERSION}} — Open-Source and for Python.
 
 This is the official documentation for [lmlib](https://pypi.org/project/lmLib/), a signal processing library to efficiently analyze single- and multi-channel time series using linear state space models.
 

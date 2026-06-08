@@ -202,31 +202,30 @@ def render_gallery_table(entries, link_prefix="", max_words=GALLERY_BLURB_WORDS)
 
 
 def build_combined_gallery_page(page_title, intro_md, sections, output_dir,
-                                index_name="index.md"):
+                                lead_sections=None):
     """Write a single combined gallery page (Application Examples, Teaching, ...).
 
     ``page_title``/``intro_md`` come from the category's top-level README.md.
+    ``lead_sections`` is an optional list of ``(title, body_md)`` rendered before
+    the galleries (used for the State-Space Tutorial link on the Teaching page).
     ``sections`` is an ordered list of ``(section_title, folder_name, entries,
     intro_md)``; one ``## <section_title>`` heading per folder makes the
     right-hand table of contents the in-page navigation.
-    ``index_name`` is the output file name. It defaults to ``index.md`` (used for a
-    top-level page such as Application Examples). The Teaching page passes a
-    non-index name (``coding.md``) so it can be nested as a *non-index* child under
-    the ``Teaching`` nav section: a section's ``index.md`` child is promoted to the
-    section index by the navigation.indexes theme feature and then no longer shows
-    its own headings in the (integrated) left-sidebar table of contents, whereas a
-    non-index child keeps that per-page TOC. See the nav notes in mkdocs.yml.
     """
     parts = [f"# {page_title}\n"]
     if intro_md:
         parts.append(f"\n{intro_md}\n")
+    for title, body_md in (lead_sections or []):
+        parts.append(f"\n## {title}\n")
+        if body_md:
+            parts.append(f"\n{body_md}\n")
     for section_title, folder_name, entries, sec_intro in sections:
         parts.append(f"\n## {section_title}\n")
         if sec_intro:
             parts.append(f"\n{sec_intro}\n")
         parts.append(render_gallery_table(entries, link_prefix=f"{folder_name}/"))
     output_dir.mkdir(parents=True, exist_ok=True)
-    index_file = output_dir / index_name
+    index_file = output_dir / "index.md"
     with open(index_file, "w", encoding="utf-8") as f:
         f.write("\n".join(parts))
     total = sum(len(e) for _, _, e, _ in sections)
@@ -254,18 +253,12 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
     output_folder = target_output_dir / folder_name
     output_folder.mkdir(parents=True, exist_ok=True)
 
-    # Copy any local data files (CSVs, JPGs, PNGs sitting next to the examples) into the
+    # Copy any local data files (CSVs sitting next to the examples) into the
     # output folder so they are served by the site and can be linked for download
     # (#16). Library-bundled signals loaded via load_lib_csv are NOT here.
-    extensions = ["*.csv", "*.jpg", "*.jpeg", "*.png"]
-#    local_assets = {p.name for p in folder_path.glob("*.csv")}
-#    for csv in folder_path.glob("*.csv"):
-#        shutil.copy2(csv, output_folder / csv.name)
-    local_assets = set()
-    for pattern in ("*.csv", "*.jpg", "*.jpeg", "*.png"):
-       for file in folder_path.glob(pattern):
-           local_assets.add(file.name)
-           shutil.copy2(file, output_folder / file.name)
+    local_csvs = {p.name for p in folder_path.glob("*.csv")}
+    for csv in folder_path.glob("*.csv"):
+        shutil.copy2(csv, output_folder / csv.name)
 
     gallery_entries = []
     entries = []  # structured rows for the new gallery layout
@@ -380,7 +373,7 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         plot_generated = bool(all_plots)
 
         # Local data files referenced by this example (for download links, #16).
-        referenced_assets = [name for name in sorted(local_assets) if name in code]
+        referenced_csvs = [name for name in sorted(local_csvs) if name in code]
 
         # Extract & Truncate
         docstring_match = re.search(r'"""(.*?)"""', code, re.DOTALL)
@@ -411,9 +404,9 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         else:
             detail_md += "> **Note:** No graphical output.\n\n"
 
-        if referenced_assets:
+        if referenced_csvs:
             detail_md += "## Data\n\nThis example uses the following data file(s):\n\n"
-            for name in referenced_assets:
+            for name in referenced_csvs:
                 detail_md += f"- [`{name}`]({name})\n"
             detail_md += "\n"
             
@@ -482,12 +475,13 @@ if __name__ == "__main__":
 
     if coding_sections:
         page_title, page_intro = read_folder_meta(BASE_DIR / "coding")
+        tutorial = (
+            "Beginner's tutorial to start using the model-based signal processing library lmlib. \n\n"
+            "[Open the State-Space Tutorial](../../state-space-tutorial.md)"
+        )
         build_combined_gallery_page(
             page_title, page_intro, coding_sections, GENERATED_DIR / "coding",
-            # Non-index name so the Teaching nav section can nest this page as a
-            # regular child (an index.md child would be promoted to the section
-            # index and lose its left-sidebar TOC). See nav notes in mkdocs.yml.
-            index_name="coding.md",
+            lead_sections=[("State-Space Tutorial", tutorial)],
         )
 
     # --- Catalog. Biosignals uses the new gallery layout (#8); the generators

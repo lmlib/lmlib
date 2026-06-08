@@ -479,112 +479,6 @@ class RLSAlssm:
         # ── nu (number of weighted samples) ──────────────────────────────────
         # TODO: not yet implemented.
 
-    def convolve(self, y, xref, sample_weights=None, dim_order=None):
-        r"""
-        Convolve (or correlate) a signal with a reference state vector in the ALSSM feature space.
-
-        This is a thin convenience wrapper around [`filter`][lmlib.statespace.rls.RLSAlssm.filter]:
-        it projects the signal $y$ into the low-dimensional ALSSM feature space
-        and then contracts the per-sample cross-correlation state $\xi_k$ with a
-        fixed reference state vector $x_\mathrm{ref}$,
-
-        $$
-            \mathrm{out}_k \;=\; \langle \xi_k,\, x_\mathrm{ref} \rangle ,
-        $$
-
-        which is equivalent to a sliding-window linear filter whose effective
-        impulse response lives in the span of the ALSSM (see
-        [ex504](../../../examples/50-convolution/example-ex504.0-convolution-benchmark.py)).
-        Because $\xi_k$ is obtained by a recursive filter, the cost is
-        $\mathcal{O}(K \cdot N)$ and **independent of the effective filter
-        length** (the segment window), unlike a direct sample-domain
-        convolution.
-
-        Whether the operation realises a convolution or a correlation depends on
-        $x_\mathrm{ref}$ and on the segment direction of the underlying cost
-        (a time-reversed/inverted model gives the convolution, a forward model
-        the correlation); see the convolution examples in the ``50-convolution``
-        folder.
-
-        Internally this is ``self.filter(y, ...)`` followed by
-        ``numpy.tensordot(self.xi, xref, axes=xref.ndim)``.  For a 1-D ``xref``
-        (shape ``(N,)``) this reduces to ``self.xi @ xref``; a higher-rank
-        ``xref`` (e.g. shape ``(channels, N)`` for multichannel signals)
-        additionally sums over the leading reference axes, reproducing the
-        channel-wise accumulation $\sum_j \xi_{k,j} \, x_{\mathrm{ref},j}$.
-
-        Parameters
-        ----------
-        y : array_like
-            Input signal, in the same shape as accepted by
-            [`filter`][lmlib.statespace.rls.RLSAlssm.filter].
-        xref : array_like
-            Reference state vector in the ALSSM feature space. Its shape must
-            match the trailing feature axes of [`xi`][lmlib.statespace.rls.RLSAlssm.xi]:
-
-            * 1-D ``(N,)`` for a single-channel [`CostSegment`][lmlib.statespace.cost.CostSegment] /
-              [`CompositeCost`][lmlib.statespace.cost.CompositeCost], or the Kronecker
-              state ``(N,)`` of an [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost];
-            * ``(channels, N)`` for a multichannel signal, in which case the
-              channel axis is summed over.
-        sample_weights : array_like, optional
-            Per-sample weights forwarded to [`filter`][lmlib.statespace.rls.RLSAlssm.filter].
-        dim_order : array_like, optional
-            Processing order of the signal axes for
-            [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost], forwarded to
-            [`filter`][lmlib.statespace.rls.RLSAlssm.filter].
-
-        Returns
-        -------
-        out : ndarray
-            Convolution/correlation output with the spatial shape of $y$
-            (the trailing feature axes are contracted away). Shape ``(K,)`` for
-            a 1-D signal and ``(K_0, ..., K_{L-1})`` for an ND signal.
-
-        Notes
-        -----
-        Only $\xi$ is needed, so if this ``RLSAlssm`` was constructed with
-        ``calc_W=True`` and/or ``calc_kappa=True`` those flags are turned off
-        (with a warning) on the first call to avoid computing $W$ and $\kappa$.
-        Construct the ``RLSAlssm`` with ``calc_W=False, calc_kappa=False`` to
-        silence the warning.
-
-        Examples
-        --------
-        ```python
-        >>> import numpy as np
-        >>> import lmlib as lm
-        >>> alssm = lm.AlssmPoly(poly_degree=2)
-        >>> segment = lm.Segment(a=-10, b=10, direction=lm.BACKWARD, g=200)
-        >>> cost = lm.CostSegment(alssm, segment)
-        >>> rls = lm.RLSAlssm(cost, steady_state=True)
-        >>> y = np.zeros(100); y[40:61] = 1.0          # a rectangular pulse
-        >>> xref = np.array([1.0, 0.0, 0.0])           # match the local mean (N = 3)
-        >>> out = rls.convolve(y, xref)
-        >>> out.shape
-        (100,)
-        ```
-        """
-        # convolve() only consumes xi; W (xi^(2)) and kappa (xi^(0)) are not
-        # needed and would only add per-sample cost. Disable them (once) and
-        # warn so the caller can silence it by constructing the RLSAlssm with
-        # calc_W=False, calc_kappa=False.
-        _enabled = [name for name, flag in
-                    (('calc_W', self._calc_W), ('calc_kappa', self._calc_kappa)) if flag]
-        if _enabled:
-            self._calc_W = False
-            self._calc_kappa = False
-            warnings.warn(
-                f"convolve() only requires xi; disabling {' and '.join(_enabled)} "
-                f"for this RLSAlssm. Construct it with calc_W=False, calc_kappa=False "
-                f"to avoid this warning.",
-                stacklevel=2,
-            )
-
-        self.filter(y, sample_weights=sample_weights, dim_order=dim_order)
-        xref = np.asarray(xref)
-        return np.tensordot(self.xi, xref, axes=xref.ndim)
-
     # ------------------------------------------------------------------
     # minimize / eval
     # ------------------------------------------------------------------
@@ -994,17 +888,11 @@ class RLSAlssm:
         h : array_like of shape (N,), optional
             Constraint offset. Passed to [`minimize_v`][lmlib.statespace.rls.RLSAlssm.minimize_v]. Default: zero vector.
         eval_alssm_weights : array_like, optional
-            Per-ALSSM output weights used when evaluating $\hat{y}$.
-
-            - For [`CompositeCost`][lmlib.statespace.cost.CompositeCost] / [`CostSegment`][lmlib.statespace.cost.CostSegment]:
-              shape ``(M,)`` (or scalar), forwarded as ``alssm_weights`` to the cost
-              term's [`eval_alssm_output`][lmlib.statespace.cost.CompositeCost.eval_alssm_output]
-              (which passes them to [`AlssmSum`][lmlib.statespace.model.AlssmSum]).
-            - For [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost]:
-              shape ``(L, M)``, forwarded as ``nd_alssm_weights`` to
-              [`eval_alssm_output`][lmlib.statespace.cost.NDCompositeCost.eval_alssm_output],
-              where element ``[l, m]`` scales ALSSM ``m`` in signal dimension ``l``.
-
+            Per-ALSSM output weights used when evaluating $\hat{y}$ from a
+            [`CompositeCost`][lmlib.statespace.cost.CompositeCost] with multiple models.
+            Forwarded to the cost term's
+            [`eval_alssm_output`][lmlib.statespace.cost.CompositeCost.eval_alssm_output]
+            (which in turn passes them to [`AlssmSum`][lmlib.statespace.model.AlssmSum]).
             If ``None``, all models contribute equally.
 
         Returns
@@ -1073,13 +961,7 @@ class RLSAlssm:
         if 'y_hat' not in _output:
             return (out_dict[_] for _ in _output)
 
-        if isinstance(self._cost_terms, NDCompositeCost):
-            # NDCompositeCost separates per signal dimension; its eval_alssm_output
-            # takes `nd_alssm_weights` of shape (L, M). `None` weights all ALSSMs
-            # equally, which matches the default behaviour of the 1-D branch below.
-            out_dict['y_hat'] = self._cost_terms.eval_alssm_output(x, nd_alssm_weights=eval_alssm_weights)
-        else:
-            out_dict['y_hat']  = self._cost_terms.eval_alssm_output(x, alssm_weights= eval_alssm_weights if eval_alssm_weights is not None else [1.0] * len(self._cost_terms.get_alssms()))
+        out_dict['y_hat']  = self._cost_terms.eval_alssm_output(x, alssm_weights= eval_alssm_weights if eval_alssm_weights is not None else [1.0] * len(self._cost_terms.get_alssms()))
 
         if _output == ('y_hat',):
             return out_dict['y_hat']

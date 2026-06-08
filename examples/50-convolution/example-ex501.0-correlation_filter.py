@@ -50,17 +50,13 @@ y_hat = cost.eval_alssm_output(xs_hat)  # signal reconstruction using ALSSM appr
 print("Processing Speed Measurements")
 print("-----------------------------")
 
-# xi-only filter for the convolution: no W / kappa and no steady state needed.
-rls_conv = lm.RLSAlssm(cost, steady_state=False, calc_W=False, calc_kappa=False, backend='lfilter')
-
 start = time.process_time()  # start timer for speed comparison
 
-# Convolution/correlation in ALSSM feature space: filter y and contract the
-# per-sample state with the template xs_h. The multichannel template
-# (NOFCH, N) is summed over channels automatically.
-corr_alssm = rls_conv.convolve(y_mc, xs_h)
+corr_alssm = np.zeros(K)
+for j in range(NOFCH):
+    corr_alssm = corr_alssm + rls_y.xi[:, j, :] @ xs_h[j, :]
 
-print("Duration of correlation (or convolution) in ALSSM feature space (incl. signal projection): {:10.3f}ms".format(
+print("Duration of correlation (or convolution) in ALSSM feature space (w/o mapping time): {:10.3f}ms".format(
     (time.process_time() - start) * 1e3))
 
 # -- 4. Standard convolution in sample space (channel-wise) (for comparison) --

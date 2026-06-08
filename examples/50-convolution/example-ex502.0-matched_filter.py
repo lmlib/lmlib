@@ -39,7 +39,7 @@ segment = lm.Segment(a=a, b=b, direction=lm.BACKWARD, g=400)
 cost = lm.CostSegment(alssm, segment)
 
 # -- 2. Project observations (and the template) to ALSSM feature space --
-rls_y = lm.RLSAlssm(cost, backend='lfilter')
+rls_y = lm.RLSAlssm(cost, backend='numpy')
 rls_y.filter(y_mc)  # Transform observations
 
 xs_hat = rls_y.minimize_x()  # get transformed observations
@@ -68,17 +68,13 @@ h_mc_matched = (np.linalg.inv(Ryy) @ h_mc.T).T
 print("Processing Speed Measurements")
 print("-----------------------------")
 
-# xi-only filter for the convolution: no W / kappa and no steady state needed.
-rls_conv = lm.RLSAlssm(cost, steady_state=False, calc_W=False, calc_kappa=False, backend='lfilter')
-
 start = time.process_time()  # start timer for speed comparison
 
-# Matched filtering in ALSSM feature space: filter y and contract the
-# per-sample state with the matched template. The multichannel template
-# (NOFCH, N) is summed over channels automatically.
-corr_alssm = rls_conv.convolve(y_mc, xs_h_matched)
+corr_alssm = np.zeros(K)
+for j in range(NOFCH):
+    corr_alssm = corr_alssm + rls_y.xi[:, j] @ xs_h_matched[j]
 
-print("Duration of correlation (or convolution) in ALSSM feature space (incl. signal projection): {:10.3f}ms".format(
+print("Duration of correlation (or convolution) in ALSSM feature space (w/o mapping time): {:10.3f}ms".format(
     (time.process_time() - start) * 1e3))
 
 # -- 4. Standard convolution in sample space (channel-wise) (for comparison) --

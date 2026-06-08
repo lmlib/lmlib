@@ -6,12 +6,6 @@ import scipy.linalg as _sp
 from lmlib._warnings import WConditionNumberWarning
 import warnings
 
-# Maximum number of terms (b - a) for which the exact direct-sum Gram matrix
-# (`covariance_matrix_limited_sum`) is preferred over the Stein-equation solve
-# on finite segments.  The direct sum is O((b-a) N^3) and exact; wider finite
-# windows fall back to the Stein solver.
-_DIRECT_SUM_MAX_TERMS = 8192
-
 __all__ = [
     'covariance_matrix_closed_form',
     'covariance_matrix_schur',
@@ -409,16 +403,6 @@ def covariance_matrix_schur(A, C, gamma, a, b, delta):
         return covariance_matrix_meixner(A, C, gamma, a, b, delta)
 
 
-    # ── Exact direct-sum path for finite segments ───────────────────────────
-    # On a finite window W is a finite sum; evaluating it directly is exact to
-    # machine precision and avoids the N^2 x N^2 Stein solve below, which loses
-    # several digits for short, high-degree polynomial segments (e.g.
-    # AlssmPolyJordan, which is caught by neither the Legendre nor the Meixner
-    # fast path).  The O((b-a) N^3) loop is capped so very wide finite windows
-    # still fall through to the Stein solver.
-    if not np.isinf(a) and not np.isinf(b) and (b - a) <= _DIRECT_SUM_MAX_TERMS:
-        return covariance_matrix_limited_sum(A, C, gamma, a, b, delta)
-
     # ── General path: Stein equation in N^2 × N^2 ───────────────────────────
     N = int(np.shape(A)[0])
     N2 = N * N
@@ -531,41 +515,13 @@ def covariance_matrix_closed_form(A, C, gamma, a, b, delta):
 
 def covariance_matrix_limited_sum(A, C, gamma, a, b, delta):
     r"""
-    Exact steady-state Gram matrix W for a finite segment via direct summation.
+    Compute the steady-state Gram matrix W by iterative summation.
 
-    Computes the windowed Gram matrix directly from its definition
-
-    $$
-    W = \sum_{t=a}^{b} \gamma^{\,t-\delta}\,(A^t)^{\top} C^{\top} C\, A^t .
-    $$
-
-    Because this is exactly the finite sum that defines ``W`` on a finite
-    segment ``[a, b]``, the result is accurate to machine precision.  Unlike the
-    Stein-equation path it never forms or solves the $N^2 \times N^2$ Kronecker
-    system, so it stays accurate even when that system is ill-conditioned --
-    e.g. short, high-degree :class:`AlssmPolyJordan` segments, where the Stein
-    solve can lose several digits.  Cost is $O\big((b-a)\,N^3\big)$.
+    Not yet implemented.  Raises [`NotImplementedError`][NotImplementedError].
 
     Parameters
     ----------
     A, C, gamma, a, b, delta
         See [`covariance_matrix_closed_form`][lmlib.statespace.backends.steady_state.covariance_matrix_closed_form].
-        ``a`` and ``b`` must be finite.
-
-    Returns
-    -------
-    W : ndarray of shape (N, N)
     """
-    if np.isinf(a) or np.isinf(b):
-        raise ValueError("covariance_matrix_limited_sum requires finite a and b.")
-    A = np.asarray(A, dtype=float)
-    C = np.atleast_2d(np.asarray(C, dtype=float))            # (1, N)
-    N = A.shape[0]
-    Q = C.T @ C                                              # (N, N)
-    a, b = int(a), int(b)
-    At = matrix_power(A, a)                                  # A^a
-    W = np.zeros((N, N))
-    for t in range(a, b + 1):
-        W += (gamma ** (t - delta)) * (At.T @ Q @ At)
-        At = At @ A
-    return W
+    raise NotImplementedError("limited_sum is not implemented yet.")

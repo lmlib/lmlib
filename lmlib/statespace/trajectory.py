@@ -187,64 +187,42 @@ class Trajectory:
                 ab_ranges, values = _eval_nd_patch(cost, xs[anchor_idx], p_combo, thd)
                 out[(combo_idx, *anchor_idx)] = (ab_ranges, values)
 
-        # Per-dimension union of every segment's offset range.  When a
-        # dimension has several segments (e.g. a forward + a backward window)
-        # they cover *different* parts of the offset axis, so the per-combo
-        # value tensors are tiles of a larger grid and must be placed onto this
-        # common grid before merging.  A naive element-wise maximum of the raw
-        # per-combo tensors is wrong: it fails outright as soon as the segment
-        # windows differ in length, and overlays unrelated offsets even when
-        # they happen to match.  (This mirrors how `_eval_y_nd` maps onto the
-        # absolute signal grid.)
-        union_ab = [
-            np.unique(np.concatenate([
-                cost.cost_terms[l]._get_cost_segments()[p].segment._ab_range(thd)
-                for p in range(P_per_dim[l])
-            ]))
-            for l in range(L)
-        ]
-        pos = [{int(o): i for i, o in enumerate(union_ab[l])} for l in range(L)]
-
-        def _assemble(combo_results):
-            """nanmax-merge per-combo ``(ab_ranges, values)`` onto the union grid."""
-            merged_vals = np.full(tuple(len(u) for u in union_ab), np.nan)
-            for ab_ranges, values in combo_results:
-                idx = [np.array([pos[l][int(o)] for o in ab_ranges[l]], dtype=int)
-                       for l in range(L)]
-                sl = np.ix_(*idx)
-                merged_vals[sl] = np.fmax(merged_vals[sl], values)
-            return merged_vals
-
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)
             if merged_ks:
-                # Merge across the anchor dimension first.  All anchors of a
-                # single combo share the same offset grid, so an element-wise
-                # maximum is valid at this step.
-                combo_results = []
+                # Merge across anchor dimension (axis 1) using element-wise nanmax
+                merged = np.empty(n_combos, dtype=object)
                 for combo_idx in range(n_combos):
+                    # Collect all values tensors for this combo across anchors
                     all_vals = [out[(combo_idx, *idx)][1] for idx in np.ndindex(XS)]
                     ab_ranges = out[(combo_idx, *next(iter(np.ndindex(XS))))][0]
                     merged_vals = np.full_like(all_vals[0], np.nan)
                     for v in all_vals:
                         merged_vals = np.fmax(merged_vals, v)
-                    combo_results.append((ab_ranges, merged_vals))
-
-                if merged_seg:
-                    out = (union_ab, _assemble(combo_results))
-                else:
-                    merged = np.empty(n_combos, dtype=object)
-                    for combo_idx in range(n_combos):
-                        merged[combo_idx] = combo_results[combo_idx]
-                    out = merged
-
-            elif merged_seg:
-                # No anchor merge, but merge segment combos per anchor.
-                merged = np.empty(XS, dtype=object)
-                for anchor_idx in np.ndindex(XS):
-                    combo_results = [out[(ci, *anchor_idx)] for ci in range(n_combos)]
-                    merged[anchor_idx] = (union_ab, _assemble(combo_results))
+                    merged[combo_idx] = (ab_ranges, merged_vals)
                 out = merged
+
+            if merged_seg:
+                # Merge across all segment combos
+                if merged_ks:
+                    # out is 1-D array of length n_combos
+                    all_ab = out[0][0]
+                    all_vals = [out[i][1] for i in range(n_combos)]
+                    merged_vals = np.full_like(all_vals[0], np.nan)
+                    for v in all_vals:
+                        merged_vals = np.fmax(merged_vals, v)
+                    out = (all_ab, merged_vals)
+                else:
+                    # out shape (n_combos, *XS); merge along axis 0
+                    merged = np.empty(XS, dtype=object)
+                    for anchor_idx in np.ndindex(XS):
+                        all_ab = out[(0, *anchor_idx)][0]
+                        all_vals = [out[(ci, *anchor_idx)][1] for ci in range(n_combos)]
+                        merged_vals = np.full_like(all_vals[0], np.nan)
+                        for v in all_vals:
+                            merged_vals = np.fmax(merged_vals, v)
+                        merged[anchor_idx] = (all_ab, merged_vals)
+                    out = merged
 
         return out
 

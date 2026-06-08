@@ -64,71 +64,9 @@ class TestSanitizeZeros(unittest.TestCase):
         np.testing.assert_allclose(abs(out[0].imag), 0.3, rtol=1e-10)
         self.assertAlmostEqual(out[0].imag, -out[1].imag, places=12)
 
-    def test_near_origin_zero_snapped(self):
-        r"""A zero near the origin with a negligible imaginary part must snap to
-        real.  A purely relative test would keep it complex (tiny |real| gives a
-        vanishing threshold), leaving an unpaired complex value that breaks
-        zpk2sos.  Mixed here with a genuine conjugate pair to mimic the real case.
-        """
-        from scipy.signal import zpk2sos
-        z = np.array([0.99 + 0j,
-                      -6.327811e-15 - 1.174678e-18j,    # near-origin, must snap
-                      0.9778115 + 0.1548701j,
-                      0.9778115 - 0.1548701j])
-        out = self.sanitize(z)
-        # the near-origin entry must be exactly real now
-        near0 = out[np.argmin(np.abs(out))]
-        self.assertEqual(np.imag(near0), 0.0)
-        sos = zpk2sos(out, np.zeros(len(out)), 1.0)   # must not raise
-        self.assertEqual(sos.shape[1], 6)
-
     def test_empty_input(self):
         out = self.sanitize(np.array([], dtype=complex))
         self.assertEqual(len(out), 0)
-
-
-class TestMultiSineParallelPlan(unittest.TestCase):
-    r"""Regression: the parallel plan must build for a multi-sine ALSSM.
-
-    ``AlssmSum(AlssmPoly(0), AlssmSin, AlssmSin)`` (the water-drop model) has a
-    non-triangular A -> parallel form.  Building the per-block transfer functions
-    used to fail in ``_zpk_cancel_and_build_sos`` -> ``zpk2sos`` with
-    "Array contains complex value with no matching conjugate" because a
-    near-origin FIR zero was not snapped to real.  Now it must build and match
-    the numpy backend.
-    """
-
-    @staticmethod
-    def _rel(a, b):
-        a = np.asarray(a); b = np.asarray(b)
-        return np.nanmax(np.abs(a - b)) / max(np.nanmax(np.abs(a)), 1e-12)
-
-    def _nd_cost(self, L1=80, g=100, half=20):
-        alssm = lm.AlssmSum((lm.AlssmPoly(0),
-                             lm.AlssmSin(2 * np.pi / L1),
-                             lm.AlssmSin(2 * np.pi / (0.5 * L1))))
-        sl = lm.Segment(a=-half, b=-1, direction=lm.FORWARD, g=g)
-        sr = lm.Segment(a=0, b=half, direction=lm.BACKWARD, g=g)
-        cost_1d = lm.CompositeCost((alssm,), (sl, sr), [[1, 1]])
-        return lm.NDCompositeCost([cost_1d, cost_1d])
-
-    def test_parallel_plan_builds(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            rls = lm.RLSAlssm(self._nd_cost(), steady_state=True, backend='lfilter')
-        self.assertEqual(rls._filter_form, 'parallel')   # non-triangular A
-
-    def test_2d_matches_numpy(self):
-        nd = self._nd_cost()
-        Y = np.random.default_rng(0).standard_normal((30, 28))
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            rn = lm.RLSAlssm(nd, steady_state=True, backend='numpy')
-            rn.filter(Y, dim_order=[0, 1])
-            rl = lm.RLSAlssm(nd, steady_state=True, backend='lfilter')
-            rl.filter(Y, dim_order=[0, 1])
-        self.assertLess(self._rel(rn.xi, rl.xi), 1e-9)
-        self.assertLess(self._rel(rn.kappa, rl.kappa), 1e-9)
 
 
 class TestParallelBackendPolyJordan(unittest.TestCase):
@@ -459,76 +397,6 @@ class TestParallelBackendMultiChannel(unittest.TestCase):
                                backend='lfilter', filter_form='parallel')
             rls.filter(y)
         self.assertTrue(np.all(np.isfinite(rls.xi)))
-
-
-class TestExpModelCascade(unittest.TestCase):
-    r"""Regression: the cascade xi realization must be exact for non-unit-diagonal A.
-
-    ``AlssmExp`` / ``AlssmProd(AlssmExp, AlssmPoly)`` have an upper-triangular A
-    whose diagonal is the model pole ``gamma != 1``.  The cascade gives each
-    state dimension its own IIR pole (the diagonal of the recursion matrix), so
-    such models use the cascade form and must reproduce the numpy backend.
-    Previously the default-cascade lfilter result was wildly wrong (the bug this
-    guards against).
-    """
-
-    @staticmethod
-    def _rel(a, b):
-        a = np.asarray(a); b = np.asarray(b)
-        return np.nanmax(np.abs(a - b)) / max(np.nanmax(np.abs(a)), 1e-12)
-
-    def _composite(self):
-        # decaying recursion poles (model pole > window decay): well-conditioned
-        half, g = 10, 200.0
-        al = lm.AlssmProd((lm.AlssmExp(gamma=1 / 0.48), lm.AlssmPoly(poly_degree=2)))
-        ar = lm.AlssmProd((lm.AlssmExp(gamma=0.48), lm.AlssmPoly(poly_degree=2)))
-        sl = lm.Segment(a=-half, b=0, direction=lm.FORWARD, g=g)
-        sr = lm.Segment(a=0, b=half, direction=lm.BACKWARD, g=g)
-        return lm.CompositeCost((al, ar), (sl, sr), [[1, 0], [0, 1]])
-
-    def test_uses_cascade_form(self):
-        cost = self._composite()
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            rls = lm.RLSAlssm(cost, backend='lfilter', filter_form='cascade')
-        # upper-triangular A -> cascade is valid (handles the non-unit diagonal)
-        self.assertEqual(rls._filter_form, 'cascade')
-
-    def test_sin_still_uses_parallel(self):
-        half, g = 10, 200.0
-        sl = lm.Segment(a=-half, b=0, direction=lm.FORWARD, g=g)
-        sr = lm.Segment(a=0, b=half, direction=lm.BACKWARD, g=g)
-        cost = lm.CompositeCost((lm.AlssmSin(0.4), lm.AlssmSin(0.4)), (sl, sr),
-                                [[1, 0], [0, 1]])
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            rls = lm.RLSAlssm(cost, backend='lfilter', filter_form='cascade')
-        self.assertEqual(rls._filter_form, 'parallel')   # non-triangular A
-
-    def test_1d_xi_kappa_match_numpy(self):
-        cost = self._composite()
-        y = np.random.default_rng(0).standard_normal(60)
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            rn = lm.RLSAlssm(cost, backend='numpy'); rn.filter(y)
-            rl = lm.RLSAlssm(cost, backend='lfilter'); rl.filter(y)
-        self.assertEqual(rl._filter_form, 'cascade')
-        self.assertLess(self._rel(rn.xi, rl.xi), 1e-9)
-        self.assertLess(self._rel(rn.kappa, rl.kappa), 1e-9)
-
-    def test_2d_nd_xi_match_numpy(self):
-        nd = lm.NDCompositeCost([self._composite(), self._composite()])
-        Y = np.random.default_rng(1).standard_normal((26, 24))
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            rn = lm.RLSAlssm(nd, backend='numpy'); rn.filter(Y, dim_order=[0, 1])
-            rl = lm.RLSAlssm(nd, backend='lfilter'); rl.filter(Y, dim_order=[0, 1])
-        self.assertEqual(rl._filter_form, 'cascade')
-        self.assertLess(self._rel(rn.xi, rl.xi), 1e-9)
-        # the xi @ x_ref convolution used in the 2-D convolution example
-        xref = rn.minimize_x(solver='lstsq')[13, 12]
-        self.assertLess(self._rel(np.asarray(rn.xi) @ xref,
-                                  np.asarray(rl.xi) @ xref), 1e-9)
 
 
 if __name__ == '__main__':
