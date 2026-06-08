@@ -67,7 +67,7 @@ def gen_sine(K, k_periods, amplitudes=None, k0s=None):
 
 
 def gen_exp(K, decay, k0=0):
-    """
+    r"""
     Exponentially decaying signal generator
 
     :math:`y_k = \gamma^{k-k_0}`
@@ -466,7 +466,7 @@ def load_data_mc(name, K=-1, kstart=0, chIdxs=None):
 
 
 def k_period_to_omega(k_period):
-    """
+    r"""
     Converts sample base period  (samples per cycle) to the normalized frequency
 
     Parameters

@@ -68,6 +68,3 @@ ax[1].set_xlabel('k')
 ax[1].set_title('Symmetric, Infinite Support')
 
 plt.show()
-
-
-
