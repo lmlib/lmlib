@@ -544,6 +544,14 @@ def lfilter_forward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta
     if not np.allclose(gAinvT, np.tril(gAinvT)):
         raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
 
+    # Per-dimension IIR pole = diagonal of the recursion matrix gamma^{-1} A^{-T}.
+    # For unit-diagonal (polynomial) A this is just gamma_inv; for exponential
+    # models (AlssmExp / AlssmProd) the model eigenvalue folds into the pole
+    # (gamma_inv / diag(A)).  The diagonal is then removed from the feed-forward
+    # coupling, leaving it strictly lower-triangular.
+    poles = np.diag(gAinvT).copy()
+    gAinvT = gAinvT - np.diagflat(np.diag(gAinvT))
+
     y_weighted = y*sample_weights[:, None]
     K = y_weighted.shape[0]
 
@@ -578,10 +586,10 @@ def lfilter_forward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, beta
     # structurally-zero cross-block terms.  block_sizes=None (or a single
     # block) reproduces the original full-width cascade.
     for s, e in _block_ranges(block_sizes, N):
-        xi_add[:, s] = lfilter([1, 0], [1, -gamma_inv], y_diff[s].T).T
+        xi_add[:, s] = lfilter([1, 0], [1, -poles[s]], y_diff[s].T).T
         for n_ in range(s + 1, e):
             y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi_add[:-1, s:e], gAinvT[n_, s:e])
-            xi_add[:, n_] = lfilter([1, 0], [1, -gamma_inv], y_diff[n_].T).T
+            xi_add[:, n_] = lfilter([1, 0], [1, -poles[n_]], y_diff[n_].T).T
 
     # SE weight for this cost segment
     if beta != 1:
@@ -639,6 +647,11 @@ def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, bet
     if not np.allclose(gAT, np.tril(gAT)):
         raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
 
+    # Per-dimension IIR pole = diagonal of the backward recursion matrix gamma A^T
+    # (gamma * diag(A)); the diagonal is removed from the feed-forward coupling.
+    poles = np.diag(gAT).copy()
+    gAT = gAT - np.diagflat(np.diag(gAT))
+
     K = len(xi)
     y_weighted = y*sample_weights[:, None]
 
@@ -667,10 +680,10 @@ def lfilter_backward_cascade_xi(xi, cascade_params, a, b, y, sample_weights, bet
     # gAT is block-diagonal when A is; slice the feed-forward to each block
     # (see lfilter_forward_cascade_xi for details).
     for s, e in _block_ranges(block_sizes, N):
-        xi_add[:, s] = lfilter([1, 0], [1, -gamma], y_diff[s].T).T
+        xi_add[:, s] = lfilter([1, 0], [1, -poles[s]], y_diff[s].T).T
         for n_ in range(s + 1, e):
             y_diff[n_, 1:] += np.einsum('kn..., n->k...', xi_add[:-1, s:e], gAT[n_, s:e])
-            xi_add[:, n_] = lfilter([1, 0], [1, -gamma], y_diff[n_].T).T
+            xi_add[:, n_] = lfilter([1, 0], [1, -poles[n_]], y_diff[n_].T).T
 
     # SE weight for this cost segment
     if beta != 1:
@@ -879,6 +892,11 @@ def lfilter_xi_asterisk_l_forward_cascade_recursion(xi, cascade_params_ast, a, b
     if not np.allclose(gAinvT, np.tril(gAinvT)):
         raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
 
+    # Per-dimension IIR pole = diagonal of gamma^{-1} A^{-T} (folds in the model
+    # eigenvalue for exponential models).  The coupling gAinvT[n, :n] used below is
+    # already strictly lower-triangular, so only the pole needs the diagonal.
+    poles = np.diag(gAinvT)
+
     K       = xi_N.shape[0]
     S_shape = xi_N.shape[1:-1]   # extra spatial dims between K and Nprev
 
@@ -919,7 +937,7 @@ def lfilter_xi_asterisk_l_forward_cascade_recursion(xi, cascade_params_ast, a, b
             yd_r[1:, ..., n] += np.einsum('...m,m->...', xa_r[:-1, ..., :n], gAinvT[n, :n])
         # Filter all (*S, Nprev) channels simultaneously along the time axis.
         inp    = yd_r[..., n].reshape(L, -1)           # (L, prod(S)*Nprev)
-        out    = lfilter([1, 0], [1, -gamma_inv], inp.T).T
+        out    = lfilter([1, 0], [1, -poles[n]], inp.T).T
         xa_r[..., n] = out.reshape(L, *S_shape, Nprev)
 
     if beta != 1:
@@ -982,6 +1000,9 @@ def lfilter_xi_asterisk_l_backward_cascade_recursion(xi, cascade_params_ast, a, 
     if not np.allclose(gAT, np.tril(gAT)):
         raise ValueError("State-Space Matrix A needs to be upper triangular for cascaded version")
 
+    # Per-dimension IIR pole = diagonal of gamma A^T (folds in the model eigenvalue).
+    poles = np.diag(gAT)
+
     K       = xi_N.shape[0]
     S_shape = xi_N.shape[1:-1]
 
@@ -1012,7 +1033,7 @@ def lfilter_xi_asterisk_l_backward_cascade_recursion(xi, cascade_params_ast, a, 
         if n > 0:
             yd_r[1:, ..., n] += np.einsum('...m,m->...', xa_r[:-1, ..., :n], gAT[n, :n])
         inp  = yd_r[..., n].reshape(L, -1)
-        out  = lfilter([1, 0], [1, -gamma], inp.T).T
+        out  = lfilter([1, 0], [1, -poles[n]], inp.T).T
         xa_r[..., n] = out.reshape(L, *S_shape, Nprev)
 
     if beta != 1:

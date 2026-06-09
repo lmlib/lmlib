@@ -45,7 +45,14 @@ def _sanitize_zeros(zeros, tol=1e-6):
         return zeros.real
 
     # -- Step 1: snap individually near-real zeros to exactly real ---------------
-    near_real = np.abs(zeros.imag) < tol * (np.abs(zeros.real) + 1e-300)
+    # The threshold includes a floor proportional to the overall zero magnitude
+    # (``scale``) so that zeros near the origin are still recognised as real.  A
+    # purely relative test ``|imag| < tol*|real|`` has a vanishing threshold for
+    # tiny |real| and would leave an essentially-real zero (e.g.
+    # ``-6e-15 - 1e-18j``) marked complex, which then fails zpk2sos with
+    # "Array contains complex value with no matching conjugate".
+    scale = max(float(np.max(np.abs(zeros))), 1.0)
+    near_real = np.abs(zeros.imag) < tol * (np.abs(zeros.real) + scale)
     zeros[near_real] = zeros[near_real].real + 0j
 
     # -- Step 2: enforce exact conjugate symmetry for remaining complex pairs -----

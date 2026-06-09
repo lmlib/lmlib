@@ -253,12 +253,18 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
     output_folder = target_output_dir / folder_name
     output_folder.mkdir(parents=True, exist_ok=True)
 
-    # Copy any local data files (CSVs sitting next to the examples) into the
+    # Copy any local data files (CSVs, JPGs, PNGs sitting next to the examples) into the
     # output folder so they are served by the site and can be linked for download
     # (#16). Library-bundled signals loaded via load_lib_csv are NOT here.
-    local_csvs = {p.name for p in folder_path.glob("*.csv")}
-    for csv in folder_path.glob("*.csv"):
-        shutil.copy2(csv, output_folder / csv.name)
+    extensions = ["*.csv", "*.jpg", "*.jpeg", "*.png"]
+#    local_assets = {p.name for p in folder_path.glob("*.csv")}
+#    for csv in folder_path.glob("*.csv"):
+#        shutil.copy2(csv, output_folder / csv.name)
+    local_assets = set()
+    for pattern in ("*.csv", "*.jpg", "*.jpeg", "*.png"):
+       for file in folder_path.glob(pattern):
+           local_assets.add(file.name)
+           shutil.copy2(file, output_folder / file.name)
 
     gallery_entries = []
     entries = []  # structured rows for the new gallery layout
@@ -373,7 +379,7 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         plot_generated = bool(all_plots)
 
         # Local data files referenced by this example (for download links, #16).
-        referenced_csvs = [name for name in sorted(local_csvs) if name in code]
+        referenced_assets = [name for name in sorted(local_assets) if name in code]
 
         # Extract & Truncate
         docstring_match = re.search(r'"""(.*?)"""', code, re.DOTALL)
@@ -404,9 +410,9 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         else:
             detail_md += "> **Note:** No graphical output.\n\n"
 
-        if referenced_csvs:
+        if referenced_assets:
             detail_md += "## Data\n\nThis example uses the following data file(s):\n\n"
-            for name in referenced_csvs:
+            for name in referenced_assets:
                 detail_md += f"- [`{name}`]({name})\n"
             detail_md += "\n"
             

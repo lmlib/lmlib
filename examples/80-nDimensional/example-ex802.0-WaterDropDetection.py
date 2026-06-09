@@ -87,7 +87,7 @@ def fit_scale(y, a_l, b_r, L1, g=100, poly_degree=0):
     #with warnings.catch_warnings():
         #warnings.simplefilter('ignore')
     if True:
-        rls = lm.RLSAlssm(nd_cost, steady_state=True)
+        rls = lm.RLSAlssm(nd_cost, steady_state=True,backend='lfilter')
         rls.filter(y, dim_order=[0, 1])
 
         # H1: symmetric offset + cosine model (the "drop" hypothesis)
