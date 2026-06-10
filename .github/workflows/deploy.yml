@@ -2,7 +2,7 @@ name: Deploy Documentation
 
 on:
   push:
-    branches: [ doc/changelog ]
+    branches: [ main ]
     tags: [ 'v*' ]
 
 permissions:
@@ -110,9 +110,6 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y tree
-          tree -L 4 . 
           pip install -r requirements.txt
           pip install -e .
           python docs/scripts_docs/generate_changelog.py
