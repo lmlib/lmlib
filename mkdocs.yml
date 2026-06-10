@@ -23,12 +23,15 @@ theme:
         name: Switch to light mode
   features:
     - navigation.tabs       # Top tabs for categories
+    - navigation.tabs.sticky  # Keeps tabs sticky when scrolling
     - navigation.sections   # Sections in sidebar
     - navigation.indexes    # Section labels link to their index page (clickable)
     - navigation.tracking   # Highlights active section
     - navigation.top        # Back to top button
     - toc.follow
+    - toc.integrate
     - content.code.copy
+
 extra:
   manifest: null
   # Maps API sidebar group labels (which have no index page of their own) to a
