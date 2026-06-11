@@ -424,5 +424,80 @@ class TestNDPipelineGroundTruth(unittest.TestCase):
         )
 
 
+class TestFiniteSegmentExactW(unittest.TestCase):
+    r"""Regression: steady-state W on a finite segment must equal the exact sum.
+
+    For a finite segment the Gram matrix is the finite sum
+    ``W = sum_{t=a}^{b} gamma^{t-delta} (A^t)^T C^T C A^t``.  ``AlssmPolyJordan``
+    is caught by neither the Legendre nor the Meixner fast path, so before the
+    fix it fell to the ill-conditioned N^2 x N^2 Stein solve, which lost ~4
+    digits for short, high-degree segments and pushed the 2-D kron condition
+    number from ~1e12 to ~1e13 — enough to wreck the (already borderline)
+    multi-channel ECG fit.  The direct-sum path is exact.
+    """
+
+    @staticmethod
+    def _exact_W(alssm, seg):
+        from numpy.linalg import matrix_power as mpow
+        A, C = alssm.A, np.atleast_2d(alssm.C)
+        Q = C.T @ C
+        W = np.zeros((alssm.N, alssm.N))
+        for t in range(seg.a, seg.b + 1):
+            At = mpow(A, t)
+            W += seg.gamma ** (t - seg.delta) * (At.T @ Q @ At)
+        return W
+
+    def test_polyjordan_channel_W_matches_exact(self):
+        # the short, high-degree channel block that was inaccurate
+        alssm = lm.AlssmPolyJordan(poly_degree=5)
+        seg = lm.Segment(a=0, b=6, direction=lm.BACKWARD, g=15.0)
+        W = lm.CostSegment(alssm, seg).get_steady_state_W('schur')
+        np.testing.assert_allclose(W, self._exact_W(alssm, seg), rtol=0, atol=1e-10)
+
+    def test_polyjordan_time_W_matches_exact(self):
+        alssm = lm.AlssmProd((lm.AlssmPolyJordan(poly_degree=5), lm.AlssmExp(gamma=1)))
+        seg = lm.Segment(a=0, b=15, direction=lm.BACKWARD, g=15.0)
+        W = lm.CostSegment(alssm, seg).get_steady_state_W('schur')
+        np.testing.assert_allclose(W, self._exact_W(alssm, seg), rtol=0, atol=1e-9)
+
+    def test_limited_sum_helper(self):
+        from lmlib.statespace.backends.steady_state import covariance_matrix_limited_sum
+        alssm = lm.AlssmPolyJordan(poly_degree=4)
+        seg = lm.Segment(a=0, b=8, direction=lm.BACKWARD, g=20.0)
+        W = covariance_matrix_limited_sum(alssm.A, alssm.C, seg.gamma, seg.a, seg.b, seg.delta)
+        np.testing.assert_allclose(W, self._exact_W(alssm, seg), rtol=0, atol=1e-12)
+
+    def test_2d_kron_well_conditioned_and_reconstructs(self):
+        # 2-D (time x channel) ECG-style model: exact W keeps cond ~1e12 (solvable),
+        # so a windowed beat is reconstructed (not the ~1e13 / failing case).
+        from numpy.linalg import matrix_power as mpow
+        rng = np.random.default_rng(0)
+        K, M, b_r1, b_r2, g = 200, 7, 15, 6, 15.0
+        a1 = lm.AlssmProd((lm.AlssmPolyJordan(poly_degree=5), lm.AlssmExp(gamma=1)))
+        a2 = lm.AlssmPolyJordan(poly_degree=5)
+        s1 = lm.Segment(a=0, b=b_r1, direction=lm.BACKWARD, g=g)
+        s2 = lm.Segment(a=0, b=b_r2, direction=lm.BACKWARD, g=g)
+        nd = lm.NDCompositeCost([lm.CostSegment(a1, s1), lm.CostSegment(a2, s2)])
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            W = nd.get_steady_state_W(method='schur')
+        self.assertLess(np.linalg.cond(W), 5e12)         # was ~1e13 before the fix
+        # build a separable polynomial signal (degree <= 5 per axis) that lies
+        # exactly in the model space, fit it, and check the reference-window
+        # reconstruction is exact (before the fix it failed, MSE ~1).
+        K_REF = 80
+        i = np.arange(b_r1 + 1); j = np.arange(b_r2 + 1)
+        shape = ((1 - 0.05 * i + 0.002 * i ** 2)[:, None]
+                 * (1 + 0.1 * j - 0.01 * j ** 2)[None, :])
+        y = np.zeros((K, M)); y[K_REF:K_REF + b_r1 + 1, :b_r2 + 1] = shape
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            rls = lm.RLSAlssm(nd, steady_state=True); rls.filter(y, dim_order=[0, 1])
+            xs = rls.minimize_x()[K_REF, 0, :]
+        _, surf = lm.Trajectory.eval(nd, xs)
+        recon = surf[:b_r1 + 1, :b_r2 + 1]
+        self.assertLess(np.mean((recon - shape) ** 2), 1e-8)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

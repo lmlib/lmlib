@@ -11,10 +11,10 @@ This is the official documentation for [lmlib](https://pypi.org/project/lmLib/),
 
 **This library provides methods for**
 
-- Recursive, Linear Filters
-- Shape Detection
-- Event Detection
-- Correlation, Convolution, and Matched Filters in low-dimensional vector spaces
+- [Recursive, Linear Filters](_generated/examples/index.md#filtering)
+- [Shape Detection](_generated/examples/index.md#detection)
+- [Event Detection](_generated/examples/index.md#event-detection-with-two-sided-line-models)
+ [Correlation, Convolution, and Matched Filters](_generated/examples/index.md#convolution) in low-dimensional vector spaces,
 - and others
 
 This library is optimized for fast processing using scipy, JIT (Just-in-Time) compilation, GPU, and other.
