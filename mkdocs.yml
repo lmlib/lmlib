@@ -23,12 +23,15 @@ theme:
         name: Switch to light mode
   features:
     - navigation.tabs       # Top tabs for categories
+    - navigation.tabs.sticky  # Keeps tabs sticky when scrolling
     - navigation.sections   # Sections in sidebar
     - navigation.indexes    # Section labels link to their index page (clickable)
     - navigation.tracking   # Highlights active section
     - navigation.top        # Back to top button
     - toc.follow
+    - toc.integrate
     - content.code.copy
+
 extra:
   manifest: null
   # Maps API sidebar group labels (which have no index page of their own) to a
@@ -51,7 +54,7 @@ nav:
   - Home:
     - index.md
     - What is lmlib?: getting_started/whats_lmlib.md
-    - Installation: getting_started/installation.md
+  - Install: installation.md
   - API Reference: api/
   - Teaching: _generated/coding/index.md
   - Application Examples: _generated/examples/index.md
