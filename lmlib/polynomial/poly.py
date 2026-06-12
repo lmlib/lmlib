@@ -154,7 +154,7 @@ class _PolyBase(ABC):
 
     @property
     def coefs_fac(self):
-        r"""[`ndarray, None`][numpy.ndarray, None] : Factorized coefficient vectors"""
+        r"""tuple of [`ndarray`][numpy.ndarray], or `None` : Factorized coefficient vectors"""
         return self._coefs_fac
 
     @coefs_fac.setter

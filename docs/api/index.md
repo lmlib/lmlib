@@ -44,7 +44,7 @@ palette.
 - [`lmlib.utils.colors`](lmlib.utils.colors.md) — color palette.
 
 <!-- gen-api:function-groups
-# Single source of truth for gen_api.py's thematic grouping of a module's
+# Single source of truth for create_api.py's thematic grouping of a module's
 # functions on its overview page. Maps a module to an ordered list of
 # {section title: [name prefixes]}. A function is placed in the first section
 # whose longest matching name-prefix it starts with; unmatched ones fall into a

@@ -21,3 +21,6 @@ This library is optimized for fast processing using scipy, JIT (Just-in-Time) co
 
 This library is the essence of many years of research
 documented in many publications (see [Bibliography](bibliography.md)).
+
+## What is lmlib?
+The lmlib project brings mathematical model-based signal analysis methods to the application level. It makes them freely available as open-source software. The lmlib project includes [Python source code](https://github.com/lmlib/lmlib), [documentation](api/index.md), [examples](_generated/examples/index.md) of how to use lmlib, and [scientific reference publications](bibliography.md). The lmlib project was initiated by the Signal and Information Processing Laboratory (ISI) at ETH Zurich. It is supported by several [institutions](about_us.md).

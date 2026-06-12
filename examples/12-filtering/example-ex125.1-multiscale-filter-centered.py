@@ -1,25 +1,29 @@
-"""
-ex805.1 multi-scale polynomial (Savitzky-Golay-type) smoothing -- centered.
+r"""
+Centered Multi-Scale Polynomial (Savitzky-Golay) Smoothing [ex125.1]
+====================================================================
 
-Companion to example-ex805_0-multiscale-filter.py, but with the symmetric,
-zero-lag centered windows that Savitzky-Golay smoothing normally uses
-(FORWARD segment a=-L/2, b=L/2-1) instead of one-sided BACKWARD windows.
+Companion to [ex125.0] (``example-ex125.0-multiscale-filter.py``), but using the
+symmetric, zero-lag centered windows that Savitzky-Golay smoothing normally uses
+(FORWARD segment $a = -L/2$, $b = L/2 - 1$) instead of one-sided BACKWARD
+windows. As before, two mathematically equivalent methods are compared:
 
-  METHOD 1  "per-scale RLS"  : one RLSAlssm.fit() per scale.
-  METHOD 2  "xi reuse"       : one recursion at the base scale, then build every
-                               larger scale by *centered* dyadic composition.
+* **Per-scale RLS** — one [`RLSAlssm`][lmlib.statespace.rls.RLSAlssm].fit() over a
+  [`CompositeCost`][lmlib.statespace.cost.CompositeCost] per scale.
+* **State reuse** — one recursion at the base scale, then each larger scale is
+  built by *centered* dyadic composition of the filter state $(\xi, W)$. With the
+  half-shift $h = L/2$, a length-$2L$ centered window is two length-$L$ windows
+  centered at $k-h$ and $k+h$; each is propagated to the common reference $k$ by
+  $A^{\pm h}$ and re-weighted:
 
-CENTERED composition identity (length L -> 2L, half-shift h = L/2):
-A length-2L centered window is two length-L windows centered at k-h and k+h;
-each is propagated to the common reference k by A^{-/+h} and re-weighted:
+$$
+\xi_{2L}[k] = \gamma^{-h}\, \xi_L[k+h]\, A^{h} + \gamma^{+h}\, \xi_L[k-h]\, A^{-h}, \qquad
+W_{2L} = \gamma^{-h}\, A^{h\mathsf{T}} W_L\, A^{h} + \gamma^{+h}\, A^{-h\mathsf{T}} W_L\, A^{-h}.
+$$
 
-    xi_{2L}[k] = gamma^{-h} * ( xi_L[k+h] @ A^{ h} )
-               + gamma^{+h} * ( xi_L[k-h] @ A^{-h} )
-    W_{2L}     = gamma^{-h} * ( A^{ h}.T @ W_L @ A^{ h} )
-               + gamma^{+h} * ( A^{-h}.T @ W_L @ A^{-h} )
-
-(The two scalar weights are gamma_fwd^{+/-h}; for a FORWARD segment lmlib uses
-gamma_fwd = 1/(1-1/g), so gamma_fwd^{+/-h} = gamma^{-/+h} with gamma = 1-1/g.)
+(The scalar weights are $\gamma_\mathrm{fwd}^{\pm h}$; for a FORWARD segment lmlib
+uses $\gamma_\mathrm{fwd} = 1/(1 - 1/g)$, so $\gamma_\mathrm{fwd}^{\pm h} =
+\gamma^{\mp h}$ with $\gamma = 1 - 1/g$.) The script checks that both methods
+agree numerically and reports the speed-up of state reuse.
 """
 import time
 import numpy as np

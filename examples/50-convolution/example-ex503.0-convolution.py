@@ -1,3 +1,19 @@
+r"""
+Convolution and Correlation in Low-Dimensional ALSSM Feature Space [ex503.0]
+============================================================================
+
+Computes the convolution, cross-correlation, and auto-correlation of a signal
+$y$ with a reference filter $h$ directly in a low-dimensional ALSSM feature
+space instead of in the original sample space.
+
+Both the signal and the filter are projected onto a polynomial basis through an
+[`AlssmPolyJordan`][lmlib.statespace.model.AlssmPolyJordan] model that is fitted
+recursively with [`RLSAlssm`][lmlib.statespace.rls.RLSAlssm]. Each operation
+then reduces to an inner product of the compact state vectors (via a precomputed
+cross-window matrix $W$), which is faster than the corresponding direct
+sample-domain computation. The native ``numpy`` convolution and correlation are
+plotted alongside the ALSSM results for comparison.
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import lmlib as lm
@@ -50,16 +66,16 @@ alssminv = lm.Alssm(np.linalg.inv(alssm.A), alssm.C)
 costinv = lm.CostSegment(alssminv, segmentinv)
 
 # -- 2. Project observations to ALSSM feature space --
-rls_yreversed = lm.create_rls(cost, multi_channel_set=False,steady_state=True)
+rls_yreversed = lm.RLSAlssm(cost, steady_state=True)
 rls_yreversed.filter(y_sc[::-1])  # Transform observations. y is reversed for the convolution
 xs_yreversedhat = rls_yreversed.minimize_x()  # get transformed observations
 
-rls_y = lm.create_rls(cost, multi_channel_set=False,steady_state=True)
+rls_y = lm.RLSAlssm(cost, steady_state=True)
 rls_y.filter(y_sc)  # Transform observations
 x_hat_y = rls_y.minimize_x()  # get transformed observations
 y_hat = cost.eval_alssm_output(x_hat_y)  # signal reconstruction using ALSSM approximation (for illustration only)
 
-rls_yinv = lm.create_rls(costinv, multi_channel_set=False,steady_state=True)
+rls_yinv = lm.RLSAlssm(costinv, steady_state=True)
 rls_yinv.filter(y_sc)  # Transform observations
 
 # -- 3. Define and project filter to ALSSM feature space
@@ -72,14 +88,14 @@ h_filter_zeropadded = np.zeros(K)
 h_filter_zeropadded[-koffset:Kfilter-koffset] = h_filter
 h_filter_zeropadded += lm.utils.generator.gen_wgn(K, sigma=0.10)
 
-rls_h = lm.create_rls(cost, multi_channel_set=False,steady_state=True)
+rls_h = lm.RLSAlssm(cost, steady_state=True)
 rls_h.filter(h_filter)  # Transform filter
 x_hat_h = rls_h.minimize_x()  # get transformed observations
 
-rls_hreversed = lm.create_rls(cost, multi_channel_set=False,steady_state=True)
+rls_hreversed = lm.RLSAlssm(cost, steady_state=True)
 rls_hreversed.filter(h_filter[::-1])  # Transform filter
 
-rls_hinv = lm.create_rls(costinv, multi_channel_set=False,steady_state=True)
+rls_hinv = lm.RLSAlssm(costinv, steady_state=True)
 rls_hinv.filter(h_filter)  # Transform observations
 h_trajectory = lm.Trajectory.eval_y(cost,x_hat_h[L//2], Kfilter//2, Kfilter,fill_value=0.0)
 h_trajectory_zeropadded = np.zeros(K)
@@ -106,7 +122,7 @@ corr_alssm_hhatyhat = x_hat_y[:, :] @ W1 @ x_hat_h[[L//2]].T
 corr_native = np.correlate(y_sc[:], h_filter[:], 'same')
 
 #Auto Correlation
-rls_h_zeropadded = lm.create_rls(cost, multi_channel_set=False,steady_state=False)
+rls_h_zeropadded = lm.RLSAlssm(cost, steady_state=False)
 rls_h_zeropadded.filter(h_filter_zeropadded)
 autocorr_alssm_hhat = x_hat_h[L//2] @ rls_h_zeropadded.xi.T  
 autocorr_native = np.correlate(h_filter_zeropadded[:], h_filter[:], 'same' )
@@ -145,11 +161,11 @@ for index,kf in enumerate(range(koffset,K-b*2,3)): #[0, 15, 25, 30, 40, 61]:
     axs[nax].plot(k, y_trajectory, c=c_alssminput,lw=lw_alssm_y, ls=ls_alssm_y )
     axs[nax].scatter(kf+b, y_trajectory[kf-koffset+b], c='k',marker='.',s=5)
     if index==7:
-        axs[nax].annotate(xy=(kf+b, y_trajectory[kf-koffset+b]), xytext=(kf+b-3, y_trajectory[kf-koffset+b]-0.7), text=r'$\hat y_{\bullet-'+f"{kf+b}"+'}(\hat x_{'+f"{kf+b}"+'})$',  
+        axs[nax].annotate(xy=(kf+b, y_trajectory[kf-koffset+b]), xytext=(kf+b-3, y_trajectory[kf-koffset+b]-0.7), text=r'$\hat y_{\bullet-'+f"{kf+b}"+r'}(\hat x_{'+f"{kf+b}"+'})$',  
                     arrowprops=dict(arrowstyle="->, head_width=0.1, head_length=0.1,lengthA=1.1", relpos=(0.5,0.525), patchA=0, 
                                     facecolor='black', edgecolor='black', linestyle='--', linewidth=0.25, joinstyle='miter'))
     if index==22:
-        axs[nax].annotate(xy=(kf+b, y_trajectory[kf-koffset+b]), xytext=(kf+b-8, y_trajectory[kf-koffset+b]-0.7), text=r'$\hat y_{\bullet-'+f"{kf+b}"+'}(\hat x_{'+f"{kf+b}"+'})$',  
+        axs[nax].annotate(xy=(kf+b, y_trajectory[kf-koffset+b]), xytext=(kf+b-8, y_trajectory[kf-koffset+b]-0.7), text=r'$\hat y_{\bullet-'+f"{kf+b}"+r'}(\hat x_{'+f"{kf+b}"+'})$',  
                     arrowprops=dict(arrowstyle="->, head_width=0.1, head_length=0.1,lengthA=1.1", relpos=(0.3,0.6), patchA=0, 
                                     facecolor='black', edgecolor='black', linestyle='--', linewidth=0.25, joinstyle='miter'))
 axs[nax].plot([], [], c=c_alssm,lw=lw_alssm_y, ls=ls_alssm_y,label=r'$\hat y_{\bullet-k}$')    
@@ -165,7 +181,7 @@ axs[nax].legend(loc='upper right')
 
 # Correlation with approximated filter 
 nax += 1
-axs[nax].plot(k, corr_native, c=c_sample, lw=lw_sampleresuts, linestyle='-', label="$h \star y$")
+axs[nax].plot(k, corr_native, c=c_sample, lw=lw_sampleresuts, linestyle='-', label=r"$h \star y$")
 axs[nax].plot(k, corr_alssm_hhatyhat, c=c_alssm, lw=lw_alssmresults, linestyle='--',label=r'$\hat h \star \hat y$')
 axs[nax].legend(loc='upper right')
 axs[nax].set_xlim(left=-5)

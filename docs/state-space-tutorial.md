@@ -3,7 +3,7 @@
 Beginner's tutorial to start using the model-based signal
 processing library lmlib.
 
-To start, [install lmlib](getting_started/installation.md) .
+To start, [install lmlib](installation.md) .
 
 ``` python
 import numpy as np

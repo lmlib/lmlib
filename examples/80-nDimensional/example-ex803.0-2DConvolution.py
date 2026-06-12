@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Separable ALSSM Gaussian Kernel via 2-D NDCompositeCost [Fig2_Cameraman]
+Separable ALSSM Gaussian Kernel via 2-D NDCompositeCost [ex803.0]
 ========================================================================
 
 A 2-D Gaussian smoothing kernel is approximated by a separable Autonomous
 Linear State-Space Model (ALSSM).  Instead of building the kernel by hand, the
 approximation is obtained directly from a **2-D** recursive least-squares fit:
-two identical one-dimensional [`CompositeCost`][lmlib] terms (a two-sided,
+two identical one-dimensional [`CompositeCost`][lmlib.statespace.cost.CompositeCost] terms (a two-sided,
 damped-polynomial model) are wrapped in an
 [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost] and fitted to the
 true 2-D Gaussian with [`RLSAlssm`][lmlib.statespace.rls.RLSAlssm].

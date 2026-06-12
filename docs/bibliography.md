@@ -1,16 +1,16 @@
 # Bibliography
 
 <a id="baeriswyl2025"></a>**[Baeriswyl2025]**
-C. Baeriswyl, F. Waldmann, A. Bertrand, and R. A. Wildhaber, "Multi-Resolution Autonomous Linear State Space Filters for N-Dimensional Signals", *IEEE Transactions on Signal Processing*.
+C. Baeriswyl, F. Waldmann, A. Bertrand, and R. A. Wildhaber, "Multi-Resolution Autonomous Linear State Space Filters for N-Dimensional Signals," *IEEE Transactions on Signal Processing*, vol. 73, pp. 5303–5318, 2025. doi: [10.1109/TSP.2025.3628349](https://doi.org/10.1109/TSP.2025.3628349).
 
 <a id="baeriswyl2022"></a>**[Baeriswyl2022]**
-C. Baeriswyl, A. Bertrand, and R. A. Wildhaber, "Windowed State Space Filters for Peak Interference Suppression in Neural Spike Sorting", *30th European Signal Processing Conference (EUSIPCO 2022)*, Belgrad, Spain.
+C. Baeriswyl, A. Bertrand, and R. A. Wildhaber, "Windowed State Space Filters for Peak Interference Suppression in Neural Spike Sorting," in *30th European Signal Processing Conference (EUSIPCO 2022)*, Belgrade, Serbia, 2022. [Online]. Available: [IEEE Xplore](https://ieeexplore.ieee.org/document/9909862).
 
 <a id="waldmann2022"></a>**[Waldmann2022]**
-F. Waldmann, Ch. Baeriswyl, R. Andonie, and R. Wildhaber, "Onset Detection of Pulse-Shaped Bioelectrical Signals Using Linear State Space Models", *BMT2022*, Austria
+F. Waldmann, C. Baeriswyl, R. Andonie, and R. A. Wildhaber, "Onset Detection of Pulse-Shaped Bioelectrical Signals Using Linear State Space Models," *Current Directions in Biomedical Engineering*, vol. 8, no. 2, pp. 101–104, 2022 (Proc. BMT 2022, Austria). doi: [10.1515/cdbme-2022-1027](https://doi.org/10.1515/cdbme-2022-1027).
 
 <a id="wildhaber2020"></a>**[Wildhaber2020]**
-R. A. Wildhaber, E. Ren, F. Waldmann, and H.-A. Loeliger, "Signal Analysis Using Local Polynomial Approximations," *EUSIPCO 2020*.
+R. A. Wildhaber, E. Ren, F. Waldmann, and H.-A. Loeliger, "Signal Analysis Using Local Polynomial Approximations," in *28th European Signal Processing Conference (EUSIPCO 2020)*. [Online]. Available: [IEEE Xplore](https://ieeexplore.ieee.org/document/9287801).
 
 <a id="wildhaber2018"></a>**[Wildhaber2018]**
 R. A. Wildhaber, N. Zalmai, M. Jacomet, and H.-A. Loeliger, "Windowed statespace filters for signal detection and separation," *IEEE Trans. Signal Process.*, vol. 66, no. 14, pp. 3768–3783, 2018. doi: [10.1109/TSP.2018.2833804](https://doi.org/10.1109/TSP.2018.2833804).

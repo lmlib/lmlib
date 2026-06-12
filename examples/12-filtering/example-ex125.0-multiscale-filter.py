@@ -1,23 +1,27 @@
-"""
-ex805.0 multi-scale polynomial (Savitzky-Golay-type) smoothing.
+r"""
+Multi-Scale Polynomial (Savitzky-Golay) Smoothing [ex125.0]
+===========================================================
 
-Two ways to obtain the smoothed signal at a dyadic family of window lengths
-L in {10,20,40,...,640}:
+Smooths a noisy single-channel EEG signal at a dyadic family of window lengths
+$L \in \{10, 20, 40, 80, 160, 320\}$ with polynomial ALSSMs, and contrasts two
+mathematically equivalent ways of obtaining the multi-scale result:
 
-  METHOD 1  "per-scale RLS"  (the ex805 approach)
-      For every scale: create_rls -> filter(y)  -> read (W, xi).
-      => the O(K) recursion is run M times.
+* **Per-scale RLS** — a fresh [`RLSAlssm`][lmlib.statespace.rls.RLSAlssm] over a
+  [`CompositeCost`][lmlib.statespace.cost.CompositeCost] is run for every scale,
+  so the $O(K)$ recursion is evaluated once per scale.
+* **State reuse** — the recursion is run only once at the base scale and each
+  larger scale is built by dyadic composition of the filter state $(\xi, W)$. A
+  length-$2L$ window is two stacked length-$L$ windows; the trailing one is
+  propagated to the common reference by $A^{L}$ and re-weighted by the segment
+  decay $\gamma^{L}$:
 
-  METHOD 2  "xi reuse"       (Proof_Multiscale.py idea)
-      Run the recursion ONCE at the base scale, then build every larger
-      scale by dyadic composition of (xi, W).  A length-2L window is two
-      stacked length-L windows; the trailing one is propagated to the common
-      reference by A^L and re-weighted by the segment decay gamma^L:
+$$
+\xi_{2L}[k] = \xi_L[k] + \gamma^{L}\, \xi_L[k+L]\, A^{L}, \qquad
+W_{2L} = W_L + \gamma^{L}\, A^{L\mathsf{T}} W_L\, A^{L}.
+$$
 
-          xi_{2L}[k] = xi_L[k] + gamma^L * ( xi_L[k+L] @ A^L )
-          W_{2L}     = W_L      + gamma^L * ( A^L.T @ W_L @ A^L )
-
-Windows are one-sided BACKWARD segments (a=0, b=L-1).
+Windows are one-sided BACKWARD segments ($a = 0$, $b = L-1$). The script checks
+that both methods agree numerically and reports the speed-up of state reuse.
 """
 import time
 import numpy as np

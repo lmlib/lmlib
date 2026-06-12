@@ -160,6 +160,40 @@ def read_folder_meta(folder_path):
     return folder_path.name.replace('-', ' ').replace('_', ' ').title(), ""
 
 
+# Prose State-Space Tutorial. Its first paragraph (the one-line intro under the
+# title) is reused verbatim as the lead blurb on the Teaching page, so the wording
+# lives in a single place (the tutorial) instead of being duplicated here.
+STATE_SPACE_TUTORIAL_MD = DOC_DIR / "state-space-tutorial.md"
+
+
+def read_tutorial_intro(md_path=STATE_SPACE_TUTORIAL_MD):
+    """Return the first prose paragraph of a markdown file as a single line.
+
+    Skips a leading level-1 title (``# ...``) and any blank lines, then collects
+    the first non-empty paragraph (up to the next blank line), collapsing the soft
+    line breaks into spaces. Used so the Teaching page's lead blurb is pulled from
+    ``state-space-tutorial.md`` rather than hard-coded here. Returns an empty string
+    if the file or an intro paragraph is missing.
+    """
+    try:
+        text = md_path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    para = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not para:
+            # Skip the title and any leading blank lines until the first prose line.
+            if not stripped or stripped.startswith("#"):
+                continue
+            para.append(stripped)
+        elif not stripped:
+            break  # blank line -> end of the first paragraph
+        else:
+            para.append(stripped)
+    return re.sub(r"\s+", " ", " ".join(para)).strip()
+
+
 def render_gallery_table(entries, link_prefix="", max_words=GALLERY_BLURB_WORDS):
     """Render gallery rows as a class-tagged HTML table.
 
@@ -481,8 +515,11 @@ if __name__ == "__main__":
 
     if coding_sections:
         page_title, page_intro = read_folder_meta(BASE_DIR / "coding")
+        # Reuse the tutorial's own intro sentence (first paragraph of
+        # state-space-tutorial.md) instead of duplicating it here.
+        tutorial_intro = read_tutorial_intro()
         tutorial = (
-            "Beginner's tutorial to start using the model-based signal processing library lmlib. \n\n"
+            f"{tutorial_intro}\n\n"
             "[Open the State-Space Tutorial](../../state-space-tutorial.md)"
         )
         build_combined_gallery_page(
