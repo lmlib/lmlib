@@ -66,17 +66,18 @@ alssminv = lm.Alssm(np.linalg.inv(alssm.A), alssm.C)
 costinv = lm.CostSegment(alssminv, segmentinv)
 
 # -- 2. Project observations to ALSSM feature space --
-rls_yreversed = lm.RLSAlssm(cost, steady_state=True)
-rls_yreversed.filter(y_sc[::-1])  # Transform observations. y is reversed for the convolution
-xs_yreversedhat = rls_yreversed.minimize_x()  # get transformed observations
+# rls objects used only for convolve() need xi only (no W / kappa, no steady
+# state); convolve() filters the signal internally.
+rls_yreversed = lm.RLSAlssm(cost, steady_state=False, calc_W=False, calc_kappa=False)
 
 rls_y = lm.RLSAlssm(cost, steady_state=True)
 rls_y.filter(y_sc)  # Transform observations
 x_hat_y = rls_y.minimize_x()  # get transformed observations
 y_hat = cost.eval_alssm_output(x_hat_y)  # signal reconstruction using ALSSM approximation (for illustration only)
+# dedicated xi-only filter for the convolution/correlation of y_sc
+rls_y_conv = lm.RLSAlssm(cost, steady_state=False, calc_W=False, calc_kappa=False)
 
-rls_yinv = lm.RLSAlssm(costinv, steady_state=True)
-rls_yinv.filter(y_sc)  # Transform observations
+rls_yinv = lm.RLSAlssm(costinv, steady_state=False, calc_W=False, calc_kappa=False)
 
 # -- 3. Define and project filter to ALSSM feature space
 L=b-a + 1
@@ -104,8 +105,10 @@ h_trajectory_nanpadded = np.zeros(K) * np.nan
 h_trajectory_nanpadded[-koffset:Kfilter-koffset] = h_trajectory
 
 # -- 3. Fast convolutions in ALSSM feature space  --
-conv_alssm_hhatinv = x_hat_h[L//2] @ rls_yinv.xi.T  
-conv_alssm_hhatrev = x_hat_h[L//2] @ rls_yreversed.xi[::-1,:].T  #ugly hack: since y was reversed, xi[k] has the samples of xi[K-k]. Therefore, reverse again
+# convolve() filters the signal and contracts xi with the reference state xref.
+conv_alssm_hhatinv = rls_yinv.convolve(y_sc, x_hat_h[L//2])
+# y was reversed for this branch; convolve the reversed signal and flip back
+conv_alssm_hhatrev = rls_yreversed.convolve(y_sc[::-1], x_hat_h[L//2])[::-1]
 conv_alssm_yhatinv = x_hat_y[:, :] @ rls_hinv.xi[L//2,:]
 conv_alssm_yhatrev = x_hat_y[:, :] @ rls_hreversed.xi[L//2,:] 
 W1inv2 = calc_W12_1d_1segment(segment, alssm1=alssminv, alssm2=alssm)
@@ -116,15 +119,14 @@ conv_native = np.zeros(y_sc.shape[0])
 conv_native = np.convolve(y_sc[:], h_filter[:], 'same')
 
 # Cross Correlation
-corr_alssm_hhat = x_hat_h[L//2] @ rls_y.xi.T  
+corr_alssm_hhat = rls_y_conv.convolve(y_sc, x_hat_h[L//2])
 W1 = calc_W12_1d_1segment(segment, alssm1=alssm, alssm2=alssm)
 corr_alssm_hhatyhat = x_hat_y[:, :] @ W1 @ x_hat_h[[L//2]].T
 corr_native = np.correlate(y_sc[:], h_filter[:], 'same')
 
 #Auto Correlation
-rls_h_zeropadded = lm.RLSAlssm(cost, steady_state=False)
-rls_h_zeropadded.filter(h_filter_zeropadded)
-autocorr_alssm_hhat = x_hat_h[L//2] @ rls_h_zeropadded.xi.T  
+rls_h_zeropadded = lm.RLSAlssm(cost, steady_state=False, calc_W=False, calc_kappa=False)
+autocorr_alssm_hhat = rls_h_zeropadded.convolve(h_filter_zeropadded, x_hat_h[L//2])
 autocorr_native = np.correlate(h_filter_zeropadded[:], h_filter[:], 'same' )
 
 # -- 5.  Plotting --

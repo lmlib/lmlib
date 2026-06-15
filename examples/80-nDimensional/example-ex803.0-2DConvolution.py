@@ -91,9 +91,11 @@ image = scipy.ndimage.zoom(cameraman, upscale, order=3)
 rng = np.random.default_rng(0)
 image = image + rng.normal(0.0, std_gauss * 0.5, image.shape)
 
-rls2d = lm.RLSAlssm(nd_cost, steady_state=True,backend='lfilter')     
-rls2d.filter(image, dim_order=[0, 1])
-image_filtered_alssm = rls2d.xi @ xref / hhat.sum()
+# xi-only filter for the 2-D convolution (no W / kappa, no steady state needed).
+rls2d = lm.RLSAlssm(nd_cost, steady_state=False, calc_W=False, calc_kappa=False, backend='lfilter')
+# convolve() filters the image (over both axes) and contracts the per-pixel
+# Kronecker state with the centre reference state xref.
+image_filtered_alssm = rls2d.convolve(image, xref, dim_order=[0, 1]) / hhat.sum()
 
 
 # Also convolve with the original image for a ground truth

@@ -54,8 +54,9 @@ nav:
   - Home: index.md
   - Install: installation.md
   - API Reference: api/
-  - Teaching: _generated/coding/index.md
-  - State Space Tutorial: state-space-tutorial.md
+  - Teaching:
+      - State-Space Tutorial: state-space-tutorial.md
+      - Coding Examples: _generated/coding/coding.md
   - Application Examples: _generated/examples/index.md
   - Test Signals: _generated/catalog/biosignals/index.md
   - Bibliography: bibliography.md

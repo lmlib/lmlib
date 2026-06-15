@@ -1,6 +1,7 @@
 import unittest
 import lmlib as lm
 import numpy as np
+import warnings
 
 
 # ── JIT availability ──────────────────────────────────────────────────────────
@@ -1214,6 +1215,86 @@ class TestRLSAlssm(unittest.TestCase):
 
         self.assertTrue(np.allclose(rls_fw_bw.eval_errors(xs_fw_bw),
                                     rls_bw_fw.eval_errors(xs_bw_fw)))
+
+    # ── convolve() ────────────────────────────────────────────────────────────
+    def test_convolve_equals_filter_then_xi_dot(self):
+        """convolve(y, xref) == filter(y) followed by xi @ xref (1-D, scalar)."""
+        y = np.sin(np.linspace(0, 6 * np.pi, 200))
+        alssm = lm.AlssmPoly(poly_degree=2)
+        segment = lm.Segment(a=-10, b=10, direction=lm.BW, g=200)
+        cost = lm.CostSegment(alssm, segment)
+        rls = lm.RLSAlssm(cost, steady_state=False, calc_W=False, calc_kappa=False, backend='lfilter')
+        xref = np.array([1.0, -0.5, 0.25])
+        out = rls.convolve(y, xref)
+        rls.filter(y)
+        self.assertEqual(out.shape, (200,))
+        self.assertTrue(np.allclose(out, rls.xi @ xref))
+
+    def test_convolve_multichannel_sums_over_channels(self):
+        """For a multichannel xref (channels, N) the channel axis is summed,
+        reproducing the explicit per-channel accumulation."""
+        rng = np.random.default_rng(0)
+        K, NCH = 300, 4
+        y_mc = rng.standard_normal((K, NCH))
+        alssm = lm.AlssmPoly(poly_degree=3)
+        segment = lm.Segment(a=-20, b=20, direction=lm.BW, g=200)
+        cost = lm.CostSegment(alssm, segment)
+        rls = lm.RLSAlssm(cost, steady_state=False, calc_W=False, calc_kappa=False, backend='lfilter')
+        xref = rng.standard_normal((NCH, alssm.N))
+        out = rls.convolve(y_mc, xref)
+        rls.filter(y_mc)
+        ref = np.zeros(K)
+        for j in range(NCH):
+            ref += rls.xi[:, j, :] @ xref[j, :]
+        self.assertEqual(out.shape, (K,))
+        self.assertTrue(np.allclose(out, ref))
+
+    def test_convolve_nd_2d(self):
+        """convolve on an NDCompositeCost contracts the Kronecker state per pixel."""
+        rng = np.random.default_rng(1)
+        img = rng.standard_normal((30, 24))
+        alssm = lm.AlssmPoly(poly_degree=2)
+        sl = lm.Segment(a=-6, b=-1, direction=lm.FW, g=100)
+        sr = lm.Segment(a=0, b=6, direction=lm.BW, g=100)
+        cc = lm.CompositeCost((alssm,), (sl, sr), F=[[1, 1]])
+        nd = lm.NDCompositeCost([cc, cc])
+        rls = lm.RLSAlssm(nd, steady_state=False, calc_W=False, calc_kappa=False, backend='lfilter')
+        xref = rng.standard_normal(nd.get_alssm_order())
+        out = rls.convolve(img, xref, dim_order=[0, 1])
+        rls.filter(img, dim_order=[0, 1])
+        self.assertEqual(out.shape, img.shape)
+        self.assertTrue(np.allclose(out, rls.xi @ xref))
+
+    def test_convolve_disables_W_and_kappa_with_warning(self):
+        """convolve() turns off calc_W / calc_kappa (with a warning) on first
+        use, is silent thereafter, and gives the same result either way."""
+        y = np.sin(np.linspace(0, 6 * np.pi, 120))
+        alssm = lm.AlssmPoly(poly_degree=2)
+        segment = lm.Segment(a=-8, b=8, direction=lm.BW, g=100)
+        cost = lm.CostSegment(alssm, segment)
+        xref = np.array([1.0, -0.5, 0.25])
+
+        rls = lm.RLSAlssm(cost, steady_state=True, backend='lfilter',
+                          calc_W=True, calc_kappa=True)
+        with self.assertWarns(UserWarning):
+            out1 = rls.convolve(y, xref)
+        self.assertFalse(rls._calc_W)
+        self.assertFalse(rls._calc_kappa)
+
+        # second call: flags already off -> no warning
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')   # any warning would raise
+            out2 = rls.convolve(y, xref)
+        self.assertTrue(np.allclose(out1, out2))
+
+        # constructed with both already off -> never warns, same result
+        rls_off = lm.RLSAlssm(cost, steady_state=True, backend='lfilter',
+                              calc_W=False, calc_kappa=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            out3 = rls_off.convolve(y, xref)
+        self.assertTrue(np.allclose(out1, out3))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

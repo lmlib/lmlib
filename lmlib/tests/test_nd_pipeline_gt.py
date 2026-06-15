@@ -498,6 +498,48 @@ class TestFiniteSegmentExactW(unittest.TestCase):
         recon = surf[:b_r1 + 1, :b_r2 + 1]
         self.assertLess(np.mean((recon - shape) ** 2), 1e-8)
 
+    # ------------------------------------------------------------------
+    # RLSAlssm.fit() for NDCompositeCost
+    # ------------------------------------------------------------------
+
+    def test_fit_nd_matches_minimize_x_pipeline(self):
+        """
+        fit() must work for NDCompositeCost and agree with the explicit
+        filter -> minimize_x -> eval_alssm_output pipeline.
+
+        Before the fix, fit() raised
+        ``AttributeError: 'NDCompositeCost' object has no attribute 'get_alssms'``
+        because the y_hat branch used the 1-D-only API.
+        """
+        rng = np.random.default_rng(0)
+        Y = rng.standard_normal((30, 22))
+
+        # Reference path: filter + minimize_x + eval_alssm_output
+        nd_ref = make_nd_cost([2, 2])
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            rls_ref = lm.RLSAlssm(nd_ref, steady_state=True)
+            rls_ref.filter(Y, dim_order=[0, 1])
+            x_ref = rls_ref.minimize_x()
+        y_hat_ref = nd_ref.eval_alssm_output(x_ref)
+
+        # fit() path — must reproduce both x and y_hat exactly
+        nd_fit = make_nd_cost([2, 2])
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            rls_fit = lm.RLSAlssm(nd_fit, steady_state=True)
+            x_fit, v_fit, y_hat_fit = rls_fit.fit(Y, output=('x', 'v', 'y_hat'))
+
+        self.assertEqual(y_hat_fit.shape, Y.shape)
+        self.assertEqual(x_fit.shape, x_ref.shape)
+        np.testing.assert_allclose(x_fit, x_ref, atol=1e-9)
+        np.testing.assert_allclose(y_hat_fit, y_hat_ref, atol=1e-9)
+        # default (None) nd weights must equal explicit unit weights
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            y_hat_w = rls_fit.fit(Y, eval_alssm_weights=[[1.0], [1.0]])
+        np.testing.assert_allclose(y_hat_w, y_hat_fit, atol=1e-9)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

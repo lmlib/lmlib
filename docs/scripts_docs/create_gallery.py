@@ -160,40 +160,6 @@ def read_folder_meta(folder_path):
     return folder_path.name.replace('-', ' ').replace('_', ' ').title(), ""
 
 
-# Prose State-Space Tutorial. Its first paragraph (the one-line intro under the
-# title) is reused verbatim as the lead blurb on the Teaching page, so the wording
-# lives in a single place (the tutorial) instead of being duplicated here.
-STATE_SPACE_TUTORIAL_MD = DOC_DIR / "state-space-tutorial.md"
-
-
-def read_tutorial_intro(md_path=STATE_SPACE_TUTORIAL_MD):
-    """Return the first prose paragraph of a markdown file as a single line.
-
-    Skips a leading level-1 title (``# ...``) and any blank lines, then collects
-    the first non-empty paragraph (up to the next blank line), collapsing the soft
-    line breaks into spaces. Used so the Teaching page's lead blurb is pulled from
-    ``state-space-tutorial.md`` rather than hard-coded here. Returns an empty string
-    if the file or an intro paragraph is missing.
-    """
-    try:
-        text = md_path.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-    para = []
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not para:
-            # Skip the title and any leading blank lines until the first prose line.
-            if not stripped or stripped.startswith("#"):
-                continue
-            para.append(stripped)
-        elif not stripped:
-            break  # blank line -> end of the first paragraph
-        else:
-            para.append(stripped)
-    return re.sub(r"\s+", " ", " ".join(para)).strip()
-
-
 def render_gallery_table(entries, link_prefix="", max_words=GALLERY_BLURB_WORDS):
     """Render gallery rows as a class-tagged HTML table.
 
@@ -236,30 +202,31 @@ def render_gallery_table(entries, link_prefix="", max_words=GALLERY_BLURB_WORDS)
 
 
 def build_combined_gallery_page(page_title, intro_md, sections, output_dir,
-                                lead_sections=None):
+                                index_name="index.md"):
     """Write a single combined gallery page (Application Examples, Teaching, ...).
 
     ``page_title``/``intro_md`` come from the category's top-level README.md.
-    ``lead_sections`` is an optional list of ``(title, body_md)`` rendered before
-    the galleries (used for the State-Space Tutorial link on the Teaching page).
     ``sections`` is an ordered list of ``(section_title, folder_name, entries,
     intro_md)``; one ``## <section_title>`` heading per folder makes the
     right-hand table of contents the in-page navigation.
+    ``index_name`` is the output file name. It defaults to ``index.md`` (used for a
+    top-level page such as Application Examples). The Teaching page passes a
+    non-index name (``coding.md``) so it can be nested as a *non-index* child under
+    the ``Teaching`` nav section: a section's ``index.md`` child is promoted to the
+    section index by the navigation.indexes theme feature and then no longer shows
+    its own headings in the (integrated) left-sidebar table of contents, whereas a
+    non-index child keeps that per-page TOC. See the nav notes in mkdocs.yml.
     """
     parts = [f"# {page_title}\n"]
     if intro_md:
         parts.append(f"\n{intro_md}\n")
-    for title, body_md in (lead_sections or []):
-        parts.append(f"\n## {title}\n")
-        if body_md:
-            parts.append(f"\n{body_md}\n")
     for section_title, folder_name, entries, sec_intro in sections:
         parts.append(f"\n## {section_title}\n")
         if sec_intro:
             parts.append(f"\n{sec_intro}\n")
         parts.append(render_gallery_table(entries, link_prefix=f"{folder_name}/"))
     output_dir.mkdir(parents=True, exist_ok=True)
-    index_file = output_dir / "index.md"
+    index_file = output_dir / index_name
     with open(index_file, "w", encoding="utf-8") as f:
         f.write("\n".join(parts))
     total = sum(len(e) for _, _, e, _ in sections)
@@ -515,16 +482,12 @@ if __name__ == "__main__":
 
     if coding_sections:
         page_title, page_intro = read_folder_meta(BASE_DIR / "coding")
-        # Reuse the tutorial's own intro sentence (first paragraph of
-        # state-space-tutorial.md) instead of duplicating it here.
-        tutorial_intro = read_tutorial_intro()
-        tutorial = (
-            f"{tutorial_intro}\n\n"
-            "[Open the State-Space Tutorial](../../state-space-tutorial.md)"
-        )
         build_combined_gallery_page(
             page_title, page_intro, coding_sections, GENERATED_DIR / "coding",
-            lead_sections=[("State-Space Tutorial", tutorial)],
+            # Non-index name so the Teaching nav section can nest this page as a
+            # regular child (an index.md child would be promoted to the section
+            # index and lose its left-sidebar TOC). See nav notes in mkdocs.yml.
+            index_name="coding.md",
         )
 
     # --- Catalog. Biosignals uses the new gallery layout (#8); the generators

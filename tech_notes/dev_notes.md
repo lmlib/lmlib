@@ -3,10 +3,7 @@
 ## TODOs
 - RLSAlssm lcr method implementation
 - Nu implementation
-- Covariance steady state for limited sum
 - Trajectory and Window Class plot method implementation
-- Window Class extended for nd-cost
-- Two dimensional eval function for NDCompositeCost (example)
 
 ## Open Questions / Ideas to Discuss
 - Trajectory and Window Class eval_y xs already selected or gets selected by ks?
