@@ -112,7 +112,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -e .
-          python docs/scripts_docs/generate_changelog.py
+          python docs/scripts_docs/create_changelog.py
 
       - name: Update Version Placeholder
         run: |
