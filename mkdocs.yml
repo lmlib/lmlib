@@ -61,6 +61,7 @@ nav:
   - Test Signals: _generated/catalog/biosignals/index.md
   - Bibliography: bibliography.md
   - About Us: about_us.md
+  - News: news.md
 
 
 plugins:
@@ -85,7 +86,7 @@ plugins:
             heading_level: 2
             parameter_headings: false
             members_order: source
-            docstring_section_style: list
+            docstring_section_style: list  
             show_if_no_docstring: true
             filters: public
             inherited_members: true
