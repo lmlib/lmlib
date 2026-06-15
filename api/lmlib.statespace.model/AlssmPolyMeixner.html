@@ -1,0 +1,3803 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="AlssmPolyLegendre.html">
+      
+      
+        <link rel="next" href="AlssmSin.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>AlssmPolyMeixner - lmlib Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../css/mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../css/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="blue-grey">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#lmlib.statespace.model.AlssmPolyMeixner" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../index.html" title="lmlib Documentation" class="md-header__button md-logo" aria-label="lmlib Documentation" data-md-component="logo">
+      
+  <img src="../../images/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            lmlib Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              AlssmPolyMeixner
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="blue-grey"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="black"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../installation.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Install
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../index.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../state-space-tutorial.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Teaching
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../_generated/examples/index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Application Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../_generated/catalog/biosignals/index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Test Signals
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../bibliography.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Bibliography
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../about_us.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  About Us
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../index.html" title="lmlib Documentation" class="md-nav__button md-logo" aria-label="lmlib Documentation" data-md-component="logo">
+      
+  <img src="../../images/logo.svg" alt="logo">
+
+    </a>
+    lmlib Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        
+          <a href="../index.html#state-space" class="md-nav__link">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Space
+  
+
+    
+  </span>
+  
+  
+
+          </a>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    State Space
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.model
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_1" id="__nav_3_2_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.model
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ModelBase.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ModelBase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Alssm.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alssm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="AlssmPoly.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmPoly
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="AlssmPolyJordan.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmPolyJordan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="AlssmPolyLegendre.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmPolyLegendre
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmPolyMeixner
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="AlssmPolyMeixner.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmPolyMeixner
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.poly_degree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;poly_degree
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.g" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;g
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.direction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;direction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.shift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;shift
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.gamma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;gamma
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.eval_output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;eval_output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.dump_tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;dump_tree
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.set_state_var_label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;set_state_var_label
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.get_state_var_labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_state_var_labels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.get_state_var_indices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_state_var_indices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lmlib.statespace.model.AlssmPolyMeixner.get_alssm_output_dimension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_alssm_output_dimension
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="AlssmSin.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmSin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="AlssmExp.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmExp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="AlssmStacked.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmStacked
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="AlssmSum.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmSum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="AlssmProd.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmProd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../lmlib.statespace.cost/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.cost
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_2" id="__nav_3_2_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.cost
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.statespace.cost/CostSegment.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CostSegment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.statespace.cost/CompositeCost.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CompositeCost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.statespace.cost/NDCompositeCost.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NDCompositeCost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.statespace.cost/ConstrainMatrix.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ConstrainMatrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../lmlib.statespace.rls/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.rls
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_3" id="__nav_3_2_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.rls
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.statespace.rls/RLSAlssm.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RLSAlssm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../lmlib.statespace.window/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.window
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_4" id="__nav_3_2_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.window
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.statespace.window/Window.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../lmlib.statespace.segment/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.segment
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_5" id="__nav_3_2_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.segment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.statespace.segment/Segment.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Segment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../lmlib.statespace.trajectory/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.trajectory
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_6" id="__nav_3_2_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.trajectory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.statespace.trajectory/Trajectory.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trajectory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.statespace.backend.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../lmlib.statespace.applications/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.applications
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_8" id="__nav_3_2_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.applications
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.statespace.applications/TSLM.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TSLM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          <a href="../index.html#polynomial" class="md-nav__link">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Polynomial
+  
+
+    
+  </span>
+  
+  
+
+          </a>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Polynomial
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../lmlib.polynomial.poly/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.polynomial.poly
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_1" id="__nav_3_3_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.polynomial.poly
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.polynomial.poly/MPoly.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MPoly
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.polynomial.poly/Poly.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Poly
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          <a href="../index.html#utils" class="md-nav__link">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+          </a>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Utils
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.utils.generator.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.utils.generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.utils.check.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.utils.check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lmlib.utils.colors.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.utils.colors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Teaching
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Teaching
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../state-space-tutorial.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State-Space Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../_generated/coding/coding.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coding Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../_generated/examples/index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../_generated/catalog/biosignals/index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test Signals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../bibliography.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bibliography
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about_us.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About Us
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h1 id="lmlib.statespace.model.AlssmPolyMeixner" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">AlssmPolyMeixner</span>
+
+
+<a href="#lmlib.statespace.model.AlssmPolyMeixner" class="headerlink" title="Permanent link">&para;</a></h1>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">AlssmPolyMeixner</span><span class="p">(</span><span class="n">poly_degree</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">,</span> <span class="n">segment</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="            ModelBase (lmlib.statespace.model.ModelBase)" href="ModelBase.html#lmlib.statespace.model.ModelBase">ModelBase</a></code></p>
+
+            <div style="display: none">
+              <a class="autorefs autorefs-internal" title="            AlssmPolyMeixner (lmlib.statespace.model.AlssmPolyMeixner)" href="#lmlib.statespace.model.AlssmPolyMeixner" id="mermaid-link-lmlib.statespace.model.AlssmPolyMeixner"></a>
+                  <a class="autorefs autorefs-internal" title="            ModelBase (lmlib.statespace.model.ModelBase)" href="ModelBase.html#lmlib.statespace.model.ModelBase" id="mermaid-link-lmlib.statespace.model.ModelBase"></a>
+            </div>
+            <pre class="mermaid"><code id="mermaid-diagram-lmlib.statespace.model.AlssmPolyMeixner">
+              flowchart TD
+              lmlib.statespace.model.AlssmPolyMeixner[AlssmPolyMeixner]
+              lmlib.statespace.model.ModelBase[ModelBase]
+
+                              lmlib.statespace.model.ModelBase --> lmlib.statespace.model.AlssmPolyMeixner
+                
+
+
+              click lmlib.statespace.model.AlssmPolyMeixner href "" "lmlib.statespace.model.AlssmPolyMeixner"
+              click lmlib.statespace.model.ModelBase href "" "lmlib.statespace.model.ModelBase"
+            </code></pre>
+            <script>
+              var diagram = document.getElementById('mermaid-diagram-lmlib.statespace.model.AlssmPolyMeixner');
+              diagram.innerHTML = diagram.innerHTML.replace(/click ([\w.]+) href "" "\1"/g, function(match, nodeID, offset) {
+                try {
+                  const link = document.getElementById("mermaid-link-" + nodeID).href;
+                  return `click ${nodeID} href "${link}" "${nodeID}"`
+                } catch (e) {
+                  return '';
+                }
+              });
+            </script>
+
+
+        <p>ALSSM whose output basis is the Meixner polynomials, orthogonal under the
+geometric (exponential) weight <span class="arithmatex">\(\gamma^j\)</span> on <span class="arithmatex">\(j = 0, 1, 2, \ldots\)</span></p>
+<p>Unlike <a class="autorefs autorefs-internal" title="            AlssmPoly" href="AlssmPoly.html#lmlib.statespace.model.AlssmPoly"><code>AlssmPoly</code></a> (Pascal/monomial basis), which suffers from Gram
+matrix condition numbers of <span class="arithmatex">\(\mathcal{O}(g^{2D})\)</span>, and
+<a class="autorefs autorefs-internal" title="            AlssmPolyLegendre" href="AlssmPolyLegendre.html#lmlib.statespace.model.AlssmPolyLegendre"><code>AlssmPolyLegendre</code></a>, which requires a <em>finite</em> window specification,
+<a class="autorefs autorefs-internal" title="            AlssmPolyMeixner" href="#lmlib.statespace.model.AlssmPolyMeixner"><code>AlssmPolyMeixner</code></a> is designed for <strong>infinite or semi-infinite exponential
+windows</strong> and keeps the composite Gram matrix near the theoretical minimum.</p>
+<p><strong>Mathematical background</strong></p>
+<p>The Meixner polynomials <span class="arithmatex">\(M_n(j;\,1,\gamma)\)</span> satisfy</p>
+<div class="arithmatex">\[
+\sum_{j=0}^{\infty} \gamma^j\, M_m(j)\, M_n(j) = W_{n}\,\delta_{mn},
+\qquad W_n = g\!\left(\frac{g}{g-1}\right)^{\!n} = \frac{1}{(1-\gamma)\,\gamma^n},
+\]</div>
+<p>where <span class="arithmatex">\(\gamma = (g-1)/g &lt; 1\)</span> is the exponential decay of the backward
+segment and <span class="arithmatex">\(g &gt; 1\)</span> is its effective window length.  The norms
+<span class="arithmatex">\(W_n\)</span> are <strong>exact and closed-form</strong>, growing by the constant factor
+<span class="arithmatex">\(g/(g-1)\)</span> per degree. <span class="arithmatex">\(\delta_{mn}\)</span> is the kronecker delta.</p>
+<p><strong>Accepting a Segment</strong></p>
+<p>The recommended constructor is <code>AlssmPolyMeixner(poly_degree, segment)</code> which
+infers all parameters from the <a class="autorefs autorefs-internal" title="            Segment" href="../lmlib.statespace.segment/Segment.html#lmlib.statespace.segment.Segment"><code>Segment</code></a>:</p>
+<ul>
+<li>
+<p><code>segment.direction</code> → selects <span class="arithmatex">\(A\)</span>:</p>
+</li>
+<li>
+<p><code>'bw'</code> (backward): <span class="arithmatex">\(A = A_{\rm bw} = I - \tfrac{1}{g-1}\operatorname{triu}(\mathbf{1},1)\)</span>
+    — basis <span class="arithmatex">\(C A_{\rm bw}^j x = M_n(j;\gamma)\)</span> at lag <span class="arithmatex">\(j \ge 0\)</span>.</p>
+</li>
+<li>
+<p><code>'fw'</code> (forward): <span class="arithmatex">\(A = A_{\rm fw} = A_{\rm bw}^{-1}\)</span>
+    — the forward filter's internal <span class="arithmatex">\(A^{-1} = A_{\rm bw}\)</span> step recovers
+    the decaying Meixner basis at lags <span class="arithmatex">\(j \le 0\)</span>.</p>
+</li>
+<li>
+<p><code>segment.a</code> (backward) or <code>segment.b</code> (forward) → shifts <span class="arithmatex">\(C\)</span> so
+  that the Gram matrix remains <span class="arithmatex">\(W_{\rm ss}\)</span> (diagonal) even when the
+  segment does not start at <span class="arithmatex">\(j=0\)</span>:</p>
+</li>
+<li>
+<p>Backward <span class="arithmatex">\([a, \infty)\)</span>:
+    <span class="arithmatex">\(C \leftarrow [1,\ldots,1]\,A_{\rm bw}^{-a}\)</span>
+    (makes <span class="arithmatex">\(C A^j x = M_n(j-a;\gamma)\)</span> for <span class="arithmatex">\(j \ge a\)</span>).</p>
+</li>
+<li>
+<p>Forward <span class="arithmatex">\((-\infty, b]\)</span>:
+    <span class="arithmatex">\(C \leftarrow [1,\ldots,1]\,A_{\rm bw}^{-b}\)</span>
+    (makes the relative basis start at the boundary <span class="arithmatex">\(j=b\)</span>).</p>
+</li>
+</ul>
+<p>The <a class="autorefs autorefs-internal" href="#lmlib.statespace.model.AlssmPolyMeixner.g"><code>g</code></a> and <a class="autorefs autorefs-internal" href="#lmlib.statespace.model.AlssmPolyMeixner.direction"><code>direction</code></a> attributes are always available.</p>
+<p><strong>Condition number</strong></p>
+<p><span class="arithmatex">\(\kappa(W) = (g/(g-1))^D\)</span>, independent of the segment shift.</p>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <p>The Meixner polynomials used here are the standard (monic normalisation)
+<span class="arithmatex">\(M_n(x;\,1,\gamma) = {}_2F_1(-n,\,-x;\,1;\,1 - 1/\gamma)\)</span>.</p>
+</details>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>poly_degree</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Polynomial degree <span class="arithmatex">\(D \geq 0\)</span>.  The model order is <span class="arithmatex">\(N = D+1\)</span>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>segment</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Segment (lmlib.statespace.segment.Segment)" href="../lmlib.statespace.segment/Segment.html#lmlib.statespace.segment.Segment">Segment</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Target segment.  Encodes direction, <span class="arithmatex">\(g\)</span>, and boundary shift:</p>
+<ul>
+<li><code>segment.g</code> → window size <span class="arithmatex">\(g\)</span> (giving decay
+  <span class="arithmatex">\(\gamma = (g-1)/g\)</span>).</li>
+<li><code>segment.direction</code> → <code>'bw'</code> selects <span class="arithmatex">\(A_{\rm bw}\)</span>;
+  <code>'fw'</code> selects <span class="arithmatex">\(A_{\rm fw} = A_{\rm bw}^{-1}\)</span>.</li>
+<li><code>segment.a</code> (BW, if finite) or <code>segment.b</code> (FW, if finite)
+  → shifts <span class="arithmatex">\(C\)</span> to restore Gram matrix orthogonality when the
+  segment does not start at the canonical origin.</li>
+</ul>
+<p>Meixner orthogonality requires a semi-infinite support, so the
+segment must be backward with <code>b=+inf</code> or forward with <code>a=-inf</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>**kwargs</code></b>
+          –
+          <div class="doc-md-description">
+            <p>Forwarded to <a class="autorefs autorefs-internal" title="            ModelBase" href="ModelBase.html#lmlib.statespace.model.ModelBase"><code>ModelBase</code></a> (e.g. <code>label</code>).</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+  
+
+
+
+<p><span class="doc-section-title">Methods:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            update (lmlib.statespace.model.AlssmPolyMeixner.update)" href="#lmlib.statespace.model.AlssmPolyMeixner.update">update</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Recompute <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(C\)</span> from all stored parameters.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            eval_output (lmlib.statespace.model.AlssmPolyMeixner.eval_output)" href="#lmlib.statespace.model.AlssmPolyMeixner.eval_output">eval_output</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Evaluate the ALSSM output for one or more state vectors.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            dump_tree (lmlib.statespace.model.AlssmPolyMeixner.dump_tree)" href="#lmlib.statespace.model.AlssmPolyMeixner.dump_tree">dump_tree</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Return the internal ALSSM tree structure as a string.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            set_state_var_label (lmlib.statespace.model.AlssmPolyMeixner.set_state_var_label)" href="#lmlib.statespace.model.AlssmPolyMeixner.set_state_var_label">set_state_var_label</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Register a label for one or more state vector indices.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            get_state_var_labels (lmlib.statespace.model.AlssmPolyMeixner.get_state_var_labels)" href="#lmlib.statespace.model.AlssmPolyMeixner.get_state_var_labels">get_state_var_labels</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Return all registered state-variable labels together with their index tuples.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            get_state_var_indices (lmlib.statespace.model.AlssmPolyMeixner.get_state_var_indices)" href="#lmlib.statespace.model.AlssmPolyMeixner.get_state_var_indices">get_state_var_indices</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Return the state-vector indices for a state variable identified by its label.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            get_alssm_output_dimension (lmlib.statespace.model.AlssmPolyMeixner.get_alssm_output_dimension)" href="#lmlib.statespace.model.AlssmPolyMeixner.get_alssm_output_dimension">get_alssm_output_dimension</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Return the ALSSM output dimension <span class="arithmatex">\(Q\)</span> (number of output channels).</p>
+            </div>
+          </li>
+    </ul>
+
+
+  
+
+
+    <p><span class="doc-section-title">Attributes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.poly_degree" href="#lmlib.statespace.model.AlssmPolyMeixner.poly_degree">poly_degree</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>int : Polynomial degree <span class="arithmatex">\(D\)</span>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.g" href="#lmlib.statespace.model.AlssmPolyMeixner.g">g</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>float : Effective window size <span class="arithmatex">\(g\)</span> (read-only; from the segment).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.direction" href="#lmlib.statespace.model.AlssmPolyMeixner.direction">direction</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>str : Segment direction <code>'bw'</code> (backward) or <code>'fw'</code> (forward).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.shift" href="#lmlib.statespace.model.AlssmPolyMeixner.shift">shift</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>int : Boundary shift applied to <span class="arithmatex">\(C\)</span>; 0 for the canonical origin.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.gamma" href="#lmlib.statespace.model.AlssmPolyMeixner.gamma">gamma</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>float : Exponential decay <span class="arithmatex">\(\gamma = (g-1)/g\)</span>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.label" href="ModelBase.html#lmlib.statespace.model.ModelBase.label">label</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>str : Label of the model</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.C_init" href="ModelBase.html#lmlib.statespace.model.ModelBase.C_init">C_init</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p><a class="autorefs autorefs-external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray"><code>ndarray</code></a>, shape=([Q,] N) : Initialized Output matrix <span class="arithmatex">\(C \in \mathbb{R}^{Q \times N}\)</span></p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.force_MC" href="ModelBase.html#lmlib.statespace.model.ModelBase.force_MC">force_MC</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>bool : If True, a 1-D output vector <code>C</code> is broadcast to a 2-D array of shape <code>(1, N)</code> (multi-channel form).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.A" href="ModelBase.html#lmlib.statespace.model.ModelBase.A">A</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p><a class="autorefs autorefs-external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray"><code>ndarray</code></a>, shape=(N, N) : State matrix <span class="arithmatex">\(A \in \mathbb{R}^{N \times N}\)</span></p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.C" href="ModelBase.html#lmlib.statespace.model.ModelBase.C">C</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p><a class="autorefs autorefs-external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray"><code>ndarray</code></a>, shape=([Q,] N) : Output matrix <span class="arithmatex">\(C \in \mathbb{R}^{Q \times N}\)</span></p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.N" href="ModelBase.html#lmlib.statespace.model.ModelBase.N">N</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>int : Model order <span class="arithmatex">\(N\)</span></p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.Q" href="ModelBase.html#lmlib.statespace.model.ModelBase.Q">Q</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>int : Number of output channels <span class="arithmatex">\(Q\)</span>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.alssms" href="ModelBase.html#lmlib.statespace.model.ModelBase.alssms">alssms</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>list : Sub-ALSSMs that compose this model (empty for leaf nodes such as <a class="autorefs autorefs-internal" title="            Alssm" href="Alssm.html#lmlib.statespace.model.Alssm"><code>Alssm</code></a>).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.lambdas" href="ModelBase.html#lmlib.statespace.model.ModelBase.lambdas">lambdas</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p><a class="autorefs autorefs-external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray"><code>ndarray</code></a> : Per-ALSSM scalar output scaling factors <span class="arithmatex">\(\lambda_m\)</span> applied to each sub-model's output matrix <span class="arithmatex">\(C_m\)</span>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.AlssmPolyMeixner.is_MC" href="ModelBase.html#lmlib.statespace.model.ModelBase.is_MC">is_MC</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>bool : True if the output matrix <code>C</code> is 2-D (multi-channel form), False if 1-D (scalar output).</p>
+          </div>
+        </li>
+    </ul>
+
+                  <details class="mkdocstrings-source">
+                    <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-999"> 999</a></span>
+<span class="normal"><a href="#__codelineno-0-1000">1000</a></span>
+<span class="normal"><a href="#__codelineno-0-1001">1001</a></span>
+<span class="normal"><a href="#__codelineno-0-1002">1002</a></span>
+<span class="normal"><a href="#__codelineno-0-1003">1003</a></span>
+<span class="normal"><a href="#__codelineno-0-1004">1004</a></span>
+<span class="normal"><a href="#__codelineno-0-1005">1005</a></span>
+<span class="normal"><a href="#__codelineno-0-1006">1006</a></span>
+<span class="normal"><a href="#__codelineno-0-1007">1007</a></span>
+<span class="normal"><a href="#__codelineno-0-1008">1008</a></span>
+<span class="normal"><a href="#__codelineno-0-1009">1009</a></span>
+<span class="normal"><a href="#__codelineno-0-1010">1010</a></span>
+<span class="normal"><a href="#__codelineno-0-1011">1011</a></span>
+<span class="normal"><a href="#__codelineno-0-1012">1012</a></span>
+<span class="normal"><a href="#__codelineno-0-1013">1013</a></span>
+<span class="normal"><a href="#__codelineno-0-1014">1014</a></span>
+<span class="normal"><a href="#__codelineno-0-1015">1015</a></span>
+<span class="normal"><a href="#__codelineno-0-1016">1016</a></span>
+<span class="normal"><a href="#__codelineno-0-1017">1017</a></span>
+<span class="normal"><a href="#__codelineno-0-1018">1018</a></span>
+<span class="normal"><a href="#__codelineno-0-1019">1019</a></span>
+<span class="normal"><a href="#__codelineno-0-1020">1020</a></span>
+<span class="normal"><a href="#__codelineno-0-1021">1021</a></span>
+<span class="normal"><a href="#__codelineno-0-1022">1022</a></span>
+<span class="normal"><a href="#__codelineno-0-1023">1023</a></span>
+<span class="normal"><a href="#__codelineno-0-1024">1024</a></span>
+<span class="normal"><a href="#__codelineno-0-1025">1025</a></span>
+<span class="normal"><a href="#__codelineno-0-1026">1026</a></span>
+<span class="normal"><a href="#__codelineno-0-1027">1027</a></span>
+<span class="normal"><a href="#__codelineno-0-1028">1028</a></span>
+<span class="normal"><a href="#__codelineno-0-1029">1029</a></span>
+<span class="normal"><a href="#__codelineno-0-1030">1030</a></span>
+<span class="normal"><a href="#__codelineno-0-1031">1031</a></span>
+<span class="normal"><a href="#__codelineno-0-1032">1032</a></span>
+<span class="normal"><a href="#__codelineno-0-1033">1033</a></span>
+<span class="normal"><a href="#__codelineno-0-1034">1034</a></span>
+<span class="normal"><a href="#__codelineno-0-1035">1035</a></span>
+<span class="normal"><a href="#__codelineno-0-1036">1036</a></span>
+<span class="normal"><a href="#__codelineno-0-1037">1037</a></span>
+<span class="normal"><a href="#__codelineno-0-1038">1038</a></span>
+<span class="normal"><a href="#__codelineno-0-1039">1039</a></span>
+<span class="normal"><a href="#__codelineno-0-1040">1040</a></span>
+<span class="normal"><a href="#__codelineno-0-1041">1041</a></span>
+<span class="normal"><a href="#__codelineno-0-1042">1042</a></span>
+<span class="normal"><a href="#__codelineno-0-1043">1043</a></span>
+<span class="normal"><a href="#__codelineno-0-1044">1044</a></span>
+<span class="normal"><a href="#__codelineno-0-1045">1045</a></span>
+<span class="normal"><a href="#__codelineno-0-1046">1046</a></span>
+<span class="normal"><a href="#__codelineno-0-1047">1047</a></span>
+<span class="normal"><a href="#__codelineno-0-1048">1048</a></span>
+<span class="normal"><a href="#__codelineno-0-1049">1049</a></span>
+<span class="normal"><a href="#__codelineno-0-1050">1050</a></span>
+<span class="normal"><a href="#__codelineno-0-1051">1051</a></span>
+<span class="normal"><a href="#__codelineno-0-1052">1052</a></span>
+<span class="normal"><a href="#__codelineno-0-1053">1053</a></span>
+<span class="normal"><a href="#__codelineno-0-1054">1054</a></span>
+<span class="normal"><a href="#__codelineno-0-1055">1055</a></span>
+<span class="normal"><a href="#__codelineno-0-1056">1056</a></span>
+<span class="normal"><a href="#__codelineno-0-1057">1057</a></span>
+<span class="normal"><a href="#__codelineno-0-1058">1058</a></span>
+<span class="normal"><a href="#__codelineno-0-1059">1059</a></span>
+<span class="normal"><a href="#__codelineno-0-1060">1060</a></span>
+<span class="normal"><a href="#__codelineno-0-1061">1061</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-999" name="__codelineno-0-999"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poly_degree</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">segment</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a><span class="sd">    poly_degree : int</span>
+<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a><span class="sd">        Polynomial degree $D \geq 0$.  The model order is $N = D+1$.</span>
+<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a><span class="sd">    segment : Segment</span>
+<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a><span class="sd">        Target segment.  Encodes direction, $g$, and boundary shift:</span>
+<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>
+<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a><span class="sd">        * ``segment.g`` → window size $g$ (giving decay</span>
+<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a><span class="sd">          $\gamma = (g-1)/g$).</span>
+<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a><span class="sd">        * ``segment.direction`` → ``&#39;bw&#39;`` selects $A_{\rm bw}$;</span>
+<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a><span class="sd">          ``&#39;fw&#39;`` selects $A_{\rm fw} = A_{\rm bw}^{-1}$.</span>
+<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a><span class="sd">        * ``segment.a`` (BW, if finite) or ``segment.b`` (FW, if finite)</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">          → shifts $C$ to restore Gram matrix orthogonality when the</span>
+<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a><span class="sd">          segment does not start at the canonical origin.</span>
+<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>
+<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a><span class="sd">        Meixner orthogonality requires a semi-infinite support, so the</span>
+<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a><span class="sd">        segment must be backward with ``b=+inf`` or forward with ``a=-inf``.</span>
+<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a><span class="sd">    **kwargs</span>
+<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a><span class="sd">        Forwarded to [`ModelBase`][lmlib.statespace.model.ModelBase] (e.g. ``label``).</span>
+<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>
+<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">poly_degree</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">poly_degree</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> \
+<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>        <span class="s1">&#39;poly_degree must be a non-negative int&#39;</span>
+<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_poly_degree</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">poly_degree</span><span class="p">)</span>
+<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>
+<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">Segment</span><span class="p">),</span> \
+<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>        <span class="s2">&quot;&#39;segment&#39; must be a lmlib.statespace.segment.Segment instance.&quot;</span>
+<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>    <span class="c1"># ── Validate: Meixner orthogonality requires a semi-infinite segment ──</span>
+<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>    <span class="k">if</span> <span class="n">segment</span><span class="o">.</span><span class="n">direction</span> <span class="o">==</span> <span class="n">BACKWARD</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">b</span><span class="p">):</span>
+<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a>            <span class="sa">f</span><span class="s2">&quot;AlssmPolyMeixner requires b=+inf for BACKWARD segments &quot;</span>
+<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a>            <span class="sa">f</span><span class="s2">&quot;(got b=</span><span class="si">{</span><span class="n">segment</span><span class="o">.</span><span class="n">b</span><span class="si">}</span><span class="s2">). The Meixner polynomials are orthogonal only on &quot;</span>
+<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a>            <span class="sa">f</span><span class="s2">&quot;a semi-infinite support. For finite windows use AlssmPoly or &quot;</span>
+<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a>            <span class="sa">f</span><span class="s2">&quot;AlssmPolyLegendre instead.&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a>    <span class="k">if</span> <span class="n">segment</span><span class="o">.</span><span class="n">direction</span> <span class="o">==</span> <span class="n">FORWARD</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">a</span><span class="p">):</span>
+<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a>            <span class="sa">f</span><span class="s2">&quot;AlssmPolyMeixner requires a=-inf for FORWARD segments &quot;</span>
+<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a>            <span class="sa">f</span><span class="s2">&quot;(got a=</span><span class="si">{</span><span class="n">segment</span><span class="o">.</span><span class="n">a</span><span class="si">}</span><span class="s2">). The Meixner polynomials are orthogonal only on &quot;</span>
+<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a>            <span class="sa">f</span><span class="s2">&quot;a semi-infinite support. For finite windows use AlssmPoly or &quot;</span>
+<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a>            <span class="sa">f</span><span class="s2">&quot;AlssmPolyLegendre instead.&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_g</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">g</span><span class="p">)</span>
+<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_direction</span> <span class="o">=</span> <span class="n">segment</span><span class="o">.</span><span class="n">direction</span>
+<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a>    <span class="c1"># ── Determine C shift from the finite boundary ──────────────────────</span>
+<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a>    <span class="c1">#</span>
+<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a>    <span class="c1"># BACKWARD [a, ∞):</span>
+<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a>    <span class="c1">#   C ← [1..1] A_bw^{-a}  →  output at lag j = M_n(j-a; γ).</span>
+<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a>    <span class="c1">#   This keeps W = W_ss regardless of a (the Stein boundary term Q_b</span>
+<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a>    <span class="c1">#   = C^T C = ones at relative lag 0).</span>
+<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>    <span class="c1">#</span>
+<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a>    <span class="c1"># FORWARD (-∞, b]:</span>
+<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a>    <span class="c1">#   A = A_fw = A_bw^{-1}.</span>
+<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a>    <span class="c1">#   C ← [1..1] A_bw^{-|b|} = [1..1] A_fw^{|b|}</span>
+<a id="__codelineno-0-1054" name="__codelineno-0-1054"></a>    <span class="c1">#   This makes Q_b = outer([1..1],[1..1]) in the Stein equation,</span>
+<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a>    <span class="c1">#   keeping W = W_ss regardless of b (standard b=-1 → shift=1).</span>
+<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a>    <span class="k">if</span> <span class="n">segment</span><span class="o">.</span><span class="n">direction</span> <span class="o">==</span> <span class="n">BACKWARD</span><span class="p">:</span>
+<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_shift</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">a</span><span class="p">)</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">a</span><span class="p">)</span>
+<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a>    <span class="k">else</span><span class="p">:</span>  <span class="c1"># FORWARD</span>
+<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_shift</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">b</span><span class="p">)</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">b</span><span class="p">))</span>
+<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a>
+<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+<a id="lmlib.statespace.model.AlssmPolyMeixner.poly_degree"></a><a id="lmlib.statespace.model.AlssmPolyMeixner.g"></a><a id="lmlib.statespace.model.AlssmPolyMeixner.direction"></a><a id="lmlib.statespace.model.AlssmPolyMeixner.shift"></a><a id="lmlib.statespace.model.AlssmPolyMeixner.gamma"></a>
+
+
+<h2 id="lmlib.statespace.model.AlssmPolyMeixner-functions">Methods<a href="#lmlib.statespace.model.AlssmPolyMeixner-functions" class="headerlink" title="Permanent link">&para;</a></h2>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="lmlib.statespace.model.AlssmPolyMeixner.update" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">update</span>
+
+
+<a href="#lmlib.statespace.model.AlssmPolyMeixner.update" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">update</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Recompute <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(C\)</span> from all stored parameters.</p>
+<p><strong>Transition matrix</strong> <span class="arithmatex">\(A\)</span>:</p>
+<ul>
+<li>direction <code>'bw'</code>:
+  <span class="arithmatex">\(A = A_{\rm bw} = I_N - \tfrac{1}{g-1}\,\operatorname{triu}(\mathbf{1}_N, 1)\)</span></li>
+<li>direction <code>'fw'</code>:
+  <span class="arithmatex">\(A = A_{\rm fw} = A_{\rm bw}^{-1}\)</span></li>
+</ul>
+<p><strong>Output vector</strong> <span class="arithmatex">\(C\)</span> (before shift):
+<span class="arithmatex">\(C_{\rm base} = [1,\ldots,1]\)</span>.</p>
+<p><strong>Shift</strong> (when <code>shift != 0</code>):
+<span class="arithmatex">\(C \leftarrow C_{\rm base}\,A_{\rm bw}^{-\text{shift}}\)</span>.</p>
+<p>This ensures that for a backward segment <span class="arithmatex">\([a, \infty)\)</span> with
+<code>shift = a</code>, the output at absolute lag <span class="arithmatex">\(j\)</span> is
+<span class="arithmatex">\(M_n(j - a;\,\gamma)\)</span> — orthogonal under the shifted window weight.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1102">1102</a></span>
+<span class="normal"><a href="#__codelineno-0-1103">1103</a></span>
+<span class="normal"><a href="#__codelineno-0-1104">1104</a></span>
+<span class="normal"><a href="#__codelineno-0-1105">1105</a></span>
+<span class="normal"><a href="#__codelineno-0-1106">1106</a></span>
+<span class="normal"><a href="#__codelineno-0-1107">1107</a></span>
+<span class="normal"><a href="#__codelineno-0-1108">1108</a></span>
+<span class="normal"><a href="#__codelineno-0-1109">1109</a></span>
+<span class="normal"><a href="#__codelineno-0-1110">1110</a></span>
+<span class="normal"><a href="#__codelineno-0-1111">1111</a></span>
+<span class="normal"><a href="#__codelineno-0-1112">1112</a></span>
+<span class="normal"><a href="#__codelineno-0-1113">1113</a></span>
+<span class="normal"><a href="#__codelineno-0-1114">1114</a></span>
+<span class="normal"><a href="#__codelineno-0-1115">1115</a></span>
+<span class="normal"><a href="#__codelineno-0-1116">1116</a></span>
+<span class="normal"><a href="#__codelineno-0-1117">1117</a></span>
+<span class="normal"><a href="#__codelineno-0-1118">1118</a></span>
+<span class="normal"><a href="#__codelineno-0-1119">1119</a></span>
+<span class="normal"><a href="#__codelineno-0-1120">1120</a></span>
+<span class="normal"><a href="#__codelineno-0-1121">1121</a></span>
+<span class="normal"><a href="#__codelineno-0-1122">1122</a></span>
+<span class="normal"><a href="#__codelineno-0-1123">1123</a></span>
+<span class="normal"><a href="#__codelineno-0-1124">1124</a></span>
+<span class="normal"><a href="#__codelineno-0-1125">1125</a></span>
+<span class="normal"><a href="#__codelineno-0-1126">1126</a></span>
+<span class="normal"><a href="#__codelineno-0-1127">1127</a></span>
+<span class="normal"><a href="#__codelineno-0-1128">1128</a></span>
+<span class="normal"><a href="#__codelineno-0-1129">1129</a></span>
+<span class="normal"><a href="#__codelineno-0-1130">1130</a></span>
+<span class="normal"><a href="#__codelineno-0-1131">1131</a></span>
+<span class="normal"><a href="#__codelineno-0-1132">1132</a></span>
+<span class="normal"><a href="#__codelineno-0-1133">1133</a></span>
+<span class="normal"><a href="#__codelineno-0-1134">1134</a></span>
+<span class="normal"><a href="#__codelineno-0-1135">1135</a></span>
+<span class="normal"><a href="#__codelineno-0-1136">1136</a></span>
+<span class="normal"><a href="#__codelineno-0-1137">1137</a></span>
+<span class="normal"><a href="#__codelineno-0-1138">1138</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1102" name="__codelineno-0-1102"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-1103" name="__codelineno-0-1103"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-1104" name="__codelineno-0-1104"></a><span class="sd">    Recompute $A$ and $C$ from all stored parameters.</span>
+<a id="__codelineno-0-1105" name="__codelineno-0-1105"></a>
+<a id="__codelineno-0-1106" name="__codelineno-0-1106"></a><span class="sd">    **Transition matrix** $A$:</span>
+<a id="__codelineno-0-1107" name="__codelineno-0-1107"></a>
+<a id="__codelineno-0-1108" name="__codelineno-0-1108"></a><span class="sd">    * direction ``&#39;bw&#39;``:</span>
+<a id="__codelineno-0-1109" name="__codelineno-0-1109"></a><span class="sd">      $A = A_{\rm bw} = I_N - \tfrac{1}{g-1}\,\operatorname{triu}(\mathbf{1}_N, 1)$</span>
+<a id="__codelineno-0-1110" name="__codelineno-0-1110"></a><span class="sd">    * direction ``&#39;fw&#39;``:</span>
+<a id="__codelineno-0-1111" name="__codelineno-0-1111"></a><span class="sd">      $A = A_{\rm fw} = A_{\rm bw}^{-1}$</span>
+<a id="__codelineno-0-1112" name="__codelineno-0-1112"></a>
+<a id="__codelineno-0-1113" name="__codelineno-0-1113"></a><span class="sd">    **Output vector** $C$ (before shift):</span>
+<a id="__codelineno-0-1114" name="__codelineno-0-1114"></a><span class="sd">    $C_{\rm base} = [1,\ldots,1]$.</span>
+<a id="__codelineno-0-1115" name="__codelineno-0-1115"></a>
+<a id="__codelineno-0-1116" name="__codelineno-0-1116"></a><span class="sd">    **Shift** (when ``shift != 0``):</span>
+<a id="__codelineno-0-1117" name="__codelineno-0-1117"></a><span class="sd">    $C \leftarrow C_{\rm base}\,A_{\rm bw}^{-\text{shift}}$.</span>
+<a id="__codelineno-0-1118" name="__codelineno-0-1118"></a>
+<a id="__codelineno-0-1119" name="__codelineno-0-1119"></a><span class="sd">    This ensures that for a backward segment $[a, \infty)$ with</span>
+<a id="__codelineno-0-1120" name="__codelineno-0-1120"></a><span class="sd">    ``shift = a``, the output at absolute lag $j$ is</span>
+<a id="__codelineno-0-1121" name="__codelineno-0-1121"></a><span class="sd">    $M_n(j - a;\,\gamma)$ — orthogonal under the shifted window weight.</span>
+<a id="__codelineno-0-1122" name="__codelineno-0-1122"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1123" name="__codelineno-0-1123"></a>    <span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_poly_degree</span> <span class="o">+</span> <span class="mi">1</span>
+<a id="__codelineno-0-1124" name="__codelineno-0-1124"></a>    <span class="n">A_bw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">N</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_g</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">)),</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-1125" name="__codelineno-0-1125"></a>
+<a id="__codelineno-0-1126" name="__codelineno-0-1126"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_direction</span> <span class="o">==</span> <span class="s1">&#39;fw&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-1127" name="__codelineno-0-1127"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">A_bw</span><span class="p">)</span>
+<a id="__codelineno-0-1128" name="__codelineno-0-1128"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1129" name="__codelineno-0-1129"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">A_bw</span>
+<a id="__codelineno-0-1130" name="__codelineno-0-1130"></a>
+<a id="__codelineno-0-1131" name="__codelineno-0-1131"></a>    <span class="n">C_base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+<a id="__codelineno-0-1132" name="__codelineno-0-1132"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shift</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-1133" name="__codelineno-0-1133"></a>        <span class="c1"># C @ A_bw^{-shift}: matrix_power handles negative exponents via inverse.</span>
+<a id="__codelineno-0-1134" name="__codelineno-0-1134"></a>        <span class="n">C_base</span> <span class="o">=</span> <span class="n">C_base</span> <span class="o">@</span> <span class="n">matrix_power</span><span class="p">(</span><span class="n">A_bw</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_shift</span><span class="p">)</span>
+<a id="__codelineno-0-1135" name="__codelineno-0-1135"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">C_base</span>
+<a id="__codelineno-0-1136" name="__codelineno-0-1136"></a>
+<a id="__codelineno-0-1137" name="__codelineno-0-1137"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_init_state_var_labels</span><span class="p">()</span>
+<a id="__codelineno-0-1138" name="__codelineno-0-1138"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_C_to_multichannel</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="lmlib.statespace.model.AlssmPolyMeixner.eval_output" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">eval_output</span>
+
+
+<a href="#lmlib.statespace.model.AlssmPolyMeixner.eval_output" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">eval_output</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">js</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Evaluate the ALSSM output for one or more state vectors.</p>
+<p>Without evaluation index (<code>js=None</code>):</p>
+<div class="arithmatex">\[
+s(x) = C x
+\]</div>
+<p>With evaluation indices (<code>js</code> provided):</p>
+<div class="arithmatex">\[
+s_j(x) = C A^j x
+\]</div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>xs</code></b>
+              (<code>array_like of shape (..., N)</code>)
+          –
+          <div class="doc-md-description">
+            <p>State vector(s). The last dimension must equal the model order N.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>js</code></b>
+              (<code>array_like of shape (J,) or None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Sequence of integer evaluation indices. If None, evaluates at
+<span class="arithmatex">\(j = 0\)</span> only (i.e. returns <span class="arithmatex">\(Cx\)</span>).</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+<b><code>s</code></b> (              <code><span title="ndarray">ndarray</span></code>
+)          –
+          <div class="doc-md-description">
+            <p>If <code>js</code> is None: shape <code>(..., [Q])</code>.
+If <code>js</code> is provided: shape <code>(J, ..., [Q])</code>.
+The <code>[Q]</code> dimension is present only when <a class="autorefs autorefs-internal" href="ModelBase.html#lmlib.statespace.model.ModelBase.is_MC"><code>is_MC</code></a> is True.</p>
+          </div>
+        </li>
+    </ul>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-185">185</a></span>
+<span class="normal"><a href="#__codelineno-0-186">186</a></span>
+<span class="normal"><a href="#__codelineno-0-187">187</a></span>
+<span class="normal"><a href="#__codelineno-0-188">188</a></span>
+<span class="normal"><a href="#__codelineno-0-189">189</a></span>
+<span class="normal"><a href="#__codelineno-0-190">190</a></span>
+<span class="normal"><a href="#__codelineno-0-191">191</a></span>
+<span class="normal"><a href="#__codelineno-0-192">192</a></span>
+<span class="normal"><a href="#__codelineno-0-193">193</a></span>
+<span class="normal"><a href="#__codelineno-0-194">194</a></span>
+<span class="normal"><a href="#__codelineno-0-195">195</a></span>
+<span class="normal"><a href="#__codelineno-0-196">196</a></span>
+<span class="normal"><a href="#__codelineno-0-197">197</a></span>
+<span class="normal"><a href="#__codelineno-0-198">198</a></span>
+<span class="normal"><a href="#__codelineno-0-199">199</a></span>
+<span class="normal"><a href="#__codelineno-0-200">200</a></span>
+<span class="normal"><a href="#__codelineno-0-201">201</a></span>
+<span class="normal"><a href="#__codelineno-0-202">202</a></span>
+<span class="normal"><a href="#__codelineno-0-203">203</a></span>
+<span class="normal"><a href="#__codelineno-0-204">204</a></span>
+<span class="normal"><a href="#__codelineno-0-205">205</a></span>
+<span class="normal"><a href="#__codelineno-0-206">206</a></span>
+<span class="normal"><a href="#__codelineno-0-207">207</a></span>
+<span class="normal"><a href="#__codelineno-0-208">208</a></span>
+<span class="normal"><a href="#__codelineno-0-209">209</a></span>
+<span class="normal"><a href="#__codelineno-0-210">210</a></span>
+<span class="normal"><a href="#__codelineno-0-211">211</a></span>
+<span class="normal"><a href="#__codelineno-0-212">212</a></span>
+<span class="normal"><a href="#__codelineno-0-213">213</a></span>
+<span class="normal"><a href="#__codelineno-0-214">214</a></span>
+<span class="normal"><a href="#__codelineno-0-215">215</a></span>
+<span class="normal"><a href="#__codelineno-0-216">216</a></span>
+<span class="normal"><a href="#__codelineno-0-217">217</a></span>
+<span class="normal"><a href="#__codelineno-0-218">218</a></span>
+<span class="normal"><a href="#__codelineno-0-219">219</a></span>
+<span class="normal"><a href="#__codelineno-0-220">220</a></span>
+<span class="normal"><a href="#__codelineno-0-221">221</a></span>
+<span class="normal"><a href="#__codelineno-0-222">222</a></span>
+<span class="normal"><a href="#__codelineno-0-223">223</a></span>
+<span class="normal"><a href="#__codelineno-0-224">224</a></span>
+<span class="normal"><a href="#__codelineno-0-225">225</a></span>
+<span class="normal"><a href="#__codelineno-0-226">226</a></span>
+<span class="normal"><a href="#__codelineno-0-227">227</a></span>
+<span class="normal"><a href="#__codelineno-0-228">228</a></span>
+<span class="normal"><a href="#__codelineno-0-229">229</a></span>
+<span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="k">def</span><span class="w"> </span><span class="nf">eval_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">js</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">    Evaluate the ALSSM output for one or more state vectors.</span>
+<a id="__codelineno-0-188" name="__codelineno-0-188"></a>
+<a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">    Without evaluation index (``js=None``):</span>
+<a id="__codelineno-0-190" name="__codelineno-0-190"></a>
+<a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">    s(x) = C x</span>
+<a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-194" name="__codelineno-0-194"></a>
+<a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">    With evaluation indices (``js`` provided):</span>
+<a id="__codelineno-0-196" name="__codelineno-0-196"></a>
+<a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-198" name="__codelineno-0-198"></a><span class="sd">    s_j(x) = C A^j x</span>
+<a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-200" name="__codelineno-0-200"></a>
+<a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">    xs : array_like of shape (..., N)</span>
+<a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">        State vector(s). The last dimension must equal the model order N.</span>
+<a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">    js : array_like of shape (J,) or None, optional</span>
+<a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">        Sequence of integer evaluation indices. If None, evaluates at</span>
+<a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">        $j = 0$ only (i.e. returns $Cx$).</span>
+<a id="__codelineno-0-208" name="__codelineno-0-208"></a>
+<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">    s : ndarray</span>
+<a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">        If ``js`` is None: shape ``(..., [Q])``.</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">        If ``js`` is provided: shape ``(J, ..., [Q])``.</span>
+<a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">        The ``[Q]`` dimension is present only when [`is_MC`][lmlib.statespace.model.ModelBase.is_MC] is True.</span>
+<a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-216" name="__codelineno-0-216"></a>    <span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<a id="__codelineno-0-217" name="__codelineno-0-217"></a>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a>    <span class="c1"># Ensure last axis is state dimension</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a>    <span class="k">if</span> <span class="n">xs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
+<a id="__codelineno-0-220" name="__codelineno-0-220"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Last dimension of xs must be </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-221" name="__codelineno-0-221"></a>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="c1"># No propagation: s = C x</span>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="k">if</span> <span class="n">js</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a>        <span class="n">_subscript</span> <span class="o">=</span> <span class="s1">&#39;ln,...n-&gt;...l&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_MC</span> <span class="k">else</span> <span class="s1">&#39;n,...n-&gt;...&#39;</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="n">_subscript</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">,</span> <span class="n">xs</span><span class="p">)</span>
+<a id="__codelineno-0-226" name="__codelineno-0-226"></a>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a>    <span class="c1"># Propagation: s_j = C A^j x</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a>    <span class="n">A_powers</span> <span class="o">=</span> <span class="p">[</span><span class="n">matrix_power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">j</span><span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">js</span><span class="p">]</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a>    <span class="n">_subscript</span> <span class="o">=</span> <span class="s1">&#39;ln,...n-&gt;...l&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_MC</span> <span class="k">else</span> <span class="s1">&#39;n,...n-&gt;...&#39;</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a>    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="n">_subscript</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">@</span> <span class="n">Aj</span><span class="p">,</span> <span class="n">xs</span><span class="p">)</span> <span class="k">for</span> <span class="n">Aj</span> <span class="ow">in</span> <span class="n">A_powers</span><span class="p">])</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="lmlib.statespace.model.AlssmPolyMeixner.dump_tree" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">dump_tree</span>
+
+
+<a href="#lmlib.statespace.model.AlssmPolyMeixner.dump_tree" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">dump_tree</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the internal ALSSM tree structure as a string.</p>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+<b><code>out</code></b> (              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+)          –
+          <div class="doc-md-description">
+            <p>Multi-line string representing the nested ALSSM structure.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">lmlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">alssm_poly</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">AlssmPoly</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;high order polynomial&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">A</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">C</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">alssm_line</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Alssm</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;line&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">stacked_alssm</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">AlssmStacked</span><span class="p">((</span><span class="n">alssm_poly</span><span class="p">,</span> <span class="n">alssm_line</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;stacked model&#39;</span><span class="p">)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">print</span><span class="p">(</span><span class="n">stacked_alssm</span><span class="o">.</span><span class="n">dump_tree</span><span class="p">())</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="err">└</span><span class="o">-</span><span class="n">AlssmStacked</span><span class="p">,</span> <span class="n">A</span><span class="p">:</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span> <span class="n">C</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span> <span class="n">label</span><span class="p">:</span> <span class="n">stacked</span> <span class="n">model</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  <span class="err">└</span><span class="o">-</span><span class="n">AlssmPoly</span><span class="p">,</span> <span class="n">A</span><span class="p">:</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">C</span><span class="p">:</span> <span class="p">(</span><span class="mi">5</span><span class="p">,),</span> <span class="n">label</span><span class="p">:</span> <span class="n">high</span> <span class="n">order</span> <span class="n">polynomial</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>  <span class="err">└</span><span class="o">-</span><span class="n">Alssm</span><span class="p">,</span> <span class="n">A</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">C</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">label</span><span class="p">:</span> <span class="n">line</span>
+</code></pre></div>
+</details>
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-232">232</a></span>
+<span class="normal"><a href="#__codelineno-0-233">233</a></span>
+<span class="normal"><a href="#__codelineno-0-234">234</a></span>
+<span class="normal"><a href="#__codelineno-0-235">235</a></span>
+<span class="normal"><a href="#__codelineno-0-236">236</a></span>
+<span class="normal"><a href="#__codelineno-0-237">237</a></span>
+<span class="normal"><a href="#__codelineno-0-238">238</a></span>
+<span class="normal"><a href="#__codelineno-0-239">239</a></span>
+<span class="normal"><a href="#__codelineno-0-240">240</a></span>
+<span class="normal"><a href="#__codelineno-0-241">241</a></span>
+<span class="normal"><a href="#__codelineno-0-242">242</a></span>
+<span class="normal"><a href="#__codelineno-0-243">243</a></span>
+<span class="normal"><a href="#__codelineno-0-244">244</a></span>
+<span class="normal"><a href="#__codelineno-0-245">245</a></span>
+<span class="normal"><a href="#__codelineno-0-246">246</a></span>
+<span class="normal"><a href="#__codelineno-0-247">247</a></span>
+<span class="normal"><a href="#__codelineno-0-248">248</a></span>
+<span class="normal"><a href="#__codelineno-0-249">249</a></span>
+<span class="normal"><a href="#__codelineno-0-250">250</a></span>
+<span class="normal"><a href="#__codelineno-0-251">251</a></span>
+<span class="normal"><a href="#__codelineno-0-252">252</a></span>
+<span class="normal"><a href="#__codelineno-0-253">253</a></span>
+<span class="normal"><a href="#__codelineno-0-254">254</a></span>
+<span class="normal"><a href="#__codelineno-0-255">255</a></span>
+<span class="normal"><a href="#__codelineno-0-256">256</a></span>
+<span class="normal"><a href="#__codelineno-0-257">257</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="k">def</span><span class="w"> </span><span class="nf">dump_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">    Return the internal ALSSM tree structure as a string.</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    out : str</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">        Multi-line string representing the nested ALSSM structure.</span>
+<a id="__codelineno-0-240" name="__codelineno-0-240"></a>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Example</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="sd">    ```python</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="sd">    &gt;&gt;&gt; import lmlib as lm</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">    &gt;&gt;&gt; alssm_poly = lm.AlssmPoly(4, label=&quot;high order polynomial&quot;)</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">    &gt;&gt;&gt; A = [[1, 1], [0, 1]]</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="sd">    &gt;&gt;&gt; C = [[1, 0]]</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="sd">    &gt;&gt;&gt; alssm_line = lm.Alssm(A, C, label=&quot;line&quot;)</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="sd">    &gt;&gt;&gt; stacked_alssm = lm.AlssmStacked((alssm_poly, alssm_line), label=&#39;stacked model&#39;)</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">    &gt;&gt;&gt; print(stacked_alssm.dump_tree())</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">    └-AlssmStacked, A: (7, 7), C: (2, 7), label: stacked model</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">      └-AlssmPoly, A: (5, 5), C: (5,), label: high order polynomial</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">      └-Alssm, A: (2, 2), C: (1, 2), label: line</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">    ```</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rec_tree</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="lmlib.statespace.model.AlssmPolyMeixner.set_state_var_label" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">set_state_var_label</span>
+
+
+<a href="#lmlib.statespace.model.AlssmPolyMeixner.set_state_var_label" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_state_var_label</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">indices</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">])</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Register a label for one or more state vector indices.</p>
+<p>Labels allow state components to be referenced by name rather than by
+numeric index; see <a class="autorefs autorefs-internal" title="            get_state_var_indices" href="ModelBase.html#lmlib.statespace.model.ModelBase.get_state_var_indices"><code>get_state_var_indices</code></a>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>label</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Label name to register.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>indices</code></b>
+              (<code>tuple of int</code>)
+          –
+          <div class="doc-md-description">
+            <p>State vector indices associated with this label.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">lmlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">alssm</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">AlssmPoly</span><span class="p">(</span><span class="n">poly_degree</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;slope_with_offset&#39;</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">alssm</span><span class="o">.</span><span class="n">set_state_var_label</span><span class="p">(</span><span class="s1">&#39;slope&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">alssm</span><span class="o">.</span><span class="n">get_state_var_indices</span><span class="p">(</span><span class="s1">&#39;slope_with_offset.slope&#39;</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">(</span><span class="mi">1</span><span class="p">,)</span>
+</code></pre></div>
+</details>
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-259">259</a></span>
+<span class="normal"><a href="#__codelineno-0-260">260</a></span>
+<span class="normal"><a href="#__codelineno-0-261">261</a></span>
+<span class="normal"><a href="#__codelineno-0-262">262</a></span>
+<span class="normal"><a href="#__codelineno-0-263">263</a></span>
+<span class="normal"><a href="#__codelineno-0-264">264</a></span>
+<span class="normal"><a href="#__codelineno-0-265">265</a></span>
+<span class="normal"><a href="#__codelineno-0-266">266</a></span>
+<span class="normal"><a href="#__codelineno-0-267">267</a></span>
+<span class="normal"><a href="#__codelineno-0-268">268</a></span>
+<span class="normal"><a href="#__codelineno-0-269">269</a></span>
+<span class="normal"><a href="#__codelineno-0-270">270</a></span>
+<span class="normal"><a href="#__codelineno-0-271">271</a></span>
+<span class="normal"><a href="#__codelineno-0-272">272</a></span>
+<span class="normal"><a href="#__codelineno-0-273">273</a></span>
+<span class="normal"><a href="#__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#__codelineno-0-276">276</a></span>
+<span class="normal"><a href="#__codelineno-0-277">277</a></span>
+<span class="normal"><a href="#__codelineno-0-278">278</a></span>
+<span class="normal"><a href="#__codelineno-0-279">279</a></span>
+<span class="normal"><a href="#__codelineno-0-280">280</a></span>
+<span class="normal"><a href="#__codelineno-0-281">281</a></span>
+<span class="normal"><a href="#__codelineno-0-282">282</a></span>
+<span class="normal"><a href="#__codelineno-0-283">283</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="k">def</span><span class="w"> </span><span class="nf">set_state_var_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">indices</span><span class="p">:</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Register a label for one or more state vector indices.</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    Labels allow state components to be referenced by name rather than by</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="sd">    numeric index; see [`get_state_var_indices`][lmlib.statespace.model.ModelBase.get_state_var_indices].</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="sd">    label : str</span>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a><span class="sd">        Label name to register.</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a><span class="sd">    indices : tuple of int</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="sd">        State vector indices associated with this label.</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a><span class="sd">    Example</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    ```python</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a><span class="sd">    &gt;&gt;&gt; import lmlib as lm</span>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    &gt;&gt;&gt; alssm = lm.AlssmPoly(poly_degree=1, label=&#39;slope_with_offset&#39;)</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">    &gt;&gt;&gt; alssm.set_state_var_label(&#39;slope&#39;, (1,))</span>
+<a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &gt;&gt;&gt; alssm.get_state_var_indices(&#39;slope_with_offset.slope&#39;)</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a><span class="sd">    (1,)</span>
+<a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="sd">    ```</span>
+<a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-283" name="__codelineno-0-283"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_state_var_labels</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">indices</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="lmlib.statespace.model.AlssmPolyMeixner.get_state_var_labels" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_state_var_labels</span>
+
+
+<a href="#lmlib.statespace.model.AlssmPolyMeixner.get_state_var_labels" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_state_var_labels</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return all registered state-variable labels together with their index tuples.</p>
+<p>Labels are accumulated recursively from all nested sub-ALSSMs, with
+each label prefixed by the current model's <a class="autorefs autorefs-internal" href="ModelBase.html#lmlib.statespace.model.ModelBase.label"><code>label</code></a>.  The state
+indices are adjusted to reflect the position within the combined
+(block-diagonal) state vector.</p>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+<b><code>out</code></b> (              <code>list of (str, tuple of int)</code>
+)          –
+          <div class="doc-md-description">
+            <p>List of <code>(label_string, indices)</code> pairs.  <code>label_string</code> is a
+dot-separated path (e.g. <code>'stacked.poly.x0'</code>) and <code>indices</code> is
+the corresponding tuple of integer state-vector positions.</p>
+          </div>
+        </li>
+    </ul>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-312">312</a></span>
+<span class="normal"><a href="#__codelineno-0-313">313</a></span>
+<span class="normal"><a href="#__codelineno-0-314">314</a></span>
+<span class="normal"><a href="#__codelineno-0-315">315</a></span>
+<span class="normal"><a href="#__codelineno-0-316">316</a></span>
+<span class="normal"><a href="#__codelineno-0-317">317</a></span>
+<span class="normal"><a href="#__codelineno-0-318">318</a></span>
+<span class="normal"><a href="#__codelineno-0-319">319</a></span>
+<span class="normal"><a href="#__codelineno-0-320">320</a></span>
+<span class="normal"><a href="#__codelineno-0-321">321</a></span>
+<span class="normal"><a href="#__codelineno-0-322">322</a></span>
+<span class="normal"><a href="#__codelineno-0-323">323</a></span>
+<span class="normal"><a href="#__codelineno-0-324">324</a></span>
+<span class="normal"><a href="#__codelineno-0-325">325</a></span>
+<span class="normal"><a href="#__codelineno-0-326">326</a></span>
+<span class="normal"><a href="#__codelineno-0-327">327</a></span>
+<span class="normal"><a href="#__codelineno-0-328">328</a></span>
+<span class="normal"><a href="#__codelineno-0-329">329</a></span>
+<span class="normal"><a href="#__codelineno-0-330">330</a></span>
+<span class="normal"><a href="#__codelineno-0-331">331</a></span>
+<span class="normal"><a href="#__codelineno-0-332">332</a></span>
+<span class="normal"><a href="#__codelineno-0-333">333</a></span>
+<span class="normal"><a href="#__codelineno-0-334">334</a></span>
+<span class="normal"><a href="#__codelineno-0-335">335</a></span>
+<span class="normal"><a href="#__codelineno-0-336">336</a></span>
+<span class="normal"><a href="#__codelineno-0-337">337</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_state_var_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">    Return all registered state-variable labels together with their index tuples.</span>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">    Labels are accumulated recursively from all nested sub-ALSSMs, with</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">    each label prefixed by the current model&#39;s [`label`][lmlib.statespace.model.ModelBase.label].  The state</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">    indices are adjusted to reflect the position within the combined</span>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">    (block-diagonal) state vector.</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="sd">    out : list of (str, tuple of int)</span>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">        List of ``(label_string, indices)`` pairs.  ``label_string`` is a</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">        dot-separated path (e.g. ``&#39;stacked.poly.x0&#39;``) and ``indices`` is</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">        the corresponding tuple of integer state-vector positions.</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a>    <span class="n">state_list</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a>    <span class="k">for</span> <span class="n">var_label</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_var_labels</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a>        <span class="n">state_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">var_label</span><span class="p">,</span> <span class="n">indices</span><span class="p">))</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a>    <span class="n">N</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a>    <span class="k">for</span> <span class="n">alssm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">:</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a>        <span class="k">for</span> <span class="n">var_label</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="n">alssm</span><span class="o">.</span><span class="n">get_state_var_labels</span><span class="p">():</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a>            <span class="n">state_list</span><span class="o">.</span><span class="n">extend</span><span class="p">([(</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">var_label</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">N</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">))])</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a>        <span class="n">N</span> <span class="o">+=</span> <span class="n">alssm</span><span class="o">.</span><span class="n">N</span>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a>    <span class="k">return</span> <span class="n">state_list</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="lmlib.statespace.model.AlssmPolyMeixner.get_state_var_indices" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_state_var_indices</span>
+
+
+<a href="#lmlib.statespace.model.AlssmPolyMeixner.get_state_var_indices" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_state_var_indices</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the state-vector indices for a state variable identified by its label.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>label</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Fully qualified state label (dot-separated path), as returned by
+<a class="autorefs autorefs-internal" title="            get_state_var_labels" href="ModelBase.html#lmlib.statespace.model.ModelBase.get_state_var_labels"><code>get_state_var_labels</code></a>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+<b><code>out</code></b> (              <code>tuple of int or list of int</code>
+)          –
+          <div class="doc-md-description">
+            <p>State-vector indices associated with <code>label</code>.
+Returns an empty list if <code>label</code> is not found.</p>
+          </div>
+        </li>
+    </ul>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-339">339</a></span>
+<span class="normal"><a href="#__codelineno-0-340">340</a></span>
+<span class="normal"><a href="#__codelineno-0-341">341</a></span>
+<span class="normal"><a href="#__codelineno-0-342">342</a></span>
+<span class="normal"><a href="#__codelineno-0-343">343</a></span>
+<span class="normal"><a href="#__codelineno-0-344">344</a></span>
+<span class="normal"><a href="#__codelineno-0-345">345</a></span>
+<span class="normal"><a href="#__codelineno-0-346">346</a></span>
+<span class="normal"><a href="#__codelineno-0-347">347</a></span>
+<span class="normal"><a href="#__codelineno-0-348">348</a></span>
+<span class="normal"><a href="#__codelineno-0-349">349</a></span>
+<span class="normal"><a href="#__codelineno-0-350">350</a></span>
+<span class="normal"><a href="#__codelineno-0-351">351</a></span>
+<span class="normal"><a href="#__codelineno-0-352">352</a></span>
+<span class="normal"><a href="#__codelineno-0-353">353</a></span>
+<span class="normal"><a href="#__codelineno-0-354">354</a></span>
+<span class="normal"><a href="#__codelineno-0-355">355</a></span>
+<span class="normal"><a href="#__codelineno-0-356">356</a></span>
+<span class="normal"><a href="#__codelineno-0-357">357</a></span>
+<span class="normal"><a href="#__codelineno-0-358">358</a></span>
+<span class="normal"><a href="#__codelineno-0-359">359</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_state_var_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+<a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">    Return the state-vector indices for a state variable identified by its label.</span>
+<a id="__codelineno-0-342" name="__codelineno-0-342"></a>
+<a id="__codelineno-0-343" name="__codelineno-0-343"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-344" name="__codelineno-0-344"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-345" name="__codelineno-0-345"></a><span class="sd">    label : str</span>
+<a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="sd">        Fully qualified state label (dot-separated path), as returned by</span>
+<a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="sd">        [`get_state_var_labels`][lmlib.statespace.model.ModelBase.get_state_var_labels].</span>
+<a id="__codelineno-0-348" name="__codelineno-0-348"></a>
+<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">    out : tuple of int or list of int</span>
+<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">        State-vector indices associated with ``label``.</span>
+<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">        Returns an empty list if ``label`` is not found.</span>
+<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a>    <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_state_var_labels</span><span class="p">():</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a>        <span class="k">if</span> <span class="n">label</span> <span class="o">==</span> <span class="n">l</span><span class="p">:</span>
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a>            <span class="k">return</span> <span class="n">indices</span>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a>    <span class="k">return</span> <span class="p">[]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="lmlib.statespace.model.AlssmPolyMeixner.get_alssm_output_dimension" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_alssm_output_dimension</span>
+
+
+<a href="#lmlib.statespace.model.AlssmPolyMeixner.get_alssm_output_dimension" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_alssm_output_dimension</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the ALSSM output dimension <span class="arithmatex">\(Q\)</span> (number of output channels).</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-361">361</a></span>
+<span class="normal"><a href="#__codelineno-0-362">362</a></span>
+<span class="normal"><a href="#__codelineno-0-363">363</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_output_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return the ALSSM output dimension $Q$ (number of output channels).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-363" name="__codelineno-0-363"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Q</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.tracking", "navigation.top", "toc.follow", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

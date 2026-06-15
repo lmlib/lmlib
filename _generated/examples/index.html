@@ -1,0 +1,2709 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../coding/coding.html">
+      
+      
+        <link rel="next" href="../catalog/biosignals/index.html">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Application Examples - lmlib Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../css/mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../css/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="blue-grey">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#application-and-productive-examples" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../index.html" title="lmlib Documentation" class="md-header__button md-logo" aria-label="lmlib Documentation" data-md-component="logo">
+      
+  <img src="../../images/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            lmlib Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Application Examples
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="blue-grey"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="black"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../installation.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Install
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/index.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../state-space-tutorial.html" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Teaching
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Application Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../catalog/biosignals/index.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Test Signals
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../bibliography.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Bibliography
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../about_us.html" class="md-tabs__link">
+        
+  
+  
+    
+  
+  About Us
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../index.html" title="lmlib Documentation" class="md-nav__button md-logo" aria-label="lmlib Documentation" data-md-component="logo">
+      
+  <img src="../../images/logo.svg" alt="logo">
+
+    </a>
+    lmlib Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          <a href="../../api/index.html#state-space" class="md-nav__link">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State Space
+  
+
+    
+  </span>
+  
+  
+
+          </a>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    State Space
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/lmlib.statespace.model/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.model
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_1" id="__nav_3_2_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.model
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/ModelBase.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ModelBase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/Alssm.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Alssm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/AlssmPoly.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmPoly
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/AlssmPolyJordan.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmPolyJordan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/AlssmPolyLegendre.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmPolyLegendre
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/AlssmPolyMeixner.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmPolyMeixner
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/AlssmSin.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmSin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/AlssmExp.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmExp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/AlssmStacked.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmStacked
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/AlssmSum.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmSum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.model/AlssmProd.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AlssmProd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/lmlib.statespace.cost/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.cost
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_2" id="__nav_3_2_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.cost
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.cost/CostSegment.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CostSegment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.cost/CompositeCost.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CompositeCost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.cost/NDCompositeCost.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NDCompositeCost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.cost/ConstrainMatrix.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ConstrainMatrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/lmlib.statespace.rls/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.rls
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_3" id="__nav_3_2_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.rls
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.rls/RLSAlssm.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RLSAlssm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/lmlib.statespace.window/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.window
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_4" id="__nav_3_2_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.window
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.window/Window.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Window
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/lmlib.statespace.segment/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.segment
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_5" id="__nav_3_2_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.segment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.segment/Segment.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Segment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/lmlib.statespace.trajectory/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.trajectory
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_6" id="__nav_3_2_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.trajectory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.trajectory/Trajectory.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trajectory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.backend.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/lmlib.statespace.applications/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.statespace.applications
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_8" id="__nav_3_2_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.statespace.applications
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.statespace.applications/TSLM.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TSLM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          <a href="../../api/index.html#polynomial" class="md-nav__link">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Polynomial
+  
+
+    
+  </span>
+  
+  
+
+          </a>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Polynomial
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/lmlib.polynomial.poly/index.html" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.polynomial.poly
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_1" id="__nav_3_3_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    lmlib.polynomial.poly
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.polynomial.poly/MPoly.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MPoly
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.polynomial.poly/Poly.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Poly
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          <a href="../../api/index.html#utils" class="md-nav__link">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+          </a>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Utils
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.utils.generator.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.utils.generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.utils.check.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.utils.check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/lmlib.utils.colors.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lmlib.utils.colors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Teaching
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Teaching
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../state-space-tutorial.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State-Space Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding/coding.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coding Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Examples
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="index.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filtering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#polynomials-calculus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Polynomials Calculus
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#event-detection-with-two-sided-line-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Detection with Two-Sided Line Models
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#convolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Convolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shift-and-time-dilation-estimation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shift and Time Dilation Estimation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#n-dimensional-signal-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N Dimensional Signal Processing
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../catalog/biosignals/index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test Signals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../bibliography.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bibliography
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about_us.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About Us
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="application-and-productive-examples">Application and Productive Examples<a class="headerlink" href="#application-and-productive-examples" title="Permanent link">&para;</a></h1>
+<p>Application-level examples showing how to use lmlib on realistic
+signal-processing tasks, grouped by topic. Each thumbnail links to a full page
+with the plot(s), console output, any data files, and the complete source code.</p>
+<h2 id="detection">Detection<a class="headerlink" href="#detection" title="Permanent link">&para;</a></h2>
+<p>Advanced event detection with ALSSMs.</p>
+<table class="gallery">
+<tbody>
+<tr>
+  <td class="gallery-plot"><a href="11-detection/example-ex110.0-edge-detection.html"><img src="11-detection/example-ex110.0-edge-detection.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="11-detection/example-ex110.0-edge-detection.html"><b>Edge Detection [ex110.0]</b><br><small>Performs edge detection based on two adjacent ALSSMs, which are connected with linear constraints on their state parameters. Edges are detected at peaks of the LCR (Log-Cost Ratio). The Two-Sided Line Model (TSLM) fits two independent line models to a left and a right window around each sample....</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="11-detection/example-ex111.0-pulse-detection.html"><img src="11-detection/example-ex111.0-pulse-detection.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="11-detection/example-ex111.0-pulse-detection.html"><b>Rectangular Pulse Detection with Baseline [ex111.0]</b><br><small>This example demonstrates the detection of a rectangular pulses of known duration in a noisy signal with baseline interferences.</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="11-detection/example-ex112.0-mc-pulse-detection.html"><img src="11-detection/example-ex112.0-mc-pulse-detection.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="11-detection/example-ex112.0-mc-pulse-detection.html"><b>Multi-Channel Spike Detection [ex112.0]</b><br><small>Demonstrates a spike detection algorithm that uses autonomous linear state space models together with exponentially decaying windows. The input is a multi-channel signal containing multiple spikes (sinusoidal cycles with decaying amplitude) with additive white Gaussian noise and a polynomial baseline. The algorithm fits a spike model and a...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="11-detection/example-ex113.0-shape-detection.html"><img src="11-detection/example-ex113.0-shape-detection.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="11-detection/example-ex113.0-shape-detection.html"><b>ECG Shape Detection [ex113.0]</b><br><small>Detects a known reference shape in a single-channel electrocardiogram (ECG) signal using a template-matching approach based on ALSSMs. A reference template is extracted from the signal at a known location (K_REF). A polynomial ALSSM fits the template and every candidate window in the signal; the Log-Cost Ratio (LCR)...</small></a></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="filtering">Filtering<a class="headerlink" href="#filtering" title="Permanent link">&para;</a></h2>
+<p>ALSSM-based signal filters.</p>
+<table class="gallery">
+<tbody>
+<tr>
+  <td class="gallery-plot"><a href="12-filtering/example-ex121.0-sc-filter.html"><img src="12-filtering/example-ex121.0-sc-filter.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="12-filtering/example-ex121.0-sc-filter.html"><b>Symmetric Moving Average Filters with ALSSMs [ex121.0]</b><br><small>Applies a CompositeCost with a two-sided symmetric window as a symmetric moving average filter of length L=100. A degree-0 polynomial ALSSM (i.e. a constant model) is combined with a forward left segment and a backward right segment of equal length. The resulting filter is equivalent to a finite-impulse-response...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="12-filtering/example-ex122.0-polynomial-filters.html"><img src="12-filtering/example-ex122.0-polynomial-filters.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="12-filtering/example-ex122.0-polynomial-filters.html"><b>Symmetric and Non-Symmetric Polynomial Filters with ALSSMs [ex122.0]</b><br><small>Applies CompositeCost instances with polynomial ALSSMs of degrees 0 through 3 to a rectangular test signal. Two filter configurations are shown for each polynomial degree: • Symmetric filter — a forward left window and a backward right window of equal size, yielding a zero-phase (non-causal) smoother. • Left...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="12-filtering/example-ex122.1-polynomial-filters-meixner.html"><img src="12-filtering/example-ex122.1-polynomial-filters-meixner.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="12-filtering/example-ex122.1-polynomial-filters-meixner.html"><b>Symmetric and Non-Symmetric Polynomial Filters with Meixner Basis [ex122.1]</b><br><small>Applies CompositeCost instances with AlssmPolyMeixner of degrees 0 through 7 to a rectangular test signal. The Meixner basis is orthogonal under the exponential (geometric) window weight, giving a well-conditioned Gram matrix for semi-infinite windows. This makes it the preferred polynomial basis for recursive least-squares filtering with exponential windows,...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="12-filtering/example-ex123.0-mc-filter.html"><img src="12-filtering/example-ex123.0-mc-filter.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="12-filtering/example-ex123.0-mc-filter.html"><b>Multi-Channel Symmetric Signal Filter [ex123.0]</b><br><small>Applies a CompositeCost with a symmetric two-sided window as a symmetric linear filter to a multi-channel signal. A degree-5 polynomial ALSSM is fitted over equal-length left and right windows. The same model is applied in parallel to all channels using the multi-channel (MC) output form of the ALSSM....</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="12-filtering/example-ex125.0-multiscale-filter.html"><img src="12-filtering/example-ex125.0-multiscale-filter.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="12-filtering/example-ex125.0-multiscale-filter.html"><b>Multi-Scale Polynomial (Savitzky-Golay) Smoothing [ex125.0]</b><br><small>Smooths a noisy single-channel EEG signal at a dyadic family of window lengths L \in {10, 20, 40, 80, 160, 320} with polynomial ALSSMs, and contrasts two mathematically equivalent ways of obtaining the multi-scale result: • Per-scale RLS — a fresh RLSAlssm over a CompositeCost is run for...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="12-filtering/example-ex125.1-multiscale-filter-centered.html"><img src="12-filtering/example-ex125.1-multiscale-filter-centered.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="12-filtering/example-ex125.1-multiscale-filter-centered.html"><b>Centered Multi-Scale Polynomial (Savitzky-Golay) Smoothing [ex125.1]</b><br><small>Companion to [ex125.0] (example-ex125.0-multiscale-filter.py), but using the symmetric, zero-lag centered windows that Savitzky-Golay smoothing normally uses (FORWARD segment a = -L/2, b = L/2 - 1) instead of one-sided BACKWARD windows. As before, two mathematically equivalent methods are compared: • Per-scale RLS — one RLSAlssm.fit() over a CompositeCost...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="12-filtering/example-ex126.0-2d-polynomial-filters.html"><img src="12-filtering/example-ex126.0-2d-polynomial-filters.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="12-filtering/example-ex126.0-2d-polynomial-filters.html"><b>Symmetric and Non-Symmetric 2-D Polynomial Filters with ALSSMs [ex126.0]</b><br><small>2-D extension of the 1-D polynomial smoother shown in ex122.0. Instead of a single CompositeCost, a separable NDCompositeCost is built from one polynomial CompositeCost per image axis and applied to a noisy 2-D signal (an image) in a single fit call. At every pixel the filter fits a...</small></a></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="polynomials-calculus">Polynomials Calculus<a class="headerlink" href="#polynomials-calculus" title="Permanent link">&para;</a></h2>
+<p>Calculus and cost functions with polynomials.</p>
+<table class="gallery">
+<tbody>
+<tr>
+  <td class="gallery-plot"><a href="21-polynomials-calculus/example-ex211.0-se-poly-poly.html"><img src="21-polynomials-calculus/example-ex211.0-se-poly-poly.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="21-polynomials-calculus/example-ex211.0-se-poly-poly.html"><b>Squared error between two polynomials [ex211.0]</b><br><small>Closed form computation of the squared error between two time-continuous polynomials.</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="21-polynomials-calculus/example-ex701.0-poly-poly-approximation.html"><img src="21-polynomials-calculus/example-ex701.0-poly-poly-approximation.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="21-polynomials-calculus/example-ex701.0-poly-poly-approximation.html"><b>Approximating a Polynomial by a Polynomial of Lower Degree [ex701.0]</b><br><small>Fits a polynomial of lower order to a polynomial of higher order by minimizing the squared error over the given window. This example is published in [Wildhaber2020].</small></a></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="event-detection-with-two-sided-line-models">Event Detection with Two-Sided Line Models<a class="headerlink" href="#event-detection-with-two-sided-line-models" title="Permanent link">&para;</a></h2>
+<p>Onset and peak detection with Two-Sided Line Models (TSLMs). Examples published in "Onset Detection of Pulse-Shaped Bioelectrical Signals Using Linear State Space Models" <a href="../../bibliography.html#waldmann2022">[Waldmann2022]</a>.</p>
+<table class="gallery">
+<tbody>
+<tr>
+  <td class="gallery-plot"><a href="40-app-changepoint-detection/example-ex401.0-onset-detection-edge-trivial-edu.html"><img src="40-app-changepoint-detection/example-ex401.0-onset-detection-edge-trivial-edu.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="40-app-changepoint-detection/example-ex401.0-onset-detection-edge-trivial-edu.html"><b>(Edu) Edge Detection [ex401.0]</b><br><small>This example is published in [Waldmann2022] as Example 1. This basic example illustrates the detection of edges using a Two-Sided Line Model (TSLM), weighting the two options of a &quot;Continuous&quot; versus a &quot;Straight&quot; line in a LCR term. Education Examples (Edu): This is an illustrative example to demonstrate...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="40-app-changepoint-detection/example-ex401.1-onset-detection-edge-trivial-app.html"><img src="40-app-changepoint-detection/example-ex401.1-onset-detection-edge-trivial-app.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="40-app-changepoint-detection/example-ex401.1-onset-detection-edge-trivial-app.html"><b>Edge Detection [ex401.1]</b><br><small>Example published in [Waldmann2022] as Example 1. Illustrates edge detection using a Two-Sided Line Model (TSLM) that scores each sample by the Log-Cost Ratio (LCR) between a Continuous constraint (shared offset and matching slopes on both sides) and a Straight constraint (single global line). Peaks in the LCR...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="40-app-changepoint-detection/example-ex402.0-onset-detection-abpnotch.html"><img src="40-app-changepoint-detection/example-ex402.0-onset-detection-abpnotch.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="40-app-changepoint-detection/example-ex402.0-onset-detection-abpnotch.html"><b>Notch Detection in ABP Signal [ex402.0]</b><br><small>Example published in [Waldmann2022] as Example 2. Arterial blood pressure (ABP) signals typically show a dicrotic notch in the descending slope, marking the end of the systolic cycle. This example detects these notches using a Two-Sided Line Model (TSLM) that compares a Continuous line fit (no slope change)...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="40-app-changepoint-detection/example-ex403.0-ecg-onset-detection_ponset_tpeak.html"><img src="40-app-changepoint-detection/example-ex403.0-ecg-onset-detection_ponset_tpeak.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="40-app-changepoint-detection/example-ex403.0-ecg-onset-detection_ponset_tpeak.html"><b>ECG P, T Wave Onset and Peak Detection [ex403.0]</b><br><small>Example published in [Waldmann2022] as Example 3. A common task in cardiology is to accurately measure the onsets and peaks of P and T waves in electrocardiography (ECG) signals. This example demonstrates a Two-Sided Line Model (TSLM) approach for extracting these fiducial points. Two separate TSLM cost functions...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="40-app-changepoint-detection/example-ex404.0-tslm.html"><img src="40-app-changepoint-detection/example-ex404.0-tslm.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="40-app-changepoint-detection/example-ex404.0-tslm.html"><b>Overview of Two-Sided Line Model (TSLM) Applications [ex404.0]</b><br><small>Compares multiple Two-Sided Line Model (TSLM) constraint types on a piecewise-linear test signal; cf. [Waldmann2022]. For each pair of hypothesis constraints (H0, H1), the Log-Cost Ratio (LCR) is computed and plotted. The constraint pairs tested are: • Left Horizontal vs. Horizontal • Continuous vs. Straight • Peak vs....</small></a></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="convolution">Convolution<a class="headerlink" href="#convolution" title="Permanent link">&para;</a></h2>
+<p>Correlation (or convolution) and matched filters. The method was published in "Windowed State Space Filters for Peak Interference Suppression in Neural Spike Sorting" <a href="../../bibliography.html#baeriswyl2022">[Baeriswyl2022]</a>.</p>
+<table class="gallery">
+<tbody>
+<tr>
+  <td class="gallery-plot"><a href="50-convolution/example-ex501.0-correlation_filter.html"><img src="50-convolution/example-ex501.0-correlation_filter.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="50-convolution/example-ex501.0-correlation_filter.html"><b>Correlation/Convolution in Low-Dimensional ALSSM Feature Space [ex501.0]</b><br><small>Performs correlation (or convolution) of a multi-channel signal (blue) with a given reference template (red) in a low-dimensional ALSSM feature space. Each signal window is projected onto the Legendre polynomial basis via an AlssmPolyLegendre and the resulting compact state-vector coefficients are used as features. Template matching is then...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="50-convolution/example-ex502.0-matched_filter.html"><img src="50-convolution/example-ex502.0-matched_filter.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="50-convolution/example-ex502.0-matched_filter.html"><b>Matched Filter in Low-Dimensional ALSSM Feature Space [ex502.0]</b><br><small>Implements a matched filter using ALSSM signal approximations (polynomial basis) to significantly increase processing speed compared to a direct sample-domain matched filter. A reference template is extracted from a 9-channel ECG signal and projected onto the Legendre polynomial basis via AlssmPolyLegendre. The matched filter response is computed as...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="50-convolution/example-ex503.0-convolution.html"><img src="50-convolution/example-ex503.0-convolution.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="50-convolution/example-ex503.0-convolution.html"><b>Convolution and Correlation in Low-Dimensional ALSSM Feature Space [ex503.0]</b><br><small>Computes the convolution, cross-correlation, and auto-correlation of a signal y with a reference filter h directly in a low-dimensional ALSSM feature space instead of in the original sample space. Both the signal and the filter are projected onto a polynomial basis through an AlssmPolyJordan model that is fitted...</small></a></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="shift-and-time-dilation-estimation">Shift and Time Dilation Estimation<a class="headerlink" href="#shift-and-time-dilation-estimation" title="Permanent link">&para;</a></h2>
+<p>Shift and Time Dilation Estimation with localized polynomial signal models. Examples published in "Signal Analysis Using Local Polynomial Approximations" <a href="../../bibliography.html#wildhaber2020">[Wildhaber2020]</a>.</p>
+<table class="gallery">
+<tbody>
+<tr>
+  <td class="gallery-plot"><a href="70-localized-polynomials/example-ex702.0-shift-estimation.html"><img src="70-localized-polynomials/example-ex702.0-shift-estimation.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="70-localized-polynomials/example-ex702.0-shift-estimation.html"><b>Audio Signal Shift Estimation [ex702.0]</b><br><small>Example 2 as published in [Wildhaber2020]. Equation references in the code (e.g. # Eq. 6.52) refer to equations in [Wildhaber2019]. Top plot: Two-channel acoustic signal from the left (L) and right (R) ear with an unknown interaural time delay (ITD) to be estimated. Middle plot: Local time-delay estimates...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="70-localized-polynomials/example-ex703.0-time-amplitude-scaling.html"><img src="70-localized-polynomials/example-ex703.0-time-amplitude-scaling.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="70-localized-polynomials/example-ex703.0-time-amplitude-scaling.html"><b>Time and Amplitude Scaling [ex703.0]</b><br><small>Estimates both a time-scaling (dilation) factor and an amplitude-scaling factor between two locally polynomial signals. This example is published in [Wildhaber2020]. The polynomial coefficients of the reference and the candidate windows are related by the dilation and amplitude operators, enabling a closed-form least-squares estimator via the polynomial calculus.</small></a></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="n-dimensional-signal-processing">N Dimensional Signal Processing<a class="headerlink" href="#n-dimensional-signal-processing" title="Permanent link">&para;</a></h2>
+<p>Processing of N-dimensional signals. Examples published in "Multi-Resolution Autonomous Linear State Space Filters for N-Dimensional Signals" <a href="../../bibliography.html#baeriswyl2025">[Baeriswyl2025]</a>.</p>
+<table class="gallery">
+<tbody>
+<tr>
+  <td class="gallery-plot"><a href="80-nDimensional/example-ex801.0-Text-Recognition.html"><img src="80-nDimensional/example-ex801.0-Text-Recognition.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="80-nDimensional/example-ex801.0-Text-Recognition.html"><b>Text Recognition [ex801.0]</b><br><small>Demonstrates 2-D ALSSM-based text recognition using an NDCompositeCost over a pixel image. A reference letter image is used as a template. The 2-D ALSSM filter projects each local image patch onto a separable polynomial basis (one per image dimension) and computes the Log-Cost Ratio (LCR) between the best-fit...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="80-nDimensional/example-ex802.0-WaterDropDetection.html"><img src="80-nDimensional/example-ex802.0-WaterDropDetection.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="80-nDimensional/example-ex802.0-WaterDropDetection.html"><b>Multi-Scale Water-Drop Detection with 2-D ALSSM / LCR [ex802.0]</b><br><small>Round water drops in a microscope image are detected as local maxima of a Log-Cost Ratio (LCR) between two competing 2-D ALSSM hypotheses, evaluated at several scales. For each scale an isotropic 1-D model -- an offset plus two cosine modes, AlssmPoly(0) + AlssmSin + AlssmSin -- is...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="80-nDimensional/example-ex803.0-2DConvolution.html"><img src="80-nDimensional/example-ex803.0-2DConvolution.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="80-nDimensional/example-ex803.0-2DConvolution.html"><b>Separable ALSSM Gaussian Kernel via 2-D NDCompositeCost [ex803.0]</b><br><small>A 2-D Gaussian smoothing kernel is approximated by a separable Autonomous Linear State-Space Model (ALSSM). Instead of building the kernel by hand, the approximation is obtained directly from a 2-D recursive least-squares fit: two identical one-dimensional CompositeCost terms (a two-sided, damped-polynomial model) are wrapped in an NDCompositeCost and...</small></a></td>
+</tr>
+<tr>
+  <td class="gallery-plot"><a href="80-nDimensional/example-ex804_0-MCShapeDetection_sECG.html"><img src="80-nDimensional/example-ex804_0-MCShapeDetection_sECG.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="80-nDimensional/example-ex804_0-MCShapeDetection_sECG.html"><b>Multi-Channel ECG Shape Detection with a 2-D ALSSM / Cost-Ratio [ex804.0]</b><br><small>Heartbeat shapes are detected in a multi-lead ECG by fitting a separable 2-D Autonomous Linear State-Space Model (ALSSM) over time (axis 0) and channel (axis 1) and scoring every time index with a cost ratio CR = \dfrac{J_0}{J_1} where J_0 is the squared error of a flat (zero)...</small></a></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.tracking", "navigation.top", "toc.follow", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
