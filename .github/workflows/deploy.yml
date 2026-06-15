@@ -112,6 +112,8 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -e .
+          python3 docs/scripts_docs/create_api.py
+          python3 docs/scripts_docs/create_changelog.py
 
       - name: Update Version Placeholder
         run: |

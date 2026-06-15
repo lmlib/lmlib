@@ -65,11 +65,11 @@ nav:
 
 
 plugins:
-  - search
   - gen-files:
       scripts:
-        - docs/scripts_docs/create_api.py
         - docs/scripts_docs/create_changelog.py
+        - docs/scripts_docs/create_api.py
+  - search
   - literate-nav:
       nav_file: SUMMARY.md
   - mkdocstrings:
