@@ -56,5 +56,4 @@ def main():
 
     print(f"Generated {OUTPUT} with {len(releases)} releases.")
 
-if __name__ == "__main__":
-    main()
+main()

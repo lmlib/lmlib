@@ -105,14 +105,13 @@ jobs:
           name: generated-docs
           path: docs/_generated
 
-      - name: Generate Changelog from Releases
+      - name: Install requirements
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pip install -r requirements.txt
           pip install -e .
-          python docs/scripts_docs/create_changelog.py
 
       - name: Update Version Placeholder
         run: |

@@ -69,6 +69,7 @@ plugins:
   - gen-files:
       scripts:
         - docs/scripts_docs/create_api.py
+        - docs/scripts_docs/create_changelog.py
   - literate-nav:
       nav_file: SUMMARY.md
   - mkdocstrings:
