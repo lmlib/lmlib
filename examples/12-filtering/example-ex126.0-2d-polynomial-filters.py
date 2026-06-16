@@ -3,7 +3,7 @@ Symmetric and Non-Symmetric 2-D Polynomial Filters with ALSSMs [ex126.0]
 ========================================================================
 
 2-D extension of the 1-D polynomial smoother shown in
-[ex122.0](../12-filtering/example-ex122.0-polynomial-filters.py).
+[ex122.0](../12-filtering/example-ex122.0-polynomial-filters-pascal.md).
 
 Instead of a single [`CompositeCost`][lmlib.statespace.cost.CompositeCost],
 a separable [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost] is built
@@ -13,20 +13,16 @@ image axis** and applied to a noisy 2-D signal (an image) in a single
 separable polynomial surface of degree ``N`` to the surrounding window and
 returns the surface value at the window centre.
 
-As in ex122, two filter configurations are shown for each polynomial degree:
+Two filter configurations are shown for each polynomial degree:
 
 * **Symmetric filter** — forward (left/top) *and* backward (right/bottom)
   windows of equal size on every axis (mixing matrix ``F = [[1, 1]]``),
   yielding a zero-phase (non-causal) 2-D smoother.
-* **Asymmetric (causal) filter** — a single forward window on the left/top
-  side of every axis (mixing matrix ``F = [[1, 0]]``), yielding a causal,
-  phase-delayed 2-D smoother. The phase delay is visible as a shift of the
-  image content toward the bottom-right.
+* **Asymmetric filter** — a single forward window from the left/top
+  side of every axis (mixing matrix ``F = [[1]]``).
 
 Higher polynomial degrees follow the image edges more closely but are more
 sensitive to noise in flat regions.
-
-Authors: lmlib developers
 """
 
 import matplotlib.pyplot as plt
@@ -50,9 +46,9 @@ img[200:280, 150:275] = 0.30 + 0.5 * (cc[200:280, 150:275] - 200) / 50
 Y = img + gen_wgn((K1, K2), 0.18, seed=1)   # noisy observation
 
 # --- Filter configuration ----------------------------------------------------
-DEGREES = (0, 1, 2, 3)                   # polynomial degrees, as in ex122
-L = 20                                    # half-window length (samples per side)
-G = 5                                  # effective window weight (samples)
+DEGREES = (0, 1, 2, 3, 4)                  # polynomial degrees, as in ex122
+L = 10                                     # half-window length (samples per side)
+G = 40                                     # effective window weight (samples)
 
 
 def make_nd_cost(poly_degree, symmetric):
@@ -67,19 +63,24 @@ def make_nd_cost(poly_degree, symmetric):
     symmetric : bool
         If True, use forward + backward windows (``F = [[1, 1]]``,
         zero-phase). If False, use the forward window only
-        (``F = [[1, 0]]``, causal / phase-delayed).
+        (``F = [[1]]``, causal / phase-delayed).
     """
-    alssm_poly = lm.AlssmPolyJordan(poly_degree=poly_degree)
-
-    # forward (left/top) and backward (right/bottom) segments per axis
-    segment_left = lm.Segment(a=-L, b=-1, direction=lm.FORWARD, g=G)
-    segment_right = lm.Segment(a=0, b=L, direction=lm.BACKWARD, g=G)
-
-    F = [[1, 1]] if symmetric else [[1, 0]]   # both segments on, or left only
+    #alssm_poly = lm.AlssmPolyJordan(poly_degree=poly_degree)
+    alssm_poly = lm.AlssmPolyLegendre(poly_degree=poly_degree,a_seg=-L, b_seg=L)
 
     # one CompositeCost per image dimension, wrapped into an NDCompositeCost
-    cost_dim1 = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=F)
-    cost_dim2 = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=F)
+    if symmetric:
+        segment_left = lm.Segment(a=-L, b=0, direction=lm.FORWARD, g=G)
+        segment_right = lm.Segment(a=1, b=L, direction=lm.BACKWARD, g=G)
+        F = [[1, 1]]
+        cost_dim1 = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=F)
+        cost_dim2 = lm.CompositeCost((alssm_poly,), (segment_left, segment_right), F=F)
+    else:
+        #segment_left = lm.Segment(a=-L//2, b=L//2, direction=lm.FORWARD, g=G)
+        segment_left = lm.Segment(a=-L*4, b=0, direction=lm.FORWARD, g=G)
+        F = [[1]]
+        cost_dim1 = lm.CompositeCost((alssm_poly,), (segment_left, ), F=F)
+        cost_dim2 = lm.CompositeCost((alssm_poly,), (segment_left, ), F=F)
     return lm.NDCompositeCost([cost_dim1, cost_dim2])
 
 

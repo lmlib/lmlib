@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Author: Waldmann Frédéric, Wildhaber Reto
 """
-Surface Plot of Multivariate Polynomials [gu202.0]
+Surface Plot of Multivariate Polynomials [code202.0]
 ==================================================
 
 This guide script generates a bivariate polynomial using the [`MPoly`][lmlib.polynomial.poly.MPoly] class

@@ -51,8 +51,8 @@ traj_Q = np.array([alpha.T@np.power(z, q) for z in z_range])
 traj_R = np.array([beta.T@np.power(z, r) for z in z_range])
 
 fig, ax = plt.subplots()
-ax.plot(z_range, traj_Q, ls='--', c='b', lw=1.0, label=r'$\alpha^T z^q$')
-ax.plot(z_range, traj_R, ls='-', c='k', lw=1.0, label=r'$\beta^T z^r$')
+ax.plot(z_range, traj_Q, ls='--', c='r', label=r'$\alpha^T z^q$')
+ax.plot(z_range, traj_R, ls='-', c='g', label=r'$\beta^T z^r$')
 ax.axvline(a, ls=':', c='k', lw=0.5)
 ax.axvline(b, ls=':', c='k', lw=0.5)
 ax.set_ylim([-0.01, 0.35])
@@ -63,5 +63,9 @@ ax.set_xticklabels(['a','b'])
 ax.set_yticks([])
 ax.set_title('Approximating a Polynomial by a Polynomial of Lower Degree')
 ax.legend(loc=1, fontsize=9)
+
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+
 plt.show()
 

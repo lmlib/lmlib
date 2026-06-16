@@ -167,5 +167,7 @@ if True:
     for ax in axs:
         ax.axvline(k_min, c='k', lw=0.5)
         ax.legend(loc=1, fontsize=8)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
     axs[-1].set_xlabel('k')
     plt.show()

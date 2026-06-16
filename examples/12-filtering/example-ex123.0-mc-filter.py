@@ -7,8 +7,7 @@ symmetric linear filter to a multi-channel signal.
 
 A degree-5 polynomial ALSSM is fitted over equal-length left and right
 windows.  The same model is applied in parallel to all channels using the
-multi-channel (MC) output form of the ALSSM.  The ``lfilter`` backend is
-selected for efficiency.
+multi-channel (MC) output form of the ALSSM. Each channel is minimized individually.
 
 """
 
@@ -17,10 +16,10 @@ import numpy as np
 import lmlib as lm
 from lmlib.utils.generator import gen_rand_walk
 
-lm.set_backend('lfilter')
 # --- Generating test signal ---
 K = 1000
 seeds = [130, 150, 200]
+NCH = len(seeds)
 y = np.column_stack([gen_rand_walk(K, seed=s) for s in seeds])
 
 
@@ -42,12 +41,17 @@ rls = lm.RLSAlssm(costs, steady_state=False)
 y_hat = rls.fit(y)
 
 # --- Plotting ----
-fig, axs = plt.subplots(len(seeds), 1, sharex='all')
-for m, ax in enumerate(axs):
-    ax.plot(y[:, m], lw=0.6, c='gray', label=r'$y_{}$'.format(m))
-    ax.plot(y_hat[:,  m], lw=1, label=r'$\hat{{y}}_{}$'.format(m))
-    ax.legend(loc='upper right')
+fig, ax = plt.subplots(1, 1, sharex='all', figsize=(6, 5), )
+OFFSETS = np.arange(NCH ) * 25
 
-axs[-1].set_xlabel('k')
+ax.plot(y + OFFSETS,     lw=0.6, c='gray', label=[r'$y$'] + ['_nolegend_'] * (NCH - 1) )
+ax.plot(y_hat + OFFSETS, lw=1,   c='b',    label=[r'$\hat{{y}}$'] + ['_nolegend_'] * (NCH - 1))
+ax.legend(loc='upper right')
+
+ax.set(xlabel='$k$',ylabel='$y$')
+
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+
 
 plt.show()

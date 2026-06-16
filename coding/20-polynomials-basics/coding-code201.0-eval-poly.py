@@ -1,5 +1,5 @@
 r"""
-Structure and Evaluation of Univariate Polynomials [gu201.0]
+Structure and Evaluation of Univariate Polynomials [code201.0]
 ============================================================
 
 Demonstrates how to create and evaluate a univariate polynomial using

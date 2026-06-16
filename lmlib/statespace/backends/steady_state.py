@@ -389,6 +389,16 @@ def covariance_matrix_schur(A, C, gamma, a, b, delta):
     """
     A = np.asarray(A, dtype=float)
 
+    # ── Exact direct-sum path for finite segments ───────────────────────────
+    # On a finite window W is a finite sum; evaluating it directly is exact to
+    # machine precision and avoids the N^2 x N^2 Stein solve below, which loses
+    # several digits for short, high-degree polynomial segments (e.g.
+    # AlssmPolyJordan, which is caught by neither the Legendre nor the Meixner
+    # fast path).  The O((b-a) N^3) loop is capped so very wide finite windows
+    # still fall through to the Stein solver.
+    if not np.isinf(a) and not np.isinf(b) and (b - a) <= _DIRECT_SUM_MAX_TERMS:
+        return covariance_matrix_limited_sum(A, C, gamma, a, b, delta)
+
     # ── Fast path: AlssmPolyLegendre ─────────────────────────────────────────────
     # When A is a Legendre shift matrix and gamma < 1, the Stein equation in
     # the N^2 × N^2 Kronecker space becomes severely ill-conditioned (singular
@@ -408,16 +418,6 @@ def covariance_matrix_schur(A, C, gamma, a, b, delta):
     if is_m:
         return covariance_matrix_meixner(A, C, gamma, a, b, delta)
 
-
-    # ── Exact direct-sum path for finite segments ───────────────────────────
-    # On a finite window W is a finite sum; evaluating it directly is exact to
-    # machine precision and avoids the N^2 x N^2 Stein solve below, which loses
-    # several digits for short, high-degree polynomial segments (e.g.
-    # AlssmPolyJordan, which is caught by neither the Legendre nor the Meixner
-    # fast path).  The O((b-a) N^3) loop is capped so very wide finite windows
-    # still fall through to the Stein solver.
-    if not np.isinf(a) and not np.isinf(b) and (b - a) <= _DIRECT_SUM_MAX_TERMS:
-        return covariance_matrix_limited_sum(A, C, gamma, a, b, delta)
 
     # ── General path: Stein equation in N^2 × N^2 ───────────────────────────
     N = int(np.shape(A)[0])

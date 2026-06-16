@@ -43,18 +43,18 @@ N2 = 5  # number of polynomial coefficient for spike. Note: N>4 might leads to  
 
 # --------------- main -----------------------
 
-# Defining ALSSM models
-alssm_baseline = lm.AlssmPoly(poly_degree=N1 - 1, label="alssm-baseline")
-alssm_pulse = lm.AlssmPolyJordan(poly_degree=N2 - 1, label="alssm-pulse")
-
 # Defining segments with a left- resp. right-sided decaying window and a center segment with nearly rectangular window
-segmentL = lm.Segment(a=-np.inf, b=-1 - SHAPE_LEN_2, direction=lm.FORWARD, g=g_bl, delta=-1 - SHAPE_LEN_2,
-                      label='left-segment')
-segmentC = lm.Segment(a=-SHAPE_LEN_2, b=SHAPE_LEN_2, direction=lm.FORWARD, g=g_sp, label='center-segment')
-segmentR = lm.Segment(a=SHAPE_LEN_2 + 1, b=np.inf, direction=lm.BACKWARD, g=g_bl, delta=SHAPE_LEN_2 + 1,
-                      label='right-segment')
+segmentL = lm.Segment(a=-np.inf, b=-1 - SHAPE_LEN_2, direction=lm.FORWARD, g=g_bl, delta=-1 - SHAPE_LEN_2, label='left segment')
+segmentC = lm.Segment(a=-SHAPE_LEN_2, b=SHAPE_LEN_2, direction=lm.FORWARD, g=g_sp, label='center segment')
+segmentR = lm.Segment(a=SHAPE_LEN_2 + 1, b=np.inf, direction=lm.BACKWARD, g=g_bl, delta=SHAPE_LEN_2 + 1, label='right segment')
 
-# Defining the final cost function (a so called composite cost = CCost)
+# Defining ALSSM models
+alssm_baseline = lm.AlssmPolyJordan(poly_degree=N1 - 1, label="alssm-baseline")
+#alssm_pulse = lm.AlssmPolyJordan(poly_degree=N2 - 1, label="alssm-pulse")
+alssm_pulse = lm.AlssmPolyLegendre(poly_degree=N2 - 1, a_seg= segmentC.a, b_seg=segmentC.b, label="alssm-pulse")
+
+
+# Defining the cost function (a so called composite cost = CCost)
 # mapping matrix between models and segments (rows = models, columns = segments)
 F = [[0, 1, 0],
      [1, 1, 1]]
@@ -68,8 +68,8 @@ rls.filter(y)  # run recursions
 xs = rls.minimize_x()  # unconstrained minimization
 xs_ref = xs[K_REF]  # store state variables as reference pulse shape
 
-H_A = np.transpose(block_diag([xs_ref[0:N2]], np.eye(N1)))  # constrain matrix to find pulses of same shape as the reference pulse
-H_0 = np.transpose(np.hstack([np.zeros((N1, N2)), np.eye(N1)]))  # constrain matrix to test for no pulse (baseline only)
+H_A = np.transpose(block_diag([xs_ref[0:N2]], np.eye(N1)))  # constraints matrix to find pulses of same shape as the reference pulse
+H_0 = np.transpose(np.hstack([np.zeros((N1, N2)), np.eye(N1)]))  # constraints matrix to test for no pulse (baseline only)
 
 print("H_A : ", H_A)
 print("H_0 : ", H_0)
@@ -82,8 +82,8 @@ J_0 = rls.eval_errors(xs_0)  # get SE (squared error)  for hypothesis 0 (baselin
 
 lcr = -0.5 * np.log(J_A / J_0)  # log-cost ratio computation
 
-vs = rls.minimize_v(H_A)
-amp = vs[:, 0]
+vs = rls.minimize_v(H_A)     # constrainted minimization (pulse scaling and baseline coefficients)
+amp = vs[:, 0]               # optimal scaling of pulse over time
 
 # find peaks
 peaks, _ = find_peaks(lcr, height=LCR_THD, distance=MIN_DIST)
@@ -92,53 +92,53 @@ peaks, _ = find_peaks(lcr, height=LCR_THD, distance=MIN_DIST)
 k = np.arange(K)
 
 # Window
-wins = lm.Window.eval_y(cost, peaks, K, merged_seg=False)
+wins = lm.Window.eval_y(cost, peaks, K, merged_seg=False,thd=0.02,fill_value=np.nan)
 
 # Trajectories
-trajs_baseline = lm.Trajectory.eval_y(cost, xs_A, peaks, K, F=[[0, 0, 0], [1, 1, 1]], thd=0.01)
-trajs_pulse = lm.Trajectory.eval_y(cost, xs_A, peaks, K, F=[[0, 1, 0], [1, 1, 1]], thd=0.01)
+trajs_baseline = lm.Trajectory.eval_y(cost, xs_A, peaks, K, F=[[0, 0, 0], [1, 1, 1]], thd=0.02, merged_seg=False)
+trajs_pulse    = lm.Trajectory.eval_y(cost, xs_A, peaks, K, F=[[0, 1, 0], [1, 1, 1]], thd=0.02)
 
 
-fig, axs = plt.subplots(6, 1, sharex='all', figsize=(8, 6))
+fig, axs = plt.subplots(5, 1, figsize=(9, 8), gridspec_kw={'height_ratios': [1, 3, 1, 1, 1]}, sharex='all')
 
-# Remove horizontal space between axes, maximize use of plotting pane
-fig.tight_layout()
-fig.subplots_adjust(hspace=0.0, left=0.08, bottom=0.05)
-
-axs[0].plot(k, wins[0], color='k', lw=1.0, ls='--', label=segmentL.label)
-axs[0].plot(k, wins[1], color='k', lw=1.0, ls='-', label=segmentC.label)
-axs[0].plot(k, wins[2], color='k', lw=1.0, ls=':', label=segmentR.label)
-    
-axs[0].set(ylabel='windows')
+axs[0].plot(k, wins[0], color='r', lw=0.75, ls='-',  label=segmentL.label)
+axs[0].plot(k, wins[1], color='k', lw=0.75, ls='-',  label=segmentC.label)
+axs[0].plot(k, wins[2], color='g', lw=0.75, ls='-',  label=segmentR.label)
+axs[0].set(ylabel='$w$')
 axs[0].legend(loc='upper right')
 
 axs[1].plot(k, y, color="gray", lw=1.0, label='y')
 axs[1].axvline(x=K_REF, color='black', ls='--')
 axs[1].text(K_REF, y[K_REF], ' K_REF', horizontalalignment='right', rotation=90)
+axs[1].plot(range(K), trajs_pulse, color='b', lw=1.0, linestyle="-", label='estimated pulses')
+for i, (traj_baseline,color) in enumerate(zip(trajs_baseline,['r','k','g'])):
+    axs[1].plot(range(K), traj_baseline, color=color, lw=1.5, linestyle="-", label='estimated baseline')
 axs[1].legend(loc='upper right')
+axs[1].set(ylabel = '$y$')
 
-axs[2].plot(k, y, color="gray", lw=1.0, label='y')
-axs[2].plot(range(K), trajs_pulse, color='b', lw=1.0, linestyle="-", label='"pulses"')
-axs[2].plot(range(K),trajs_baseline , color='k', lw=1.0, linestyle="-", label='"baseline"')
+axs[2].plot(k, J_A, lw=1.0, color='blue', label=r"$J(x_A)$")
+axs[2].plot(k, J_0, lw=1.0, color='black', label=r"$J(x_0)$")
 axs[2].legend(loc='upper right')
+axs[2].set(ylabel = '$J$')
 
-axs[3].plot(k, J_A, lw=1.0, color='blue', label=r"$J(x_A)$")
-axs[3].plot(k, J_0, lw=1.0, color='black', label=r"$J(x_0)$")
+axs[3].plot(k, lcr, lw=1.0, color='black', label=r"$LCR = -.5 ln(J(\hat{x}_A) / J(\hat{x}_0))$")
+axs[3].scatter(peaks, lcr[peaks], marker=7, c='b')
+axs[3].axhline(LCR_THD, color="black", linestyle="--", lw=0.5, label='detection threshold')
+axs[3].set_ylim(0.0, 0.45)
+axs[3].set(ylabel = 'LCR')
 axs[3].legend(loc='upper right')
 
-axs[4].plot(k, lcr, lw=1.0, color='black', label=r"$LCR = -.5 ln(J(\hat{x}_A) / J(\hat{x}_0))$")
-axs[4].scatter(peaks, lcr[peaks], marker=7, c='b')
-axs[4].axhline(LCR_THD, color="black", linestyle="--", lw=1.0)
-axs[4].set_ylim(0.0, 0.45)
-axs[4].legend(loc='upper right')
-
-axs[5].plot(k, amp, lw=1.0, color='gray', label=r'$\hat{\lambda}_{k}$')
-_, stemlines, _ = axs[5].stem(peaks, amp[peaks], markerfmt="bo", basefmt=" ")
+axs[4].plot(k, amp, lw=1.0, color='gray', label=r'$\hat{\lambda}$')
+_, stemlines, _ = axs[4].stem(peaks, amp[peaks], markerfmt="bo", basefmt=" ")
 plt.setp(stemlines, 'linewidth', 2, 'color', 'blue')
-axs[5].axhline(1.0, color="black", linestyle="--", lw=1.0)
-axs[5].axhline(0, color="black", lw=0.5)
-axs[5].legend(loc='upper right')
-axs[5].set_ylim(0.5, 1.4)
-axs[5].set(xlabel='time index $k$')
+axs[4].axhline(1.0, color="black", linestyle="--", lw=0.5, label='ground truth scaling')
+axs[4].axhline(0, color="black", lw=0.5)
+axs[4].legend(loc='upper right')
+axs[4].set_ylim(0.5, 1.4)
+axs[4].set(ylabel = r'$\lambda$', xlabel='time index $k$')
+
+for _ax in axs:
+    _ax.spines['top'].set_visible(False)
+    _ax.spines['right'].set_visible(False)
 
 plt.show()

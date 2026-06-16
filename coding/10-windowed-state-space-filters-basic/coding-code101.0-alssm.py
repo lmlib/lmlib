@@ -1,5 +1,5 @@
 """
-Basic ALSSM Coding [gu101.0]
+Basic ALSSM Coding [code101.0]
 ============================
 
 Demonstrates how to set up an autonomous linear state space model (ALSSM).

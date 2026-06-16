@@ -14,6 +14,7 @@ Support lmlib by joining the [community](https://www.lmlib.ch/).
 - Frédéric Waldmann, FHNW Muttenz
 - Christof Baeriswyl, ETH Zürich
 - Luca Fleischmann, BFH Biel
+- Simon Büttler, FHNW Muttenz
 
 ## Research
 

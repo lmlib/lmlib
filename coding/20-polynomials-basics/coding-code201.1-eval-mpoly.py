@@ -1,5 +1,5 @@
 r"""
-Structure and Evaluation of Multivariate Polynomials [gu201.1]
+Structure and Evaluation of Multivariate Polynomials [code201.1]
 ==============================================================
 
 Demonstrates how to create and evaluate a multivariate polynomial using

@@ -1,5 +1,5 @@
 """
-Export of Transfer-Function Coefficients [gu132.0]
+Export of Transfer-Function Coefficients [code912.0]
 ==================================================
 
 Shows how to extract the IIR/FIR transfer-function coefficients from an

@@ -148,8 +148,8 @@ axs[nax].plot(k, h_filter_zeropadded, c=c_sample, lw=lw_sampleresuts, label='$h$
 axs[nax].plot(k, h_trajectory_zeropadded, c=c_alssminput, lw=lw_alssmresults, ls='--',label=r'$\hat h$')
 axs[nax].legend(loc='upper right')
 axs[nax].axvline(0,c='k',lw=0.5,ls='--')
-axs[nax].text(0  ,  -0.69 ,r'$a$',ha='center')
-axs[nax].text(20-0.1 ,  -0.69 ,r'$b$',ha='center')
+axs[nax].text(0      ,  -0.73 ,r'$a$',ha='center')
+axs[nax].text(20-0.1 ,  -0.73 ,r'$b$',ha='center')
 axs[nax].axvline(20,c='k',lw=0.5,ls='--')
 axs[nax].figure.subplots_adjust(hspace=0.4)  # global hspace
 

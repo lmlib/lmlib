@@ -1,8 +1,8 @@
 """
-Symmetric and Non-Symmetric Polynomial Filters with ALSSMs [ex122.0]
+Symmetric and Non-Symmetric Polynomial Filters with Pascal Basis [ex122.0]
 ====================================================================
 
-Applies [`CompositeCost`][lmlib.statespace.cost.CompositeCost] instances with polynomial ALSSMs of degrees
+Applies [`CompositeCost`][lmlib.statespace.cost.CompositeCost] instances with [`AlssmPoly`][lmlib.statespace.model.AlssmPoly] of degrees
 0 through 3 to a rectangular test signal.
 
 Two filter configurations are shown for each polynomial degree:
@@ -64,15 +64,19 @@ STYLES = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:b
 fig, ax = plt.subplots(2, sharex='all', figsize=(10, 6))
 ax[0].plot(k, y, lw=0.6, c='gray', label=rf'$y$')
 for (i, y_hat) in enumerate(y_hats_sym):
-    ax[0].plot(k, y_hat, STYLES[i], lw=1, label=r'$N=' + str(i) + '$')
+    ax[0].plot(k, y_hat, STYLES[i], lw=1, label=r'$\hat y, N=' + str(i) + '$')
 ax[0].legend(loc='upper right')
 ax[0].set_title('Left- and Right-Sided CostSegment (Symmetric)')
 
 ax[1].plot(k, y, lw=0.6, c='gray', label=rf'$y$')
 for (i, y_hat) in enumerate(y_hats_left):
-    ax[1].plot(k, y_hat, STYLES[i], lw=1, label=r'$N=' + str(i) + '$')
+    ax[1].plot(k, y_hat, STYLES[i], lw=1, label=r'$\hat y, N=' + str(i) + '$')
 ax[1].legend(loc='upper right')
 ax[1].set_title('Left-Sided CostSegment only (non-symmetric)')
 ax[1].set_xlabel('k')
+
+for _ax in ax:
+    _ax.spines['top'].set_visible(False)
+    _ax.spines['right'].set_visible(False)
 
 plt.show()

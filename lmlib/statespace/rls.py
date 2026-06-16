@@ -493,8 +493,7 @@ class RLSAlssm:
         $$
 
         which is equivalent to a sliding-window linear filter whose effective
-        impulse response lives in the span of the ALSSM (see
-        [ex504](../../../examples/50-convolution/example-ex504.0-convolution-benchmark.py)).
+        impulse response lives in the span of the ALSSM.
         Because $\xi_k$ is obtained by a recursive filter, the cost is
         $\mathcal{O}(K \cdot N)$ and **independent of the effective filter
         length** (the segment window), unlike a direct sample-domain
@@ -1079,7 +1078,7 @@ class RLSAlssm:
             # equally, which matches the default behaviour of the 1-D branch below.
             out_dict['y_hat'] = self._cost_terms.eval_alssm_output(x, nd_alssm_weights=eval_alssm_weights)
         else:
-            out_dict['y_hat']  = self._cost_terms.eval_alssm_output(x, alssm_weights= eval_alssm_weights if eval_alssm_weights is not None else [1.0] * len(self._cost_terms.get_alssms()))
+            out_dict['y_hat'] = self._cost_terms.eval_alssm_output(x, alssm_weights= eval_alssm_weights if eval_alssm_weights is not None else [1.0] * len(self._cost_terms.get_alssms()))
 
         if _output == ('y_hat',):
             return out_dict['y_hat']

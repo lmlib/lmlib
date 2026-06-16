@@ -45,8 +45,6 @@ rls_y.filter(y_mc)  # Transform observations
 xs_hat = rls_y.minimize_x()  # get transformed observations
 xs_h = xs_hat[K_REF]  # get correlation tempalte
 
-y_hat = cost.eval_alssm_output(xs_hat)  # signal reconstruction using ALSSM approximation (for illustration only)
-
 # -- 3a. Get ALSSM Template of Matched filter
 Ryy = np.cov(y_mc.T)
 xs_h_matched = np.linalg.inv(Ryy) @ xs_h
@@ -64,34 +62,21 @@ h_mc_matched = (np.linalg.inv(Ryy) @ h_mc.T).T
 # h_mc_matched =  alpha * h_mc_matched 
 
 
-# -- 3. Fast convolution in ALSSM feature space (channel-wise) --
-print("Processing Speed Measurements")
-print("-----------------------------")
-
+# -- 4. Fast convolution in ALSSM feature space (channel-wise) --
 # xi-only filter for the convolution: no W / kappa and no steady state needed.
-rls_conv = lm.RLSAlssm(cost, steady_state=False, calc_W=False, calc_kappa=False, backend='lfilter')
-
-start = time.process_time()  # start timer for speed comparison
+rls = lm.RLSAlssm(cost, steady_state=False, calc_W=False, calc_kappa=False, backend='lfilter')
 
 # Matched filtering in ALSSM feature space: filter y and contract the
 # per-sample state with the matched template. The multichannel template
 # (NOFCH, N) is summed over channels automatically.
-corr_alssm = rls_conv.convolve(y_mc, xs_h_matched)
+corr_alssm = rls.convolve(y_mc, xs_h_matched)
 
-print("Duration of correlation (or convolution) in ALSSM feature space (incl. signal projection): {:10.3f}ms".format(
-    (time.process_time() - start) * 1e3))
-
-# -- 4. Standard convolution in sample space (channel-wise) (for comparison) --
-start = time.process_time()  # start timer for speed comparison
-
+# -- 5. Standard convolution in sample space (channel-wise) (for comparison) --
 corr_native = np.zeros(y_mc.shape[0])
 for j in range(NOFCH):
     corr_native[-a:-a + K - (b - a)] += np.correlate(y_mc[:, j], h_mc_matched[:, j], 'valid')
 
-print("Duration of correlation (or convolution) in sample space.                         : {:10.3f}ms".format(
-    (time.process_time() - start) * 1e3))
-
-# -- 5.  Plotting --
+# -- 6.  Plotting --
 template_trajectory = lm.Trajectory.eval_y(cost, xs_h, K_REF, K)
 
 _, axs = plt.subplots(2, 1, figsize=(7, 5), gridspec_kw={'height_ratios': [2, 1]}, sharex='all')
@@ -100,12 +85,11 @@ offsets = (np.arange(NOFCH, 0, -1) * .5)
 
 # Observation 
 axs[nax].set(xlabel='$k$', ylabel=r'$y$')
-axs[nax].plot(k, y_mc + offsets, c='b', lw=1, label=['$y$ (sample space)'] + [''] * (NOFCH - 1))
-axs[nax].plot(k, y_hat + offsets, c='k', linestyle="--", lw=1.2, label=[r'$\hat y$ (ALSSM space)'] + [''] * (NOFCH - 1))
-axs[nax].plot(k, template_trajectory + offsets, '-', c='tab:red', lw=2.0, label=['corr. template'] + [''] * (NOFCH - 1))
+axs[nax].plot(k, y_mc + offsets, c='gray',  label=['$y$'] + [''] * (NOFCH - 1))
+axs[nax].plot(k, template_trajectory + offsets, '-', c='g', lw=2.0, label=['ALSSM trajectory (template)'] + [''] * (NOFCH - 1))
 axs[nax].axvline(K_REF + a, color="black", linestyle="--", lw=0.5)
 axs[nax].axvline(K_REF + b, color="black", linestyle="--", lw=0.5)
-axs[nax].axvline(K_REF, color="tab:red", linestyle=":", lw=1.0)
+#axs[nax].axvline(K_REF, color="tab:red", linestyle=":", lw=1.0)
 axs[nax].legend(loc='upper right')
 axs[nax].set(ylabel='Observations')
 ch_labels = ['Obs. CH {}'.format(i) for i in range(NOFCH, 0, -1)]
@@ -114,13 +98,16 @@ ch_labels = ['Obs. CH {}'.format(i) for i in range(NOFCH, 0, -1)]
 # Convolution
 nax += 1
 axs[nax].set(xlabel='$k$')
-axs[nax].plot(k, corr_native, c='b', lw=1, linestyle='-', label="sample space corr. (reference)")
-axs[nax].plot(k, corr_alssm, '--', c='k', lw=1.2, label="ALSSM space corr.")
-axs[nax].axvline(K_REF, color="tab:red", linestyle=":", lw=1.0)
+axs[nax].plot(k, corr_native, ls='--', c='k', lw=1, label=r'$y \star  h$')
+axs[nax].plot(k, corr_alssm,  ls='-',  c='b', lw=1, label=r'$y \star \hat h$')
 axs[nax].legend(loc='upper right')
 axs[nax].set(ylabel='Correlation')
 
 axs[nax].set_xlim(100, K - 100)
+
+for _ax in axs:
+    _ax.spines['top'].set_visible(False)
+    _ax.spines['right'].set_visible(False)
 
 plt.suptitle('Matched Filter in Low-Dimensional ALSSM Feature Space of \n Polynomials of degree $' + str(pd) + '$')
 plt.show()

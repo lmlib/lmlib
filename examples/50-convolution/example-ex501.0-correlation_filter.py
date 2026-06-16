@@ -72,7 +72,7 @@ h_mc = y_mc[K_REF + a:K_REF + b + 1]  # cut out impulse response
 for j in range(NOFCH):
     corr_native[-a:-a + K - (b - a)] += np.correlate(y_mc[:, j], h_mc[:, j], 'valid')
 
-print("Duration of correlation (or convolution) in sample space.                         : {:10.3f}ms".format(
+print("Duration of correlation (or convolution) in sample space: {:10.3f}ms".format(
     (time.process_time() - start) * 1e3))
 
 # -- 5.  Plotting --
@@ -84,27 +84,28 @@ offsets = (np.arange(NOFCH, 0, -1) * .5)[None,:]
 
 # Observation 
 axs[nax].set(xlabel=r'$k$', ylabel=r'$y$')
-l1=axs[nax].plot(k, y_mc + offsets, c='b', lw=1,  )
-l2=axs[nax].plot(k, y_hat + offsets, c='k', linestyle="--", lw=1,  )
-l3=axs[nax].plot(k, template_trajectory + offsets, '-', c='tab:red', lw=2.0,  )
+axs[nax].plot(k, y_mc + offsets, c='gray',   label=['$y$'] + [''] * (NOFCH - 1)  )
+axs[nax].plot(k, template_trajectory + offsets, '-', c='g', lw=2.0, label=['ALSSM trajectory (template)'] + [''] * (NOFCH - 1))
 axs[nax].axvline(K_REF + a, color="black", linestyle="--", lw=0.5)
 axs[nax].axvline(K_REF + b, color="black", linestyle="--", lw=0.5)
-axs[nax].axvline(K_REF, color="tab:red", linestyle=":", lw=1.0)
-axs[nax].legend([l1[0],l2[0],l3[0]],[r'$y$ (sample space)',r'$\hat y$ (ALSSM space)','corr. template'], loc='upper right')
+axs[nax].legend(loc='upper right')
 axs[nax].set(ylabel='Observations')
 ch_labels = ['Obs. CH {}'.format(i) for i in range(NOFCH, 0, -1)]
 # axs[nax].legend(ch_labels)
 
-# Convolution
+# Correlation
 nax += 1
 axs[nax].set(xlabel='$k$')
-axs[nax].plot(k, corr_native, c='b', lw=1, linestyle='-', label="sample space corr. (reference)")
-axs[nax].plot(k, corr_alssm, '--', c='k', lw=1, label="ALSSM space corr.")
-axs[nax].axvline(K_REF, color="tab:red", linestyle=":", lw=1.0)
+axs[nax].plot(k, corr_native, ls='--', c='k', lw=1, label=r'$y \star  h$')
+axs[nax].plot(k, corr_alssm,  ls='-',  c='b', lw=1, label=r'$y \star \hat h$')
 axs[nax].legend(loc='upper right')
 axs[nax].set(ylabel='Correlation')
 
 axs[nax].set_xlim(100, K - 100)
+
+for _ax in axs:
+    _ax.spines['top'].set_visible(False)
+    _ax.spines['right'].set_visible(False)
 
 plt.suptitle(f"Signal Correlation in Low-Dimensional ALSSM Feature Space of \n Polynomials of degree {pd}")
 plt.show()

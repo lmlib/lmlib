@@ -46,4 +46,8 @@ ax.axvline(b, c='k', lw=0.5)
 ax.legend()
 ax.set_xlabel('$x$')
 ax.set_title('Squared Error Between Two Polynomials Within a Given Interval')
+
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+
 plt.show()

@@ -1,5 +1,5 @@
 """
-Benchmarking State-Space vs. Transfer-Function Backend [gu130.0]
+Benchmarking State-Space vs. Transfer-Function Backend [code910.0]
 ================================================================
 
 Measures the throughput (in mega-samples per second, MS/s) of the

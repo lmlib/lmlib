@@ -6,6 +6,7 @@ import subprocess
 import shutil
 import re
 import html
+import yaml
 from pathlib import Path
 import matplotlib
 # Force non-interactive backend immediately to prevent GUI issues in headless environments
@@ -160,6 +161,28 @@ def read_folder_meta(folder_path):
     return folder_path.name.replace('-', ' ').replace('_', ' ').title(), ""
 
 
+def read_gallery_skiprun(folder_path):
+    """Filenames whose figure generation the gallery build must skip.
+
+    Single source of truth: a ``<!-- gen-gallery:skip-run ... -->`` YAML comment
+    in the folder's ``README.md``. Such examples are too slow / need hardware the CI box lacks (no GPU,
+    limited CPU); they are run locally and their PNG(s) are committed next to the
+    ``.py`` (``<stem>.png`` for the thumbnail, ``<stem>_2.png``, ``_3.png`` ...
+    for extra figures). The build reuses those committed PNGs and skips only the
+    subprocess execution -- the example is still rendered in the gallery and gets
+    its detail page exactly like every other one.
+    """
+    p = folder_path / "README.md"
+    if not p.exists():
+        return set()
+    text = p.read_text(encoding="utf-8")
+    m = re.search(r'<!--\s*gen-gallery:skip-run\s*(.*?)-->', text, re.DOTALL)
+    if not m:
+        return set()
+    data = yaml.safe_load(m.group(1)) or {}
+    return set(data.get("skip-run", []) or [])
+
+
 def render_gallery_table(entries, link_prefix="", max_words=GALLERY_BLURB_WORDS):
     """Render gallery rows as a class-tagged HTML table.
 
@@ -248,6 +271,9 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
     # Section title and intro come from the folder's README.md (single source of
     # truth; no hard-coded titles or RST parsing here).
     section_title, intro_md = read_folder_meta(folder_path)
+    # Examples whose figures are pre-rendered and committed (single source of
+    # truth: the folder's README.md). Their execution is skipped below.
+    skip_run = read_gallery_skiprun(folder_path)
     # Everything generated lands under docs/_generated/<category>/<folder_name>/,
     # regardless of where the source .py files are read from.
     target_output_dir = GENERATED_DIR / folder_parent
@@ -310,61 +336,74 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
         has_plot_import = 'import matplotlib' in code or 'import pyplot' in code
         modified_code = code
 
-        # Capture every figure the example produces.
-        # We inject a helper that, at each plt.show() (and once more at the end),
-        # saves all currently-open figures: the first becomes <base>.png (the
-        # gallery thumbnail), the rest <base>_2.png, <base>_3.png, ... (shown on
-        # the detail page). A simple savefig() per show() would only ever keep the
-        # final figure, because every show() wrote to the same file.
-        if has_show or has_plot_import:
-            stem = str(output_folder / base_name).replace('\\', '/')
-            helper = (
-                "\n__lm_fig_paths = []\n"
-                "def __lm_save_open_figs():\n"
-                "    import matplotlib.pyplot as _plt\n"
-                "    for _n in _plt.get_fignums():\n"
-                "        _i = len(__lm_fig_paths) + 1\n"
-                f"        _name = r'{stem}' + ('.png' if _i == 1 else ('_%d.png' % _i))\n"
-                "        _plt.figure(_n).savefig(_name, dpi=150, bbox_inches='tight')\n"
-                "        __lm_fig_paths.append(_name)\n"
-                "    _plt.close('all')\n"
-            )
-            modified_code = (helper + "\n"
-                             + code.replace('plt.show()', '__lm_save_open_figs()')
-                             + "\n__lm_save_open_figs()\n")
-        
-        # Write the temp script INTO the source folder (not the output folder) so that
-        # __file__-relative and cwd-relative data loads inside the example resolve
-        # correctly (e.g. np.load of a .npy/.csv sitting next to the example). The plot
-        # is saved to an absolute path below, so it still lands in the output folder
-        # regardless of the working directory.
-        temp_file = folder_path / f"_temp_{base_name}.py"
-        with open(temp_file, 'w', encoding='utf-8') as f:
-            f.write(modified_code)
-            
         plot_generated = False
         console_output = ""
-        
-        try:
-            result = subprocess.run([sys.executable, str(temp_file)], check=True,
-                                    env=env, cwd=str(folder_path),
-                                    capture_output=True, text=True,
-                                    timeout=EXAMPLE_TIMEOUT)
-            if result.stdout: console_output = result.stdout.strip()
-            if result.stderr:
-                console_output = (console_output + "\n\n" + result.stderr.strip()) if console_output else result.stderr.strip()
-            if plot_path.exists(): plot_generated = True
-        except subprocess.TimeoutExpired:
-            print(f"Timeout ({EXAMPLE_TIMEOUT}s) executing {file_name}; skipping.")
-            console_output = f"(execution exceeded {EXAMPLE_TIMEOUT}s and was skipped)"
-        except subprocess.CalledProcessError as e:
-            print(f"Error executing {file_name}: {e.stderr.strip() if e.stderr else 'Unknown'}")
-            if e.stdout: console_output = e.stdout.strip()
-            if e.stderr: console_output = (console_output + "\n\n" + e.stderr.strip()) if console_output else e.stderr.strip()
-        except Exception as e:
-            print(f"Unexpected error with {file_name}: {e}")
-        finally:
-            if temp_file.exists(): temp_file.unlink()
+
+        if file_name in skip_run:
+            # Figure generation deliberately skipped (see the folder README's
+            # gen-gallery:skip-run list). The committed PNG(s) sitting next to the
+            # .py were already copied into output_folder by the local-asset step
+            # above, so the figure-collection block below picks them up as-is. We
+            # do NOT run the example here -- it needs hardware the CI box lacks.
+            if not plot_path.exists():
+                print(f"WARNING: {file_name} is in skip-run but no committed PNG "
+                      f"({plot_filename}) was found next to it; gallery cell will "
+                      f"show 'No Plot'.")
+            else:
+                print(f"Skipping execution of {file_name} (using committed PNG).")
+        else:
+            # Capture every figure the example produces.
+            # We inject a helper that, at each plt.show() (and once more at the end),
+            # saves all currently-open figures: the first becomes <base>.png (the
+            # gallery thumbnail), the rest <base>_2.png, <base>_3.png, ... (shown on
+            # the detail page). A simple savefig() per show() would only ever keep the
+            # final figure, because every show() wrote to the same file.
+            if has_show or has_plot_import:
+                stem = str(output_folder / base_name).replace('\\', '/')
+                helper = (
+                    "\n__lm_fig_paths = []\n"
+                    "def __lm_save_open_figs():\n"
+                    "    import matplotlib.pyplot as _plt\n"
+                    "    for _n in _plt.get_fignums():\n"
+                    "        _i = len(__lm_fig_paths) + 1\n"
+                    f"        _name = r'{stem}' + ('.png' if _i == 1 else ('_%d.png' % _i))\n"
+                    "        _plt.figure(_n).savefig(_name, dpi=150, bbox_inches='tight')\n"
+                    "        __lm_fig_paths.append(_name)\n"
+                    "    _plt.close('all')\n"
+                )
+                modified_code = (helper + "\n"
+                                 + code.replace('plt.show()', '__lm_save_open_figs()')
+                                 + "\n__lm_save_open_figs()\n")
+
+            # Write the temp script INTO the source folder (not the output folder) so that
+            # __file__-relative and cwd-relative data loads inside the example resolve
+            # correctly (e.g. np.load of a .npy/.csv sitting next to the example). The plot
+            # is saved to an absolute path below, so it still lands in the output folder
+            # regardless of the working directory.
+            temp_file = folder_path / f"_temp_{base_name}.py"
+            with open(temp_file, 'w', encoding='utf-8') as f:
+                f.write(modified_code)
+
+            try:
+                result = subprocess.run([sys.executable, str(temp_file)], check=True,
+                                        env=env, cwd=str(folder_path),
+                                        capture_output=True, text=True,
+                                        timeout=EXAMPLE_TIMEOUT)
+                if result.stdout: console_output = result.stdout.strip()
+                if result.stderr:
+                    console_output = (console_output + "\n\n" + result.stderr.strip()) if console_output else result.stderr.strip()
+                if plot_path.exists(): plot_generated = True
+            except subprocess.TimeoutExpired:
+                print(f"Timeout ({EXAMPLE_TIMEOUT}s) executing {file_name}; skipping.")
+                console_output = f"(execution exceeded {EXAMPLE_TIMEOUT}s and was skipped)"
+            except subprocess.CalledProcessError as e:
+                print(f"Error executing {file_name}: {e.stderr.strip() if e.stderr else 'Unknown'}")
+                if e.stdout: console_output = e.stdout.strip()
+                if e.stderr: console_output = (console_output + "\n\n" + e.stderr.strip()) if console_output else e.stderr.strip()
+            except Exception as e:
+                print(f"Unexpected error with {file_name}: {e}")
+            finally:
+                if temp_file.exists(): temp_file.unlink()
 
         # Collect every figure the example produced: <base>.png plus any
         # <base>_N.png. The first is the gallery thumbnail; all are shown on the
@@ -474,7 +513,7 @@ if __name__ == "__main__":
         if folder.exists():
             print(f"Processing Coding: {folder}")
             section_title, entries, intro_md = process_folder(
-                folder, "coding", "guide-", write_index=False
+                folder, "coding", "coding-", write_index=False
             )
             coding_sections.append((section_title, folder.name, entries, intro_md))
         else:

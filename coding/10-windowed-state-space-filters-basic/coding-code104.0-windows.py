@@ -1,5 +1,5 @@
 """
-Composed ALSSM Windows (Weighting Window) [gu106.0]
+Composed ALSSM Windows (Weighting Window) [code104.0]
 ===================================================
 
 Each cost segment in [`lmlib.statespace.cost`][lmlib.statespace.cost] is weighted by its own
@@ -61,6 +61,6 @@ plt.plot(k, wins_all_no_thd, '-k', lw=1.0, label='Overall window \n without thre
 plt.axhline(display_thd, lw=0.6, c='k', ls='--', label='')
 plt.xlabel('time index $k$')
 plt.ylabel('window weight(s)')
-plt.title(f'(Composed) Window localized at index $k={ks}$')
+plt.title(f'(Composed) window localized at index $k={ks}$')
 plt.legend(loc=1, fontsize=8)
 plt.show()

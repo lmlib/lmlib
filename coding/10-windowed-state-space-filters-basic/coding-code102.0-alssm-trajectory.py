@@ -1,5 +1,5 @@
 """
-ALSSM Trajectory [gu102.0]
+ALSSM Trajectory [code102.0]
 ==========================
 
 Evaluates an ALSSM over a time range for a given initial state vector.

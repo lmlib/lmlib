@@ -1,5 +1,5 @@
 """
-Single-Segment (CostSegment) Models: Trajectories and Windows [gu103.0]
+Single-Segment (CostSegment) Models: Trajectories and Windows [code103.0]
 =======================================================================
 
 Defines a cost segment consisting of an ALSSM and a left-sided,

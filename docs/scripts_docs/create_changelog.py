@@ -5,7 +5,8 @@ import requests
 import datetime
 from zoneinfo import ZoneInfo
 
-REPO = os.environ.get("GITHUB_REPOSITORY", "")  # e.g. "lmlib/lmlib"
+# Fallback to your local repository name if running locally outside of GitHub Actions
+REPO = os.environ.get("GITHUB_REPOSITORY", "") or "lmlib/lmlib"  # e.g. "lmlib/lmlib"
 OUTPUT = os.path.join(os.path.dirname(__file__), "..", "news.md")
 
 def format_date(iso_date):

@@ -22,12 +22,12 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
   features:
-    - navigation.tabs       # Top tabs for categories
+    - navigation.tabs         # Top tabs for categories
     - navigation.tabs.sticky  # Keeps tabs sticky when scrolling
-    - navigation.sections   # Sections in sidebar
-    - navigation.indexes    # Section labels link to their index page (clickable)
-    - navigation.tracking   # Highlights active section
-    - navigation.top        # Back to top button
+    - navigation.sections     # Sections in sidebar
+    - navigation.indexes      # Section labels link to their index page (clickable)
+    - navigation.tracking     # Highlights active section
+    - navigation.top          # Back to top button
     - toc.follow
     - toc.integrate
     - content.code.copy
@@ -42,11 +42,6 @@ extra:
     Polynomial: api/index.html#polynomial
     Utils: api/index.html#utils
 use_directory_urls: false
-# Keep build-only scripts out of the built site (they live under docs/ for
-# convenience but are not pages/assets). Both the API page generator
-# (create_api.py) and the gallery builder (create_gallery.py) live here.
-# Note: the generated galleries themselves (docs/_generated/) are NOT excluded;
-# they are the actual pages the nav below points to.
 exclude_docs: |
   scripts_docs/
 
@@ -61,7 +56,7 @@ nav:
   - Test Signals: _generated/catalog/biosignals/index.md
   - Bibliography: bibliography.md
   - About Us: about_us.md
-  - News: news.md
+  - Release Notes: news.md
 
 
 plugins:

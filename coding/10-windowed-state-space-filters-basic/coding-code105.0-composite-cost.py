@@ -1,5 +1,5 @@
 """
-Multi-Segment (Composite) Models: Windows and Trajectories [gu104.0]
+Multi-Segment (Composite) Models: Windows and Trajectories [code105.0]
 ====================================================================
 
 Defines a [`CompositeCost`][lmlib.statespace.cost.CompositeCost] combining two ALSSM
@@ -52,42 +52,59 @@ trajectories = lm.Trajectory.eval(costs,x0, F, thd=0.01,merged_seg=False)
 
 fig, axs = plt.subplots(4, sharex='all')
 
-# Plot Window
-for (js, weights), loc, c in zip(windows, ('0', '1', '2'), ('black','gray','lightgray')):
-    axs[0].plot(js, weights, c=c, lw=1.5, label=f'segment {loc}')
-axs[0].axvline(0, color="black", linestyle="--", lw=0.5)    
+# Plot Window — same colour and linestyle for all three segments; the segments
+# are annotated directly in the plot (no legend).
+for (js, weights), loc in zip(windows, ('0', '1', '2')):
+    axs[0].plot(js, weights, c='gray', ls='--', lw=1.0)
 axs[0].set_ylabel('Window')
 axs[0].set_ylim([-0, 1.5])
-axs[0].legend(fontsize=9)
 
+# In-plot annotation of the three segments (arrow -> a point on each lobe).
+seg_labels  = ('segment 0', 'segment 1', 'segment 2')
+seg_arrow_x = (-20, 5, 20)
+seg_text_xy = ((-55, 0.75), (5, 1.30), (55, 0.75))
+for (js, weights), name, ax_x, txy in zip(windows, seg_labels, seg_arrow_x, seg_text_xy):
+    js = np.asarray(js); weights = np.asarray(weights)
+    order = np.argsort(js)
+    y_on_curve = float(np.interp(ax_x, js[order], weights[order]))
+    axs[0].annotate(name, xy=(ax_x, y_on_curve), xytext=txy, ha='center',
+                    fontsize=9, color='black',
+                    arrowprops=dict(arrowstyle='->', lw=0.8, color='black'))
 
-# Plot Trajectory Pulse
-for (js, trajs), loc, c in zip(trajectories_pulse, ('0', '1', '2'), ('blue','darkblue','dodgerblue')):
-    axs[1].plot(js, trajs, lw=1.5, c=c, label=f'segment {loc}')
-axs[1].axvline(0, color="black", linestyle="--", lw=0.5)    
+# Trajectory subplots: one colour per *signal* (not per segment) — pulse=blue,
+# baseline=black, pulse+baseline=green; all three segments share that colour.
+# Plot Trajectory Pulse (blue)
+for (js, trajs), loc in zip(trajectories_pulse, ('0', '1', '2')):
+    axs[1].plot(js, trajs, lw=1.5, c='blue')
 axs[1].set_ylabel('Trajectory\n Pulse')
 axs[1].set_ylim([-1, 8.0])
-axs[1].legend(fontsize=9)
 
-# Plot Trajectory Baseline
-for (js, trajs), loc, c in zip(trajectories_baseline, ('0', '1', '2'), ('blue','darkblue','dodgerblue')):
-    axs[2].plot(js, trajs, lw=1.5, c=c)
-axs[2].axvline(0, color="black", linestyle="--", lw=0.5)    
+# Plot Trajectory Baseline (black)
+for (js, trajs), loc in zip(trajectories_baseline, ('0', '1', '2')):
+    axs[2].plot(js, trajs, lw=1.5, c='black')
 axs[2].set_ylabel('Trajectory\n Baseline')
 axs[2].set_ylim([-1, 8.0])
 
-# Plot Trajectory Pulse+Baseline
-for (js, trajs), loc, c in zip(trajectories, ('0', '1', '2'),  ('blue','darkblue','dodgerblue')):
-    axs[3].plot(js, trajs, lw=1.5, c=c)
-
-axs[3].axvline(0, color="black", linestyle="--", lw=0.5)    
+# Plot Trajectory Pulse+Baseline (green)
+for (js, trajs), loc in zip(trajectories, ('0', '1', '2')):
+    axs[3].plot(js, trajs, lw=1.5, c='green')
 axs[3].set_ylabel('Trajectory\n Pulse+Basel.')
 axs[3].set_ylim([-1, 8.0])
 
 axs[-1].set_xlabel('Evaluation index $j$')
 axs[0].set_title('Multi-Segment (Composite) Models: Windows and Trajectories')
+axs[0].set_xlim([-120, 120])
 
-axs[0].set_xlim([-150, 200])
+for _ax in axs:
+    _ax.axvline(0,  color="black", linestyle="--", lw=0.5)
+    _ax.axvline(10, color="black", linestyle="--", lw=0.5)
+
+# Add a bit of extra spacing between the window subplot (0) and the trajectory
+# subplots (1-3) by nudging the top axes upward.
+fig.canvas.draw()
+pos0 = axs[0].get_position()
+axs[0].set_position([pos0.x0, pos0.y0 + 0.05, pos0.width, pos0.height])
+
 plt.show()
 
 

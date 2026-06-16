@@ -67,6 +67,10 @@ ax[1].legend(loc='upper right')
 ax[1].set_xlabel('k')
 ax[1].set_title('Symmetric, Infinite Support')
 
+for _ax in ax:
+    _ax.spines['top'].set_visible(False)
+    _ax.spines['right'].set_visible(False)
+
 plt.show()
 
 

@@ -68,15 +68,20 @@ for i in range(0, 8):
 fig, ax = plt.subplots(2, sharex='all', figsize=(10, 6))
 ax[0].plot(k, y, lw=0.6, c='gray', label=r'$y$')
 for (i, y_hat) in enumerate(y_hats_sym):
-    ax[0].plot(k, y_hat, lw=1, label=r'$N=' + str(i) + '$')
+    ax[0].plot(k, y_hat, lw=1, label=r'$\hat y, N=' + str(i) + '$')
 ax[0].legend(loc='upper right')
 ax[0].set_title('Left- and Right-Sided CostSegment (Symmetric)')
 
 ax[1].plot(k, y, lw=0.6, c='gray', label=r'$y$')
 for (i, y_hat) in enumerate(y_hats_left):
-    ax[1].plot(k, y_hat,  lw=1, label=r'$N=' + str(i) + '$')
+    ax[1].plot(k, y_hat,  lw=1, label=r'$\hat y, N=' + str(i) + '$')
 ax[1].legend(loc='upper right')
 ax[1].set_title('Left-Sided CostSegment only (non-symmetric)')
 ax[1].set_xlabel('k')
+
+for _ax in ax:
+    _ax.spines['top'].set_visible(False)
+    _ax.spines['right'].set_visible(False)
+
 
 plt.show()

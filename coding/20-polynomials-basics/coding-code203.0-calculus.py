@@ -1,5 +1,5 @@
 """
-Calculus with Polynomials [gu203.0]
+Calculus with Polynomials [code203.0]
 ===================================
 
 Demonstrates arithmetic operations on univariate polynomials using the

@@ -1,5 +1,5 @@
 """
-Superposition (Stacking) of ALSSMs [gu101.1]
+Superposition (Stacking) of ALSSMs [code101.1]
 ============================================
 
 Generates two discrete-time autonomous linear state space models and stacks
