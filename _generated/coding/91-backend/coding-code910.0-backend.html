@@ -19,7 +19,7 @@
     
     
       
-        <title>Benchmarking State-Space vs. Transfer-Function Backend [gu130.0] - lmlib Documentation</title>
+        <title>Benchmarking State-Space vs. Transfer-Function Backend [code910.0] - lmlib Documentation</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#benchmarking-state-space-vs-transfer-function-backend-gu1300" class="md-skip">
+        <a href="#benchmarking-state-space-vs-transfer-function-backend-code9100" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Benchmarking State-Space vs. Transfer-Function Backend [gu130.0]
+              Benchmarking State-Space vs. Transfer-Function Backend [code910.0]
             
           </span>
         </div>
@@ -368,7 +368,7 @@
   
     
   
-  News
+  Release Notes
 
       </a>
     </li>
@@ -2368,7 +2368,7 @@
   <span class="md-ellipsis">
     
   
-    News
+    Release Notes
   
 
     
@@ -2398,18 +2398,19 @@
 
 
 
-<h1 id="benchmarking-state-space-vs-transfer-function-backend-gu1300">Benchmarking State-Space vs. Transfer-Function Backend [gu130.0]<a class="headerlink" href="#benchmarking-state-space-vs-transfer-function-backend-gu1300" title="Permanent link">&para;</a></h1>
+<h1 id="benchmarking-state-space-vs-transfer-function-backend-code9100">Benchmarking State-Space vs. Transfer-Function Backend [code910.0]<a class="headerlink" href="#benchmarking-state-space-vs-transfer-function-backend-code9100" title="Permanent link">&para;</a></h1>
 <p>Measures the throughput (in mega-samples per second, MS/s) of the
 <a class="autorefs autorefs-internal" title="            RLSAlssm" href="../../../api/lmlib.statespace.rls/RLSAlssm.html#lmlib.statespace.rls.RLSAlssm"><code>RLSAlssm</code></a> filter for the <code>numpy</code> and
 <code>lfilter</code> backends on a single-channel signal.</p>
 <p>The <code>lfilter</code> backend converts the state-space recursion to a cascade of
 IIR/FIR transfer functions and uses <a class="autorefs autorefs-external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lfilter.html#scipy.signal.lfilter"><code>scipy.signal.lfilter</code></a>, which
 can be significantly faster for long signals when the model order is low.</p>
-<h2 id="plot">Plot<a class="headerlink" href="#plot" title="Permanent link">&para;</a></h2>
-<p><img alt="Plot" src="guide-gu130.0-backend.png" /></p>
+<blockquote>
+<p><strong>Note:</strong> No graphical output.</p>
+</blockquote>
 <h2 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="sd">Benchmarking State-Space vs. Transfer-Function Backend [gu130.0]</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="sd">Benchmarking State-Space vs. Transfer-Function Backend [code910.0]</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">================================================================</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">Measures the throughput (in mega-samples per second, MS/s) of the</span>

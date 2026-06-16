@@ -19,7 +19,7 @@
     
     
       
-        <title>Structure and Evaluation of Univariate Polynomials [gu201.0] - lmlib Documentation</title>
+        <title>Basic ALSSM Coding [code101.0] - lmlib Documentation</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#structure-and-evaluation-of-univariate-polynomials-gu2010" class="md-skip">
+        <a href="#basic-alssm-coding-code1010" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Structure and Evaluation of Univariate Polynomials [gu201.0]
+              Basic ALSSM Coding [code101.0]
             
           </span>
         </div>
@@ -368,7 +368,7 @@
   
     
   
-  News
+  Release Notes
 
       </a>
     </li>
@@ -2368,7 +2368,7 @@
   <span class="md-ellipsis">
     
   
-    News
+    Release Notes
   
 
     
@@ -2398,66 +2398,57 @@
 
 
 
-<h1 id="structure-and-evaluation-of-univariate-polynomials-gu2010">Structure and Evaluation of Univariate Polynomials [gu201.0]<a class="headerlink" href="#structure-and-evaluation-of-univariate-polynomials-gu2010" title="Permanent link">&para;</a></h1>
-<p>Demonstrates how to create and evaluate a univariate polynomial using
-<a class="autorefs autorefs-internal" title="            Poly" href="../../../api/lmlib.polynomial.poly/Poly.html#lmlib.polynomial.poly.Poly"><code>Poly</code></a> in vector exponent notation
-<span class="arithmatex">\(\alpha^\mathsf{T} x^q\)</span>.</p>
-<p>Four evaluation cases are shown:</p>
+<h1 id="basic-alssm-coding-code1010">Basic ALSSM Coding [code101.0]<a class="headerlink" href="#basic-alssm-coding-code1010" title="Permanent link">&para;</a></h1>
+<p>Demonstrates how to set up an autonomous linear state space model (ALSSM).</p>
+<p>Two approaches are shown:</p>
 <ol>
-<li>Print the polynomial's coefficient and exponent vectors.</li>
-<li>Evaluate at a scalar <span class="arithmatex">\(x = 3\)</span>.</li>
-<li>Evaluate over a 1-D array of <span class="arithmatex">\(x\)</span> values.</li>
-<li>Evaluate over a 3-D array and confirm the output shape.</li>
+<li><strong>Native ALSSM</strong> — explicit definition of the state transition matrix
+<span class="arithmatex">\(A\)</span> and output matrix <span class="arithmatex">\(C\)</span> using <a class="autorefs autorefs-internal" title="            Alssm" href="../../../api/lmlib.statespace.model/Alssm.html#lmlib.statespace.model.Alssm"><code>Alssm</code></a>.</li>
+<li><strong>Built-in polynomial ALSSM</strong> — using the convenience class
+<a class="autorefs autorefs-internal" title="            AlssmPoly" href="../../../api/lmlib.statespace.model/AlssmPoly.html#lmlib.statespace.model.AlssmPoly"><code>AlssmPoly</code></a>, which constructs the Pascal
+upper-triangular <span class="arithmatex">\(A\)</span> and default <span class="arithmatex">\(C\)</span> from a polynomial degree.</li>
 </ol>
 <blockquote>
 <p><strong>Note:</strong> No graphical output.</p>
 </blockquote>
 <h2 id="console-output">Console Output<a class="headerlink" href="#console-output" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>-- (1) --
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>(array([-0.3  ,  0.08 , -0.004]),), (array([0, 2, 4]),)
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>-- (2) --
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>0.09599999999999997
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>-- (3) --
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>[-0.3   -0.224 -0.044  0.096 -0.044]
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>-- (4) --
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>(2, 4, 6)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>-- Print --
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Alssm(A=[[1 1] [0 1]], C=[1 0], label=my-native-alssm)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>-- Print --
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>AlssmPoly(A=[[1 1 1 1] [0 1 2 3] [0 0 1 3] [0 0 0 1]], C=[1 0 0 0], label=my-polynomial-alssm)
 </code></pre></div>
 <h2 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="sd">Structure and Evaluation of Univariate Polynomials [gu201.0]</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="sd">============================================================</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="sd">Basic ALSSM Coding [code101.0]</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="sd">============================</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="sd">Demonstrates how to create and evaluate a univariate polynomial using</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="sd">[`Poly`][lmlib.polynomial.poly.Poly] in vector exponent notation</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="sd">$\alpha^\mathsf{T} x^q$.</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="sd">Demonstrates how to set up an autonomous linear state space model (ALSSM).</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="sd">Two approaches are shown:</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="sd">Four evaluation cases are shown:</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">1. Print the polynomial&#39;s coefficient and exponent vectors.</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">2. Evaluate at a scalar $x = 3$.</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="sd">3. Evaluate over a 1-D array of $x$ values.</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">4. Evaluate over a 3-D array and confirm the output shape.</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lmlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">expo</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">coef</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.004</span><span class="p">]</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">poly</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Poly</span><span class="p">(</span><span class="n">coef</span><span class="p">,</span> <span class="n">expo</span><span class="p">)</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- (1) --&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="nb">print</span><span class="p">(</span><span class="n">poly</span><span class="p">)</span>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- (2) --&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="nb">print</span><span class="p">(</span><span class="n">poly</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- (3) --&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="nb">print</span><span class="p">(</span><span class="n">poly</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">)))</span>
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
-<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- (4) --&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="n">var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="mi">4</span><span class="o">*</span><span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
-<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="nb">print</span><span class="p">(</span><span class="n">poly</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">var</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="sd">1. **Native ALSSM** — explicit definition of the state transition matrix</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sd">   $A$ and output matrix $C$ using [`Alssm`][lmlib.statespace.model.Alssm].</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">2. **Built-in polynomial ALSSM** — using the convenience class</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">   [`AlssmPoly`][lmlib.statespace.model.AlssmPoly], which constructs the Pascal</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="sd">   upper-triangular $A$ and default $C$ from a polynomial degree.</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lmlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="c1"># Example 1: a native ALSSM with explicit A and C definition</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="n">A</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="n">C</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">alssm_line</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Alssm</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;my-native-alssm&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- Print --&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="nb">print</span><span class="p">(</span><span class="n">alssm_line</span><span class="p">)</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="c1"># Example 2: using built-in ALSSM generator for polynomial ALSSMs</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="n">alssm_poly</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">AlssmPoly</span><span class="p">(</span><span class="n">poly_degree</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;my-polynomial-alssm&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">-- Print --&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="nb">print</span><span class="p">(</span><span class="n">alssm_poly</span><span class="p">)</span>
 </code></pre></div>
 
 

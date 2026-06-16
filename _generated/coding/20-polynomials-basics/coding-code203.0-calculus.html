@@ -19,7 +19,7 @@
     
     
       
-        <title>Alternative ALSSM Outputs [gu107.0] - lmlib Documentation</title>
+        <title>Calculus with Polynomials [code203.0] - lmlib Documentation</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#alternative-alssm-outputs-gu1070" class="md-skip">
+        <a href="#calculus-with-polynomials-code2030" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Alternative ALSSM Outputs [gu107.0]
+              Calculus with Polynomials [code203.0]
             
           </span>
         </div>
@@ -368,7 +368,7 @@
   
     
   
-  News
+  Release Notes
 
       </a>
     </li>
@@ -2368,7 +2368,7 @@
   <span class="md-ellipsis">
     
   
-    News
+    Release Notes
   
 
     
@@ -2398,79 +2398,112 @@
 
 
 
-<h1 id="alternative-alssm-outputs-gu1070">Alternative ALSSM Outputs [gu107.0]<a class="headerlink" href="#alternative-alssm-outputs-gu1070" title="Permanent link">&para;</a></h1>
-<p>Demonstrates different ways to reconstruct the signal estimate from the
-state vectors returned by <a class="autorefs autorefs-internal" title="            minimize_x" href="../../../api/lmlib.statespace.rls/RLSAlssm.html#lmlib.statespace.rls.RLSAlssm.minimize_x"><code>minimize_x</code></a>.</p>
-<p>A <a class="autorefs autorefs-internal" title="            CompositeCost" href="../../../api/lmlib.statespace.cost/CompositeCost.html#lmlib.statespace.cost.CompositeCost"><code>CompositeCost</code></a> combines a polynomial and a
-sinusoidal ALSSM.  After filtering and minimization, two output methods are
-compared:</p>
+<h1 id="calculus-with-polynomials-code2030">Calculus with Polynomials [code203.0]<a class="headerlink" href="#calculus-with-polynomials-code2030" title="Permanent link">&para;</a></h1>
+<p>Demonstrates arithmetic operations on univariate polynomials using the
+<a class="autorefs autorefs-internal" href="../../../api/lmlib.polynomial.poly/index.html#lmlib.polynomial.poly"><code>lmlib.polynomial.poly</code></a> calculus functions.</p>
+<p><strong>Operations shown:</strong></p>
 <ul>
-<li><strong>Normal output</strong> — all ALSSMs contribute equally (<code>alssm_weights=None</code>).</li>
-<li><strong>Weighted output</strong> — only the sinusoidal component is selected by passing
-<code>alssm_weights=(0, 1)</code>, setting the polynomial contribution to zero.</li>
+<li>Sum of two polynomials (<a class="autorefs autorefs-internal" title="            poly_sum" href="../../../api/lmlib.polynomial.poly/index.html#lmlib.polynomial.poly.poly_sum"><code>poly_sum</code></a>)</li>
+<li>Product of two polynomials (<a class="autorefs autorefs-internal" title="            poly_prod" href="../../../api/lmlib.polynomial.poly/index.html#lmlib.polynomial.poly.poly_prod"><code>poly_prod</code></a>)</li>
+<li>Square of a polynomial (<a class="autorefs autorefs-internal" title="            poly_square" href="../../../api/lmlib.polynomial.poly/index.html#lmlib.polynomial.poly.poly_square"><code>poly_square</code></a>)</li>
+<li>Shift of a polynomial (<a class="autorefs autorefs-internal" title="            poly_shift" href="../../../api/lmlib.polynomial.poly/index.html#lmlib.polynomial.poly.poly_shift"><code>poly_shift</code></a>)</li>
+<li>Dilation of a polynomial (<a class="autorefs autorefs-internal" title="            poly_dilation" href="../../../api/lmlib.polynomial.poly/index.html#lmlib.polynomial.poly.poly_dilation"><code>poly_dilation</code></a>)</li>
+<li>Indefinite integral of a polynomial (<a class="autorefs autorefs-internal" title="            poly_int" href="../../../api/lmlib.polynomial.poly/index.html#lmlib.polynomial.poly.poly_int"><code>poly_int</code></a>)</li>
+<li>Derivative of a polynomial (<a class="autorefs autorefs-internal" title="            poly_diff" href="../../../api/lmlib.polynomial.poly/index.html#lmlib.polynomial.poly.poly_diff"><code>poly_diff</code></a>)</li>
 </ul>
-<h2 id="plot">Plot<a class="headerlink" href="#plot" title="Permanent link">&para;</a></h2>
-<p><img alt="Plot" src="guide-gu107.0-alternative-alssm-outputs.png" /></p>
-<h2 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="sd">Alternative ALSSM Outputs [gu107.0]</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">===================================</span>
+<blockquote>
+<p><strong>Note:</strong> No graphical output.</p>
+</blockquote>
+<h2 id="console-output">Console Output<a class="headerlink" href="#console-output" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Defining uni-variate polynomials
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>(array([1, 3, 5]),), (array([0, 1, 2]),)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>(array([ 2, -1]),), (array([0, 1]),)
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">Demonstrates different ways to reconstruct the signal estimate from the</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">state vectors returned by [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x].</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="sd">A [`CompositeCost`][lmlib.statespace.cost.CompositeCost] combines a polynomial and a</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">sinusoidal ALSSM.  After filtering and minimization, two output methods are</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="sd">compared:</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">* **Normal output** — all ALSSMs contribute equally (``alssm_weights=None``).</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="sd">* **Weighted output** — only the sinusoidal component is selected by passing</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">  ``alssm_weights=(0, 1)``, setting the polynomial contribution to zero.</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lmlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lmlib.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">gen_wgn</span><span class="p">,</span> <span class="n">gen_sine</span><span class="p">,</span> <span class="n">gen_rand_walk</span><span class="p">,</span> <span class="n">k_period_to_omega</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="c1"># create signal</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="n">seed</span> <span class="o">=</span> <span class="mi">12345</span>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="n">K</span> <span class="o">=</span> <span class="mi">1000</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="n">k_periods</span> <span class="o">=</span> <span class="mi">300</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="n">ys</span> <span class="o">=</span> <span class="n">gen_sine</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">k_periods</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.05</span> <span class="o">*</span> <span class="n">gen_rand_walk</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span> <span class="o">+</span> <span class="n">gen_wgn</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>----------------------------------------
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>Sum of polynomials p1 and p2
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>(array([ 1.,  3.,  5.,  2., -1.]),), (array([0., 1., 2., 0., 1.]),) 
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>Product of polynomials p1 and p2
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>(array([ 2, -1,  6, -3, 10, -5]),), (array([0., 1., 1., 2., 2., 3.]),) 
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>Square polynomial p1
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>(array([ 1,  3,  5,  3,  9, 15,  5, 15, 25]),), (array([0., 1., 2., 1., 2., 3., 2., 3., 4.]),) 
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>Shift polynomial p1
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>(array([27., 23.,  5.]),), (array([0, 1, 2]),) 
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>Dilation polynomial p1
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>(array([  1, -15, 125]),), (array([0, 1, 2]),) 
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>Integral of polynomial p1
 <a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="c1"># create model</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="n">alssms</span> <span class="o">=</span> <span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">AlssmPoly</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">lm</span><span class="o">.</span><span class="n">AlssmSin</span><span class="p">(</span><span class="n">k_period_to_omega</span><span class="p">(</span><span class="n">k_periods</span><span class="p">)))</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="n">segments</span> <span class="o">=</span> <span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">Segment</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">FW</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="mi">100</span><span class="p">),</span> <span class="n">lm</span><span class="o">.</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">BW</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="mi">100</span><span class="p">))</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="n">cost</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">CompositeCost</span><span class="p">(</span><span class="n">alssms</span><span class="p">,</span> <span class="n">segments</span><span class="p">,</span> <span class="n">F</span><span class="p">)</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>
-<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="c1"># filter and minimize</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="n">rls</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">RLSAlssm</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s1">&#39;numpy&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="n">rls</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ys</span><span class="p">)</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="n">xs</span> <span class="o">=</span> <span class="n">rls</span><span class="o">.</span><span class="n">minimize_x</span><span class="p">()</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="c1"># ------------------------------</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="c1"># normal output defined by the model</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="n">ys_hat_normal</span> <span class="o">=</span> <span class="n">cost</span><span class="o">.</span><span class="n">eval_alssm_output</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>
-<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="c1"># ------------------------------</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="c1"># alternative outputs with alssm weights parameter, Sinusoidal Model only</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="n">ys_hat_sinus</span> <span class="o">=</span> <span class="n">cost</span><span class="o">.</span><span class="n">eval_alssm_output</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">alssm_weights</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>
-<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="c1"># alternative outputs with alssm weights parameter, Polynomial Model only</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="n">ys_hat_poly</span> <span class="o">=</span> <span class="n">cost</span><span class="o">.</span><span class="n">eval_alssm_output</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">alssm_weights</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>
-<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Signal Estimate Reconstruction with ALSSM&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">ys</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$y$&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">ys_hat_normal</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$y_</span><span class="si">{hat}</span><span class="s1">$&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">ys_hat_sinus</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$y_{hat,sine}$&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">ys_hat_poly</span><span class="p">,</span>  <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$y_{hat,poly}$&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="c1">#plt.ylim([-3, 3])</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a><span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$k$&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>(array([1.        , 1.5       , 1.66666667]),), (array([1, 2, 3]),) 
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>Differentiation polynomial p1
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>(array([ 0,  3, 10]),), (array([0, 0, 1]),)
+</code></pre></div>
+<h2 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="sd">Calculus with Polynomials [code203.0]</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="sd">===================================</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="sd">Demonstrates arithmetic operations on univariate polynomials using the</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="sd">[`lmlib.polynomial.poly`][lmlib.polynomial.poly] calculus functions.</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="sd">**Operations shown:**</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sd">* Sum of two polynomials ([`poly_sum`][lmlib.polynomial.poly.poly_sum])</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">* Product of two polynomials ([`poly_prod`][lmlib.polynomial.poly.poly_prod])</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">* Square of a polynomial ([`poly_square`][lmlib.polynomial.poly.poly_square])</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="sd">* Shift of a polynomial ([`poly_shift`][lmlib.polynomial.poly.poly_shift])</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">* Dilation of a polynomial ([`poly_dilation`][lmlib.polynomial.poly.poly_dilation])</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">* Indefinite integral of a polynomial ([`poly_int`][lmlib.polynomial.poly.poly_int])</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">* Derivative of a polynomial ([`poly_diff`][lmlib.polynomial.poly.poly_diff])</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lmlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Defining uni-variate polynomials&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">p1</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Poly</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="n">p2</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Poly</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="nb">print</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="nb">print</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">+</span><span class="s2">&quot;-&quot;</span><span class="o">*</span><span class="mi">40</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sum of polynomials p1 and p2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="nb">print</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">poly_sum</span><span class="p">((</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">)),</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Product of polynomials p1 and p2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="nb">print</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">poly_prod</span><span class="p">((</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">)),</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Square polynomial p1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="nb">print</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">poly_square</span><span class="p">(</span><span class="n">p1</span><span class="p">),</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Shift polynomial p1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="n">gamma</span> <span class="o">=</span> <span class="mi">2</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="nb">print</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">poly_shift</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">gamma</span><span class="p">),</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dilation polynomial p1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="n">eta</span> <span class="o">=</span> <span class="o">-</span><span class="mi">5</span>
+<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="nb">print</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">poly_dilation</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">eta</span><span class="p">),</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>
+<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a>
+<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Integral of polynomial p1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a><span class="nb">print</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">poly_int</span><span class="p">(</span><span class="n">p1</span><span class="p">),</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>
+<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a>
+<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Differentiation polynomial p1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a><span class="nb">print</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">poly_diff</span><span class="p">(</span><span class="n">p1</span><span class="p">),</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
 </code></pre></div>
 
 

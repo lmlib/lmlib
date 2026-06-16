@@ -374,7 +374,7 @@
   
     
   
-  News
+  Release Notes
 
       </a>
     </li>
@@ -2498,7 +2498,7 @@
   <span class="md-ellipsis">
     
   
-    News
+    Release Notes
   
 
     
@@ -2560,8 +2560,8 @@ with the plot(s), console output, any data files, and the complete source code.<
   <td class="gallery-desc"><a href="12-filtering/example-ex121.0-sc-filter.html"><b>Symmetric Moving Average Filters with ALSSMs [ex121.0]</b><br><small>Applies a CompositeCost with a two-sided symmetric window as a symmetric moving average filter of length L=100. A degree-0 polynomial ALSSM (i.e. a constant model) is combined with a forward left segment and a backward right segment of equal length. The resulting filter is equivalent to a finite-impulse-response...</small></a></td>
 </tr>
 <tr>
-  <td class="gallery-plot"><a href="12-filtering/example-ex122.0-polynomial-filters.html"><img src="12-filtering/example-ex122.0-polynomial-filters.png" alt="Plot"></a></td>
-  <td class="gallery-desc"><a href="12-filtering/example-ex122.0-polynomial-filters.html"><b>Symmetric and Non-Symmetric Polynomial Filters with ALSSMs [ex122.0]</b><br><small>Applies CompositeCost instances with polynomial ALSSMs of degrees 0 through 3 to a rectangular test signal. Two filter configurations are shown for each polynomial degree: • Symmetric filter — a forward left window and a backward right window of equal size, yielding a zero-phase (non-causal) smoother. • Left...</small></a></td>
+  <td class="gallery-plot"><a href="12-filtering/example-ex122.0-polynomial-filters-pascal.html"><img src="12-filtering/example-ex122.0-polynomial-filters-pascal.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="12-filtering/example-ex122.0-polynomial-filters-pascal.html"><b>Symmetric and Non-Symmetric Polynomial Filters with Pascal Basis [ex122.0]</b><br><small>Applies CompositeCost instances with AlssmPoly of degrees 0 through 3 to a rectangular test signal. Two filter configurations are shown for each polynomial degree: • Symmetric filter — a forward left window and a backward right window of equal size, yielding a zero-phase (non-causal) smoother. • Left (causal)...</small></a></td>
 </tr>
 <tr>
   <td class="gallery-plot"><a href="12-filtering/example-ex122.1-polynomial-filters-meixner.html"><img src="12-filtering/example-ex122.1-polynomial-filters-meixner.png" alt="Plot"></a></td>
@@ -2573,11 +2573,7 @@ with the plot(s), console output, any data files, and the complete source code.<
 </tr>
 <tr>
   <td class="gallery-plot"><a href="12-filtering/example-ex125.0-multiscale-filter.html"><img src="12-filtering/example-ex125.0-multiscale-filter.png" alt="Plot"></a></td>
-  <td class="gallery-desc"><a href="12-filtering/example-ex125.0-multiscale-filter.html"><b>Multi-Scale Polynomial (Savitzky-Golay) Smoothing [ex125.0]</b><br><small>Smooths a noisy single-channel EEG signal at a dyadic family of window lengths L \in {10, 20, 40, 80, 160, 320} with polynomial ALSSMs, and contrasts two mathematically equivalent ways of obtaining the multi-scale result: • Per-scale RLS — a fresh RLSAlssm over a CompositeCost is run for...</small></a></td>
-</tr>
-<tr>
-  <td class="gallery-plot"><a href="12-filtering/example-ex125.1-multiscale-filter-centered.html"><img src="12-filtering/example-ex125.1-multiscale-filter-centered.png" alt="Plot"></a></td>
-  <td class="gallery-desc"><a href="12-filtering/example-ex125.1-multiscale-filter-centered.html"><b>Centered Multi-Scale Polynomial (Savitzky-Golay) Smoothing [ex125.1]</b><br><small>Companion to [ex125.0] (example-ex125.0-multiscale-filter.py), but using the symmetric, zero-lag centered windows that Savitzky-Golay smoothing normally uses (FORWARD segment a = -L/2, b = L/2 - 1) instead of one-sided BACKWARD windows. As before, two mathematically equivalent methods are compared: • Per-scale RLS — one RLSAlssm.fit() over a CompositeCost...</small></a></td>
+  <td class="gallery-desc"><a href="12-filtering/example-ex125.0-multiscale-filter.html"><b>Multi-Scale Polynomial (Savitzky-Golay) Smoothing: Causal vs Centered [ex125.0]</b><br><small>Smooths a noisy single-channel EEG signal at a dyadic family of window lengths L \in {10, 20, 40, 80, 160, 320} with polynomial ALSSMs, and shows the two standard windowing choices side by side: • Causal (left) — a one-sided (left-sided) BACKWARD window (a = 0, b =...</small></a></td>
 </tr>
 <tr>
   <td class="gallery-plot"><a href="12-filtering/example-ex126.0-2d-polynomial-filters.html"><img src="12-filtering/example-ex126.0-2d-polynomial-filters.png" alt="Plot"></a></td>
@@ -2595,8 +2591,8 @@ with the plot(s), console output, any data files, and the complete source code.<
   <td class="gallery-desc"><a href="21-polynomials-calculus/example-ex211.0-se-poly-poly.html"><b>Squared error between two polynomials [ex211.0]</b><br><small>Closed form computation of the squared error between two time-continuous polynomials.</small></a></td>
 </tr>
 <tr>
-  <td class="gallery-plot"><a href="21-polynomials-calculus/example-ex701.0-poly-poly-approximation.html"><img src="21-polynomials-calculus/example-ex701.0-poly-poly-approximation.png" alt="Plot"></a></td>
-  <td class="gallery-desc"><a href="21-polynomials-calculus/example-ex701.0-poly-poly-approximation.html"><b>Approximating a Polynomial by a Polynomial of Lower Degree [ex701.0]</b><br><small>Fits a polynomial of lower order to a polynomial of higher order by minimizing the squared error over the given window. This example is published in [Wildhaber2020].</small></a></td>
+  <td class="gallery-plot"><a href="21-polynomials-calculus/example-ex212.0-poly-poly-approximation.html"><img src="21-polynomials-calculus/example-ex212.0-poly-poly-approximation.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="21-polynomials-calculus/example-ex212.0-poly-poly-approximation.html"><b>Approximating a Polynomial by a Polynomial of Lower Degree [ex701.0]</b><br><small>Fits a polynomial of lower order to a polynomial of higher order by minimizing the squared error over the given window. This example is published in [Wildhaber2020].</small></a></td>
 </tr>
 </tbody>
 </table>

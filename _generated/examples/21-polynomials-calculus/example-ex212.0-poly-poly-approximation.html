@@ -19,7 +19,7 @@
     
     
       
-        <title>Composed ALSSM Windows (Weighting Window) [gu106.0] - lmlib Documentation</title>
+        <title>Approximating a Polynomial by a Polynomial of Lower Degree [ex701.0] - lmlib Documentation</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#composed-alssm-windows-weighting-window-gu1060" class="md-skip">
+        <a href="#approximating-a-polynomial-by-a-polynomial-of-lower-degree-ex7010" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Composed ALSSM Windows (Weighting Window) [gu106.0]
+              Approximating a Polynomial by a Polynomial of Lower Degree [ex701.0]
             
           </span>
         </div>
@@ -286,7 +286,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../examples/index.html" class="md-tabs__link">
+      <a href="../index.html" class="md-tabs__link">
         
   
   
@@ -368,7 +368,7 @@
   
     
   
-  News
+  Release Notes
 
       </a>
     </li>
@@ -2218,7 +2218,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../coding.html" class="md-nav__link">
+      <a href="../../coding/coding.html" class="md-nav__link">
         
   
   
@@ -2253,7 +2253,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/index.html" class="md-nav__link">
+      <a href="../index.html" class="md-nav__link">
         
   
   
@@ -2368,7 +2368,7 @@
   <span class="md-ellipsis">
     
   
-    News
+    Release Notes
   
 
     
@@ -2398,86 +2398,83 @@
 
 
 
-<h1 id="composed-alssm-windows-weighting-window-gu1060">Composed ALSSM Windows (Weighting Window) [gu106.0]<a class="headerlink" href="#composed-alssm-windows-weighting-window-gu1060" title="Permanent link">&para;</a></h1>
-<p>Each cost segment in <a class="autorefs autorefs-internal" href="../../../api/lmlib.statespace.cost/index.html#lmlib.statespace.cost"><code>lmlib.statespace.cost</code></a> is weighted by its own
-exponential window function.  This guide script demonstrates the basic
-exponentially decaying window of both finite and infinite support, and shows
-how a more complex symmetric window is built by composing four such segments.</p>
-<p>The composed window consists of two exponentially decaying tails (left and
-right) and a near-rectangular centre region, all joined into a single
-<a class="autorefs autorefs-internal" title="            CompositeCost" href="../../../api/lmlib.statespace.cost/CompositeCost.html#lmlib.statespace.cost.CompositeCost"><code>CompositeCost</code></a>.</p>
-<p>See also:
-<a class="autorefs autorefs-internal" title="            window" href="../../../api/lmlib.statespace.segment/Segment.html#lmlib.statespace.segment.Segment.window"><code>window</code></a>,
-<a class="autorefs autorefs-internal" title="            Window" href="../../../api/lmlib.statespace.window/Window.html#lmlib.statespace.window.Window"><code>Window</code></a></p>
+<h1 id="approximating-a-polynomial-by-a-polynomial-of-lower-degree-ex7010">Approximating a Polynomial by a Polynomial of Lower Degree [ex701.0]<a class="headerlink" href="#approximating-a-polynomial-by-a-polynomial-of-lower-degree-ex7010" title="Permanent link">&para;</a></h1>
+<p>Fits a polynomial of lower order to a polynomial of higher order by
+minimizing the squared error over the given window.
+This example is published in <a href="../../../bibliography.html#wildhaber2020">[Wildhaber2020]</a>.</p>
 <h2 id="plot">Plot<a class="headerlink" href="#plot" title="Permanent link">&para;</a></h2>
-<p><img alt="Plot" src="guide-gu106.0-windows.png" /></p>
+<p><img alt="Plot" src="example-ex212.0-poly-poly-approximation.png" /></p>
 <h2 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="sd">Composed ALSSM Windows (Weighting Window) [gu106.0]</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">===================================================</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="sd">Approximating a Polynomial by a Polynomial of Lower Degree [ex701.0]</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="sd">====================================================================</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">Each cost segment in [`lmlib.statespace.cost`][lmlib.statespace.cost] is weighted by its own</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">exponential window function.  This guide script demonstrates the basic</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">exponentially decaying window of both finite and infinite support, and shows</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="sd">how a more complex symmetric window is built by composing four such segments.</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="sd">The composed window consists of two exponentially decaying tails (left and</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="sd">right) and a near-rectangular centre region, all joined into a single</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="sd">[`CompositeCost`][lmlib.statespace.cost.CompositeCost].</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="sd">See also:</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="sd">[`window`][lmlib.statespace.segment.Segment.window],</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="sd">[`Window`][lmlib.statespace.window.Window]</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="sd">Fits a polynomial of lower order to a polynomial of higher order by</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="sd">minimizing the squared error over the given window.</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="sd">This example is published in [\[Wildhaber2020\]](../../../bibliography.md#wildhaber2020).</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lmlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1"># set up a high degree polynomial</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.2</span><span class="o">+</span><span class="mf">0.195348430289480</span><span class="p">,</span> <span class="mf">0.0346630187098931</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.00473267554870773</span><span class="p">,</span> <span class="mf">0.000187361113911066</span><span class="p">,</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>                  <span class="o">-</span><span class="mf">3.22693894846170e-06</span><span class="p">,</span> <span class="mf">2.53205688827560e-08</span><span class="p">,</span> <span class="o">-</span><span class="mf">7.43776537580248e-11</span><span class="p">])</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">Q</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
 <a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lmlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="n">K</span> <span class="o">=</span> <span class="mi">1000</span>  <span class="c1"># signal length</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="n">ks</span> <span class="o">=</span> <span class="mi">500</span>  <span class="c1"># (arbitrary) window location</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="n">k</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">segment_left_infinite</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Segment</span><span class="p">(</span><span class="n">a</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">b</span><span class="o">=-</span><span class="mi">40</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">lm</span><span class="o">.</span><span class="n">FORWARD</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">delta</span><span class="o">=-</span><span class="mi">40</span><span class="p">)</span>  <span class="c1"># left decaying window</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="n">segment_left_finite</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Segment</span><span class="p">(</span><span class="n">a</span><span class="o">=-</span><span class="mi">39</span><span class="p">,</span> <span class="n">b</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">lm</span><span class="o">.</span><span class="n">FORWARD</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="mf">1e6</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># (nearly) rectangular window</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="n">segment_right_finite</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Segment</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">39</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">lm</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="mf">1e6</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># (nearly) rectangular window</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="n">segment_right_infinite</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Segment</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">lm</span><span class="o">.</span><span class="n">BACKWARD</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>  <span class="c1"># right decaying window</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="c1"># window settings</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="n">x0</span> <span class="o">=</span> <span class="mi">65</span>  <span class="c1"># window center index</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="n">a</span> <span class="o">=</span> <span class="n">x0</span><span class="o">-</span><span class="mi">30</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="n">b</span> <span class="o">=</span> <span class="n">x0</span><span class="o">+</span><span class="mi">30</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="c1"># --- Polynomial to Polynomial Approximation ---</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="c1"># constant calculation</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Q</span><span class="p">)</span>  <span class="c1"># exponent vector from 0 to Q-1</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="n">R</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># Polynomial order (degree +1) of the polynomial approximation ## This is the lower order polynomial</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>  <span class="c1"># exponent vector from 0 to R-1</span>
 <a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>
-<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="n">cost</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">CompositeCost</span><span class="p">((</span><span class="n">lm</span><span class="o">.</span><span class="n">AlssmPoly</span><span class="p">(</span><span class="mi">3</span><span class="p">),),</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>                        <span class="p">[</span><span class="n">segment_left_infinite</span><span class="p">,</span> <span class="n">segment_left_finite</span><span class="p">,</span> <span class="n">segment_right_finite</span><span class="p">,</span> <span class="n">segment_right_infinite</span><span class="p">],</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>                        <span class="n">F</span><span class="o">=</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="c1"># Generating Windows - for illustrative and plotting purposes only</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="c1"># ---------------------------------------------------------------</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="c1"># Minimum window weight below which samples are treated as zero.</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="c1"># Only relevant for exponentially decaying windows with infinite support,</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="c1"># which never reach exactly 0.</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="n">display_thd</span> <span class="o">=</span> <span class="mf">0.1</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="c1"># Per-segment windows without thresholding</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="n">wins</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Window</span><span class="o">.</span><span class="n">eval_y</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">ks</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">merged_seg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="c1"># Combined window with thresholding applied (infinite tails clipped at display_thd)</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="n">wins_all_no_thd</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Window</span><span class="o">.</span><span class="n">eval_y</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">ks</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">merged_seg</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">thd</span><span class="o">=</span><span class="n">display_thd</span><span class="p">)</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="c1"># Combined window without thresholding (infinite tails shown in full)</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="n">wins_all</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Window</span><span class="o">.</span><span class="n">eval_y</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">ks</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">merged_seg</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>
-<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="c1"># Plot</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="c1"># ----</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a><span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">win</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">wins</span><span class="p">):</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>    <span class="n">line</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">win</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Segment </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>    <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">win</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">(),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">wins_all</span><span class="p">,</span> <span class="s1">&#39;--k&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Overall window </span><span class="se">\n</span><span class="s1"> with threshold&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">wins_all_no_thd</span><span class="p">,</span> <span class="s1">&#39;-k&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Overall window </span><span class="se">\n</span><span class="s1"> without threshold&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>
-<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a><span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">display_thd</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a><span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;time index $k$&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a><span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;window weight(s)&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;(Composed) Window localized at index $k=</span><span class="si">{</span><span class="n">ks</span><span class="si">}</span><span class="s1">$&#39;</span><span class="p">)</span>
-<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a><span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="c1"># Constant Calculation (See. Signal Analysis Using Local Polynomial</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="c1"># Approximations. Appendix)</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">q</span><span class="p">,</span> <span class="n">r</span><span class="p">])</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">Q</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">R</span><span class="p">,</span> <span class="n">Q</span><span class="p">))],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">Q</span><span class="p">,</span> <span class="n">R</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">R</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="n">Ms</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">poly_square_expo</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="n">L</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">poly_int_coef_L</span><span class="p">(</span><span class="n">Ms</span><span class="p">)</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">Ms</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Ms</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="n">vec_C</span> <span class="o">=</span> <span class="n">L</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">c</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="n">C</span> <span class="o">=</span> <span class="n">vec_C</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vec_C</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="c1"># Solves the Equation by setting derivative to zero.</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="n">Lambda</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">B</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">C</span> <span class="o">@</span> <span class="n">B</span><span class="p">)</span> <span class="o">@</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">B</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">C</span> <span class="o">@</span> <span class="n">A</span><span class="p">)</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="n">beta</span> <span class="o">=</span> <span class="n">Lambda</span><span class="nd">@alpha</span>  <span class="c1"># approximated low order polynomial coefficients</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="c1"># ----------------  Plot  -----------------</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="n">z_range</span> <span class="o">=</span> <span class="n">x0</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">64</span><span class="p">,</span> <span class="mi">65</span><span class="p">)</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="n">traj_Q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">alpha</span><span class="o">.</span><span class="n">T</span><span class="nd">@np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">z_range</span><span class="p">])</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="n">traj_R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">beta</span><span class="o">.</span><span class="n">T</span><span class="nd">@np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">z_range</span><span class="p">])</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">z_range</span><span class="p">,</span> <span class="n">traj_Q</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\alpha^T z^q$&#39;</span><span class="p">)</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a><span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">z_range</span><span class="p">,</span> <span class="n">traj_R</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\beta^T z^r$&#39;</span><span class="p">)</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a><span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="o">-</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">])</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="mi">15</span><span class="p">,</span> <span class="mi">115</span><span class="p">])</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">])</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([</span><span class="s1">&#39;a&#39;</span><span class="p">,</span><span class="s1">&#39;b&#39;</span><span class="p">])</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Approximating a Polynomial by a Polynomial of Lower Degree&#39;</span><span class="p">)</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a><span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a>
+<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a><span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s1">&#39;top&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a><span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s1">&#39;right&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a>
+<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </code></pre></div>
 
 

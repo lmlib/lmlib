@@ -19,7 +19,7 @@
     
     
       
-        <title>Local Signal Approximation and Trajectories [gu105.0] - lmlib Documentation</title>
+        <title>Structure and Evaluation of Multivariate Polynomials [code201.1] - lmlib Documentation</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#local-signal-approximation-and-trajectories-gu1050" class="md-skip">
+        <a href="#structure-and-evaluation-of-multivariate-polynomials-code2011" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Local Signal Approximation and Trajectories [gu105.0]
+              Structure and Evaluation of Multivariate Polynomials [code201.1]
             
           </span>
         </div>
@@ -368,7 +368,7 @@
   
     
   
-  News
+  Release Notes
 
       </a>
     </li>
@@ -2368,7 +2368,7 @@
   <span class="md-ellipsis">
     
   
-    News
+    Release Notes
   
 
     
@@ -2398,81 +2398,91 @@
 
 
 
-<h1 id="local-signal-approximation-and-trajectories-gu1050">Local Signal Approximation and Trajectories [gu105.0]<a class="headerlink" href="#local-signal-approximation-and-trajectories-gu1050" title="Permanent link">&para;</a></h1>
-<p>Fits a high-degree polynomial locally to a rectangular test signal using
-<a class="autorefs autorefs-internal" title="            RLSAlssm" href="../../../api/lmlib.statespace.rls/RLSAlssm.html#lmlib.statespace.rls.RLSAlssm"><code>RLSAlssm</code></a> and compares the Pascal monomial
-basis (<a class="autorefs autorefs-internal" title="            AlssmPoly" href="../../../api/lmlib.statespace.model/AlssmPoly.html#lmlib.statespace.model.AlssmPoly"><code>AlssmPoly</code></a>) against the numerically
-superior Legendre basis (<a class="autorefs autorefs-internal" title="            AlssmPolyLegendre" href="../../../api/lmlib.statespace.model/AlssmPolyLegendre.html#lmlib.statespace.model.AlssmPolyLegendre"><code>AlssmPolyLegendre</code></a>).</p>
-<p>For each of three reference positions, the optimal state vector is extracted
-from the full filter output and the corresponding trajectory is placed in the
-output signal at the correct absolute location.  A wider window version shows
-the trajectory extrapolated beyond the fitting window.</p>
-<h2 id="plot">Plot<a class="headerlink" href="#plot" title="Permanent link">&para;</a></h2>
-<p><img alt="Plot" src="guide-gu105.0-rectangular-approximation.png" /></p>
+<h1 id="structure-and-evaluation-of-multivariate-polynomials-code2011">Structure and Evaluation of Multivariate Polynomials [code201.1]<a class="headerlink" href="#structure-and-evaluation-of-multivariate-polynomials-code2011" title="Permanent link">&para;</a></h1>
+<p>Demonstrates how to create and evaluate a multivariate polynomial using
+<a class="autorefs autorefs-internal" title="            MPoly" href="../../../api/lmlib.polynomial.poly/MPoly.html#lmlib.polynomial.poly.MPoly"><code>MPoly</code></a> in vector exponent notation
+<span class="arithmatex">\(\tilde{\alpha}^\mathsf{T}(x^q \otimes y^r)\)</span>.</p>
+<p>Six evaluation cases are shown:</p>
+<ol>
+<li>Univariate <a class="autorefs autorefs-internal" title="            MPoly" href="../../../api/lmlib.polynomial.poly/MPoly.html#lmlib.polynomial.poly.MPoly"><code>MPoly</code></a> (single variable, no cross terms) — print.</li>
+<li>Evaluate at a scalar.</li>
+<li>Evaluate over a 1-D array.</li>
+<li>Bivariate <a class="autorefs autorefs-internal" title="            MPoly" href="../../../api/lmlib.polynomial.poly/MPoly.html#lmlib.polynomial.poly.MPoly"><code>MPoly</code></a> (factorised coefficients) — scalar evaluation.</li>
+<li>Array-valued variable inputs — output shape matches input shape.</li>
+<li>High-dimensional array inputs — confirm broadcast output shape.</li>
+</ol>
+<blockquote>
+<p><strong>Note:</strong> No graphical output.</p>
+</blockquote>
 <h2 id="console-output">Console Output<a class="headerlink" href="#console-output" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>/home/runner/work/lmlib/lmlib/coding/10-windowed-state-space-filters-basic/_temp_guide-gu105.0-rectangular-approximation.py:44: WConditionNumberWarning: condition number of W from &lt;class &#39;lmlib.statespace.model.AlssmPoly&#39;&gt; too high; results of minimization may be meaningless.
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  xs = rls.minimize_x(solver=&#39;lstsq&#39;)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>-- 1 --
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>(array([-0.3  ,  0.08 , -0.004]),), (array([0, 2, 4]),)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>-- 2 --
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>0.09599999999999997
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>-- 3 --
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>[-0.3   -0.224 -0.044  0.096 -0.044]
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>-- 4 --
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>0.007680000000000015
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>-- 5 --
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>[ 0.00768 -0.00352 -0.0224  -0.042  ]
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>shape:  4
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>-- 6 --
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>shape:  (3, 2, 5)
 </code></pre></div>
 <h2 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="sd">Local Signal Approximation and Trajectories [gu105.0]</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="sd">=====================================================</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="sd">Structure and Evaluation of Multivariate Polynomials [code201.1]</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="sd">==============================================================</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="sd">Fits a high-degree polynomial locally to a rectangular test signal using</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="sd">[`RLSAlssm`][lmlib.statespace.rls.RLSAlssm] and compares the Pascal monomial</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="sd">basis ([`AlssmPoly`][lmlib.statespace.model.AlssmPoly]) against the numerically</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="sd">superior Legendre basis ([`AlssmPolyLegendre`][lmlib.statespace.model.AlssmPolyLegendre]).</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="sd">For each of three reference positions, the optimal state vector is extracted</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">from the full filter output and the corresponding trajectory is placed in the</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">output signal at the correct absolute location.  A wider window version shows</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="sd">the trajectory extrapolated beyond the fitting window.</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lmlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lmlib.utils.generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">gen_wgn</span><span class="p">,</span> <span class="n">gen_rect</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">)</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">K</span> <span class="o">=</span> <span class="mi">2100</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">y</span> <span class="o">=</span> <span class="n">gen_rect</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="mi">570</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span> <span class="o">+</span> <span class="n">gen_wgn</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">pd</span><span class="o">=</span><span class="mi">7</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="n">g</span><span class="o">=</span><span class="mi">100</span>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="n">cost</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">CostSegment</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">AlssmPoly</span><span class="p">(</span><span class="n">poly_degree</span><span class="o">=</span><span class="n">pd</span><span class="p">),</span>
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>                      <span class="n">lm</span><span class="o">.</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">BW</span><span class="p">,</span> <span class="n">g</span><span class="p">))</span>
-<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="n">cost_wide</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">CostSegment</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">AlssmPoly</span><span class="p">(</span><span class="n">poly_degree</span><span class="o">=</span><span class="n">pd</span><span class="p">),</span>
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>                           <span class="n">lm</span><span class="o">.</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">220</span> <span class="o">+</span> <span class="mi">20</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">BW</span><span class="p">,</span> <span class="n">g</span><span class="p">))</span>
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="n">rls</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">RLSAlssm</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span> 
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="n">rls</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="n">xs</span> <span class="o">=</span> <span class="n">rls</span><span class="o">.</span><span class="n">minimize_x</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s1">&#39;lstsq&#39;</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="sd">Demonstrates how to create and evaluate a multivariate polynomial using</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="sd">[`MPoly`][lmlib.polynomial.poly.MPoly] in vector exponent notation</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="sd">$\tilde{\alpha}^\mathsf{T}(x^q \otimes y^r)$.</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="sd">Six evaluation cases are shown:</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="sd">1. Univariate [`MPoly`][lmlib.polynomial.poly.MPoly] (single variable, no cross terms) — print.</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="sd">2. Evaluate at a scalar.</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="sd">3. Evaluate over a 1-D array.</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="sd">4. Bivariate [`MPoly`][lmlib.polynomial.poly.MPoly] (factorised coefficients) — scalar evaluation.</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="sd">5. Array-valued variable inputs — output shape matches input shape.</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sd">6. High-dimensional array inputs — confirm broadcast output shape.</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lmlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lm</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">expos</span> <span class="o">=</span> <span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">],)</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="n">coefs</span> <span class="o">=</span> <span class="p">([</span><span class="o">-</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.004</span><span class="p">],)</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="n">m_poly</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">MPoly</span><span class="p">(</span><span class="n">coefs</span><span class="p">,</span> <span class="n">expos</span><span class="p">)</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- 1 --&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="nb">print</span><span class="p">(</span><span class="n">m_poly</span><span class="p">)</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- 2 --&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="nb">print</span><span class="p">(</span><span class="n">m_poly</span><span class="o">.</span><span class="n">eval</span><span class="p">((</span><span class="mi">3</span><span class="p">,)))</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- 3 --&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="nb">print</span><span class="p">(</span><span class="n">m_poly</span><span class="o">.</span><span class="n">eval</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">),)))</span>
 <a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>
-<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="n">cost_legendre</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">CostSegment</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">AlssmPolyLegendre</span><span class="p">(</span><span class="n">poly_degree</span><span class="o">=</span><span class="n">pd</span><span class="p">,</span><span class="n">a_seg</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">b_seg</span><span class="o">=</span><span class="mi">200</span><span class="p">),</span>
-<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>                      <span class="n">lm</span><span class="o">.</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">BW</span><span class="p">,</span> <span class="n">g</span><span class="p">))</span>
-<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="n">cost_legendre_wide</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">CostSegment</span><span class="p">(</span><span class="n">lm</span><span class="o">.</span><span class="n">AlssmPolyLegendre</span><span class="p">(</span><span class="n">poly_degree</span><span class="o">=</span><span class="n">pd</span><span class="p">,</span><span class="n">a_seg</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">b_seg</span><span class="o">=</span><span class="mi">200</span><span class="p">),</span>
-<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>                           <span class="n">lm</span><span class="o">.</span><span class="n">Segment</span><span class="p">(</span><span class="mi">0</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">220</span> <span class="o">+</span> <span class="mi">20</span><span class="p">,</span> <span class="n">lm</span><span class="o">.</span><span class="n">BW</span><span class="p">,</span> <span class="n">g</span><span class="p">))</span>
-<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>
-<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="n">rls_legendre</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">RLSAlssm</span><span class="p">(</span><span class="n">cost_legendre</span><span class="p">)</span> 
-<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="n">rls_legendre</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
-<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="n">xs_legendre</span> <span class="o">=</span> <span class="n">rls_legendre</span><span class="o">.</span><span class="n">minimize_x</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s1">&#39;lstsq&#39;</span><span class="p">)</span>
-<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>
-<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="n">K_refs</span> <span class="o">=</span> <span class="p">[</span><span class="mi">500</span><span class="p">,</span> <span class="mi">1130</span><span class="p">,</span> <span class="mi">1800</span><span class="p">]</span>
-<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="n">trajs</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Trajectory</span><span class="o">.</span><span class="n">eval_y</span><span class="p">(</span><span class="n">cost</span><span class="p">,</span> <span class="n">xs</span><span class="p">[</span><span class="n">K_refs</span><span class="p">],</span> <span class="n">K_refs</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">thd</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">merged_ks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">merged_seg</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="n">trajs_wide</span> <span class="o">=</span><span class="n">lm</span><span class="o">.</span><span class="n">Trajectory</span><span class="o">.</span><span class="n">eval_y</span><span class="p">(</span><span class="n">cost_wide</span><span class="p">,</span><span class="n">xs</span><span class="p">[</span><span class="n">K_refs</span><span class="p">],</span> <span class="n">K_refs</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">thd</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span><span class="n">merged_ks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">merged_seg</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>
-<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="n">trajs_legendre</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Trajectory</span><span class="o">.</span><span class="n">eval_y</span><span class="p">(</span><span class="n">cost_legendre</span><span class="p">,</span> <span class="n">xs_legendre</span><span class="p">[</span><span class="n">K_refs</span><span class="p">],</span> <span class="n">K_refs</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">thd</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">merged_ks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">merged_seg</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a><span class="n">trajs_legendre_wide</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">Trajectory</span><span class="o">.</span><span class="n">eval_y</span><span class="p">(</span><span class="n">cost_legendre_wide</span><span class="p">,</span><span class="n">xs_legendre</span><span class="p">[</span><span class="n">K_refs</span><span class="p">],</span> <span class="n">K_refs</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">thd</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span><span class="n">merged_ks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">merged_seg</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a>
-<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a><span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Local Signal Approximation: Polynomial degree </span><span class="si">{</span><span class="n">pd</span><span class="si">}</span><span class="s1">, RLSAlssm.minimize_x()&#39;</span><span class="p">)</span>
-<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
-<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trajs</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;y_hat, Pascal Poly&#39;</span><span class="p">)</span>
-<a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trajs_wide</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
-<a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trajs_legendre</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;y_hat, Legendre Poly&#39;</span><span class="p">)</span>
-<a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">trajs_legendre_wide</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">)</span>
-<a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a><span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
-<a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a><span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="n">expos</span> <span class="o">=</span> <span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="n">coefs</span> <span class="o">=</span> <span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.004</span><span class="p">])</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="n">m_poly</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">MPoly</span><span class="p">(</span><span class="n">coefs</span><span class="p">,</span> <span class="n">expos</span><span class="p">)</span>
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- 4 --&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="c1"># Scalar variable inputs yields a scalar output</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="nb">print</span><span class="p">(</span><span class="n">m_poly</span><span class="o">.</span><span class="n">eval</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- 5 --&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="c1"># Array_like variable inputs yields into a array_like output of the same shape</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="n">variables</span> <span class="o">=</span> <span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a><span class="n">out</span> <span class="o">=</span> <span class="n">m_poly</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a><span class="nb">print</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;shape: &#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
+<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a>
+<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- 6 --&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="mi">2</span><span class="o">*</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="mi">2</span><span class="o">*</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span><span class="o">-</span><span class="mi">10</span>
+<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;shape: &#39;</span><span class="p">,</span> <span class="n">m_poly</span><span class="o">.</span><span class="n">eval</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 </code></pre></div>
 
 
