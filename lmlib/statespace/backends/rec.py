@@ -6,6 +6,8 @@ from .rec_lfilter import *
 from .rec_lfilter import _compute_cascade_params_asterisk, _build_parallel_ast_sos
 if 'jit' in available_backends:
     from .rec_jit import *
+if 'cupy' in available_backends:
+    from .rec_cupy import *
 import warnings
 from .statespace_tools import kron_q
 
@@ -65,6 +67,16 @@ def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, back
         return
 
     if backend == 'numpy':
+        numpy_xi_asterisk_l_recursion(xi_curr, A, C,
+                                      segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                      INq, xi_prev,
+                                      v, beta)
+        return
+
+    if backend == 'cupy':
+        # The cross-dimensional (ND) asterisk recursion is not reimplemented on
+        # the GPU; the GPU backend targets the 1-D cascade path. Delegate to the
+        # numpy realization so ND costs still work with backend='cupy'.
         numpy_xi_asterisk_l_recursion(xi_curr, A, C,
                                       segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                       INq, xi_prev,
@@ -238,5 +250,42 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, bloc
                 raise ValueError("q value not supported: '{}'".format(q))
         else:
             raise ValueError("unknown filter-form: '{}'".format(filter_form))
+    elif backend == 'cupy':
+        # GPU cascade backend (1-D, upper-triangular A). The parallel filter
+        # form is not reimplemented on the GPU; route it to the numpy backend.
+        if filter_form == 'cascade':
+            if q == 2:
+                cupy_cascade_xi2(xi,
+                                 alssm.A, alssm.C,
+                                 segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                 y, v, beta)
+            elif q == 1:
+                cupy_cascade_xi1(xi,
+                                 alssm.A, alssm.C,
+                                 segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                 y, v, beta, block_sizes)
+            elif q == 0:
+                cupy_cascade_xi0(xi,
+                                 alssm.A, alssm.C,
+                                 segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                 y, v, beta)
+            else:
+                raise ValueError("q value not supported: '{}'".format(q))
+        else:
+            # parallel form on GPU is not implemented; fall back to numpy.
+            if q == 2:
+                numpy_recursion_xi2(xi, alssm.A, alssm.C,
+                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    y, v, beta)
+            elif q == 1:
+                numpy_recursion_xi1(xi, alssm.A, alssm.C,
+                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    y, v, beta)
+            elif q == 0:
+                numpy_recursion_xi0(xi, alssm.A, alssm.C,
+                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                    y, v, beta)
+            else:
+                raise ValueError("q value not supported: '{}'".format(q))
     else:
         raise ValueError("unknown backend: '{}'".format(backend))

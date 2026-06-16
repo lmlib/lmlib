@@ -204,7 +204,7 @@ def ss2zpk_qz(A, B, C_row, D_scalar=0.0):
     and then recovers roots from those coefficients with ``numpy.roots``.
     The round-trip through polynomial coefficients is ill-conditioned whenever
     the system has near-repeated eigenvalues — precisely the situation that
-    arises here (all poles at ``gamma_inv ≈ 1``). The resulting zeros can be
+    arises for AlssmPoly (all poles at ``gamma_inv ≈ 1``). The resulting zeros can be
     off by up to 1e-5 relative to the true values.
 
     This implementation instead builds the ``(N+1) × (N+1)`` **Rosenbrock

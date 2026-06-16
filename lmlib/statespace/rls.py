@@ -2,7 +2,7 @@ import sys
 import numpy as np
 from numpy.linalg import inv, cond
 
-from lmlib.statespace.backend import get_backend
+from lmlib.statespace.backend import get_backend, available_backends
 from lmlib.statespace.cost import CompositeCost, CostSegment, NDCompositeCost
 from lmlib.statespace.model import AlssmSum
 from lmlib.utils.check import *
@@ -138,6 +138,11 @@ class RLSAlssm:
         self._nu = None
 
         self._backend = backend if backend is not None else get_backend(cost_terms)
+        assert self._backend in available_backends, (
+            f"backend '{self._backend}' is not available on this system. "
+            f"Available backends: {available_backends}. "
+            f"(The 'cupy' backend requires the cupy package and a visible CUDA device; "
+            f"'jit' requires numba.)")
 
         self._filter_form = filter_form
 
@@ -1170,11 +1175,19 @@ class RLSAlssm:
             combined = AlssmSum(alssms, F[:, p], force_MC=True)
             plan = (self._parallel_plan[dim_index][p]
                     if self._parallel_plan is not None else None)
-            for i in range(_y.shape[0]):
-                xi_q_recursion(
-                    _xi_curr[i], q, combined, segment,
-                    _y[i], _sw[i], betas[p],
-                    self._backend, self._filter_form, block_sizes, plan)
+            if self._backend == 'cupy' and self._filter_form == 'cascade':
+                # Process the whole channel batch in a single GPU sweep instead
+                # of one backend call per channel (see rec_cupy batched section).
+                from lmlib.statespace.backends.rec_cupy import cupy_xi_q_recursion_batch
+                cupy_xi_q_recursion_batch(
+                    _xi_curr, q, combined, segment,
+                    _y, _sw, betas[p], block_sizes)
+            else:
+                for i in range(_y.shape[0]):
+                    xi_q_recursion(
+                        _xi_curr[i], q, combined, segment,
+                        _y[i], _sw[i], betas[p],
+                        self._backend, self._filter_form, block_sizes, plan)
 
         _xi_view[:] = np.reshape(_xi_curr, _xi_view.shape)
         return xi_curr
