@@ -53,14 +53,22 @@ js, w = windows[0]
 trajectories = lm.Trajectory.eval(costs, xs, merged_ks=False)
 
 # plot
-fig, axs = plt.subplots(5, sharex='all', gridspec_kw={'hspace': 0.1}, figsize=(6, 6))
+fig, axs = plt.subplots(5, gridspec_kw={'hspace': 0.1}, figsize=(6, 6))
+
+# Shrink top two axes horizontally and center them
+for ax in [axs[0], axs[1]]:
+    pos = ax.get_position()
+    new_width = pos.width * 0.5      # keep 60% of original width
+    new_x0 = pos.x0 + (pos.width - new_width) / 2
+    ax.set_position([new_x0, pos.y0, new_width, pos.height])
+
 axs[0].plot(js,w, '-', c='k', lw=1.5, label=r'window weights $w_j = \gamma^j$')
-axs[0].set_title('costs.trajectories(xs)')
-axs[0].axvline(0, color="black", linestyle="--", lw=1.0)
-axs[0].axhline(1, color="black", linestyle="--", lw=0.5)
+axs[0].set_title('lm.Trajectory.eval()')
+axs[0].axvline(0, color="black", linestyle="--", lw=0.5)
 axs[0].axvline(a, color="gray", linestyle="-", lw=0.5)
 axs[0].axvline(b, color="gray", linestyle="-", lw=0.5)
 axs[0].set(ylim=[0, 2.1])
+axs[0].set(xlim=[-11, 37])
 
 for n, trajectory_p in enumerate(trajectories):
     js, trajectory = trajectory_p
@@ -75,7 +83,8 @@ axs[1].set_xlabel('Evaluation Index $j$')
 axs[1].axvline(0, color="black", linestyle="--", lw=0.5)
 axs[1].axvline(a, color="gray", linestyle="-", lw=0.5)
 axs[1].axvline(b, color="gray", linestyle="-", lw=0.5)
-axs[1].set_ylim([-40, 80])
+axs[1].set(ylim=[-40, 80])
+axs[1].set(xlim=[-11, 37])
 
 axs[1].tick_params(axis='both', which='both', labelbottom=True)
 
@@ -87,21 +96,29 @@ K = 70  # total signal length
 K_refs = [20, 40, 60]  # trajectory locations (indices)
 COLS_W = ['black', 'gray', 'lightgray']
 
-windows = lm.Window.eval_y(costs, K_refs, K, merged_seg=True)
-axs[3].plot(windows,  lw=1.5, label=r"window weights $w_{k-K_{ref}}$")
+windows = lm.Window.eval_y(costs, K_refs, K, merged_seg=True,fill_value=np.nan)
+axs[3].plot(windows, c='k', lw=1.5, label=r"window weights $w_{k-K_{ref}}=\gamma^{k-K_{ref}}$")
+axs[3].set(xlim=[-2, 105])
+axs[3].set_title('lm.Trajectory.eval_y()')
 
-trajectories = lm.Trajectory.eval_y(costs, xs, K_refs, K, merged_seg=True)
+trajectories = lm.Trajectory.eval_y(costs, xs, K_refs, K, merged_ks=False)
+#axs[4].plot(trajectories, lw=2, label='y_hat')
+for n, trajectory_p in enumerate(trajectories):
+    axs[4].plot(trajectory_p, lw=1.5, label=r'trajectory $s_j(x_' + str(n) + ') = cA^jx_' + str(n) + '$')
 
-axs[4].plot(trajectories, lw=2, label='y_hat')
 
 for k_ref in K_refs:
+    axs[3].axvline(k_ref + a, color="gray", linestyle="-", lw=0.5)
+    axs[3].axvline(k_ref + b, color="gray", linestyle="-", lw=0.5)
+    axs[3].axvline(k_ref, color="black", linestyle="--", lw=0.5)
     axs[4].axvline(k_ref + a, color="gray", linestyle="-", lw=0.5)
     axs[4].axvline(k_ref + b, color="gray", linestyle="-", lw=0.5)
     axs[4].axvline(k_ref, color="black", linestyle="--", lw=0.5)
 
 axs[4].set_xlabel('Evaluation Index $k$')
-axs[4].set_ylim([-40, 80])
+axs[4].set(ylim=[-40, 80])
+axs[4].set(xlim=[-2, 105])
 
 for ax in axs:
-    ax.legend(fontsize=7)
+    ax.legend(fontsize=7, loc=1)
 plt.show()

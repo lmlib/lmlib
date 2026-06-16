@@ -33,25 +33,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 import lmlib as lm
 from lmlib.utils.generator import gen_wgn
+plt.close('all')
 
 # --- Generating a 2-D test signal (image) -----------------------------------
 # A piecewise-constant image with sharp edges (the 2-D analogue of the
 # rectangular test signal `gen_rect` used in ex122) plus a diagonal intensity
 # ramp, contaminated with white Gaussian noise.
-K1, K2 = 140, 160                       # image size (rows, cols)
+K1, K2 = 300, 300                       # image size (rows, cols)
 img = np.zeros((K1, K2))
-img[20:70, 25:130] = 1.00               # bright block
-img[35:60, 40:65] = 0.25                # dark inset inside the bright block
-img[85:120, 50:110] = 0.55              # mid-gray block
+img[20:90, 25:275] = 1.00               # bright block
+img[40:70, 120:180] = 0.25              # dark inset inside the bright block
+img[120:180, 25:150] = 0.55             # mid-gray block
 rr, cc = np.mgrid[0:K1, 0:K2]           # diagonal ramp region (tests poly degree)
-img[95:130, 115:150] = 0.30 + 0.5 * (cc[95:130, 115:150] - 115) / 35
+img[200:280, 150:275] = 0.30 + 0.5 * (cc[200:280, 150:275] - 200) / 50
 
 Y = img + gen_wgn((K1, K2), 0.18, seed=1)   # noisy observation
 
 # --- Filter configuration ----------------------------------------------------
 DEGREES = (0, 1, 2, 3)                   # polynomial degrees, as in ex122
-L = 16                                   # half-window length (samples per side)
-G = 14                                   # effective window weight (samples)
+L = 20                                    # half-window length (samples per side)
+G = 5                                  # effective window weight (samples)
 
 
 def make_nd_cost(poly_degree, symmetric):
@@ -68,7 +69,7 @@ def make_nd_cost(poly_degree, symmetric):
         zero-phase). If False, use the forward window only
         (``F = [[1, 0]]``, causal / phase-delayed).
     """
-    alssm_poly = lm.AlssmPoly(poly_degree=poly_degree)
+    alssm_poly = lm.AlssmPolyJordan(poly_degree=poly_degree)
 
     # forward (left/top) and backward (right/bottom) segments per axis
     segment_left = lm.Segment(a=-L, b=-1, direction=lm.FORWARD, g=G)
@@ -90,7 +91,7 @@ for degree in DEGREES:
     # -- Symmetric Filter --
     nd_cost = make_nd_cost(degree, symmetric=True)
     rls = lm.RLSAlssm(nd_cost, steady_state=True, backend='lfilter')
-    y_hats_sym.append(rls.fit(Y))        # fit() now supports NDCompositeCost
+    y_hats_sym.append(rls.fit(Y))        
 
     # -- Asymmetric (causal) Filter --
     nd_cost = make_nd_cost(degree, symmetric=False)

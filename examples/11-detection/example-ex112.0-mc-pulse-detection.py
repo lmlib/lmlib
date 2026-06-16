@@ -70,7 +70,8 @@ peaks, _ = find_peaks(lcr, height=0.041, distance=30)
 
 
 # Window
-wins = lm.Window.eval_y(cost, peaks, K, merged_seg=False)
+#wins = lm.Window.eval_y(cost, peaks, K, merged_seg=False, fill_value=np.nan)
+wins = lm.Window.eval_y(cost, peaks, K, merged_seg=False, fill_value=0.0)
 
 # Trajectories
 trajs_baseline = lm.Trajectory.eval_y(cost, xs_sp, peaks, K, F=[[0, 0, 0], [1, 1, 1]], thd=0.01)
@@ -80,9 +81,9 @@ trajs_pulse = lm.Trajectory.eval_y(cost, xs_sp, peaks, K, F=[[0, 1, 0], [1, 1, 1
 fig, axs = plt.subplots(5, 1, figsize=(9, 8), gridspec_kw={'height_ratios': [1, 1, 3, 1, 1]}, sharex='all')
 
 axs[0].set(ylabel='$w_k$')
-axs[0].plot(range(K), wins[0], lw=1, c='k', ls='--')
+axs[0].plot(range(K), wins[0], lw=1, c='g', ls='--')
 axs[0].plot(range(K), wins[1], lw=1, c='k', ls='-')
-axs[0].plot(range(K), wins[2], lw=1, c='k', ls=':')
+axs[0].plot(range(K), wins[2], lw=1, c='r', ls=':')
 axs[0].legend(('segm. 1 ("baseline")', 'segm. 2 ("pulse"+"baseline")', 'segm. 3 ("baseline")'), loc=1, fontsize='small')
 
 # True Signals
