@@ -150,6 +150,90 @@ class TestCupyBackend(unittest.TestCase):
         finally:
             lm.set_gpu_dtype('float64')  # never leak precision state into other tests
 
+    # ── parallel filter form on GPU (vs lfilter parallel) ─────────────────────
+    def _parity_parallel(self, cost, y, sample_weights=None):
+        ref = lm.RLSAlssm(cost, backend='lfilter', filter_form='parallel')
+        gpu = lm.RLSAlssm(cost, backend='cupy', filter_form='parallel')
+        ref.filter(y, sample_weights=sample_weights)
+        gpu.filter(y, sample_weights=sample_weights)
+        np.testing.assert_allclose(np.asarray(gpu.xi),    np.asarray(ref.xi),    rtol=RTOL, atol=ATOL)
+        np.testing.assert_allclose(np.asarray(gpu.kappa), np.asarray(ref.kappa), rtol=RTOL, atol=ATOL)
+        return ref, gpu
+
+    def test_parallel_poly_orders(self):
+        for order in (1, 2, 3):
+            alssm = lm.AlssmPoly(poly_degree=order)
+            seg = lm.Segment(a=-21, b=-1, direction=lm.FW, g=100)
+            cost = lm.CompositeCost([alssm], [seg], F=[[1]])
+            np.random.seed(order)
+            self._parity_parallel(cost, np.random.randn(3000))
+
+    def test_parallel_backward(self):
+        alssm = lm.AlssmPoly(poly_degree=2)
+        seg = lm.Segment(a=0, b=21, direction=lm.BW, g=100)
+        cost = lm.CompositeCost([alssm], [seg], F=[[1]])
+        np.random.seed(0)
+        self._parity_parallel(cost, np.random.randn(3000))
+
+    def test_parallel_alssmsin_complex_poles(self):
+        # non-upper-triangular model with complex-conjugate poles: the genuine
+        # reason the parallel form exists; exercises the sosfilt (non gamma-shift) path.
+        sin = lm.AlssmSin(omega=0.1, rho=0.99)
+        seg = lm.Segment(a=-40, b=-1, direction=lm.FW, g=200)
+        cost = lm.CompositeCost([sin], [seg], F=[[1]])
+        np.random.seed(0)
+        self._parity_parallel(cost, np.random.randn(3000))
+
+    def test_parallel_minimize_x(self):
+        y = np.sin(np.linspace(0, 2 * np.pi, 40))
+        alssm = lm.AlssmPoly(poly_degree=2)
+        sfw = lm.Segment(a=-5, b=-1, direction=lm.FW, g=10)
+        sbw = lm.Segment(a=0, b=5, direction=lm.BW, g=10)
+        cost = lm.CompositeCost([alssm], [sfw, sbw], F=[[1, 1]])
+        ref, gpu = self._parity_parallel(cost, y)
+        np.testing.assert_allclose(gpu.minimize_x(), ref.minimize_x(), rtol=RTOL, atol=ATOL)
+
+    # ── N-dimensional (asterisk-l) recursion on GPU vs numpy ──────────────────
+    @staticmethod
+    def _mk_nd_cost(pd, g=5):
+        alssm = lm.AlssmPoly(poly_degree=pd)
+        sfw = lm.Segment(a=-4, b=-1, direction=lm.FW, g=g, delta=0)
+        sbw = lm.Segment(a=0, b=4, direction=lm.BW, g=g, delta=0)
+        return lm.CompositeCost([alssm], [sfw, sbw], F=[[1, 1]])
+
+    def _parity_nd(self, costs, Y, dim_order, filter_form):
+        nd = lm.NDCompositeCost(costs)
+        rn = lm.RLSAlssm(nd, steady_state=True, backend='numpy')
+        rg = lm.RLSAlssm(nd, steady_state=True, backend='cupy', filter_form=filter_form)
+        rn.filter(Y, dim_order=dim_order)
+        rg.filter(Y, dim_order=dim_order)
+        np.testing.assert_allclose(np.asarray(rg.xi), np.asarray(rn.xi), rtol=RTOL, atol=ATOL)
+        np.testing.assert_allclose(np.asarray(rg.kappa), np.asarray(rn.kappa), rtol=RTOL, atol=ATOL)
+        np.testing.assert_allclose(rg.eval_errors(rg.minimize_x()),
+                                   rn.eval_errors(rn.minimize_x()), rtol=RTOL, atol=ATOL)
+
+    def test_nd_2d_equal_order(self):
+        rng = np.random.default_rng(0); Y = rng.standard_normal((15, 15))
+        for form in ('cascade', 'parallel'):
+            self._parity_nd([self._mk_nd_cost(2), self._mk_nd_cost(2)], Y, [0, 1], form)
+
+    def test_nd_2d_unequal_order(self):
+        rng = np.random.default_rng(1); Y = rng.standard_normal((15, 15))
+        for form in ('cascade', 'parallel'):
+            self._parity_nd([self._mk_nd_cost(1), self._mk_nd_cost(2)], Y, [0, 1], form)
+            self._parity_nd([self._mk_nd_cost(3), self._mk_nd_cost(1)], Y, [0, 1], form)
+
+    def test_nd_3d(self):
+        rng = np.random.default_rng(2); Y = rng.standard_normal((10, 10, 10))
+        for form in ('cascade', 'parallel'):
+            self._parity_nd([self._mk_nd_cost(1), self._mk_nd_cost(2), self._mk_nd_cost(1)],
+                            Y, [0, 1, 2], form)
+
+    def test_nd_dim_order_permutation(self):
+        rng = np.random.default_rng(3); Y = rng.standard_normal((15, 15))
+        for form in ('cascade', 'parallel'):
+            self._parity_nd([self._mk_nd_cost(1), self._mk_nd_cost(2)], Y, [1, 0], form)
+
 
 if __name__ == '__main__':
     unittest.main()

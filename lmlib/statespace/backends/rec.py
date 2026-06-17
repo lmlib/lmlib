@@ -74,13 +74,26 @@ def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, back
         return
 
     if backend == 'cupy':
-        # The cross-dimensional (ND) asterisk recursion is not reimplemented on
-        # the GPU; the GPU backend targets the 1-D cascade path. Delegate to the
-        # numpy realization so ND costs still work with backend='cupy'.
-        numpy_xi_asterisk_l_recursion(xi_curr, A, C,
-                                      segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                      INq, xi_prev,
-                                      v, beta)
+        # GPU asterisk-l recursion: parallel q==1 -> parallel realization;
+        # cascade (and parallel q==0) -> cascade asterisk. q==2 and
+        # non-upper-triangular A fall back to numpy.
+        if q in (0, 1):
+            try:
+                from .rec_cupy import cupy_xi_q_asterisk_l_recursion
+                cupy_xi_q_asterisk_l_recursion(
+                    xi_curr, q, A, C,
+                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                    xi_prev, v, beta, filter_form, block_sizes)
+            except ValueError:
+                numpy_xi_asterisk_l_recursion(xi_curr, A, C,
+                                              segment.a, segment.b, segment.direction,
+                                              segment.delta, segment.gamma,
+                                              INq, xi_prev, v, beta)
+        else:
+            numpy_xi_asterisk_l_recursion(xi_curr, A, C,
+                                          segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                          INq, xi_prev,
+                                          v, beta)
         return
 
     if backend == 'lfilter':
@@ -271,21 +284,22 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, bloc
                                  y, v, beta)
             else:
                 raise ValueError("q value not supported: '{}'".format(q))
-        else:
-            # parallel form on GPU is not implemented; fall back to numpy.
+        elif filter_form == 'parallel':
+            # GPU parallel realization (mirrors lfilter parallel; reuses the
+            # host-built, cached parallel_plan).
             if q == 2:
-                numpy_recursion_xi2(xi, alssm.A, alssm.C,
-                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                    y, v, beta)
+                raise NotImplementedError("cupy_parallel_xi2 not implemented yet.")
             elif q == 1:
-                numpy_recursion_xi1(xi, alssm.A, alssm.C,
-                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                    y, v, beta)
+                cupy_parallel_xi1_split(xi, parallel_plan,
+                                        segment.a, segment.b, segment.direction,
+                                        segment.delta, segment.gamma, y, v, beta)
             elif q == 0:
-                numpy_recursion_xi0(xi, alssm.A, alssm.C,
-                                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
-                                    y, v, beta)
+                cupy_parallel_xi0(xi, None, None, None,
+                                  segment.a, segment.b, segment.direction,
+                                  segment.delta, segment.gamma, y, v, beta)
             else:
                 raise ValueError("q value not supported: '{}'".format(q))
+        else:
+            raise ValueError("unknown filter-form: '{}'".format(filter_form))
     else:
         raise ValueError("unknown backend: '{}'".format(backend))

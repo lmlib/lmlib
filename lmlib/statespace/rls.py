@@ -155,7 +155,7 @@ class RLSAlssm:
         # ------------------------------------------------------------------
         # check if filter form is valid for all segments
         # ------------------------------------------------------------------
-        if self._backend == 'lfilter' and self._filter_form == 'cascade':
+        if self._backend in ('lfilter', 'cupy') and self._filter_form == 'cascade':
             for ct in _sub_costs:
                 _alssms = [ct.alssm] if isinstance(ct, CostSegment) else list(ct.alssms)
                 for alssm in _alssms:
@@ -234,7 +234,7 @@ class RLSAlssm:
         The combined block-diagonal ``A`` / block-partitioned ``C`` are built
         once per segment here; the backend slices and decomposes each block.
         """
-        if not (self._filter_form == 'parallel' and self._backend == 'lfilter'):
+        if not (self._filter_form == 'parallel' and self._backend in ('lfilter', 'cupy')):
             return None
 
         from lmlib.statespace.backends.rec_lfilter import build_parallel_numdenom
