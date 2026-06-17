@@ -2778,6 +2778,13 @@ vector of length Q.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.Alssm.steady_state_basis" href="ModelBase.html#lmlib.statespace.model.ModelBase.steady_state_basis">steady_state_basis</a></code></b>
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
           <b><code><a class="autorefs autorefs-internal" title="lmlib.statespace.model.Alssm.label" href="ModelBase.html#lmlib.statespace.model.ModelBase.label">label</a></code></b>
           –
           <div class="doc-md-description">
@@ -2837,19 +2844,19 @@ vector of length Q.</p>
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-428">428</a></span>
-<span class="normal"><a href="#__codelineno-0-429">429</a></span>
-<span class="normal"><a href="#__codelineno-0-430">430</a></span>
-<span class="normal"><a href="#__codelineno-0-431">431</a></span>
-<span class="normal"><a href="#__codelineno-0-432">432</a></span>
-<span class="normal"><a href="#__codelineno-0-433">433</a></span>
-<span class="normal"><a href="#__codelineno-0-434">434</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">C_init</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-430" name="__codelineno-0-430"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">A</span>
-<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;[`ndarray`][numpy.ndarray], shape=(N, N) : State matrix $A \in \mathbb{R}^{N \times N}$&quot;&quot;&quot;</span>
-<a id="__codelineno-0-432" name="__codelineno-0-432"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">C</span>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;[`ndarray`][numpy.ndarray], shape=([Q,] N) : Output matrix $C \in \mathbb{R}^{Q \times N}$&quot;&quot;&quot;</span>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-437">437</a></span>
+<span class="normal"><a href="#__codelineno-0-438">438</a></span>
+<span class="normal"><a href="#__codelineno-0-439">439</a></span>
+<span class="normal"><a href="#__codelineno-0-440">440</a></span>
+<span class="normal"><a href="#__codelineno-0-441">441</a></span>
+<span class="normal"><a href="#__codelineno-0-442">442</a></span>
+<span class="normal"><a href="#__codelineno-0-443">443</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<a id="__codelineno-0-438" name="__codelineno-0-438"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">C_init</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-439" name="__codelineno-0-439"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">A</span>
+<a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;[`ndarray`][numpy.ndarray], shape=(N, N) : State matrix $A \in \mathbb{R}^{N \times N}$&quot;&quot;&quot;</span>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">C</span>
+<a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;[`ndarray`][numpy.ndarray], shape=([Q,] N) : Output matrix $C \in \mathbb{R}^{Q \times N}$&quot;&quot;&quot;</span>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -2884,15 +2891,15 @@ vector of length Q.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-436">436</a></span>
-<span class="normal"><a href="#__codelineno-0-437">437</a></span>
-<span class="normal"><a href="#__codelineno-0-438">438</a></span>
-<span class="normal"><a href="#__codelineno-0-439">439</a></span>
-<span class="normal"><a href="#__codelineno-0-440">440</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reapply ``C_init`` and re-broadcast C to multi-channel form if needed.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-438" name="__codelineno-0-438"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">C_init</span>
-<a id="__codelineno-0-439" name="__codelineno-0-439"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_init_state_var_labels</span><span class="p">()</span>
-<a id="__codelineno-0-440" name="__codelineno-0-440"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_C_to_multichannel</span><span class="p">()</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-445">445</a></span>
+<span class="normal"><a href="#__codelineno-0-446">446</a></span>
+<span class="normal"><a href="#__codelineno-0-447">447</a></span>
+<span class="normal"><a href="#__codelineno-0-448">448</a></span>
+<span class="normal"><a href="#__codelineno-0-449">449</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reapply ``C_init`` and re-broadcast C to multi-channel form if needed.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">C_init</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_init_state_var_labels</span><span class="p">()</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_C_to_multichannel</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2963,16 +2970,7 @@ The <code>[Q]</code> dimension is present only when <a class="autorefs autorefs-
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-185">185</a></span>
-<span class="normal"><a href="#__codelineno-0-186">186</a></span>
-<span class="normal"><a href="#__codelineno-0-187">187</a></span>
-<span class="normal"><a href="#__codelineno-0-188">188</a></span>
-<span class="normal"><a href="#__codelineno-0-189">189</a></span>
-<span class="normal"><a href="#__codelineno-0-190">190</a></span>
-<span class="normal"><a href="#__codelineno-0-191">191</a></span>
-<span class="normal"><a href="#__codelineno-0-192">192</a></span>
-<span class="normal"><a href="#__codelineno-0-193">193</a></span>
-<span class="normal"><a href="#__codelineno-0-194">194</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-194">194</a></span>
 <span class="normal"><a href="#__codelineno-0-195">195</a></span>
 <span class="normal"><a href="#__codelineno-0-196">196</a></span>
 <span class="normal"><a href="#__codelineno-0-197">197</a></span>
@@ -3008,52 +3006,61 @@ The <code>[Q]</code> dimension is present only when <a class="autorefs autorefs-
 <span class="normal"><a href="#__codelineno-0-227">227</a></span>
 <span class="normal"><a href="#__codelineno-0-228">228</a></span>
 <span class="normal"><a href="#__codelineno-0-229">229</a></span>
-<span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="k">def</span><span class="w"> </span><span class="nf">eval_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">js</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">    Evaluate the ALSSM output for one or more state vectors.</span>
-<a id="__codelineno-0-188" name="__codelineno-0-188"></a>
-<a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">    Without evaluation index (``js=None``):</span>
-<a id="__codelineno-0-190" name="__codelineno-0-190"></a>
-<a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">    s(x) = C x</span>
-<a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-194" name="__codelineno-0-194"></a>
-<a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">    With evaluation indices (``js`` provided):</span>
-<a id="__codelineno-0-196" name="__codelineno-0-196"></a>
-<a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-198" name="__codelineno-0-198"></a><span class="sd">    s_j(x) = C A^j x</span>
-<a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-200" name="__codelineno-0-200"></a>
-<a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">    xs : array_like of shape (..., N)</span>
-<a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">        State vector(s). The last dimension must equal the model order N.</span>
-<a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">    js : array_like of shape (J,) or None, optional</span>
-<a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">        Sequence of integer evaluation indices. If None, evaluates at</span>
-<a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">        $j = 0$ only (i.e. returns $Cx$).</span>
-<a id="__codelineno-0-208" name="__codelineno-0-208"></a>
-<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">    s : ndarray</span>
-<a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">        If ``js`` is None: shape ``(..., [Q])``.</span>
-<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">        If ``js`` is provided: shape ``(J, ..., [Q])``.</span>
-<a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">        The ``[Q]`` dimension is present only when [`is_MC`][lmlib.statespace.model.ModelBase.is_MC] is True.</span>
-<a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-216" name="__codelineno-0-216"></a>    <span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-230">230</a></span>
+<span class="normal"><a href="#__codelineno-0-231">231</a></span>
+<span class="normal"><a href="#__codelineno-0-232">232</a></span>
+<span class="normal"><a href="#__codelineno-0-233">233</a></span>
+<span class="normal"><a href="#__codelineno-0-234">234</a></span>
+<span class="normal"><a href="#__codelineno-0-235">235</a></span>
+<span class="normal"><a href="#__codelineno-0-236">236</a></span>
+<span class="normal"><a href="#__codelineno-0-237">237</a></span>
+<span class="normal"><a href="#__codelineno-0-238">238</a></span>
+<span class="normal"><a href="#__codelineno-0-239">239</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="k">def</span><span class="w"> </span><span class="nf">eval_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">js</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="sd">    Evaluate the ALSSM output for one or more state vectors.</span>
+<a id="__codelineno-0-197" name="__codelineno-0-197"></a>
+<a id="__codelineno-0-198" name="__codelineno-0-198"></a><span class="sd">    Without evaluation index (``js=None``):</span>
+<a id="__codelineno-0-199" name="__codelineno-0-199"></a>
+<a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">    s(x) = C x</span>
+<a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-203" name="__codelineno-0-203"></a>
+<a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">    With evaluation indices (``js`` provided):</span>
+<a id="__codelineno-0-205" name="__codelineno-0-205"></a>
+<a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">    s_j(x) = C A^j x</span>
+<a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-209" name="__codelineno-0-209"></a>
+<a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">    xs : array_like of shape (..., N)</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">        State vector(s). The last dimension must equal the model order N.</span>
+<a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">    js : array_like of shape (J,) or None, optional</span>
+<a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">        Sequence of integer evaluation indices. If None, evaluates at</span>
+<a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">        $j = 0$ only (i.e. returns $Cx$).</span>
 <a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a>    <span class="c1"># Ensure last axis is state dimension</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a>    <span class="k">if</span> <span class="n">xs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
-<a id="__codelineno-0-220" name="__codelineno-0-220"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Last dimension of xs must be </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-221" name="__codelineno-0-221"></a>
-<a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="c1"># No propagation: s = C x</span>
-<a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="k">if</span> <span class="n">js</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-224" name="__codelineno-0-224"></a>        <span class="n">_subscript</span> <span class="o">=</span> <span class="s1">&#39;ln,...n-&gt;...l&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_MC</span> <span class="k">else</span> <span class="s1">&#39;n,...n-&gt;...&#39;</span>
-<a id="__codelineno-0-225" name="__codelineno-0-225"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="n">_subscript</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">,</span> <span class="n">xs</span><span class="p">)</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    s : ndarray</span>
+<a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="sd">        If ``js`` is None: shape ``(..., [Q])``.</span>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">        If ``js`` is provided: shape ``(J, ..., [Q])``.</span>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a><span class="sd">        The ``[Q]`` dimension is present only when [`is_MC`][lmlib.statespace.model.ModelBase.is_MC] is True.</span>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a>    <span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
 <a id="__codelineno-0-226" name="__codelineno-0-226"></a>
-<a id="__codelineno-0-227" name="__codelineno-0-227"></a>    <span class="c1"># Propagation: s_j = C A^j x</span>
-<a id="__codelineno-0-228" name="__codelineno-0-228"></a>    <span class="n">A_powers</span> <span class="o">=</span> <span class="p">[</span><span class="n">matrix_power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">j</span><span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">js</span><span class="p">]</span>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a>    <span class="n">_subscript</span> <span class="o">=</span> <span class="s1">&#39;ln,...n-&gt;...l&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_MC</span> <span class="k">else</span> <span class="s1">&#39;n,...n-&gt;...&#39;</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a>    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="n">_subscript</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">@</span> <span class="n">Aj</span><span class="p">,</span> <span class="n">xs</span><span class="p">)</span> <span class="k">for</span> <span class="n">Aj</span> <span class="ow">in</span> <span class="n">A_powers</span><span class="p">])</span>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a>    <span class="c1"># Ensure last axis is state dimension</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a>    <span class="k">if</span> <span class="n">xs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">:</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Last dimension of xs must be </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a>    <span class="c1"># No propagation: s = C x</span>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a>    <span class="k">if</span> <span class="n">js</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a>        <span class="n">_subscript</span> <span class="o">=</span> <span class="s1">&#39;ln,...n-&gt;...l&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_MC</span> <span class="k">else</span> <span class="s1">&#39;n,...n-&gt;...&#39;</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="n">_subscript</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">,</span> <span class="n">xs</span><span class="p">)</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a>    <span class="c1"># Propagation: s_j = C A^j x</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="n">A_powers</span> <span class="o">=</span> <span class="p">[</span><span class="n">matrix_power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">j</span><span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">js</span><span class="p">]</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="n">_subscript</span> <span class="o">=</span> <span class="s1">&#39;ln,...n-&gt;...l&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_MC</span> <span class="k">else</span> <span class="s1">&#39;n,...n-&gt;...&#39;</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a>    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="n">_subscript</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">@</span> <span class="n">Aj</span><span class="p">,</span> <span class="n">xs</span><span class="p">)</span> <span class="k">for</span> <span class="n">Aj</span> <span class="ow">in</span> <span class="n">A_powers</span><span class="p">])</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3106,16 +3113,7 @@ The <code>[Q]</code> dimension is present only when <a class="autorefs autorefs-
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-232">232</a></span>
-<span class="normal"><a href="#__codelineno-0-233">233</a></span>
-<span class="normal"><a href="#__codelineno-0-234">234</a></span>
-<span class="normal"><a href="#__codelineno-0-235">235</a></span>
-<span class="normal"><a href="#__codelineno-0-236">236</a></span>
-<span class="normal"><a href="#__codelineno-0-237">237</a></span>
-<span class="normal"><a href="#__codelineno-0-238">238</a></span>
-<span class="normal"><a href="#__codelineno-0-239">239</a></span>
-<span class="normal"><a href="#__codelineno-0-240">240</a></span>
-<span class="normal"><a href="#__codelineno-0-241">241</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-241">241</a></span>
 <span class="normal"><a href="#__codelineno-0-242">242</a></span>
 <span class="normal"><a href="#__codelineno-0-243">243</a></span>
 <span class="normal"><a href="#__codelineno-0-244">244</a></span>
@@ -3131,32 +3129,41 @@ The <code>[Q]</code> dimension is present only when <a class="autorefs autorefs-
 <span class="normal"><a href="#__codelineno-0-254">254</a></span>
 <span class="normal"><a href="#__codelineno-0-255">255</a></span>
 <span class="normal"><a href="#__codelineno-0-256">256</a></span>
-<span class="normal"><a href="#__codelineno-0-257">257</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="k">def</span><span class="w"> </span><span class="nf">dump_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">    Return the internal ALSSM tree structure as a string.</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">    out : str</span>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">        Multi-line string representing the nested ALSSM structure.</span>
-<a id="__codelineno-0-240" name="__codelineno-0-240"></a>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    Example</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a><span class="sd">    --------</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="sd">    ```python</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="sd">    &gt;&gt;&gt; import lmlib as lm</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">    &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">    &gt;&gt;&gt; alssm_poly = lm.AlssmPoly(4, label=&quot;high order polynomial&quot;)</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">    &gt;&gt;&gt; A = [[1, 1], [0, 1]]</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="sd">    &gt;&gt;&gt; C = [[1, 0]]</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="sd">    &gt;&gt;&gt; alssm_line = lm.Alssm(A, C, label=&quot;line&quot;)</span>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="sd">    &gt;&gt;&gt; stacked_alssm = lm.AlssmStacked((alssm_poly, alssm_line), label=&#39;stacked model&#39;)</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">    &gt;&gt;&gt; print(stacked_alssm.dump_tree())</span>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">    └-AlssmStacked, A: (7, 7), C: (2, 7), label: stacked model</span>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">      └-AlssmPoly, A: (5, 5), C: (5,), label: high order polynomial</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">      └-Alssm, A: (2, 2), C: (1, 2), label: line</span>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">    ```</span>
-<a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rec_tree</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-257">257</a></span>
+<span class="normal"><a href="#__codelineno-0-258">258</a></span>
+<span class="normal"><a href="#__codelineno-0-259">259</a></span>
+<span class="normal"><a href="#__codelineno-0-260">260</a></span>
+<span class="normal"><a href="#__codelineno-0-261">261</a></span>
+<span class="normal"><a href="#__codelineno-0-262">262</a></span>
+<span class="normal"><a href="#__codelineno-0-263">263</a></span>
+<span class="normal"><a href="#__codelineno-0-264">264</a></span>
+<span class="normal"><a href="#__codelineno-0-265">265</a></span>
+<span class="normal"><a href="#__codelineno-0-266">266</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="k">def</span><span class="w"> </span><span class="nf">dump_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="sd">    Return the internal ALSSM tree structure as a string.</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">    out : str</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="sd">        Multi-line string representing the nested ALSSM structure.</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="sd">    Example</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">    ```python</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">    &gt;&gt;&gt; import lmlib as lm</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">    &gt;&gt;&gt; alssm_poly = lm.AlssmPoly(4, label=&quot;high order polynomial&quot;)</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    &gt;&gt;&gt; A = [[1, 1], [0, 1]]</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">    &gt;&gt;&gt; C = [[1, 0]]</span>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    &gt;&gt;&gt; alssm_line = lm.Alssm(A, C, label=&quot;line&quot;)</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">    &gt;&gt;&gt; stacked_alssm = lm.AlssmStacked((alssm_poly, alssm_line), label=&#39;stacked model&#39;)</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">    &gt;&gt;&gt; print(stacked_alssm.dump_tree())</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    └-AlssmStacked, A: (7, 7), C: (2, 7), label: stacked model</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">      └-AlssmPoly, A: (5, 5), C: (5,), label: high order polynomial</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">      └-Alssm, A: (2, 2), C: (1, 2), label: line</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="sd">    ```</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rec_tree</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3214,16 +3221,7 @@ numeric index; see <a class="autorefs autorefs-internal" title="            get_
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-259">259</a></span>
-<span class="normal"><a href="#__codelineno-0-260">260</a></span>
-<span class="normal"><a href="#__codelineno-0-261">261</a></span>
-<span class="normal"><a href="#__codelineno-0-262">262</a></span>
-<span class="normal"><a href="#__codelineno-0-263">263</a></span>
-<span class="normal"><a href="#__codelineno-0-264">264</a></span>
-<span class="normal"><a href="#__codelineno-0-265">265</a></span>
-<span class="normal"><a href="#__codelineno-0-266">266</a></span>
-<span class="normal"><a href="#__codelineno-0-267">267</a></span>
-<span class="normal"><a href="#__codelineno-0-268">268</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-268">268</a></span>
 <span class="normal"><a href="#__codelineno-0-269">269</a></span>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span>
 <span class="normal"><a href="#__codelineno-0-271">271</a></span>
@@ -3238,31 +3236,40 @@ numeric index; see <a class="autorefs autorefs-internal" title="            get_
 <span class="normal"><a href="#__codelineno-0-280">280</a></span>
 <span class="normal"><a href="#__codelineno-0-281">281</a></span>
 <span class="normal"><a href="#__codelineno-0-282">282</a></span>
-<span class="normal"><a href="#__codelineno-0-283">283</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="k">def</span><span class="w"> </span><span class="nf">set_state_var_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">indices</span><span class="p">:</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
-<a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">    Register a label for one or more state vector indices.</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a>
-<a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    Labels allow state components to be referenced by name rather than by</span>
-<a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="sd">    numeric index; see [`get_state_var_indices`][lmlib.statespace.model.ModelBase.get_state_var_indices].</span>
-<a id="__codelineno-0-265" name="__codelineno-0-265"></a>
-<a id="__codelineno-0-266" name="__codelineno-0-266"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-267" name="__codelineno-0-267"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="sd">    label : str</span>
-<a id="__codelineno-0-269" name="__codelineno-0-269"></a><span class="sd">        Label name to register.</span>
-<a id="__codelineno-0-270" name="__codelineno-0-270"></a><span class="sd">    indices : tuple of int</span>
-<a id="__codelineno-0-271" name="__codelineno-0-271"></a><span class="sd">        State vector indices associated with this label.</span>
-<a id="__codelineno-0-272" name="__codelineno-0-272"></a>
-<a id="__codelineno-0-273" name="__codelineno-0-273"></a><span class="sd">    Example</span>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="sd">    --------</span>
-<a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    ```python</span>
-<a id="__codelineno-0-276" name="__codelineno-0-276"></a><span class="sd">    &gt;&gt;&gt; import lmlib as lm</span>
-<a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    &gt;&gt;&gt; alssm = lm.AlssmPoly(poly_degree=1, label=&#39;slope_with_offset&#39;)</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">    &gt;&gt;&gt; alssm.set_state_var_label(&#39;slope&#39;, (1,))</span>
-<a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    &gt;&gt;&gt; alssm.get_state_var_indices(&#39;slope_with_offset.slope&#39;)</span>
-<a id="__codelineno-0-280" name="__codelineno-0-280"></a><span class="sd">    (1,)</span>
-<a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="sd">    ```</span>
-<a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-283" name="__codelineno-0-283"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_state_var_labels</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">indices</span>
+<span class="normal"><a href="#__codelineno-0-283">283</a></span>
+<span class="normal"><a href="#__codelineno-0-284">284</a></span>
+<span class="normal"><a href="#__codelineno-0-285">285</a></span>
+<span class="normal"><a href="#__codelineno-0-286">286</a></span>
+<span class="normal"><a href="#__codelineno-0-287">287</a></span>
+<span class="normal"><a href="#__codelineno-0-288">288</a></span>
+<span class="normal"><a href="#__codelineno-0-289">289</a></span>
+<span class="normal"><a href="#__codelineno-0-290">290</a></span>
+<span class="normal"><a href="#__codelineno-0-291">291</a></span>
+<span class="normal"><a href="#__codelineno-0-292">292</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="k">def</span><span class="w"> </span><span class="nf">set_state_var_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">indices</span><span class="p">:</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a><span class="sd">    Register a label for one or more state vector indices.</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="sd">    Labels allow state components to be referenced by name rather than by</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a><span class="sd">    numeric index; see [`get_state_var_indices`][lmlib.statespace.model.ModelBase.get_state_var_indices].</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    label : str</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a><span class="sd">        Label name to register.</span>
+<a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    indices : tuple of int</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a><span class="sd">        State vector indices associated with this label.</span>
+<a id="__codelineno-0-281" name="__codelineno-0-281"></a>
+<a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="sd">    Example</span>
+<a id="__codelineno-0-283" name="__codelineno-0-283"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-284" name="__codelineno-0-284"></a><span class="sd">    ```python</span>
+<a id="__codelineno-0-285" name="__codelineno-0-285"></a><span class="sd">    &gt;&gt;&gt; import lmlib as lm</span>
+<a id="__codelineno-0-286" name="__codelineno-0-286"></a><span class="sd">    &gt;&gt;&gt; alssm = lm.AlssmPoly(poly_degree=1, label=&#39;slope_with_offset&#39;)</span>
+<a id="__codelineno-0-287" name="__codelineno-0-287"></a><span class="sd">    &gt;&gt;&gt; alssm.set_state_var_label(&#39;slope&#39;, (1,))</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="sd">    &gt;&gt;&gt; alssm.get_state_var_indices(&#39;slope_with_offset.slope&#39;)</span>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="sd">    (1,)</span>
+<a id="__codelineno-0-290" name="__codelineno-0-290"></a><span class="sd">    ```</span>
+<a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_state_var_labels</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">indices</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3305,16 +3312,7 @@ the corresponding tuple of integer state-vector positions.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-312">312</a></span>
-<span class="normal"><a href="#__codelineno-0-313">313</a></span>
-<span class="normal"><a href="#__codelineno-0-314">314</a></span>
-<span class="normal"><a href="#__codelineno-0-315">315</a></span>
-<span class="normal"><a href="#__codelineno-0-316">316</a></span>
-<span class="normal"><a href="#__codelineno-0-317">317</a></span>
-<span class="normal"><a href="#__codelineno-0-318">318</a></span>
-<span class="normal"><a href="#__codelineno-0-319">319</a></span>
-<span class="normal"><a href="#__codelineno-0-320">320</a></span>
-<span class="normal"><a href="#__codelineno-0-321">321</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-321">321</a></span>
 <span class="normal"><a href="#__codelineno-0-322">322</a></span>
 <span class="normal"><a href="#__codelineno-0-323">323</a></span>
 <span class="normal"><a href="#__codelineno-0-324">324</a></span>
@@ -3330,32 +3328,41 @@ the corresponding tuple of integer state-vector positions.</p>
 <span class="normal"><a href="#__codelineno-0-334">334</a></span>
 <span class="normal"><a href="#__codelineno-0-335">335</a></span>
 <span class="normal"><a href="#__codelineno-0-336">336</a></span>
-<span class="normal"><a href="#__codelineno-0-337">337</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_state_var_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">    Return all registered state-variable labels together with their index tuples.</span>
-<a id="__codelineno-0-315" name="__codelineno-0-315"></a>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">    Labels are accumulated recursively from all nested sub-ALSSMs, with</span>
-<a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">    each label prefixed by the current model&#39;s [`label`][lmlib.statespace.model.ModelBase.label].  The state</span>
-<a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">    indices are adjusted to reflect the position within the combined</span>
-<a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">    (block-diagonal) state vector.</span>
-<a id="__codelineno-0-320" name="__codelineno-0-320"></a>
-<a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="sd">    out : list of (str, tuple of int)</span>
-<a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">        List of ``(label_string, indices)`` pairs.  ``label_string`` is a</span>
-<a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">        dot-separated path (e.g. ``&#39;stacked.poly.x0&#39;``) and ``indices`` is</span>
-<a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">        the corresponding tuple of integer state-vector positions.</span>
-<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-328" name="__codelineno-0-328"></a>    <span class="n">state_list</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-329" name="__codelineno-0-329"></a>    <span class="k">for</span> <span class="n">var_label</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_var_labels</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-<a id="__codelineno-0-330" name="__codelineno-0-330"></a>        <span class="n">state_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">var_label</span><span class="p">,</span> <span class="n">indices</span><span class="p">))</span>
-<a id="__codelineno-0-331" name="__codelineno-0-331"></a>
-<a id="__codelineno-0-332" name="__codelineno-0-332"></a>    <span class="n">N</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-0-333" name="__codelineno-0-333"></a>    <span class="k">for</span> <span class="n">alssm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">:</span>
-<a id="__codelineno-0-334" name="__codelineno-0-334"></a>        <span class="k">for</span> <span class="n">var_label</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="n">alssm</span><span class="o">.</span><span class="n">get_state_var_labels</span><span class="p">():</span>
-<a id="__codelineno-0-335" name="__codelineno-0-335"></a>            <span class="n">state_list</span><span class="o">.</span><span class="n">extend</span><span class="p">([(</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">var_label</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">N</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">))])</span>
-<a id="__codelineno-0-336" name="__codelineno-0-336"></a>        <span class="n">N</span> <span class="o">+=</span> <span class="n">alssm</span><span class="o">.</span><span class="n">N</span>
-<a id="__codelineno-0-337" name="__codelineno-0-337"></a>    <span class="k">return</span> <span class="n">state_list</span>
+<span class="normal"><a href="#__codelineno-0-337">337</a></span>
+<span class="normal"><a href="#__codelineno-0-338">338</a></span>
+<span class="normal"><a href="#__codelineno-0-339">339</a></span>
+<span class="normal"><a href="#__codelineno-0-340">340</a></span>
+<span class="normal"><a href="#__codelineno-0-341">341</a></span>
+<span class="normal"><a href="#__codelineno-0-342">342</a></span>
+<span class="normal"><a href="#__codelineno-0-343">343</a></span>
+<span class="normal"><a href="#__codelineno-0-344">344</a></span>
+<span class="normal"><a href="#__codelineno-0-345">345</a></span>
+<span class="normal"><a href="#__codelineno-0-346">346</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_state_var_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="sd">    Return all registered state-variable labels together with their index tuples.</span>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">    Labels are accumulated recursively from all nested sub-ALSSMs, with</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">    each label prefixed by the current model&#39;s [`label`][lmlib.statespace.model.ModelBase.label].  The state</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">    indices are adjusted to reflect the position within the combined</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">    (block-diagonal) state vector.</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="sd">    out : list of (str, tuple of int)</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">        List of ``(label_string, indices)`` pairs.  ``label_string`` is a</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">        dot-separated path (e.g. ``&#39;stacked.poly.x0&#39;``) and ``indices`` is</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">        the corresponding tuple of integer state-vector positions.</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a>    <span class="n">state_list</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-338" name="__codelineno-0-338"></a>    <span class="k">for</span> <span class="n">var_label</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_var_labels</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a>        <span class="n">state_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">var_label</span><span class="p">,</span> <span class="n">indices</span><span class="p">))</span>
+<a id="__codelineno-0-340" name="__codelineno-0-340"></a>
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a>    <span class="n">N</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-342" name="__codelineno-0-342"></a>    <span class="k">for</span> <span class="n">alssm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">:</span>
+<a id="__codelineno-0-343" name="__codelineno-0-343"></a>        <span class="k">for</span> <span class="n">var_label</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="n">alssm</span><span class="o">.</span><span class="n">get_state_var_labels</span><span class="p">():</span>
+<a id="__codelineno-0-344" name="__codelineno-0-344"></a>            <span class="n">state_list</span><span class="o">.</span><span class="n">extend</span><span class="p">([(</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">var_label</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">N</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">))])</span>
+<a id="__codelineno-0-345" name="__codelineno-0-345"></a>        <span class="n">N</span> <span class="o">+=</span> <span class="n">alssm</span><span class="o">.</span><span class="n">N</span>
+<a id="__codelineno-0-346" name="__codelineno-0-346"></a>    <span class="k">return</span> <span class="n">state_list</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3407,16 +3414,7 @@ Returns an empty list if <code>label</code> is not found.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-339">339</a></span>
-<span class="normal"><a href="#__codelineno-0-340">340</a></span>
-<span class="normal"><a href="#__codelineno-0-341">341</a></span>
-<span class="normal"><a href="#__codelineno-0-342">342</a></span>
-<span class="normal"><a href="#__codelineno-0-343">343</a></span>
-<span class="normal"><a href="#__codelineno-0-344">344</a></span>
-<span class="normal"><a href="#__codelineno-0-345">345</a></span>
-<span class="normal"><a href="#__codelineno-0-346">346</a></span>
-<span class="normal"><a href="#__codelineno-0-347">347</a></span>
-<span class="normal"><a href="#__codelineno-0-348">348</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-348">348</a></span>
 <span class="normal"><a href="#__codelineno-0-349">349</a></span>
 <span class="normal"><a href="#__codelineno-0-350">350</a></span>
 <span class="normal"><a href="#__codelineno-0-351">351</a></span>
@@ -3427,27 +3425,36 @@ Returns an empty list if <code>label</code> is not found.</p>
 <span class="normal"><a href="#__codelineno-0-356">356</a></span>
 <span class="normal"><a href="#__codelineno-0-357">357</a></span>
 <span class="normal"><a href="#__codelineno-0-358">358</a></span>
-<span class="normal"><a href="#__codelineno-0-359">359</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_state_var_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
-<a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">    Return the state-vector indices for a state variable identified by its label.</span>
-<a id="__codelineno-0-342" name="__codelineno-0-342"></a>
-<a id="__codelineno-0-343" name="__codelineno-0-343"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-344" name="__codelineno-0-344"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-345" name="__codelineno-0-345"></a><span class="sd">    label : str</span>
-<a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="sd">        Fully qualified state label (dot-separated path), as returned by</span>
-<a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="sd">        [`get_state_var_labels`][lmlib.statespace.model.ModelBase.get_state_var_labels].</span>
-<a id="__codelineno-0-348" name="__codelineno-0-348"></a>
-<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">    out : tuple of int or list of int</span>
-<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">        State-vector indices associated with ``label``.</span>
-<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">        Returns an empty list if ``label`` is not found.</span>
-<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a>
-<a id="__codelineno-0-356" name="__codelineno-0-356"></a>    <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_state_var_labels</span><span class="p">():</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a>        <span class="k">if</span> <span class="n">label</span> <span class="o">==</span> <span class="n">l</span><span class="p">:</span>
-<a id="__codelineno-0-358" name="__codelineno-0-358"></a>            <span class="k">return</span> <span class="n">indices</span>
-<a id="__codelineno-0-359" name="__codelineno-0-359"></a>    <span class="k">return</span> <span class="p">[]</span>
+<span class="normal"><a href="#__codelineno-0-359">359</a></span>
+<span class="normal"><a href="#__codelineno-0-360">360</a></span>
+<span class="normal"><a href="#__codelineno-0-361">361</a></span>
+<span class="normal"><a href="#__codelineno-0-362">362</a></span>
+<span class="normal"><a href="#__codelineno-0-363">363</a></span>
+<span class="normal"><a href="#__codelineno-0-364">364</a></span>
+<span class="normal"><a href="#__codelineno-0-365">365</a></span>
+<span class="normal"><a href="#__codelineno-0-366">366</a></span>
+<span class="normal"><a href="#__codelineno-0-367">367</a></span>
+<span class="normal"><a href="#__codelineno-0-368">368</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_state_var_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">    Return the state-vector indices for a state variable identified by its label.</span>
+<a id="__codelineno-0-351" name="__codelineno-0-351"></a>
+<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">    label : str</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">        Fully qualified state label (dot-separated path), as returned by</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">        [`get_state_var_labels`][lmlib.statespace.model.ModelBase.get_state_var_labels].</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a>
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">    out : tuple of int or list of int</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">        State-vector indices associated with ``label``.</span>
+<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">        Returns an empty list if ``label`` is not found.</span>
+<a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-364" name="__codelineno-0-364"></a>
+<a id="__codelineno-0-365" name="__codelineno-0-365"></a>    <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_state_var_labels</span><span class="p">():</span>
+<a id="__codelineno-0-366" name="__codelineno-0-366"></a>        <span class="k">if</span> <span class="n">label</span> <span class="o">==</span> <span class="n">l</span><span class="p">:</span>
+<a id="__codelineno-0-367" name="__codelineno-0-367"></a>            <span class="k">return</span> <span class="n">indices</span>
+<a id="__codelineno-0-368" name="__codelineno-0-368"></a>    <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3472,11 +3479,11 @@ Returns an empty list if <code>label</code> is not found.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-361">361</a></span>
-<span class="normal"><a href="#__codelineno-0-362">362</a></span>
-<span class="normal"><a href="#__codelineno-0-363">363</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_output_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return the ALSSM output dimension $Q$ (number of output channels).&quot;&quot;&quot;</span>
-<a id="__codelineno-0-363" name="__codelineno-0-363"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Q</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-370">370</a></span>
+<span class="normal"><a href="#__codelineno-0-371">371</a></span>
+<span class="normal"><a href="#__codelineno-0-372">372</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-370" name="__codelineno-0-370"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_output_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-371" name="__codelineno-0-371"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return the ALSSM output dimension $Q$ (number of output channels).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-372" name="__codelineno-0-372"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Q</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>

@@ -2952,8 +2952,7 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-445">445</a></span>
-<span class="normal"><a href="#__codelineno-0-446">446</a></span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-446">446</a></span>
 <span class="normal"><a href="#__codelineno-0-447">447</a></span>
 <span class="normal"><a href="#__codelineno-0-448">448</a></span>
 <span class="normal"><a href="#__codelineno-0-449">449</a></span>
@@ -2989,44 +2988,45 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 <span class="normal"><a href="#__codelineno-0-479">479</a></span>
 <span class="normal"><a href="#__codelineno-0-480">480</a></span>
 <span class="normal"><a href="#__codelineno-0-481">481</a></span>
-<span class="normal"><a href="#__codelineno-0-482">482</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alssms</span><span class="p">,</span> <span class="n">segments</span><span class="p">,</span> <span class="n">F</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">betas</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;n/a&#39;</span><span class="p">):</span>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a>    <span class="c1"># set alssms (accept a single ALSSM in place of an iterable)</span>
-<a id="__codelineno-0-447" name="__codelineno-0-447"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alssms</span><span class="p">,</span> <span class="n">ModelBase</span><span class="p">):</span>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a>        <span class="n">alssms</span> <span class="o">=</span> <span class="p">[</span><span class="n">alssms</span><span class="p">]</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alssms</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">),</span> <span class="s1">&#39;alssms is not iterable&#39;</span>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a>    <span class="k">for</span> <span class="n">alssm</span> <span class="ow">in</span> <span class="n">alssms</span><span class="p">:</span>
-<a id="__codelineno-0-451" name="__codelineno-0-451"></a>        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alssm</span><span class="p">,</span> <span class="n">ModelBase</span><span class="p">),</span> <span class="s1">&#39;element in alssms is not of instance ModelBase&#39;</span>
-<a id="__codelineno-0-452" name="__codelineno-0-452"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_alssms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">alssms</span><span class="p">)</span>
-<a id="__codelineno-0-453" name="__codelineno-0-453"></a>
-<a id="__codelineno-0-454" name="__codelineno-0-454"></a>    <span class="c1"># set segments (accept a single Segment in place of an iterable)</span>
-<a id="__codelineno-0-455" name="__codelineno-0-455"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
-<a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="n">segments</span> <span class="o">=</span> <span class="p">[</span><span class="n">segments</span><span class="p">]</span>
-<a id="__codelineno-0-457" name="__codelineno-0-457"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">),</span> <span class="s1">&#39;segments is not iterable&#39;</span>
-<a id="__codelineno-0-458" name="__codelineno-0-458"></a>    <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">:</span>
-<a id="__codelineno-0-459" name="__codelineno-0-459"></a>        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">Segment</span><span class="p">),</span> <span class="s1">&#39;element in segments is not instance of Segment&#39;</span>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_segments</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">segments</span><span class="p">)</span>
-<a id="__codelineno-0-461" name="__codelineno-0-461"></a>
-<a id="__codelineno-0-462" name="__codelineno-0-462"></a>    <span class="c1"># set F (default to all-ones when there is a single ALSSM or a single</span>
-<a id="__codelineno-0-463" name="__codelineno-0-463"></a>    <span class="c1"># Segment; F is mandatory once there are at least two of each)</span>
-<a id="__codelineno-0-464" name="__codelineno-0-464"></a>    <span class="k">if</span> <span class="n">F</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">P</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">),</span> \
-<a id="__codelineno-0-466" name="__codelineno-0-466"></a>            <span class="s1">&#39;F is mandatory when there are at least two ALSSMs and two Segments&#39;</span>
-<a id="__codelineno-0-467" name="__codelineno-0-467"></a>        <span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">))</span>
-<a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">F</span>
-<a id="__codelineno-0-469" name="__codelineno-0-469"></a>
-<a id="__codelineno-0-470" name="__codelineno-0-470"></a>    <span class="c1"># set betas</span>
-<a id="__codelineno-0-471" name="__codelineno-0-471"></a>    <span class="k">if</span> <span class="n">betas</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-472" name="__codelineno-0-472"></a>        <span class="n">betas</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">betas</span><span class="p">)</span>
-<a id="__codelineno-0-473" name="__codelineno-0-473"></a>        <span class="k">assert</span> <span class="n">is_array_like</span><span class="p">(</span><span class="n">betas</span><span class="p">),</span> <span class="s1">&#39;betas is not array_like&#39;</span>
-<a id="__codelineno-0-474" name="__codelineno-0-474"></a>        <span class="k">assert</span> <span class="n">betas</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">,),</span> <span class="sa">f</span><span class="s1">&#39;betas has wrong shape, </span><span class="si">{</span><span class="n">info_str_found_shape</span><span class="p">(</span><span class="n">betas</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
-<a id="__codelineno-0-475" name="__codelineno-0-475"></a>        <span class="k">for</span> <span class="n">beta</span> <span class="ow">in</span> <span class="n">betas</span><span class="p">:</span>
-<a id="__codelineno-0-476" name="__codelineno-0-476"></a>            <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">beta</span><span class="p">),</span> <span class="s1">&#39;beta is not scalar&#39;</span>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a>            <span class="k">assert</span> <span class="n">beta</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;beta is negative&#39;</span>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_betas</span> <span class="o">=</span> <span class="n">betas</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-480" name="__codelineno-0-480"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_betas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
-<a id="__codelineno-0-481" name="__codelineno-0-481"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
-<a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;str : Label of the CompositeCost.&quot;&quot;&quot;</span>
+<span class="normal"><a href="#__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#__codelineno-0-483">483</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alssms</span><span class="p">,</span> <span class="n">segments</span><span class="p">,</span> <span class="n">F</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">betas</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;n/a&#39;</span><span class="p">):</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a>    <span class="c1"># set alssms (accept a single ALSSM in place of an iterable)</span>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alssms</span><span class="p">,</span> <span class="n">ModelBase</span><span class="p">):</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a>        <span class="n">alssms</span> <span class="o">=</span> <span class="p">[</span><span class="n">alssms</span><span class="p">]</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alssms</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">),</span> <span class="s1">&#39;alssms is not iterable&#39;</span>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a>    <span class="k">for</span> <span class="n">alssm</span> <span class="ow">in</span> <span class="n">alssms</span><span class="p">:</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a>        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alssm</span><span class="p">,</span> <span class="n">ModelBase</span><span class="p">),</span> <span class="s1">&#39;element in alssms is not of instance ModelBase&#39;</span>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_alssms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">alssms</span><span class="p">)</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a>    <span class="c1"># set segments (accept a single Segment in place of an iterable)</span>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="n">Segment</span><span class="p">):</span>
+<a id="__codelineno-0-457" name="__codelineno-0-457"></a>        <span class="n">segments</span> <span class="o">=</span> <span class="p">[</span><span class="n">segments</span><span class="p">]</span>
+<a id="__codelineno-0-458" name="__codelineno-0-458"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">),</span> <span class="s1">&#39;segments is not iterable&#39;</span>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a>    <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">:</span>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a>        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">Segment</span><span class="p">),</span> <span class="s1">&#39;element in segments is not instance of Segment&#39;</span>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_segments</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">segments</span><span class="p">)</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a>    <span class="c1"># set F (default to all-ones when there is a single ALSSM or a single</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a>    <span class="c1"># Segment; F is mandatory once there are at least two of each)</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a>    <span class="k">if</span> <span class="n">F</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">P</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">),</span> \
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a>            <span class="s1">&#39;F is mandatory when there are at least two ALSSMs and two Segments&#39;</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a>        <span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">))</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">F</span> <span class="o">=</span> <span class="n">F</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>    <span class="c1"># set betas</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>    <span class="k">if</span> <span class="n">betas</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>        <span class="n">betas</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">betas</span><span class="p">)</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>        <span class="k">assert</span> <span class="n">is_array_like</span><span class="p">(</span><span class="n">betas</span><span class="p">),</span> <span class="s1">&#39;betas is not array_like&#39;</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>        <span class="k">assert</span> <span class="n">betas</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">,),</span> <span class="sa">f</span><span class="s1">&#39;betas has wrong shape, </span><span class="si">{</span><span class="n">info_str_found_shape</span><span class="p">(</span><span class="n">betas</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>        <span class="k">for</span> <span class="n">beta</span> <span class="ow">in</span> <span class="n">betas</span><span class="p">:</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>            <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">beta</span><span class="p">),</span> <span class="s1">&#39;beta is not scalar&#39;</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>            <span class="k">assert</span> <span class="n">beta</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;beta is negative&#39;</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_betas</span> <span class="o">=</span> <span class="n">betas</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_betas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;str : Label of the CompositeCost.&quot;&quot;&quot;</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -3061,11 +3061,11 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-548">548</a></span>
-<span class="normal"><a href="#__codelineno-0-549">549</a></span>
-<span class="normal"><a href="#__codelineno-0-550">550</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-548" name="__codelineno-0-548"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_order</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the combined state-space order N of all ALSSMs.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sub_cost_term</span><span class="p">(</span><span class="n">seg</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_alssm_order</span><span class="p">()</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-549">549</a></span>
+<span class="normal"><a href="#__codelineno-0-550">550</a></span>
+<span class="normal"><a href="#__codelineno-0-551">551</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-549" name="__codelineno-0-549"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_order</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the combined state-space order N of all ALSSMs.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sub_cost_term</span><span class="p">(</span><span class="n">seg</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_alssm_order</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3090,11 +3090,11 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-552">552</a></span>
-<span class="normal"><a href="#__codelineno-0-553">553</a></span>
-<span class="normal"><a href="#__codelineno-0-554">554</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_output_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the output dimension Q shared by all ALSSMs.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sub_cost_term</span><span class="p">(</span><span class="n">seg</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_alssm_output_dimension</span><span class="p">()</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-553">553</a></span>
+<span class="normal"><a href="#__codelineno-0-554">554</a></span>
+<span class="normal"><a href="#__codelineno-0-555">555</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_output_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the output dimension Q shared by all ALSSMs.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sub_cost_term</span><span class="p">(</span><span class="n">seg</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">get_alssm_output_dimension</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3119,11 +3119,11 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-556">556</a></span>
-<span class="normal"><a href="#__codelineno-0-557">557</a></span>
-<span class="normal"><a href="#__codelineno-0-558">558</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-556" name="__codelineno-0-556"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_number_of_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return 1 — a CompositeCost always represents a single signal dimension.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">return</span> <span class="mi">1</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-557">557</a></span>
+<span class="normal"><a href="#__codelineno-0-558">558</a></span>
+<span class="normal"><a href="#__codelineno-0-559">559</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_number_of_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return 1 — a CompositeCost always represents a single signal dimension.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>    <span class="k">return</span> <span class="mi">1</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3185,8 +3185,7 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-560">560</a></span>
-<span class="normal"><a href="#__codelineno-0-561">561</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-561">561</a></span>
 <span class="normal"><a href="#__codelineno-0-562">562</a></span>
 <span class="normal"><a href="#__codelineno-0-563">563</a></span>
 <span class="normal"><a href="#__codelineno-0-564">564</a></span>
@@ -3206,28 +3205,29 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 <span class="normal"><a href="#__codelineno-0-578">578</a></span>
 <span class="normal"><a href="#__codelineno-0-579">579</a></span>
 <span class="normal"><a href="#__codelineno-0-580">580</a></span>
-<span class="normal"><a href="#__codelineno-0-581">581</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_steady_state_W</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;schur&#39;</span><span class="p">):</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="sd">    Compute the steady-state Gram matrix W as a beta-weighted sum over segments.</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">    dim_order : ignored</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">        Accepted for interface compatibility; unused for 1-D costs.</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">    method : str, optional</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">        Forwarded to each [`get_steady_state_W`][lmlib.statespace.cost.CostSegment.get_steady_state_W].</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>
-<a id="__codelineno-0-571" name="__codelineno-0-571"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="sd">    W : ndarray of shape (N, N)</span>
-<a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">        Aggregate steady-state Gram matrix.</span>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a>    <span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_alssm_order</span><span class="p">()</span>
-<a id="__codelineno-0-577" name="__codelineno-0-577"></a>    <span class="n">W</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
-<a id="__codelineno-0-578" name="__codelineno-0-578"></a>
-<a id="__codelineno-0-579" name="__codelineno-0-579"></a>    <span class="k">for</span> <span class="n">cost_segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
-<a id="__codelineno-0-580" name="__codelineno-0-580"></a>        <span class="n">W</span> <span class="o">+=</span> <span class="n">cost_segment</span><span class="o">.</span><span class="n">get_steady_state_W</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span> <span class="o">*</span> <span class="n">cost_segment</span><span class="o">.</span><span class="n">beta</span>
-<a id="__codelineno-0-581" name="__codelineno-0-581"></a>    <span class="k">return</span> <span class="n">W</span>
+<span class="normal"><a href="#__codelineno-0-581">581</a></span>
+<span class="normal"><a href="#__codelineno-0-582">582</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_steady_state_W</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;schur&#39;</span><span class="p">):</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a><span class="sd">    Compute the steady-state Gram matrix W as a beta-weighted sum over segments.</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">    dim_order : ignored</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">        Accepted for interface compatibility; unused for 1-D costs.</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">    method : str, optional</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">        Forwarded to each [`get_steady_state_W`][lmlib.statespace.cost.CostSegment.get_steady_state_W].</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">    W : ndarray of shape (N, N)</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">        Aggregate steady-state Gram matrix.</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-577" name="__codelineno-0-577"></a>    <span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_alssm_order</span><span class="p">()</span>
+<a id="__codelineno-0-578" name="__codelineno-0-578"></a>    <span class="n">W</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
+<a id="__codelineno-0-579" name="__codelineno-0-579"></a>
+<a id="__codelineno-0-580" name="__codelineno-0-580"></a>    <span class="k">for</span> <span class="n">cost_segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+<a id="__codelineno-0-581" name="__codelineno-0-581"></a>        <span class="n">W</span> <span class="o">+=</span> <span class="n">cost_segment</span><span class="o">.</span><span class="n">get_steady_state_W</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span> <span class="o">*</span> <span class="n">cost_segment</span><span class="o">.</span><span class="n">beta</span>
+<a id="__codelineno-0-582" name="__codelineno-0-582"></a>    <span class="k">return</span> <span class="n">W</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3287,8 +3287,7 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-583">583</a></span>
-<span class="normal"><a href="#__codelineno-0-584">584</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-584">584</a></span>
 <span class="normal"><a href="#__codelineno-0-585">585</a></span>
 <span class="normal"><a href="#__codelineno-0-586">586</a></span>
 <span class="normal"><a href="#__codelineno-0-587">587</a></span>
@@ -3303,23 +3302,24 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 <span class="normal"><a href="#__codelineno-0-596">596</a></span>
 <span class="normal"><a href="#__codelineno-0-597">597</a></span>
 <span class="normal"><a href="#__codelineno-0-598">598</a></span>
-<span class="normal"><a href="#__codelineno-0-599">599</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="k">def</span><span class="w"> </span><span class="nf">eval_alssm_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">alssm_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<a id="__codelineno-0-584" name="__codelineno-0-584"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">    Evaluate the summed ALSSM output for a set of state vectors.</span>
-<a id="__codelineno-0-586" name="__codelineno-0-586"></a>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-588" name="__codelineno-0-588"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">    xs : array_like of shape (..., N)</span>
-<a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">        State vectors.</span>
-<a id="__codelineno-0-591" name="__codelineno-0-591"></a><span class="sd">    alssm_weights : None, scalar, or array_like, optional</span>
-<a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="sd">        Per-ALSSM output weights forwarded to [`AlssmSum`][lmlib.statespace.model.AlssmSum].</span>
-<a id="__codelineno-0-593" name="__codelineno-0-593"></a>
-<a id="__codelineno-0-594" name="__codelineno-0-594"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-595" name="__codelineno-0-595"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="sd">    out : ndarray</span>
-<a id="__codelineno-0-597" name="__codelineno-0-597"></a><span class="sd">        Summed ALSSM output for each input state vector.</span>
-<a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-599" name="__codelineno-0-599"></a>    <span class="k">return</span> <span class="n">AlssmSum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">,</span> <span class="n">alssm_weights</span><span class="p">)</span><span class="o">.</span><span class="n">eval_output</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-599">599</a></span>
+<span class="normal"><a href="#__codelineno-0-600">600</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-584" name="__codelineno-0-584"></a><span class="k">def</span><span class="w"> </span><span class="nf">eval_alssm_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">alssm_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">    Evaluate the summed ALSSM output for a set of state vectors.</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">    xs : array_like of shape (..., N)</span>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a><span class="sd">        State vectors.</span>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="sd">    alssm_weights : None, scalar, or array_like, optional</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a><span class="sd">        Per-ALSSM output weights forwarded to [`AlssmSum`][lmlib.statespace.model.AlssmSum].</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a><span class="sd">    out : ndarray</span>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="sd">        Summed ALSSM output for each input state vector.</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a>    <span class="k">return</span> <span class="n">AlssmSum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">,</span> <span class="n">alssm_weights</span><span class="p">)</span><span class="o">.</span><span class="n">eval_output</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3369,8 +3369,7 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-601">601</a></span>
-<span class="normal"><a href="#__codelineno-0-602">602</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-602">602</a></span>
 <span class="normal"><a href="#__codelineno-0-603">603</a></span>
 <span class="normal"><a href="#__codelineno-0-604">604</a></span>
 <span class="normal"><a href="#__codelineno-0-605">605</a></span>
@@ -3382,20 +3381,21 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 <span class="normal"><a href="#__codelineno-0-611">611</a></span>
 <span class="normal"><a href="#__codelineno-0-612">612</a></span>
 <span class="normal"><a href="#__codelineno-0-613">613</a></span>
-<span class="normal"><a href="#__codelineno-0-614">614</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_state_var_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
-<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="sd">    Return the state indices for a named state variable in the stacked ALSSM.</span>
-<a id="__codelineno-0-604" name="__codelineno-0-604"></a>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="sd">    label : str</span>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">        State variable label.</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">    indices : list of int</span>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a>    <span class="k">return</span> <span class="n">AlssmSum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;cost&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_state_var_indices</span><span class="p">(</span><span class="s1">&#39;cost.&#39;</span> <span class="o">+</span> <span class="n">label</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-614">614</a></span>
+<span class="normal"><a href="#__codelineno-0-615">615</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_state_var_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a><span class="sd">    Return the state indices for a named state variable in the stacked ALSSM.</span>
+<a id="__codelineno-0-605" name="__codelineno-0-605"></a>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a><span class="sd">    label : str</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">        State variable label.</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a><span class="sd">    indices : list of int</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a>    <span class="k">return</span> <span class="n">AlssmSum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;cost&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_state_var_indices</span><span class="p">(</span><span class="s1">&#39;cost.&#39;</span> <span class="o">+</span> <span class="n">label</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3420,11 +3420,11 @@ defaults to <code>np.ones((1, 1))</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-616">616</a></span>
-<span class="normal"><a href="#__codelineno-0-617">617</a></span>
-<span class="normal"><a href="#__codelineno-0-618">618</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-616" name="__codelineno-0-616"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssms</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the list of ALSSMs comprising this CompositeCost.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-617">617</a></span>
+<span class="normal"><a href="#__codelineno-0-618">618</a></span>
+<span class="normal"><a href="#__codelineno-0-619">619</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-617" name="__codelineno-0-617"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssms</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the list of ALSSMs comprising this CompositeCost.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3570,8 +3570,7 @@ For AlssmPoly(1):
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-620">620</a></span>
-<span class="normal"><a href="#__codelineno-0-621">621</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-621">621</a></span>
 <span class="normal"><a href="#__codelineno-0-622">622</a></span>
 <span class="normal"><a href="#__codelineno-0-623">623</a></span>
 <span class="normal"><a href="#__codelineno-0-624">624</a></span>
@@ -3751,188 +3750,189 @@ For AlssmPoly(1):
 <span class="normal"><a href="#__codelineno-0-798">798</a></span>
 <span class="normal"><a href="#__codelineno-0-799">799</a></span>
 <span class="normal"><a href="#__codelineno-0-800">800</a></span>
-<span class="normal"><a href="#__codelineno-0-801">801</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-620" name="__codelineno-0-620"></a><span class="k">def</span><span class="w"> </span><span class="nf">spline_H</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_continuity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">alssm_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="sd">    Build the spline continuity H-matrix for a two-ALSSM cost.</span>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a><span class="sd">    For a [`CompositeCost`][lmlib.statespace.cost.CompositeCost] with **exactly two ALSSMs** and mixing matrix</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">    ``F = [[1,0],[0,1]]`` (one ALSSM per segment, independent states), the full</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">    state vector is $x = [x_L\;(N),\; x_R\;(N)]$.  The H-matrix returned</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">    here reduces this to a lower-dimensional parameter vector $v$ by</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">    imposing continuity constraints at the knot:</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>
-<a id="__codelineno-0-630" name="__codelineno-0-630"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">    x = H\,v, \qquad H \in \mathbb{R}^{2N \times (2N - m_c - 1)},</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a><span class="sd">    where $m_c =$ ``max_continuity`` and $N$ is the model order.</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a><span class="sd">    **Continuity constraints** are derived from the *k*-th forward difference</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">    operator evaluated at the knot lag $j = 0$:</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">    e_k = C\,(A - I)^k, \qquad k = 0, 1, \ldots</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a><span class="sd">    Constraint of order *k*:</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="sd">    e_k\,(x_R - (-1)^k\,x_L) = 0</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a><span class="sd">    $$</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a><span class="sd">    which encodes:</span>
-<a id="__codelineno-0-650" name="__codelineno-0-650"></a>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a><span class="sd">    * $k=0$ — value continuity: $C x_R = C x_L$.</span>
-<a id="__codelineno-0-652" name="__codelineno-0-652"></a><span class="sd">    * $k=1$ — first-derivative continuity: $e_1(x_R + x_L) = 0$.</span>
-<a id="__codelineno-0-653" name="__codelineno-0-653"></a><span class="sd">    * etc.</span>
-<a id="__codelineno-0-654" name="__codelineno-0-654"></a>
-<a id="__codelineno-0-655" name="__codelineno-0-655"></a><span class="sd">    The result is the unique minimum-rank H satisfying all constraints</span>
-<a id="__codelineno-0-656" name="__codelineno-0-656"></a><span class="sd">    $k = 0, \ldots, m_c$, computed via a stable linear solve.</span>
-<a id="__codelineno-0-657" name="__codelineno-0-657"></a>
-<a id="__codelineno-0-658" name="__codelineno-0-658"></a><span class="sd">    **Compatibility of the two ALSSMs**</span>
-<a id="__codelineno-0-659" name="__codelineno-0-659"></a>
-<a id="__codelineno-0-660" name="__codelineno-0-660"></a><span class="sd">    For constraints of order $k \geq 1$, both ALSSMs must share the same</span>
-<a id="__codelineno-0-661" name="__codelineno-0-661"></a><span class="sd">    $A$ and $C$ matrices (same basis functions).  If they differ and</span>
-<a id="__codelineno-0-662" name="__codelineno-0-662"></a><span class="sd">    ``max_continuity &gt;= 1``, a [`UserWarning`][UserWarning] is emitted because the</span>
-<a id="__codelineno-0-663" name="__codelineno-0-663"></a><span class="sd">    H-matrix will use the basis of ``alssm_index`` and impose it on both sides,</span>
-<a id="__codelineno-0-664" name="__codelineno-0-664"></a><span class="sd">    which is physically wrong for the other side.</span>
-<a id="__codelineno-0-665" name="__codelineno-0-665"></a>
-<a id="__codelineno-0-666" name="__codelineno-0-666"></a><span class="sd">    For [`AlssmSin`][lmlib.statespace.model.AlssmSin] pairs, in particular:</span>
-<a id="__codelineno-0-667" name="__codelineno-0-667"></a>
-<a id="__codelineno-0-668" name="__codelineno-0-668"></a><span class="sd">    * ``max_continuity = 0`` (value match only) always works.</span>
-<a id="__codelineno-0-669" name="__codelineno-0-669"></a><span class="sd">    * ``max_continuity &gt;= 1`` requires the same ``omega`` **and** ``rho = 1``</span>
-<a id="__codelineno-0-670" name="__codelineno-0-670"></a><span class="sd">      (undamped oscillation) on both sides; otherwise a warning is issued.</span>
-<a id="__codelineno-0-671" name="__codelineno-0-671"></a>
-<a id="__codelineno-0-672" name="__codelineno-0-672"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-674" name="__codelineno-0-674"></a><span class="sd">    max_continuity : int</span>
-<a id="__codelineno-0-675" name="__codelineno-0-675"></a><span class="sd">        Highest continuity order to impose.  ``-1`` returns the identity</span>
-<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">        (free, no constraint); ``0`` imposes $C^0$ (value match);</span>
-<a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">        ``D`` (= ``poly_degree``) is the maximum possible (fully smooth).</span>
-<a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">    alssm_index : int, optional</span>
-<a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">        Index (0-based) into ``self.alssms`` of the reference ALSSM whose</span>
-<a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">        $A$ and $C$ are used to build $e_k$.  Relevant</span>
-<a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">        only when the two ALSSMs differ.  Default: ``0``.</span>
-<a id="__codelineno-0-682" name="__codelineno-0-682"></a>
-<a id="__codelineno-0-683" name="__codelineno-0-683"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-684" name="__codelineno-0-684"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-685" name="__codelineno-0-685"></a><span class="sd">    H : ndarray of shape (2N, 2N - max_continuity - 1)</span>
-<a id="__codelineno-0-686" name="__codelineno-0-686"></a><span class="sd">        Linear constraint matrix.  Pass to</span>
-<a id="__codelineno-0-687" name="__codelineno-0-687"></a><span class="sd">        [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x] as ``H=``.</span>
-<a id="__codelineno-0-688" name="__codelineno-0-688"></a>
-<a id="__codelineno-0-689" name="__codelineno-0-689"></a><span class="sd">    Raises</span>
-<a id="__codelineno-0-690" name="__codelineno-0-690"></a><span class="sd">    ------</span>
-<a id="__codelineno-0-691" name="__codelineno-0-691"></a><span class="sd">    ValueError</span>
-<a id="__codelineno-0-692" name="__codelineno-0-692"></a><span class="sd">        If the cost does not have exactly two ALSSMs.</span>
-<a id="__codelineno-0-693" name="__codelineno-0-693"></a>
-<a id="__codelineno-0-694" name="__codelineno-0-694"></a><span class="sd">    Warns</span>
-<a id="__codelineno-0-695" name="__codelineno-0-695"></a><span class="sd">    -----</span>
-<a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">    UserWarning</span>
-<a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">        When ``max_continuity &gt;= 1`` and the two ALSSMs have different</span>
-<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">        $A$ or $C$ matrices.</span>
-<a id="__codelineno-0-699" name="__codelineno-0-699"></a>
-<a id="__codelineno-0-700" name="__codelineno-0-700"></a><span class="sd">    Examples</span>
-<a id="__codelineno-0-701" name="__codelineno-0-701"></a><span class="sd">    --------</span>
-<a id="__codelineno-0-702" name="__codelineno-0-702"></a><span class="sd">    Edge detection: test C^0 (offset-only) vs C^0+C^1 (slope join)::</span>
-<a id="__codelineno-0-703" name="__codelineno-0-703"></a>
-<a id="__codelineno-0-704" name="__codelineno-0-704"></a><span class="sd">        alssm_L = lm.AlssmPolyMeixner(D, segment=segL)</span>
-<a id="__codelineno-0-705" name="__codelineno-0-705"></a><span class="sd">        alssm_R = lm.AlssmPolyMeixner(D, segment=segR)</span>
-<a id="__codelineno-0-706" name="__codelineno-0-706"></a><span class="sd">        cost    = lm.CompositeCost((alssm_L, alssm_R), (segL, segR), [[1,0],[0,1]])</span>
-<a id="__codelineno-0-707" name="__codelineno-0-707"></a>
-<a id="__codelineno-0-708" name="__codelineno-0-708"></a><span class="sd">        rls.filter(y)</span>
-<a id="__codelineno-0-709" name="__codelineno-0-709"></a><span class="sd">        xs_free  = rls.minimize_x()                       # unconstrained</span>
-<a id="__codelineno-0-710" name="__codelineno-0-710"></a><span class="sd">        xs_cont  = rls.minimize_x(H=cost.spline_H(0))    # C^0 join</span>
-<a id="__codelineno-0-711" name="__codelineno-0-711"></a><span class="sd">        xs_peak  = rls.minimize_x(H=cost.spline_H(1))    # C^0+C^1 join</span>
-<a id="__codelineno-0-712" name="__codelineno-0-712"></a><span class="sd">        xs_full  = rls.minimize_x(H=cost.spline_H(D))    # fully smooth</span>
-<a id="__codelineno-0-713" name="__codelineno-0-713"></a>
-<a id="__codelineno-0-714" name="__codelineno-0-714"></a><span class="sd">    Works equally for AlssmPoly, AlssmPolyJordan, AlssmPolyLegendre, AlssmSin.</span>
-<a id="__codelineno-0-715" name="__codelineno-0-715"></a><span class="sd">    For AlssmPoly(1):</span>
-<a id="__codelineno-0-716" name="__codelineno-0-716"></a><span class="sd">    ``spline_H(0)`` reproduces ``H_Continuous`` and</span>
-<a id="__codelineno-0-717" name="__codelineno-0-717"></a><span class="sd">    ``spline_H(1)`` reproduces ``H_Peak`` from the literature.</span>
-<a id="__codelineno-0-718" name="__codelineno-0-718"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-719" name="__codelineno-0-719"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
-<a id="__codelineno-0-720" name="__codelineno-0-720"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.linalg</span><span class="w"> </span><span class="kn">import</span> <span class="n">matrix_power</span><span class="p">,</span> <span class="n">solve</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a>
-<a id="__codelineno-0-722" name="__codelineno-0-722"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">M</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
-<a id="__codelineno-0-723" name="__codelineno-0-723"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-724" name="__codelineno-0-724"></a>            <span class="sa">f</span><span class="s2">&quot;spline_H requires exactly 2 ALSSMs in the CompositeCost &quot;</span>
-<a id="__codelineno-0-725" name="__codelineno-0-725"></a>            <span class="sa">f</span><span class="s2">&quot;(got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="si">}</span><span class="s2">).  Use alssm_index to select the reference ALSSM.&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-726" name="__codelineno-0-726"></a>
-<a id="__codelineno-0-727" name="__codelineno-0-727"></a>    <span class="c1"># ── free case ────────────────────────────────────────────────────────────</span>
-<a id="__codelineno-0-728" name="__codelineno-0-728"></a>    <span class="k">if</span> <span class="n">max_continuity</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-729" name="__codelineno-0-729"></a>        <span class="n">alssm_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">alssm_index</span><span class="p">]</span>
-<a id="__codelineno-0-730" name="__codelineno-0-730"></a>        <span class="n">N</span> <span class="o">=</span> <span class="n">alssm_ref</span><span class="o">.</span><span class="n">N</span>
-<a id="__codelineno-0-731" name="__codelineno-0-731"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">N</span><span class="p">)</span>
-<a id="__codelineno-0-732" name="__codelineno-0-732"></a>
-<a id="__codelineno-0-733" name="__codelineno-0-733"></a>    <span class="c1"># ── select reference ALSSM ───────────────────────────────────────────────</span>
-<a id="__codelineno-0-734" name="__codelineno-0-734"></a>    <span class="c1"># For AlssmPolyMeixner TSLM the convention is (alssm_L[FW], alssm_R[BW]).</span>
-<a id="__codelineno-0-735" name="__codelineno-0-735"></a>    <span class="c1"># The spline e_k vectors must use A_bw (the backward matrix), so if</span>
-<a id="__codelineno-0-736" name="__codelineno-0-736"></a>    <span class="c1"># alssm_index points to a FW Meixner alssm, auto-select the BW one instead.</span>
-<a id="__codelineno-0-737" name="__codelineno-0-737"></a>    <span class="n">_ref_idx</span> <span class="o">=</span> <span class="n">alssm_index</span>
-<a id="__codelineno-0-738" name="__codelineno-0-738"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">lmlib.statespace.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">AlssmPolyMeixner</span>
-<a id="__codelineno-0-739" name="__codelineno-0-739"></a>    <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">_ref_idx</span><span class="p">],</span> <span class="n">AlssmPolyMeixner</span><span class="p">)</span>
-<a id="__codelineno-0-740" name="__codelineno-0-740"></a>            <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">_ref_idx</span><span class="p">],</span> <span class="s1">&#39;direction&#39;</span><span class="p">,</span> <span class="s1">&#39;bw&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;fw&#39;</span><span class="p">):</span>
-<a id="__codelineno-0-741" name="__codelineno-0-741"></a>        <span class="n">other_idx</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">_ref_idx</span>
-<a id="__codelineno-0-742" name="__codelineno-0-742"></a>        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">other_idx</span><span class="p">],</span> <span class="n">AlssmPolyMeixner</span><span class="p">)</span>
-<a id="__codelineno-0-743" name="__codelineno-0-743"></a>                <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">other_idx</span><span class="p">],</span> <span class="s1">&#39;direction&#39;</span><span class="p">,</span> <span class="s1">&#39;bw&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;bw&#39;</span><span class="p">):</span>
-<a id="__codelineno-0-744" name="__codelineno-0-744"></a>            <span class="n">_ref_idx</span> <span class="o">=</span> <span class="n">other_idx</span>
-<a id="__codelineno-0-745" name="__codelineno-0-745"></a>
-<a id="__codelineno-0-746" name="__codelineno-0-746"></a>    <span class="n">alssm_ref</span>   <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">_ref_idx</span><span class="p">]</span>
-<a id="__codelineno-0-747" name="__codelineno-0-747"></a>    <span class="n">alssm_other</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="mi">1</span> <span class="o">-</span> <span class="n">_ref_idx</span><span class="p">]</span>
-<a id="__codelineno-0-748" name="__codelineno-0-748"></a>    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">alssm_ref</span><span class="o">.</span><span class="n">A</span><span class="p">)</span>
-<a id="__codelineno-0-749" name="__codelineno-0-749"></a>    <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">alssm_ref</span><span class="o">.</span><span class="n">C</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
-<a id="__codelineno-0-750" name="__codelineno-0-750"></a>    <span class="n">N</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-751" name="__codelineno-0-751"></a>
-<a id="__codelineno-0-752" name="__codelineno-0-752"></a>    <span class="c1"># ── compatibility check ──────────────────────────────────────────────────</span>
-<a id="__codelineno-0-753" name="__codelineno-0-753"></a>    <span class="k">if</span> <span class="n">max_continuity</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alssm_ref</span><span class="p">,</span> <span class="n">AlssmSin</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alssm_other</span><span class="p">,</span> <span class="n">AlssmSin</span><span class="p">):</span>
-<a id="__codelineno-0-754" name="__codelineno-0-754"></a>        <span class="n">same_A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">alssm_ref</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="n">alssm_other</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
-<a id="__codelineno-0-755" name="__codelineno-0-755"></a>        <span class="n">same_C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span>
-<a id="__codelineno-0-756" name="__codelineno-0-756"></a>            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">alssm_ref</span><span class="o">.</span><span class="n">C</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
-<a id="__codelineno-0-757" name="__codelineno-0-757"></a>            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">alssm_other</span><span class="o">.</span><span class="n">C</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
-<a id="__codelineno-0-758" name="__codelineno-0-758"></a>            <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
-<a id="__codelineno-0-759" name="__codelineno-0-759"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">same_A</span> <span class="ow">and</span> <span class="n">same_C</span><span class="p">):</span>
-<a id="__codelineno-0-760" name="__codelineno-0-760"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-<a id="__codelineno-0-761" name="__codelineno-0-761"></a>                <span class="sa">f</span><span class="s2">&quot;spline_H(max_continuity=</span><span class="si">{</span><span class="n">max_continuity</span><span class="si">}</span><span class="s2">): the two ALSSMs have &quot;</span>
-<a id="__codelineno-0-762" name="__codelineno-0-762"></a>                <span class="sa">f</span><span class="s2">&quot;different A or C matrices.  Constraints of order &gt;= 1 use the &quot;</span>
-<a id="__codelineno-0-763" name="__codelineno-0-763"></a>                <span class="sa">f</span><span class="s2">&quot;basis of alssm[</span><span class="si">{</span><span class="n">alssm_index</span><span class="si">}</span><span class="s2">] and will be physically wrong for &quot;</span>
-<a id="__codelineno-0-764" name="__codelineno-0-764"></a>                <span class="sa">f</span><span class="s2">&quot;alssm[</span><span class="si">{</span><span class="mi">1</span><span class="o">-</span><span class="n">alssm_index</span><span class="si">}</span><span class="s2">].  For C^0 (value match only), set &quot;</span>
-<a id="__codelineno-0-765" name="__codelineno-0-765"></a>                <span class="sa">f</span><span class="s2">&quot;max_continuity=0.&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-766" name="__codelineno-0-766"></a>                <span class="ne">UserWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-0-767" name="__codelineno-0-767"></a>
-<a id="__codelineno-0-768" name="__codelineno-0-768"></a>    <span class="c1"># ── build constraint vectors e_k = C (A-I)^k ────────────────────────────</span>
-<a id="__codelineno-0-769" name="__codelineno-0-769"></a>    <span class="n">nc</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_continuity</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
-<a id="__codelineno-0-770" name="__codelineno-0-770"></a>    <span class="n">e</span> <span class="o">=</span> <span class="p">[</span><span class="n">C</span> <span class="o">@</span> <span class="n">matrix_power</span><span class="p">(</span><span class="n">A</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">N</span><span class="p">),</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nc</span><span class="p">)]</span>
-<a id="__codelineno-0-771" name="__codelineno-0-771"></a>
-<a id="__codelineno-0-772" name="__codelineno-0-772"></a>    <span class="c1"># ── assemble and solve for constrained block AR_top (nc x N) ────────────</span>
-<a id="__codelineno-0-773" name="__codelineno-0-773"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-774" name="__codelineno-0-774"></a>    <span class="c1"># Full state: x_full = [x_L (N), x_R (N)], free params v = [v_L (N), v_free (N-nc)]</span>
-<a id="__codelineno-0-775" name="__codelineno-0-775"></a>    <span class="c1"># x_L = v_L</span>
-<a id="__codelineno-0-776" name="__codelineno-0-776"></a>    <span class="c1"># x_R[0:nc]  = AR_top @ v_L + BR_top @ v_free   (constrained)</span>
-<a id="__codelineno-0-777" name="__codelineno-0-777"></a>    <span class="c1"># x_R[nc:]   = v_free                             (free)</span>
-<a id="__codelineno-0-778" name="__codelineno-0-778"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-779" name="__codelineno-0-779"></a>    <span class="c1"># Constraint k:  e_k @ x_R = (-1)^k * e_k @ x_L  for all (v_L, v_free)</span>
-<a id="__codelineno-0-780" name="__codelineno-0-780"></a>    <span class="c1"># =&gt; (1) E_top @ AR_top = RHS          (coefficient of v_L)</span>
-<a id="__codelineno-0-781" name="__codelineno-0-781"></a>    <span class="c1"># =&gt; (2) E_top @ BR_top + E_bot = 0    (coefficient of v_free)</span>
-<a id="__codelineno-0-782" name="__codelineno-0-782"></a>    <span class="c1">#</span>
-<a id="__codelineno-0-783" name="__codelineno-0-783"></a>    <span class="c1"># where E_top = E[:, :nc], E_bot = E[:, nc:], RHS[k,:] = (-1)^k * e_k.</span>
-<a id="__codelineno-0-784" name="__codelineno-0-784"></a>
-<a id="__codelineno-0-785" name="__codelineno-0-785"></a>    <span class="n">E</span>     <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">e</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>       <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nc</span><span class="p">)])</span>   <span class="c1"># nc x N</span>
-<a id="__codelineno-0-786" name="__codelineno-0-786"></a>    <span class="n">RHS</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="n">k</span> <span class="o">*</span> <span class="n">e</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nc</span><span class="p">)])</span>  <span class="c1"># nc x N</span>
-<a id="__codelineno-0-787" name="__codelineno-0-787"></a>    <span class="n">E_top</span> <span class="o">=</span> <span class="n">E</span><span class="p">[:,</span> <span class="p">:</span><span class="n">nc</span><span class="p">]</span>   <span class="c1"># nc x nc</span>
-<a id="__codelineno-0-788" name="__codelineno-0-788"></a>    <span class="n">E_bot</span> <span class="o">=</span> <span class="n">E</span><span class="p">[:,</span> <span class="n">nc</span><span class="p">:]</span>   <span class="c1"># nc x (N-nc)</span>
-<a id="__codelineno-0-789" name="__codelineno-0-789"></a>
-<a id="__codelineno-0-790" name="__codelineno-0-790"></a>    <span class="n">AR_top</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">E_top</span><span class="p">,</span> <span class="n">RHS</span><span class="p">)</span>           <span class="c1"># nc x N</span>
-<a id="__codelineno-0-791" name="__codelineno-0-791"></a>    <span class="n">BR_top</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">E_top</span><span class="p">,</span> <span class="o">-</span><span class="n">E_bot</span><span class="p">)</span>        <span class="c1"># nc x (N-nc)</span>
-<a id="__codelineno-0-792" name="__codelineno-0-792"></a>
-<a id="__codelineno-0-793" name="__codelineno-0-793"></a>    <span class="c1"># ── assemble H ───────────────────────────────────────────────────────────</span>
-<a id="__codelineno-0-794" name="__codelineno-0-794"></a>    <span class="n">nv</span> <span class="o">=</span> <span class="n">N</span> <span class="o">+</span> <span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="n">nc</span><span class="p">)</span>
-<a id="__codelineno-0-795" name="__codelineno-0-795"></a>    <span class="n">H</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">N</span><span class="p">,</span> <span class="n">nv</span><span class="p">))</span>
-<a id="__codelineno-0-796" name="__codelineno-0-796"></a>    <span class="n">H</span><span class="p">[:</span><span class="n">N</span><span class="p">,</span> <span class="p">:</span><span class="n">N</span><span class="p">]</span>         <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>   <span class="c1"># x_L = v_L</span>
-<a id="__codelineno-0-797" name="__codelineno-0-797"></a>    <span class="n">H</span><span class="p">[</span><span class="n">N</span><span class="p">:</span><span class="n">N</span><span class="o">+</span><span class="n">nc</span><span class="p">,</span> <span class="p">:</span><span class="n">N</span><span class="p">]</span>     <span class="o">=</span> <span class="n">AR_top</span>      <span class="c1"># x_R[0:nc] from v_L</span>
-<a id="__codelineno-0-798" name="__codelineno-0-798"></a>    <span class="n">H</span><span class="p">[</span><span class="n">N</span><span class="p">:</span><span class="n">N</span><span class="o">+</span><span class="n">nc</span><span class="p">,</span> <span class="n">N</span><span class="p">:]</span>     <span class="o">=</span> <span class="n">BR_top</span>      <span class="c1"># x_R[0:nc] from v_free</span>
-<a id="__codelineno-0-799" name="__codelineno-0-799"></a>    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="n">nc</span><span class="p">):</span>         <span class="c1"># x_R[nc:] = v_free</span>
-<a id="__codelineno-0-800" name="__codelineno-0-800"></a>        <span class="n">H</span><span class="p">[</span><span class="n">N</span> <span class="o">+</span> <span class="n">nc</span> <span class="o">+</span> <span class="n">j</span><span class="p">,</span> <span class="n">N</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-<a id="__codelineno-0-801" name="__codelineno-0-801"></a>    <span class="k">return</span> <span class="n">H</span>
+<span class="normal"><a href="#__codelineno-0-801">801</a></span>
+<span class="normal"><a href="#__codelineno-0-802">802</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-621" name="__codelineno-0-621"></a><span class="k">def</span><span class="w"> </span><span class="nf">spline_H</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_continuity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">alssm_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a><span class="sd">    Build the spline continuity H-matrix for a two-ALSSM cost.</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a><span class="sd">    For a [`CompositeCost`][lmlib.statespace.cost.CompositeCost] with **exactly two ALSSMs** and mixing matrix</span>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a><span class="sd">    ``F = [[1,0],[0,1]]`` (one ALSSM per segment, independent states), the full</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a><span class="sd">    state vector is $x = [x_L\;(N),\; x_R\;(N)]$.  The H-matrix returned</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a><span class="sd">    here reduces this to a lower-dimensional parameter vector $v$ by</span>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a><span class="sd">    imposing continuity constraints at the knot:</span>
+<a id="__codelineno-0-630" name="__codelineno-0-630"></a>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a><span class="sd">    x = H\,v, \qquad H \in \mathbb{R}^{2N \times (2N - m_c - 1)},</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a><span class="sd">    where $m_c =$ ``max_continuity`` and $N$ is the model order.</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a><span class="sd">    **Continuity constraints** are derived from the *k*-th forward difference</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a><span class="sd">    operator evaluated at the knot lag $j = 0$:</span>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a><span class="sd">    e_k = C\,(A - I)^k, \qquad k = 0, 1, \ldots</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a><span class="sd">    Constraint of order *k*:</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a><span class="sd">    e_k\,(x_R - (-1)^k\,x_L) = 0</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a><span class="sd">    $$</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a><span class="sd">    which encodes:</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a><span class="sd">    * $k=0$ — value continuity: $C x_R = C x_L$.</span>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a><span class="sd">    * $k=1$ — first-derivative continuity: $e_1(x_R + x_L) = 0$.</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a><span class="sd">    * etc.</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a><span class="sd">    The result is the unique minimum-rank H satisfying all constraints</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a><span class="sd">    $k = 0, \ldots, m_c$, computed via a stable linear solve.</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a><span class="sd">    **Compatibility of the two ALSSMs**</span>
+<a id="__codelineno-0-660" name="__codelineno-0-660"></a>
+<a id="__codelineno-0-661" name="__codelineno-0-661"></a><span class="sd">    For constraints of order $k \geq 1$, both ALSSMs must share the same</span>
+<a id="__codelineno-0-662" name="__codelineno-0-662"></a><span class="sd">    $A$ and $C$ matrices (same basis functions).  If they differ and</span>
+<a id="__codelineno-0-663" name="__codelineno-0-663"></a><span class="sd">    ``max_continuity &gt;= 1``, a [`UserWarning`][UserWarning] is emitted because the</span>
+<a id="__codelineno-0-664" name="__codelineno-0-664"></a><span class="sd">    H-matrix will use the basis of ``alssm_index`` and impose it on both sides,</span>
+<a id="__codelineno-0-665" name="__codelineno-0-665"></a><span class="sd">    which is physically wrong for the other side.</span>
+<a id="__codelineno-0-666" name="__codelineno-0-666"></a>
+<a id="__codelineno-0-667" name="__codelineno-0-667"></a><span class="sd">    For [`AlssmSin`][lmlib.statespace.model.AlssmSin] pairs, in particular:</span>
+<a id="__codelineno-0-668" name="__codelineno-0-668"></a>
+<a id="__codelineno-0-669" name="__codelineno-0-669"></a><span class="sd">    * ``max_continuity = 0`` (value match only) always works.</span>
+<a id="__codelineno-0-670" name="__codelineno-0-670"></a><span class="sd">    * ``max_continuity &gt;= 1`` requires the same ``omega`` **and** ``rho = 1``</span>
+<a id="__codelineno-0-671" name="__codelineno-0-671"></a><span class="sd">      (undamped oscillation) on both sides; otherwise a warning is issued.</span>
+<a id="__codelineno-0-672" name="__codelineno-0-672"></a>
+<a id="__codelineno-0-673" name="__codelineno-0-673"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-674" name="__codelineno-0-674"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-675" name="__codelineno-0-675"></a><span class="sd">    max_continuity : int</span>
+<a id="__codelineno-0-676" name="__codelineno-0-676"></a><span class="sd">        Highest continuity order to impose.  ``-1`` returns the identity</span>
+<a id="__codelineno-0-677" name="__codelineno-0-677"></a><span class="sd">        (free, no constraint); ``0`` imposes $C^0$ (value match);</span>
+<a id="__codelineno-0-678" name="__codelineno-0-678"></a><span class="sd">        ``D`` (= ``poly_degree``) is the maximum possible (fully smooth).</span>
+<a id="__codelineno-0-679" name="__codelineno-0-679"></a><span class="sd">    alssm_index : int, optional</span>
+<a id="__codelineno-0-680" name="__codelineno-0-680"></a><span class="sd">        Index (0-based) into ``self.alssms`` of the reference ALSSM whose</span>
+<a id="__codelineno-0-681" name="__codelineno-0-681"></a><span class="sd">        $A$ and $C$ are used to build $e_k$.  Relevant</span>
+<a id="__codelineno-0-682" name="__codelineno-0-682"></a><span class="sd">        only when the two ALSSMs differ.  Default: ``0``.</span>
+<a id="__codelineno-0-683" name="__codelineno-0-683"></a>
+<a id="__codelineno-0-684" name="__codelineno-0-684"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-685" name="__codelineno-0-685"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-686" name="__codelineno-0-686"></a><span class="sd">    H : ndarray of shape (2N, 2N - max_continuity - 1)</span>
+<a id="__codelineno-0-687" name="__codelineno-0-687"></a><span class="sd">        Linear constraint matrix.  Pass to</span>
+<a id="__codelineno-0-688" name="__codelineno-0-688"></a><span class="sd">        [`minimize_x`][lmlib.statespace.rls.RLSAlssm.minimize_x] as ``H=``.</span>
+<a id="__codelineno-0-689" name="__codelineno-0-689"></a>
+<a id="__codelineno-0-690" name="__codelineno-0-690"></a><span class="sd">    Raises</span>
+<a id="__codelineno-0-691" name="__codelineno-0-691"></a><span class="sd">    ------</span>
+<a id="__codelineno-0-692" name="__codelineno-0-692"></a><span class="sd">    ValueError</span>
+<a id="__codelineno-0-693" name="__codelineno-0-693"></a><span class="sd">        If the cost does not have exactly two ALSSMs.</span>
+<a id="__codelineno-0-694" name="__codelineno-0-694"></a>
+<a id="__codelineno-0-695" name="__codelineno-0-695"></a><span class="sd">    Warns</span>
+<a id="__codelineno-0-696" name="__codelineno-0-696"></a><span class="sd">    -----</span>
+<a id="__codelineno-0-697" name="__codelineno-0-697"></a><span class="sd">    UserWarning</span>
+<a id="__codelineno-0-698" name="__codelineno-0-698"></a><span class="sd">        When ``max_continuity &gt;= 1`` and the two ALSSMs have different</span>
+<a id="__codelineno-0-699" name="__codelineno-0-699"></a><span class="sd">        $A$ or $C$ matrices.</span>
+<a id="__codelineno-0-700" name="__codelineno-0-700"></a>
+<a id="__codelineno-0-701" name="__codelineno-0-701"></a><span class="sd">    Examples</span>
+<a id="__codelineno-0-702" name="__codelineno-0-702"></a><span class="sd">    --------</span>
+<a id="__codelineno-0-703" name="__codelineno-0-703"></a><span class="sd">    Edge detection: test C^0 (offset-only) vs C^0+C^1 (slope join)::</span>
+<a id="__codelineno-0-704" name="__codelineno-0-704"></a>
+<a id="__codelineno-0-705" name="__codelineno-0-705"></a><span class="sd">        alssm_L = lm.AlssmPolyMeixner(D, segment=segL)</span>
+<a id="__codelineno-0-706" name="__codelineno-0-706"></a><span class="sd">        alssm_R = lm.AlssmPolyMeixner(D, segment=segR)</span>
+<a id="__codelineno-0-707" name="__codelineno-0-707"></a><span class="sd">        cost    = lm.CompositeCost((alssm_L, alssm_R), (segL, segR), [[1,0],[0,1]])</span>
+<a id="__codelineno-0-708" name="__codelineno-0-708"></a>
+<a id="__codelineno-0-709" name="__codelineno-0-709"></a><span class="sd">        rls.filter(y)</span>
+<a id="__codelineno-0-710" name="__codelineno-0-710"></a><span class="sd">        xs_free  = rls.minimize_x()                       # unconstrained</span>
+<a id="__codelineno-0-711" name="__codelineno-0-711"></a><span class="sd">        xs_cont  = rls.minimize_x(H=cost.spline_H(0))    # C^0 join</span>
+<a id="__codelineno-0-712" name="__codelineno-0-712"></a><span class="sd">        xs_peak  = rls.minimize_x(H=cost.spline_H(1))    # C^0+C^1 join</span>
+<a id="__codelineno-0-713" name="__codelineno-0-713"></a><span class="sd">        xs_full  = rls.minimize_x(H=cost.spline_H(D))    # fully smooth</span>
+<a id="__codelineno-0-714" name="__codelineno-0-714"></a>
+<a id="__codelineno-0-715" name="__codelineno-0-715"></a><span class="sd">    Works equally for AlssmPoly, AlssmPolyJordan, AlssmPolyLegendre, AlssmSin.</span>
+<a id="__codelineno-0-716" name="__codelineno-0-716"></a><span class="sd">    For AlssmPoly(1):</span>
+<a id="__codelineno-0-717" name="__codelineno-0-717"></a><span class="sd">    ``spline_H(0)`` reproduces ``H_Continuous`` and</span>
+<a id="__codelineno-0-718" name="__codelineno-0-718"></a><span class="sd">    ``spline_H(1)`` reproduces ``H_Peak`` from the literature.</span>
+<a id="__codelineno-0-719" name="__codelineno-0-719"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-720" name="__codelineno-0-720"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<a id="__codelineno-0-721" name="__codelineno-0-721"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.linalg</span><span class="w"> </span><span class="kn">import</span> <span class="n">matrix_power</span><span class="p">,</span> <span class="n">solve</span>
+<a id="__codelineno-0-722" name="__codelineno-0-722"></a>
+<a id="__codelineno-0-723" name="__codelineno-0-723"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">M</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-0-724" name="__codelineno-0-724"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-725" name="__codelineno-0-725"></a>            <span class="sa">f</span><span class="s2">&quot;spline_H requires exactly 2 ALSSMs in the CompositeCost &quot;</span>
+<a id="__codelineno-0-726" name="__codelineno-0-726"></a>            <span class="sa">f</span><span class="s2">&quot;(got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="si">}</span><span class="s2">).  Use alssm_index to select the reference ALSSM.&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-727" name="__codelineno-0-727"></a>
+<a id="__codelineno-0-728" name="__codelineno-0-728"></a>    <span class="c1"># ── free case ────────────────────────────────────────────────────────────</span>
+<a id="__codelineno-0-729" name="__codelineno-0-729"></a>    <span class="k">if</span> <span class="n">max_continuity</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-730" name="__codelineno-0-730"></a>        <span class="n">alssm_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">alssm_index</span><span class="p">]</span>
+<a id="__codelineno-0-731" name="__codelineno-0-731"></a>        <span class="n">N</span> <span class="o">=</span> <span class="n">alssm_ref</span><span class="o">.</span><span class="n">N</span>
+<a id="__codelineno-0-732" name="__codelineno-0-732"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">N</span><span class="p">)</span>
+<a id="__codelineno-0-733" name="__codelineno-0-733"></a>
+<a id="__codelineno-0-734" name="__codelineno-0-734"></a>    <span class="c1"># ── select reference ALSSM ───────────────────────────────────────────────</span>
+<a id="__codelineno-0-735" name="__codelineno-0-735"></a>    <span class="c1"># For AlssmPolyMeixner TSLM the convention is (alssm_L[FW], alssm_R[BW]).</span>
+<a id="__codelineno-0-736" name="__codelineno-0-736"></a>    <span class="c1"># The spline e_k vectors must use A_bw (the backward matrix), so if</span>
+<a id="__codelineno-0-737" name="__codelineno-0-737"></a>    <span class="c1"># alssm_index points to a FW Meixner alssm, auto-select the BW one instead.</span>
+<a id="__codelineno-0-738" name="__codelineno-0-738"></a>    <span class="n">_ref_idx</span> <span class="o">=</span> <span class="n">alssm_index</span>
+<a id="__codelineno-0-739" name="__codelineno-0-739"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">lmlib.statespace.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">AlssmPolyMeixner</span>
+<a id="__codelineno-0-740" name="__codelineno-0-740"></a>    <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">_ref_idx</span><span class="p">],</span> <span class="n">AlssmPolyMeixner</span><span class="p">)</span>
+<a id="__codelineno-0-741" name="__codelineno-0-741"></a>            <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">_ref_idx</span><span class="p">],</span> <span class="s1">&#39;direction&#39;</span><span class="p">,</span> <span class="s1">&#39;bw&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;fw&#39;</span><span class="p">):</span>
+<a id="__codelineno-0-742" name="__codelineno-0-742"></a>        <span class="n">other_idx</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">_ref_idx</span>
+<a id="__codelineno-0-743" name="__codelineno-0-743"></a>        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">other_idx</span><span class="p">],</span> <span class="n">AlssmPolyMeixner</span><span class="p">)</span>
+<a id="__codelineno-0-744" name="__codelineno-0-744"></a>                <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">other_idx</span><span class="p">],</span> <span class="s1">&#39;direction&#39;</span><span class="p">,</span> <span class="s1">&#39;bw&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;bw&#39;</span><span class="p">):</span>
+<a id="__codelineno-0-745" name="__codelineno-0-745"></a>            <span class="n">_ref_idx</span> <span class="o">=</span> <span class="n">other_idx</span>
+<a id="__codelineno-0-746" name="__codelineno-0-746"></a>
+<a id="__codelineno-0-747" name="__codelineno-0-747"></a>    <span class="n">alssm_ref</span>   <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="n">_ref_idx</span><span class="p">]</span>
+<a id="__codelineno-0-748" name="__codelineno-0-748"></a>    <span class="n">alssm_other</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssms</span><span class="p">[</span><span class="mi">1</span> <span class="o">-</span> <span class="n">_ref_idx</span><span class="p">]</span>
+<a id="__codelineno-0-749" name="__codelineno-0-749"></a>    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">alssm_ref</span><span class="o">.</span><span class="n">A</span><span class="p">)</span>
+<a id="__codelineno-0-750" name="__codelineno-0-750"></a>    <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">alssm_ref</span><span class="o">.</span><span class="n">C</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+<a id="__codelineno-0-751" name="__codelineno-0-751"></a>    <span class="n">N</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-0-752" name="__codelineno-0-752"></a>
+<a id="__codelineno-0-753" name="__codelineno-0-753"></a>    <span class="c1"># ── compatibility check ──────────────────────────────────────────────────</span>
+<a id="__codelineno-0-754" name="__codelineno-0-754"></a>    <span class="k">if</span> <span class="n">max_continuity</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alssm_ref</span><span class="p">,</span> <span class="n">AlssmSin</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alssm_other</span><span class="p">,</span> <span class="n">AlssmSin</span><span class="p">):</span>
+<a id="__codelineno-0-755" name="__codelineno-0-755"></a>        <span class="n">same_A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">alssm_ref</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="n">alssm_other</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
+<a id="__codelineno-0-756" name="__codelineno-0-756"></a>        <span class="n">same_C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span>
+<a id="__codelineno-0-757" name="__codelineno-0-757"></a>            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">alssm_ref</span><span class="o">.</span><span class="n">C</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<a id="__codelineno-0-758" name="__codelineno-0-758"></a>            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">alssm_other</span><span class="o">.</span><span class="n">C</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+<a id="__codelineno-0-759" name="__codelineno-0-759"></a>            <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
+<a id="__codelineno-0-760" name="__codelineno-0-760"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">same_A</span> <span class="ow">and</span> <span class="n">same_C</span><span class="p">):</span>
+<a id="__codelineno-0-761" name="__codelineno-0-761"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+<a id="__codelineno-0-762" name="__codelineno-0-762"></a>                <span class="sa">f</span><span class="s2">&quot;spline_H(max_continuity=</span><span class="si">{</span><span class="n">max_continuity</span><span class="si">}</span><span class="s2">): the two ALSSMs have &quot;</span>
+<a id="__codelineno-0-763" name="__codelineno-0-763"></a>                <span class="sa">f</span><span class="s2">&quot;different A or C matrices.  Constraints of order &gt;= 1 use the &quot;</span>
+<a id="__codelineno-0-764" name="__codelineno-0-764"></a>                <span class="sa">f</span><span class="s2">&quot;basis of alssm[</span><span class="si">{</span><span class="n">alssm_index</span><span class="si">}</span><span class="s2">] and will be physically wrong for &quot;</span>
+<a id="__codelineno-0-765" name="__codelineno-0-765"></a>                <span class="sa">f</span><span class="s2">&quot;alssm[</span><span class="si">{</span><span class="mi">1</span><span class="o">-</span><span class="n">alssm_index</span><span class="si">}</span><span class="s2">].  For C^0 (value match only), set &quot;</span>
+<a id="__codelineno-0-766" name="__codelineno-0-766"></a>                <span class="sa">f</span><span class="s2">&quot;max_continuity=0.&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-767" name="__codelineno-0-767"></a>                <span class="ne">UserWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-768" name="__codelineno-0-768"></a>
+<a id="__codelineno-0-769" name="__codelineno-0-769"></a>    <span class="c1"># ── build constraint vectors e_k = C (A-I)^k ────────────────────────────</span>
+<a id="__codelineno-0-770" name="__codelineno-0-770"></a>    <span class="n">nc</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_continuity</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+<a id="__codelineno-0-771" name="__codelineno-0-771"></a>    <span class="n">e</span> <span class="o">=</span> <span class="p">[</span><span class="n">C</span> <span class="o">@</span> <span class="n">matrix_power</span><span class="p">(</span><span class="n">A</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">N</span><span class="p">),</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nc</span><span class="p">)]</span>
+<a id="__codelineno-0-772" name="__codelineno-0-772"></a>
+<a id="__codelineno-0-773" name="__codelineno-0-773"></a>    <span class="c1"># ── assemble and solve for constrained block AR_top (nc x N) ────────────</span>
+<a id="__codelineno-0-774" name="__codelineno-0-774"></a>    <span class="c1">#</span>
+<a id="__codelineno-0-775" name="__codelineno-0-775"></a>    <span class="c1"># Full state: x_full = [x_L (N), x_R (N)], free params v = [v_L (N), v_free (N-nc)]</span>
+<a id="__codelineno-0-776" name="__codelineno-0-776"></a>    <span class="c1"># x_L = v_L</span>
+<a id="__codelineno-0-777" name="__codelineno-0-777"></a>    <span class="c1"># x_R[0:nc]  = AR_top @ v_L + BR_top @ v_free   (constrained)</span>
+<a id="__codelineno-0-778" name="__codelineno-0-778"></a>    <span class="c1"># x_R[nc:]   = v_free                             (free)</span>
+<a id="__codelineno-0-779" name="__codelineno-0-779"></a>    <span class="c1">#</span>
+<a id="__codelineno-0-780" name="__codelineno-0-780"></a>    <span class="c1"># Constraint k:  e_k @ x_R = (-1)^k * e_k @ x_L  for all (v_L, v_free)</span>
+<a id="__codelineno-0-781" name="__codelineno-0-781"></a>    <span class="c1"># =&gt; (1) E_top @ AR_top = RHS          (coefficient of v_L)</span>
+<a id="__codelineno-0-782" name="__codelineno-0-782"></a>    <span class="c1"># =&gt; (2) E_top @ BR_top + E_bot = 0    (coefficient of v_free)</span>
+<a id="__codelineno-0-783" name="__codelineno-0-783"></a>    <span class="c1">#</span>
+<a id="__codelineno-0-784" name="__codelineno-0-784"></a>    <span class="c1"># where E_top = E[:, :nc], E_bot = E[:, nc:], RHS[k,:] = (-1)^k * e_k.</span>
+<a id="__codelineno-0-785" name="__codelineno-0-785"></a>
+<a id="__codelineno-0-786" name="__codelineno-0-786"></a>    <span class="n">E</span>     <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">e</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>       <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nc</span><span class="p">)])</span>   <span class="c1"># nc x N</span>
+<a id="__codelineno-0-787" name="__codelineno-0-787"></a>    <span class="n">RHS</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="n">k</span> <span class="o">*</span> <span class="n">e</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nc</span><span class="p">)])</span>  <span class="c1"># nc x N</span>
+<a id="__codelineno-0-788" name="__codelineno-0-788"></a>    <span class="n">E_top</span> <span class="o">=</span> <span class="n">E</span><span class="p">[:,</span> <span class="p">:</span><span class="n">nc</span><span class="p">]</span>   <span class="c1"># nc x nc</span>
+<a id="__codelineno-0-789" name="__codelineno-0-789"></a>    <span class="n">E_bot</span> <span class="o">=</span> <span class="n">E</span><span class="p">[:,</span> <span class="n">nc</span><span class="p">:]</span>   <span class="c1"># nc x (N-nc)</span>
+<a id="__codelineno-0-790" name="__codelineno-0-790"></a>
+<a id="__codelineno-0-791" name="__codelineno-0-791"></a>    <span class="n">AR_top</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">E_top</span><span class="p">,</span> <span class="n">RHS</span><span class="p">)</span>           <span class="c1"># nc x N</span>
+<a id="__codelineno-0-792" name="__codelineno-0-792"></a>    <span class="n">BR_top</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">E_top</span><span class="p">,</span> <span class="o">-</span><span class="n">E_bot</span><span class="p">)</span>        <span class="c1"># nc x (N-nc)</span>
+<a id="__codelineno-0-793" name="__codelineno-0-793"></a>
+<a id="__codelineno-0-794" name="__codelineno-0-794"></a>    <span class="c1"># ── assemble H ───────────────────────────────────────────────────────────</span>
+<a id="__codelineno-0-795" name="__codelineno-0-795"></a>    <span class="n">nv</span> <span class="o">=</span> <span class="n">N</span> <span class="o">+</span> <span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="n">nc</span><span class="p">)</span>
+<a id="__codelineno-0-796" name="__codelineno-0-796"></a>    <span class="n">H</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">N</span><span class="p">,</span> <span class="n">nv</span><span class="p">))</span>
+<a id="__codelineno-0-797" name="__codelineno-0-797"></a>    <span class="n">H</span><span class="p">[:</span><span class="n">N</span><span class="p">,</span> <span class="p">:</span><span class="n">N</span><span class="p">]</span>         <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>   <span class="c1"># x_L = v_L</span>
+<a id="__codelineno-0-798" name="__codelineno-0-798"></a>    <span class="n">H</span><span class="p">[</span><span class="n">N</span><span class="p">:</span><span class="n">N</span><span class="o">+</span><span class="n">nc</span><span class="p">,</span> <span class="p">:</span><span class="n">N</span><span class="p">]</span>     <span class="o">=</span> <span class="n">AR_top</span>      <span class="c1"># x_R[0:nc] from v_L</span>
+<a id="__codelineno-0-799" name="__codelineno-0-799"></a>    <span class="n">H</span><span class="p">[</span><span class="n">N</span><span class="p">:</span><span class="n">N</span><span class="o">+</span><span class="n">nc</span><span class="p">,</span> <span class="n">N</span><span class="p">:]</span>     <span class="o">=</span> <span class="n">BR_top</span>      <span class="c1"># x_R[0:nc] from v_free</span>
+<a id="__codelineno-0-800" name="__codelineno-0-800"></a>    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="n">nc</span><span class="p">):</span>         <span class="c1"># x_R[nc:] = v_free</span>
+<a id="__codelineno-0-801" name="__codelineno-0-801"></a>        <span class="n">H</span><span class="p">[</span><span class="n">N</span> <span class="o">+</span> <span class="n">nc</span> <span class="o">+</span> <span class="n">j</span><span class="p">,</span> <span class="n">N</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+<a id="__codelineno-0-802" name="__codelineno-0-802"></a>    <span class="k">return</span> <span class="n">H</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>

@@ -2750,8 +2750,7 @@ terms (one per image axis) and filter a 2-D signal — the pattern used for
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-850">850</a></span>
-<span class="normal"><a href="#__codelineno-0-851">851</a></span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-851">851</a></span>
 <span class="normal"><a href="#__codelineno-0-852">852</a></span>
 <span class="normal"><a href="#__codelineno-0-853">853</a></span>
 <span class="normal"><a href="#__codelineno-0-854">854</a></span>
@@ -2759,16 +2758,17 @@ terms (one per image axis) and filter a 2-D signal — the pattern used for
 <span class="normal"><a href="#__codelineno-0-856">856</a></span>
 <span class="normal"><a href="#__codelineno-0-857">857</a></span>
 <span class="normal"><a href="#__codelineno-0-858">858</a></span>
-<span class="normal"><a href="#__codelineno-0-859">859</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cost_terms</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">CompositeCost</span><span class="p">,</span> <span class="n">CostSegment</span><span class="p">]]):</span>
-<a id="__codelineno-0-851" name="__codelineno-0-851"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-852" name="__codelineno-0-852"></a><span class="sd">    Initialise an NDCompositeCost.</span>
-<a id="__codelineno-0-853" name="__codelineno-0-853"></a>
-<a id="__codelineno-0-854" name="__codelineno-0-854"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-855" name="__codelineno-0-855"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-856" name="__codelineno-0-856"></a><span class="sd">    cost_terms : list of CompositeCost or CostSegment</span>
-<a id="__codelineno-0-857" name="__codelineno-0-857"></a><span class="sd">        One cost term per dimension L.</span>
-<a id="__codelineno-0-858" name="__codelineno-0-858"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-859" name="__codelineno-0-859"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">cost_terms</span> <span class="o">=</span> <span class="n">cost_terms</span>
+<span class="normal"><a href="#__codelineno-0-859">859</a></span>
+<span class="normal"><a href="#__codelineno-0-860">860</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-851" name="__codelineno-0-851"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cost_terms</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">CompositeCost</span><span class="p">,</span> <span class="n">CostSegment</span><span class="p">]]):</span>
+<a id="__codelineno-0-852" name="__codelineno-0-852"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-853" name="__codelineno-0-853"></a><span class="sd">    Initialise an NDCompositeCost.</span>
+<a id="__codelineno-0-854" name="__codelineno-0-854"></a>
+<a id="__codelineno-0-855" name="__codelineno-0-855"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-856" name="__codelineno-0-856"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-857" name="__codelineno-0-857"></a><span class="sd">    cost_terms : list of CompositeCost or CostSegment</span>
+<a id="__codelineno-0-858" name="__codelineno-0-858"></a><span class="sd">        One cost term per dimension L.</span>
+<a id="__codelineno-0-859" name="__codelineno-0-859"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-860" name="__codelineno-0-860"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">cost_terms</span> <span class="o">=</span> <span class="n">cost_terms</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -2803,11 +2803,11 @@ terms (one per image axis) and filter a 2-D signal — the pattern used for
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-897">897</a></span>
-<span class="normal"><a href="#__codelineno-0-898">898</a></span>
-<span class="normal"><a href="#__codelineno-0-899">899</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-897" name="__codelineno-0-897"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_number_of_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-898" name="__codelineno-0-898"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the number of signal dimensions L.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-899" name="__codelineno-0-899"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">L</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-898">898</a></span>
+<span class="normal"><a href="#__codelineno-0-899">899</a></span>
+<span class="normal"><a href="#__codelineno-0-900">900</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-898" name="__codelineno-0-898"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_number_of_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-899" name="__codelineno-0-899"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the number of signal dimensions L.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-900" name="__codelineno-0-900"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">L</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2832,11 +2832,11 @@ terms (one per image axis) and filter a 2-D signal — the pattern used for
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-901">901</a></span>
-<span class="normal"><a href="#__codelineno-0-902">902</a></span>
-<span class="normal"><a href="#__codelineno-0-903">903</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-901" name="__codelineno-0-901"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_order</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-902" name="__codelineno-0-902"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the Kronecker-product state order N = prod(N_l for l in dims).&quot;&quot;&quot;</span>
-<a id="__codelineno-0-903" name="__codelineno-0-903"></a>    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">([</span><span class="n">cost</span><span class="o">.</span><span class="n">get_alssm_order</span><span class="p">()</span> <span class="k">for</span> <span class="n">cost</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_terms</span><span class="p">]))</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-902">902</a></span>
+<span class="normal"><a href="#__codelineno-0-903">903</a></span>
+<span class="normal"><a href="#__codelineno-0-904">904</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-902" name="__codelineno-0-902"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_order</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-903" name="__codelineno-0-903"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the Kronecker-product state order N = prod(N_l for l in dims).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-904" name="__codelineno-0-904"></a>    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">([</span><span class="n">cost</span><span class="o">.</span><span class="n">get_alssm_order</span><span class="p">()</span> <span class="k">for</span> <span class="n">cost</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_terms</span><span class="p">]))</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2861,11 +2861,11 @@ terms (one per image axis) and filter a 2-D signal — the pattern used for
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-905">905</a></span>
-<span class="normal"><a href="#__codelineno-0-906">906</a></span>
-<span class="normal"><a href="#__codelineno-0-907">907</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-905" name="__codelineno-0-905"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_output_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-906" name="__codelineno-0-906"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the output dimension Q (shared across all dimensions).&quot;&quot;&quot;</span>
-<a id="__codelineno-0-907" name="__codelineno-0-907"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_terms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_alssm_output_dimension</span><span class="p">()</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-906">906</a></span>
+<span class="normal"><a href="#__codelineno-0-907">907</a></span>
+<span class="normal"><a href="#__codelineno-0-908">908</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-906" name="__codelineno-0-906"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssm_output_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-907" name="__codelineno-0-907"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the output dimension Q (shared across all dimensions).&quot;&quot;&quot;</span>
+<a id="__codelineno-0-908" name="__codelineno-0-908"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_terms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_alssm_output_dimension</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2928,8 +2928,7 @@ Default: <code>range(self.L)</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-909">909</a></span>
-<span class="normal"><a href="#__codelineno-0-910">910</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-910">910</a></span>
 <span class="normal"><a href="#__codelineno-0-911">911</a></span>
 <span class="normal"><a href="#__codelineno-0-912">912</a></span>
 <span class="normal"><a href="#__codelineno-0-913">913</a></span>
@@ -2951,30 +2950,31 @@ Default: <code>range(self.L)</code>.</p>
 <span class="normal"><a href="#__codelineno-0-929">929</a></span>
 <span class="normal"><a href="#__codelineno-0-930">930</a></span>
 <span class="normal"><a href="#__codelineno-0-931">931</a></span>
-<span class="normal"><a href="#__codelineno-0-932">932</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-909" name="__codelineno-0-909"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_steady_state_W</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;schur&#39;</span><span class="p">):</span>
-<a id="__codelineno-0-910" name="__codelineno-0-910"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-911" name="__codelineno-0-911"></a><span class="sd">    Compute the n-dimensional steady-state Gram matrix as a Kronecker product.</span>
-<a id="__codelineno-0-912" name="__codelineno-0-912"></a>
-<a id="__codelineno-0-913" name="__codelineno-0-913"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-914" name="__codelineno-0-914"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-915" name="__codelineno-0-915"></a><span class="sd">    dim_order : list of int or None, optional</span>
-<a id="__codelineno-0-916" name="__codelineno-0-916"></a><span class="sd">        Order in which dimensions are Kronecker-multiplied.</span>
-<a id="__codelineno-0-917" name="__codelineno-0-917"></a><span class="sd">        Default: ``range(self.L)``.</span>
-<a id="__codelineno-0-918" name="__codelineno-0-918"></a><span class="sd">    method : str, optional</span>
-<a id="__codelineno-0-919" name="__codelineno-0-919"></a><span class="sd">        Forwarded to each per-dimension ``get_steady_state_W``.</span>
-<a id="__codelineno-0-920" name="__codelineno-0-920"></a>
-<a id="__codelineno-0-921" name="__codelineno-0-921"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-922" name="__codelineno-0-922"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-923" name="__codelineno-0-923"></a><span class="sd">    W : ndarray of shape (N, N)</span>
-<a id="__codelineno-0-924" name="__codelineno-0-924"></a><span class="sd">        Combined steady-state Gram matrix.</span>
-<a id="__codelineno-0-925" name="__codelineno-0-925"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-926" name="__codelineno-0-926"></a>    <span class="k">if</span> <span class="n">dim_order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-927" name="__codelineno-0-927"></a>        <span class="n">dim_order</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">)</span>
-<a id="__codelineno-0-928" name="__codelineno-0-928"></a>
-<a id="__codelineno-0-929" name="__codelineno-0-929"></a>    <span class="n">W</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-<a id="__codelineno-0-930" name="__codelineno-0-930"></a>    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">dim_order</span><span class="p">:</span>
-<a id="__codelineno-0-931" name="__codelineno-0-931"></a>        <span class="n">W</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_terms</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">get_steady_state_W</span><span class="p">(</span><span class="n">method</span><span class="p">))</span>
-<a id="__codelineno-0-932" name="__codelineno-0-932"></a>    <span class="k">return</span> <span class="n">W</span>
+<span class="normal"><a href="#__codelineno-0-932">932</a></span>
+<span class="normal"><a href="#__codelineno-0-933">933</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-910" name="__codelineno-0-910"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_steady_state_W</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;schur&#39;</span><span class="p">):</span>
+<a id="__codelineno-0-911" name="__codelineno-0-911"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-912" name="__codelineno-0-912"></a><span class="sd">    Compute the n-dimensional steady-state Gram matrix as a Kronecker product.</span>
+<a id="__codelineno-0-913" name="__codelineno-0-913"></a>
+<a id="__codelineno-0-914" name="__codelineno-0-914"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-915" name="__codelineno-0-915"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-916" name="__codelineno-0-916"></a><span class="sd">    dim_order : list of int or None, optional</span>
+<a id="__codelineno-0-917" name="__codelineno-0-917"></a><span class="sd">        Order in which dimensions are Kronecker-multiplied.</span>
+<a id="__codelineno-0-918" name="__codelineno-0-918"></a><span class="sd">        Default: ``range(self.L)``.</span>
+<a id="__codelineno-0-919" name="__codelineno-0-919"></a><span class="sd">    method : str, optional</span>
+<a id="__codelineno-0-920" name="__codelineno-0-920"></a><span class="sd">        Forwarded to each per-dimension ``get_steady_state_W``.</span>
+<a id="__codelineno-0-921" name="__codelineno-0-921"></a>
+<a id="__codelineno-0-922" name="__codelineno-0-922"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-923" name="__codelineno-0-923"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-924" name="__codelineno-0-924"></a><span class="sd">    W : ndarray of shape (N, N)</span>
+<a id="__codelineno-0-925" name="__codelineno-0-925"></a><span class="sd">        Combined steady-state Gram matrix.</span>
+<a id="__codelineno-0-926" name="__codelineno-0-926"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-927" name="__codelineno-0-927"></a>    <span class="k">if</span> <span class="n">dim_order</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-928" name="__codelineno-0-928"></a>        <span class="n">dim_order</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">)</span>
+<a id="__codelineno-0-929" name="__codelineno-0-929"></a>
+<a id="__codelineno-0-930" name="__codelineno-0-930"></a>    <span class="n">W</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-0-931" name="__codelineno-0-931"></a>    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">dim_order</span><span class="p">:</span>
+<a id="__codelineno-0-932" name="__codelineno-0-932"></a>        <span class="n">W</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_terms</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">get_steady_state_W</span><span class="p">(</span><span class="n">method</span><span class="p">))</span>
+<a id="__codelineno-0-933" name="__codelineno-0-933"></a>    <span class="k">return</span> <span class="n">W</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3040,8 +3040,7 @@ The <code>[Q]</code> dimension is present only when <a class="autorefs autorefs-
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-934">934</a></span>
-<span class="normal"><a href="#__codelineno-0-935">935</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-935">935</a></span>
 <span class="normal"><a href="#__codelineno-0-936">936</a></span>
 <span class="normal"><a href="#__codelineno-0-937">937</a></span>
 <span class="normal"><a href="#__codelineno-0-938">938</a></span>
@@ -3071,38 +3070,39 @@ The <code>[Q]</code> dimension is present only when <a class="autorefs autorefs-
 <span class="normal"><a href="#__codelineno-0-962">962</a></span>
 <span class="normal"><a href="#__codelineno-0-963">963</a></span>
 <span class="normal"><a href="#__codelineno-0-964">964</a></span>
-<span class="normal"><a href="#__codelineno-0-965">965</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="k">def</span><span class="w"> </span><span class="nf">eval_alssm_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">nd_alssm_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="sd">    Evaluate the n-dimensional ALSSM output.</span>
-<a id="__codelineno-0-937" name="__codelineno-0-937"></a>
-<a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">    Forms a separable (Kronecker-product) ALSSM from the per-dimension</span>
-<a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">    sub-models and evaluates it at each state vector in ``xs``.</span>
-<a id="__codelineno-0-940" name="__codelineno-0-940"></a>
-<a id="__codelineno-0-941" name="__codelineno-0-941"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">    xs : array_like of shape (..., N)</span>
-<a id="__codelineno-0-944" name="__codelineno-0-944"></a><span class="sd">        State vectors at which to evaluate the output. The last axis must</span>
-<a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="sd">        equal the combined model order $N = \prod_l N_l$.</span>
-<a id="__codelineno-0-946" name="__codelineno-0-946"></a><span class="sd">    nd_alssm_weights : array_like of shape (L, M), optional</span>
-<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="sd">        Per-ALSSM output weights for each signal dimension.  Element</span>
-<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="sd">        ``[l, m]`` scales the output of ALSSM ``m`` in dimension ``l``.</span>
-<a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">        If ``None``, all ALSSMs in every dimension contribute equally.</span>
-<a id="__codelineno-0-950" name="__codelineno-0-950"></a>
-<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">    out : ndarray of shape (..., [Q])</span>
-<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">        ALSSM output evaluated at each state vector in ``xs``.</span>
-<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">        The ``[Q]`` dimension is present only when [`is_MC`][lmlib.statespace.model.ModelBase.is_MC] is True.</span>
-<a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-957" name="__codelineno-0-957"></a>    <span class="n">alssms</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-958" name="__codelineno-0-958"></a>    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">):</span>
-<a id="__codelineno-0-959" name="__codelineno-0-959"></a>        <span class="n">sub_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sub_cost_term</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">l</span><span class="p">)</span>
-<a id="__codelineno-0-960" name="__codelineno-0-960"></a>        <span class="k">if</span> <span class="n">nd_alssm_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-961" name="__codelineno-0-961"></a>            <span class="n">alssms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AlssmSum</span><span class="p">(</span><span class="n">sub_cost</span><span class="o">.</span><span class="n">alssms</span><span class="p">,</span> <span class="n">nd_alssm_weights</span><span class="p">[</span><span class="n">l</span><span class="p">]))</span>
-<a id="__codelineno-0-962" name="__codelineno-0-962"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-963" name="__codelineno-0-963"></a>            <span class="n">alssms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AlssmSum</span><span class="p">(</span><span class="n">sub_cost</span><span class="o">.</span><span class="n">alssms</span><span class="p">))</span>
-<a id="__codelineno-0-964" name="__codelineno-0-964"></a>    <span class="n">alssm</span> <span class="o">=</span> <span class="n">AlssmProd</span><span class="p">(</span><span class="n">alssms</span><span class="p">)</span>
-<a id="__codelineno-0-965" name="__codelineno-0-965"></a>    <span class="k">return</span> <span class="n">alssm</span><span class="o">.</span><span class="n">eval_output</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-965">965</a></span>
+<span class="normal"><a href="#__codelineno-0-966">966</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="k">def</span><span class="w"> </span><span class="nf">eval_alssm_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">nd_alssm_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-937" name="__codelineno-0-937"></a><span class="sd">    Evaluate the n-dimensional ALSSM output.</span>
+<a id="__codelineno-0-938" name="__codelineno-0-938"></a>
+<a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">    Forms a separable (Kronecker-product) ALSSM from the per-dimension</span>
+<a id="__codelineno-0-940" name="__codelineno-0-940"></a><span class="sd">    sub-models and evaluates it at each state vector in ``xs``.</span>
+<a id="__codelineno-0-941" name="__codelineno-0-941"></a>
+<a id="__codelineno-0-942" name="__codelineno-0-942"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-943" name="__codelineno-0-943"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-944" name="__codelineno-0-944"></a><span class="sd">    xs : array_like of shape (..., N)</span>
+<a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="sd">        State vectors at which to evaluate the output. The last axis must</span>
+<a id="__codelineno-0-946" name="__codelineno-0-946"></a><span class="sd">        equal the combined model order $N = \prod_l N_l$.</span>
+<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="sd">    nd_alssm_weights : array_like of shape (L, M), optional</span>
+<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="sd">        Per-ALSSM output weights for each signal dimension.  Element</span>
+<a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">        ``[l, m]`` scales the output of ALSSM ``m`` in dimension ``l``.</span>
+<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">        If ``None``, all ALSSMs in every dimension contribute equally.</span>
+<a id="__codelineno-0-951" name="__codelineno-0-951"></a>
+<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">    out : ndarray of shape (..., [Q])</span>
+<a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">        ALSSM output evaluated at each state vector in ``xs``.</span>
+<a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">        The ``[Q]`` dimension is present only when [`is_MC`][lmlib.statespace.model.ModelBase.is_MC] is True.</span>
+<a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-958" name="__codelineno-0-958"></a>    <span class="n">alssms</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-959" name="__codelineno-0-959"></a>    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">):</span>
+<a id="__codelineno-0-960" name="__codelineno-0-960"></a>        <span class="n">sub_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sub_cost_term</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">l</span><span class="p">)</span>
+<a id="__codelineno-0-961" name="__codelineno-0-961"></a>        <span class="k">if</span> <span class="n">nd_alssm_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-962" name="__codelineno-0-962"></a>            <span class="n">alssms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AlssmSum</span><span class="p">(</span><span class="n">sub_cost</span><span class="o">.</span><span class="n">alssms</span><span class="p">,</span> <span class="n">nd_alssm_weights</span><span class="p">[</span><span class="n">l</span><span class="p">]))</span>
+<a id="__codelineno-0-963" name="__codelineno-0-963"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-964" name="__codelineno-0-964"></a>            <span class="n">alssms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AlssmSum</span><span class="p">(</span><span class="n">sub_cost</span><span class="o">.</span><span class="n">alssms</span><span class="p">))</span>
+<a id="__codelineno-0-965" name="__codelineno-0-965"></a>    <span class="n">alssm</span> <span class="o">=</span> <span class="n">AlssmProd</span><span class="p">(</span><span class="n">alssms</span><span class="p">)</span>
+<a id="__codelineno-0-966" name="__codelineno-0-966"></a>    <span class="k">return</span> <span class="n">alssm</span><span class="o">.</span><span class="n">eval_output</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>

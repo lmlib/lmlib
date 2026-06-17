@@ -3040,7 +3040,8 @@ or <code>'limited_sum'</code>.</p>
 <span class="normal"><a href="#__codelineno-0-300">300</a></span>
 <span class="normal"><a href="#__codelineno-0-301">301</a></span>
 <span class="normal"><a href="#__codelineno-0-302">302</a></span>
-<span class="normal"><a href="#__codelineno-0-303">303</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_steady_state_W</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;schur&#39;</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-303">303</a></span>
+<span class="normal"><a href="#__codelineno-0-304">304</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_steady_state_W</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;schur&#39;</span><span class="p">):</span>
 <a id="__codelineno-0-276" name="__codelineno-0-276"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Compute the steady-state Gram matrix W for this cost segment.</span>
 <a id="__codelineno-0-278" name="__codelineno-0-278"></a>
@@ -3062,13 +3063,14 @@ or <code>'limited_sum'</code>.</p>
 <a id="__codelineno-0-294" name="__codelineno-0-294"></a>    <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">delta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">segment</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">segment</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">segment</span><span class="o">.</span><span class="n">delta</span>
 <a id="__codelineno-0-295" name="__codelineno-0-295"></a>
 <a id="__codelineno-0-296" name="__codelineno-0-296"></a>    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;schur&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-297" name="__codelineno-0-297"></a>        <span class="k">return</span> <span class="n">covariance_matrix_schur</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">delta</span><span class="p">)</span>
-<a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;closed_form&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-299" name="__codelineno-0-299"></a>        <span class="k">return</span> <span class="n">covariance_matrix_closed_form</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">delta</span><span class="p">)</span>
-<a id="__codelineno-0-300" name="__codelineno-0-300"></a>    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;limited_sum&#39;</span><span class="p">:</span>
-<a id="__codelineno-0-301" name="__codelineno-0-301"></a>        <span class="k">return</span> <span class="n">covariance_matrix_limited_sum</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">delta</span><span class="p">)</span>
-<a id="__codelineno-0-302" name="__codelineno-0-302"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-303" name="__codelineno-0-303"></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;unknown method </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a>        <span class="n">basis</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alssm</span><span class="p">,</span> <span class="s1">&#39;steady_state_basis&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a>        <span class="k">return</span> <span class="n">covariance_matrix_schur</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="n">basis</span><span class="p">)</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;closed_form&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>        <span class="k">return</span> <span class="n">covariance_matrix_closed_form</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">delta</span><span class="p">)</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;limited_sum&#39;</span><span class="p">:</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>        <span class="k">return</span> <span class="n">covariance_matrix_limited_sum</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">delta</span><span class="p">)</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;unknown method </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3118,8 +3120,7 @@ or <code>'limited_sum'</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-305">305</a></span>
-<span class="normal"><a href="#__codelineno-0-306">306</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-306">306</a></span>
 <span class="normal"><a href="#__codelineno-0-307">307</a></span>
 <span class="normal"><a href="#__codelineno-0-308">308</a></span>
 <span class="normal"><a href="#__codelineno-0-309">309</a></span>
@@ -3132,21 +3133,22 @@ or <code>'limited_sum'</code>.</p>
 <span class="normal"><a href="#__codelineno-0-316">316</a></span>
 <span class="normal"><a href="#__codelineno-0-317">317</a></span>
 <span class="normal"><a href="#__codelineno-0-318">318</a></span>
-<span class="normal"><a href="#__codelineno-0-319">319</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-305" name="__codelineno-0-305"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_state_var_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
-<a id="__codelineno-0-306" name="__codelineno-0-306"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="sd">    Return the state indices corresponding to a named state variable.</span>
-<a id="__codelineno-0-308" name="__codelineno-0-308"></a>
-<a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="sd">    label : str</span>
-<a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">        State variable label as registered in the ALSSM.</span>
-<a id="__codelineno-0-313" name="__codelineno-0-313"></a>
-<a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">    indices : list of int</span>
-<a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">        Indices into the state vector for the labelled variable.</span>
-<a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-319" name="__codelineno-0-319"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssm</span><span class="o">.</span><span class="n">get_state_var_indices</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-319">319</a></span>
+<span class="normal"><a href="#__codelineno-0-320">320</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-306" name="__codelineno-0-306"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_state_var_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a><span class="sd">    Return the state indices corresponding to a named state variable.</span>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">    label : str</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="sd">        State variable label as registered in the ALSSM.</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">    indices : list of int</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">        Indices into the state vector for the labelled variable.</span>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alssm</span><span class="o">.</span><span class="n">get_state_var_indices</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3206,8 +3208,7 @@ or <code>'limited_sum'</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-321">321</a></span>
-<span class="normal"><a href="#__codelineno-0-322">322</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-322">322</a></span>
 <span class="normal"><a href="#__codelineno-0-323">323</a></span>
 <span class="normal"><a href="#__codelineno-0-324">324</a></span>
 <span class="normal"><a href="#__codelineno-0-325">325</a></span>
@@ -3222,23 +3223,24 @@ or <code>'limited_sum'</code>.</p>
 <span class="normal"><a href="#__codelineno-0-334">334</a></span>
 <span class="normal"><a href="#__codelineno-0-335">335</a></span>
 <span class="normal"><a href="#__codelineno-0-336">336</a></span>
-<span class="normal"><a href="#__codelineno-0-337">337</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="k">def</span><span class="w"> </span><span class="nf">eval_alssm_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">alssm_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="sd">    Evaluate the ALSSM output for a set of state vectors.</span>
-<a id="__codelineno-0-324" name="__codelineno-0-324"></a>
-<a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">    xs : array_like of shape (..., N)</span>
-<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">        State vectors; the last dimension must match the model order N.</span>
-<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="sd">    alssm_weights : None, scalar, or array_like, optional</span>
-<a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="sd">        Output weights forwarded to [`AlssmSum`][lmlib.statespace.model.AlssmSum]. Default: None.</span>
-<a id="__codelineno-0-331" name="__codelineno-0-331"></a>
-<a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">    out : ndarray</span>
-<a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">        ALSSM output sequences for each state vector in ``xs``.</span>
-<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-337" name="__codelineno-0-337"></a>    <span class="k">return</span> <span class="n">AlssmSum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">alssm</span><span class="p">],</span> <span class="n">alssm_weights</span><span class="p">)</span><span class="o">.</span><span class="n">eval_output</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-337">337</a></span>
+<span class="normal"><a href="#__codelineno-0-338">338</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="k">def</span><span class="w"> </span><span class="nf">eval_alssm_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xs</span><span class="p">,</span> <span class="n">alssm_weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">    Evaluate the ALSSM output for a set of state vectors.</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">    xs : array_like of shape (..., N)</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="sd">        State vectors; the last dimension must match the model order N.</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="sd">    alssm_weights : None, scalar, or array_like, optional</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">        Output weights forwarded to [`AlssmSum`][lmlib.statespace.model.AlssmSum]. Default: None.</span>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">    out : ndarray</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">        ALSSM output sequences for each state vector in ``xs``.</span>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-338" name="__codelineno-0-338"></a>    <span class="k">return</span> <span class="n">AlssmSum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">alssm</span><span class="p">],</span> <span class="n">alssm_weights</span><span class="p">)</span><span class="o">.</span><span class="n">eval_output</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3263,11 +3265,11 @@ or <code>'limited_sum'</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>lmlib/statespace/cost.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-339">339</a></span>
-<span class="normal"><a href="#__codelineno-0-340">340</a></span>
-<span class="normal"><a href="#__codelineno-0-341">341</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssms</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list containing the single ALSSM of this cost segment.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-341" name="__codelineno-0-341"></a>    <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">alssm</span><span class="p">]</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-340">340</a></span>
+<span class="normal"><a href="#__codelineno-0-341">341</a></span>
+<span class="normal"><a href="#__codelineno-0-342">342</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_alssms</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list containing the single ALSSM of this cost segment.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-342" name="__codelineno-0-342"></a>    <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">alssm</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
