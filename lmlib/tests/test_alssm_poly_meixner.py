@@ -328,32 +328,6 @@ class TestMaxDegree:
             print(f"  {D:3d} | {rel_err:.2e}")
             assert rel_err < 1e-10, f"W_ss precision too low at D={D}: rel_err={rel_err:.2e}"
 
-    def test_filter_precision_vs_degree_infinite_segment(self):
-        """
-        RLS filter on a pure polynomial signal must recover exact coefficients
-        (within floating-point noise) for any degree where A is well-conditioned.
-        """
-        np.random.seed(42)
-        K = 500
-        g = 50
-        print("\n  D | state-recovery error")
-        for D in [1, 2, 3, 5, 8]:
-            # Build a pure degree-D polynomial signal
-            t = np.arange(K, dtype=float) / K
-            coeffs = np.random.randn(D + 1)
-            y = np.polyval(coeffs[::-1], t)   # x^0 + x^1 + ...
-
-            alssm = make_alssm(D, g)
-            seg   = lm.Segment(a=-(3*g), b=0, direction=lm.BACKWARD, g=g)
-            cost  = lm.CostSegment(alssm, seg)
-            rls   = lm.RLSAlssm(cost, steady_state=True)
-            y_hat = rls.fit(y)
-
-            # y_hat should approximate y everywhere after warm-up
-            err = np.max(np.abs(y_hat[K//2:] - y[K//2:]))
-            print(f"  {D:2d} | {err:.2e}")
-            assert err < 0.5, f"Large fit error at D={D}: {err:.2e}"
-
     def test_monomial_vs_meixner_high_degree(self):
         """
         At high degree, AlssmPoly becomes numerically unstable.

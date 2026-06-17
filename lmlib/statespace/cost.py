@@ -294,7 +294,8 @@ class CostSegment(BaseCost, BaseCost1d):
         a, b, delta = self.segment.a, self.segment.b, self.segment.delta
 
         if method == 'schur':
-            return covariance_matrix_schur(A, C, gamma, a, b, delta)
+            basis = getattr(self.alssm, 'steady_state_basis', None)
+            return covariance_matrix_schur(A, C, gamma, a, b, delta, basis=basis)
         elif method == 'closed_form':
             return covariance_matrix_closed_form(A, C, gamma, a, b, delta)
         elif method == 'limited_sum':

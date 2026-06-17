@@ -35,6 +35,15 @@ class ModelBase(ABC):
         array of shape ``(1, N)`` (multi-channel form). Default: False.
     """
 
+    #: Polynomial basis tag consulted by the steady-state Gram-matrix solver
+    #: (``lmlib.statespace.backends.steady_state``). ``None`` means "unknown",
+    #: in which case the solver falls back to pattern-matching the transition
+    #: matrix ``A`` (additionally guarded by ``C``). Subclasses with a known
+    #: basis override this so the solver never misidentifies one basis as
+    #: another (e.g. a degree-1 Jordan block is identical to a Legendre ``h=1``
+    #: shift matrix).
+    steady_state_basis = None
+
     def __init__(self, label:str='n/a', C_init=None, force_MC:bool=False):
         self._alssms = list()
         self._lambdas = np.ndarray([])
@@ -516,6 +525,8 @@ class AlssmPoly(ModelBase):
     ```
     """
 
+    steady_state_basis = 'pascal'
+
     def __init__(self, poly_degree:int, C=None, **kwargs):
         super().__init__(C_init=C, **kwargs)
         self.poly_degree = poly_degree
@@ -589,6 +600,8 @@ class AlssmPolyJordan(ModelBase):
     AlssmPolyJordan(A=[[1. 1. 0. 0.],[0. 1. 1. 0.],[0. 0. 1. 1.],[0. 0. 0. 1.]], C=[1. 0. 0. 0.], label=poly)
     ```
     """
+
+    steady_state_basis = 'jordan'
 
     def __init__(self, poly_degree:int, C=None, **kwargs):
         super().__init__(C_init=C, **kwargs)
@@ -736,6 +749,8 @@ class AlssmPolyLegendre(ModelBase):
     >>> y_hat = alssm.eval_output(xs)
     ```
     """
+
+    steady_state_basis = 'legendre'
 
     def __init__(self, poly_degree: int, a_seg: int = 0, b_seg: int = None,
                  **kwargs):
@@ -995,6 +1010,8 @@ class AlssmPolyMeixner(ModelBase):
     The Meixner polynomials used here are the standard (monic normalisation)
     $M_n(x;\,1,\gamma) = {}_2F_1(-n,\,-x;\,1;\,1 - 1/\gamma)$.
     """
+
+    steady_state_basis = 'meixner'
 
     def __init__(self, poly_degree: int, segment, **kwargs):
         r"""

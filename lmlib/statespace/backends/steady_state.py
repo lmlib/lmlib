@@ -21,7 +21,7 @@ __all__ = [
 ]
 
 
-def _is_legendre_shift(A, tol=1e-10):
+def _is_legendre_shift(A, C=None, tol=1e-10):
     r"""
     Return ``(True, h)`` if *A* is a Legendre shift matrix, else ``(False, None)``.
 
@@ -74,10 +74,24 @@ def _is_legendre_shift(A, tol=1e-10):
             h_pow *= h / (m + 1)
         if not np.allclose(A[:, n], expected_col, atol=tol, rtol=1e-6):
             return False, None
+    # Optional output-vector (C) guard. The Legendre Gram path reconstructs W
+    # from the basis Vandermonde and ignores the *magnitude* of C, so it must
+    # only be trusted when C is genuinely a Legendre output row phi(t0) =
+    # [P_0(t0), ..., P_D(t0)] for some reference t0 (with P_1(t0) = t0). This
+    # rejects an F-scaled / zeroed C (e.g. the inactive segment of an asymmetric
+    # CompositeCost), which would otherwise receive a spurious non-zero W.
+    if C is not None:
+        Cv = np.asarray(C, dtype=float)
+        Cv = Cv.ravel() if Cv.ndim == 1 else (Cv[0] if Cv.shape[0] == 1 else None)
+        if Cv is not None and Cv.shape[0] == N:
+            from numpy.polynomial.legendre import legvander as _legvander_local
+            expected = _legvander_local(np.array([Cv[1]]), N - 1)[0]  # phi(t0), t0 = P_1 = C[1]
+            if not np.allclose(Cv, expected, atol=tol, rtol=1e-6):
+                return False, None
     return True, h
 
 
-def _is_meixner_shift(A, tol=1e-10):
+def _is_meixner_shift(A, C=None, tol=1e-10):
     r"""
     Return ``(True, g)`` if *A* is a Meixner shift matrix, else ``(False, None)``.
 
@@ -116,6 +130,18 @@ def _is_meixner_shift(A, tol=1e-10):
     g = 1.0 - 1.0 / val
     if g <= 1.0:
         return False, None
+    # Optional output-vector (C) guard. For degree >= 1 the Meixner Gram path
+    # reconstructs W from the Meixner basis and ignores the magnitude of C, so it
+    # must only be trusted when C is the canonical Meixner output, which is the
+    # all-ones row (M_n(0) = 1 for every n). This rejects an F-scaled / zeroed C.
+    # (Degree 0 / N == 1 is handled above and uses C[0]^2 directly, so any C is
+    # fine there.)
+    if C is not None:
+        Cv = np.asarray(C, dtype=float)
+        Cv = Cv.ravel() if Cv.ndim == 1 else (Cv[0] if Cv.shape[0] == 1 else None)
+        if Cv is not None and Cv.shape[0] == N:
+            if not np.allclose(Cv, np.ones(N), atol=tol, rtol=1e-6):
+                return False, None
     return True, g
 
 
@@ -292,7 +318,7 @@ def covariance_matrix_legendre(A, C, gamma, a, b, delta):
     return float(gamma ** (-delta)) * W
 
 
-def covariance_matrix_schur(A, C, gamma, a, b, delta):
+def covariance_matrix_schur(A, C, gamma, a, b, delta, basis=None):
     r"""
     Numerically stable steady-state Gram matrix W via a Schur-based solver.
 
@@ -389,6 +415,34 @@ def covariance_matrix_schur(A, C, gamma, a, b, delta):
     """
     A = np.asarray(A, dtype=float)
 
+    # Which fast paths are permitted? An explicit basis tag carried by the ALSSM
+    # subclass (``steady_state_basis``) is authoritative; only when it is absent
+    # (basis is None, e.g. a raw Alssm or a mixed AlssmSum) do we fall back to
+    # pattern-matching A, now additionally guarded by C. This prevents one basis
+    # from being mistaken for another — in particular a degree-1 AlssmPolyJordan
+    # block is byte-identical to a Legendre(h=1) shift matrix, and was being
+    # routed to the (C-ignoring) Legendre fast path.
+    allow_legendre = (basis == 'legendre') or (basis is None and _is_legendre_shift(A, C)[0])
+    allow_meixner  = (basis == 'meixner')  or (basis is None and _is_meixner_shift(A, C)[0])
+
+    # ── Fast path: AlssmPolyLegendre ─────────────────────────────────────────────
+    # When A is a Legendre shift matrix and gamma < 1, the Stein equation in
+    # the N^2 × N^2 Kronecker space becomes severely ill-conditioned (singular
+    # values spanning 10^40+ at deg=20) despite having well-separated eigenvalues
+    # (all equal to 1-gamma).  The direct formula W = V^T diag(gamma^j) V via
+    # legvander is exact to machine precision for any degree and O(W*N^2).
+    if not np.isinf(a) and not np.isinf(b):
+        if allow_legendre:
+            return covariance_matrix_legendre(A, C, gamma, a, b, delta)
+
+    # ── Fast path: AlssmPolyMeixner ──────────────────────────────────────────────
+    # The Meixner basis is orthogonal under the geometric weight gamma^j, so the
+    # Gram matrix is exactly diagonal with closed-form entries. Avoids the N^2×N^2
+    # Stein equation entirely, giving exact results for any degree and segment type.
+    if allow_meixner:
+        return covariance_matrix_meixner(A, C, gamma, a, b, delta)
+
+
     # ── Exact direct-sum path for finite segments ───────────────────────────
     # On a finite window W is a finite sum; evaluating it directly is exact to
     # machine precision and avoids the N^2 x N^2 Stein solve below, which loses
@@ -398,26 +452,6 @@ def covariance_matrix_schur(A, C, gamma, a, b, delta):
     # still fall through to the Stein solver.
     if not np.isinf(a) and not np.isinf(b) and (b - a) <= _DIRECT_SUM_MAX_TERMS:
         return covariance_matrix_limited_sum(A, C, gamma, a, b, delta)
-
-    # ── Fast path: AlssmPolyLegendre ─────────────────────────────────────────────
-    # When A is a Legendre shift matrix and gamma < 1, the Stein equation in
-    # the N^2 × N^2 Kronecker space becomes severely ill-conditioned (singular
-    # values spanning 10^40+ at deg=20) despite having well-separated eigenvalues
-    # (all equal to 1-gamma).  The direct formula W = V^T diag(gamma^j) V via
-    # legvander is exact to machine precision for any degree and O(W*N^2).
-    if not np.isinf(a) and not np.isinf(b):
-        is_leg, _ = _is_legendre_shift(A)
-        if is_leg:
-            return covariance_matrix_legendre(A, C, gamma, a, b, delta)
-
-    # ── Fast path: AlssmPolyMeixner ──────────────────────────────────────────────
-    # The Meixner basis is orthogonal under the geometric weight gamma^j, so the
-    # Gram matrix is exactly diagonal with closed-form entries. Avoids the N^2×N^2
-    # Stein equation entirely, giving exact results for any degree and segment type.
-    is_m, _ = _is_meixner_shift(A)
-    if is_m:
-        return covariance_matrix_meixner(A, C, gamma, a, b, delta)
-
 
     # ── General path: Stein equation in N^2 × N^2 ───────────────────────────
     N = int(np.shape(A)[0])
