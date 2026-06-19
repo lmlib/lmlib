@@ -8,20 +8,20 @@ A Model-Based Signal Processing Library Working With Windowed Linear State-Space
 **Website and Documentation**: **[lmlib.ch](http://lmlib.ch/)**
 
 Direct Links to:
-* **[API](http://lmlib.ch/2.0/html/api.html)**
-* **[Coding](http://lmlib.ch/2.0/html/_gallery_coding/index.html)**
-* **[Examples](http://lmlib.ch/2.0/html/_gallery_examples/index.html)**
-* **[Signal Catalog](http://lmlib.ch/2.0/html/catalog.html)**
-* **[Install](http://lmlib.ch/2.0/html/install.html)**
-* **[About Us](http://lmlib.ch/2.0/html/about.html)**
-* **[Bibliography](http://lmlib.ch/2.0/html/Bibliography.html)**
+* **[Install](https://lmlib.github.io/lmlib/installation.html)**
+* **[API](https://lmlib.github.io/lmlib/api/index.html)**
+* **[Coding](https://lmlib.github.io/lmlib/state-space-tutorial.html)**
+* **[Examples](https://lmlib.github.io/lmlib/_generated/examples/index.html)**
+* **[Signal Catalog](https://lmlib.github.io/lmlib/_generated/catalog/biosignals/index.html)**
+* **[About Us](https://lmlib.github.io/lmlib/about_us.html)**
+* **[Bibliography](https://lmlib.github.io/lmlib/bibliography.html)**
 
 
 ---
 ## Install lmlib
 * **pip: ```pip install lmlib ```**
 
-* **conda: [see here](http://lmlib.ch/2.0/html/install.html)**
+* **conda: [see here](https://lmlib.github.io/lmlib/installation.html#conda)**
 
 ## Developer Info
 
@@ -108,4 +108,3 @@ this is a new major release:
 ### How to make changes on documenation without release:
 
 * Push main branche with newest documentation
-
