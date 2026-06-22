@@ -1164,8 +1164,25 @@ class RLSAlssm:
         # which reshape silently returns a copy, so work on an explicit copy and
         # write the result back through the view.
         _xi_view = np.moveaxis(xi_curr, model_dimension, -2)
-        _xi_work = np.ascontiguousarray(_xi_view)
-        _xi_curr = np.reshape(_xi_work, (-1, *_xi_work.shape[-2:]))
+        if self._backend == 'cupy':
+            # The GPU backend writes its result with ``xi += asnumpy(...)``
+            # directly into the output view, so the two largest host-side
+            # transposes are pure waste: ``ascontiguousarray(_xi_view)`` copies a
+            # freshly-zeroed ~output-sized array, and the final write-back copies
+            # it back -- together ~2x the output through single-threaded numpy,
+            # which dominates the multichannel wall-clock.  ``reshape`` of the
+            # moveaxis view returns a *view* when only one batch axis is flattened
+            # (the common 1-D multichannel case), so the backend accumulates
+            # straight into ``xi_curr`` and no write-back is needed.  When reshape
+            # must copy (several ND batch axes) ``_writeback`` restores it.  The
+            # input copies are kept: ``cp.asarray`` needs a contiguous host buffer
+            # anyway, so contiguifying here is no more work and avoids surprises.
+            _xi_curr = np.reshape(_xi_view, (-1, *_xi_view.shape[-2:]))
+            _writeback = not np.shares_memory(_xi_curr, xi_curr)
+        else:
+            _xi_work = np.ascontiguousarray(_xi_view)
+            _xi_curr = np.reshape(_xi_work, (-1, *_xi_work.shape[-2:]))
+            _writeback = True
         _ym = np.ascontiguousarray(np.moveaxis(y, model_dimension, -2))
         _y = np.reshape(_ym, (-1, *_ym.shape[-2:]))
         _swm = np.ascontiguousarray(np.moveaxis(sample_weights, model_dimension, -1))
@@ -1182,6 +1199,12 @@ class RLSAlssm:
                 cupy_xi_q_recursion_batch(
                     _xi_curr, q, combined, segment,
                     _y, _sw, betas[p], block_sizes)
+            elif self._backend == 'cupy' and self._filter_form == 'parallel':
+                # Batched parallel form: all channels in one GPU sweep.
+                from lmlib.statespace.backends.rec_cupy import cupy_xi_q_recursion_parallel_batch
+                cupy_xi_q_recursion_parallel_batch(
+                    _xi_curr, q, combined, segment,
+                    _y, _sw, betas[p], plan, block_sizes)
             else:
                 for i in range(_y.shape[0]):
                     xi_q_recursion(
@@ -1189,7 +1212,8 @@ class RLSAlssm:
                         _y[i], _sw[i], betas[p],
                         self._backend, self._filter_form, block_sizes, plan)
 
-        _xi_view[:] = np.reshape(_xi_curr, _xi_view.shape)
+        if _writeback:
+            _xi_view[:] = np.reshape(_xi_curr, _xi_view.shape)
         return xi_curr
 
     # ------------------------------------------------------------------

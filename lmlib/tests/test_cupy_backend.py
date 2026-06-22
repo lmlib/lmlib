@@ -193,6 +193,29 @@ class TestCupyBackend(unittest.TestCase):
         ref, gpu = self._parity_parallel(cost, y)
         np.testing.assert_allclose(gpu.minimize_x(), ref.minimize_x(), rtol=RTOL, atol=ATOL)
 
+    def test_parallel_multichannel_batch(self):
+        # batched parallel sweep (all channels at once) must equal lfilter per-channel
+        rng = np.random.default_rng(7)
+        cost = lm.CompositeCost([lm.AlssmPoly(2)],
+                                [lm.Segment(a=-21, b=-1, direction=lm.FW, g=100)], F=[[1]])
+        for S in (1, 4, 17):
+            Y = rng.standard_normal((1200, S))
+            ref = lm.RLSAlssm(cost, backend='lfilter', filter_form='parallel'); ref.filter(Y)
+            gpu = lm.RLSAlssm(cost, backend='cupy', filter_form='parallel'); gpu.filter(Y)
+            np.testing.assert_allclose(np.asarray(gpu.xi), np.asarray(ref.xi), rtol=RTOL, atol=ATOL)
+            np.testing.assert_allclose(np.asarray(gpu.kappa), np.asarray(ref.kappa), rtol=RTOL, atol=ATOL)
+
+    def test_parallel_multichannel_batch_backward_and_sin(self):
+        rng = np.random.default_rng(8)
+        Y = rng.standard_normal((1200, 6))
+        for cost in (
+            lm.CompositeCost([lm.AlssmPoly(2)], [lm.Segment(a=0, b=21, direction=lm.BW, g=100)], F=[[1]]),
+            lm.CompositeCost([lm.AlssmSin(omega=0.1)], [lm.Segment(a=-40, b=-1, direction=lm.FW, g=200)], F=[[1]]),
+        ):
+            ref = lm.RLSAlssm(cost, backend='lfilter', filter_form='parallel'); ref.filter(Y)
+            gpu = lm.RLSAlssm(cost, backend='cupy', filter_form='parallel'); gpu.filter(Y)
+            np.testing.assert_allclose(np.asarray(gpu.xi), np.asarray(ref.xi), rtol=RTOL, atol=ATOL)
+
     # ── N-dimensional (asterisk-l) recursion on GPU vs numpy ──────────────────
     @staticmethod
     def _mk_nd_cost(pd, g=5):
@@ -233,6 +256,44 @@ class TestCupyBackend(unittest.TestCase):
         rng = np.random.default_rng(3); Y = rng.standard_normal((15, 15))
         for form in ('cascade', 'parallel'):
             self._parity_nd([self._mk_nd_cost(1), self._mk_nd_cost(2)], Y, [1, 0], form)
+
+    # ── batched multichannel parallel form (one GPU sweep over S channels) ────
+    def _parity_mc_parallel(self, cost, K, S, seed=0):
+        Y = np.random.default_rng(seed).standard_normal((K, S))
+        rl = lm.RLSAlssm(cost, backend='lfilter', filter_form='parallel')
+        rg = lm.RLSAlssm(cost, backend='cupy', filter_form='parallel')
+        rl.filter(Y); rg.filter(Y)
+        np.testing.assert_allclose(np.asarray(rg.xi), np.asarray(rl.xi), rtol=RTOL, atol=ATOL)
+        np.testing.assert_allclose(np.asarray(rg.kappa), np.asarray(rl.kappa), rtol=RTOL, atol=ATOL)
+
+    def test_parallel_multichannel_poly(self):
+        cost = lm.CompositeCost([lm.AlssmPoly(2)],
+                                [lm.Segment(a=-20, b=-1, direction=lm.FW, g=80)], F=[[1]])
+        self._parity_mc_parallel(cost, 2000, 16)
+
+    def test_parallel_multichannel_sin(self):
+        cost = lm.CompositeCost([lm.AlssmSin(omega=0.1)],
+                                [lm.Segment(a=-40, b=-1, direction=lm.FW, g=200)], F=[[1]])
+        self._parity_mc_parallel(cost, 2000, 16)
+
+    def test_parallel_multichannel_two_sided(self):
+        cost = lm.CompositeCost(
+            [lm.AlssmPoly(2)],
+            [lm.Segment(a=-10, b=-1, direction=lm.FW, g=40),
+             lm.Segment(a=0, b=10, direction=lm.BW, g=40)], F=[[1, 1]])
+        self._parity_mc_parallel(cost, 2000, 12)
+
+    def test_parallel_multichannel_chunked(self):
+        # force a tiny chunk so the chunk/OOM loop is exercised
+        import lmlib.statespace.backends.rec_cupy as rc
+        cost = lm.CompositeCost([lm.AlssmPoly(2)],
+                                [lm.Segment(a=-20, b=-1, direction=lm.FW, g=80)], F=[[1]])
+        orig = rc._auto_chunk
+        rc._auto_chunk = lambda *a, **k: 3
+        try:
+            self._parity_mc_parallel(cost, 1500, 17)
+        finally:
+            rc._auto_chunk = orig
 
 
 if __name__ == '__main__':

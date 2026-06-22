@@ -55,6 +55,7 @@ except Exception:                      # pragma: no cover - depends on hardware
 # only, so there is nothing to gain by moving them to the GPU, and sharing the
 # cache means a model+window pair is factorised once for *both* backends.
 from .rec_lfilter import _compute_cascade_params, _block_ranges, _poles_are_real
+from .rec_lfilter import _sos_to_fir_taps
 
 __all__ = [
     'cupy_cascade_xi0',
@@ -689,115 +690,72 @@ def cupy_xi_q_recursion_batch(xi, q, alssm, segment, y, sample_weights, beta,
 # classification (``_poles_are_real``) stays on the host on the tiny SOS arrays.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# A custom sequential biquad-cascade kernel. cupyx's lfilter AND sosfilt both
-# use an internal *parallel scan* (apply_iir) that forms cumulative pole-products
-# and overflows / loses precision on the stiff, high-gain, near-unit/complex-pole
-# filters of the parallel form (where the CPU's sequential recursion stays
-# bounded). This kernel recurses sequentially in time — exactly like scipy — and
-# parallelizes across the *batch* of independent series (channels) instead, which
-# is the numerically stable formulation.
-GPU_PARALLEL_STABLE_IIR = False
-r"""bool : Parallel-form IIR strategy. ``False`` (default) uses
-``cupyx.scipy.signal.sosfilt`` (fast, parallel scan, accurate for stable
-filters, bit-compatible with the CPU path). ``True`` uses the sequential biquad
-``RawKernel`` (slower per series but numerically bounded for stiff / marginally
-unstable filters where the scan overflows)."""
-_SOS_KERNEL_SRC = r'''
-extern "C" __global__
-void sos_cascade(const {ctype}* __restrict__ x, {ctype}* __restrict__ y,
-                 const long L, const long M, const int nsec,
-                 const {ctype}* __restrict__ sos) {{
-    long m = (long)blockIdx.x * blockDim.x + threadIdx.x;
-    if (m >= M) return;
-    {ctype} w1[8]; {ctype} w2[8];          // Direct-Form-II-transposed states
-    for (int s = 0; s < nsec; ++s) {{ w1[s] = ({ctype})0; w2[s] = ({ctype})0; }}
-    for (long k = 0; k < L; ++k) {{
-        {ctype} v = x[k * M + m];
-        for (int s = 0; s < nsec; ++s) {{
-            const {ctype}* c = sos + s * 6;     // [b0,b1,b2,a0(=1),a1,a2]
-            {ctype} out = c[0] * v + w1[s];
-            w1[s] = c[1] * v - c[4] * out + w2[s];
-            w2[s] = c[2] * v - c[5] * out;
-            v = out;
-        }}
-        y[k * M + m] = v;
-    }}
-}}
-'''
-
-_SOS_KERNELS = {}
-# RawKernel only exists with a real cupy; under the numpy test-shim we fall back
-# to a sequential scipy lfilter-per-biquad (also stable) so logic stays testable.
-_HAS_RAWKERNEL = (cp is not None) and hasattr(cp, 'RawKernel')
-
-
-def _get_sos_kernel():
-    key = np.dtype(_dt()).name
-    if key not in _SOS_KERNELS:
-        ctype = 'float' if key == 'float32' else 'double'
-        _SOS_KERNELS[key] = cp.RawKernel(_SOS_KERNEL_SRC.format(ctype=ctype), 'sos_cascade')
-    return _SOS_KERNELS[key]
-
 
 def _cupy_sos_apply(sos, x):
     r"""
-    Apply a Second-Order-Sections filter along time (axis 0) to ``x`` (shape
-    ``(L,)`` or ``(L, M)``).
-
-    Default (``GPU_PARALLEL_STABLE_IIR == False``): ``cupyx.scipy.signal.sosfilt``
-    — high throughput and bit-compatible with the CPU ``sosfilt`` path. This is
-    accurate for stable filters (the parallel form's intended use).
-
-    Opt-in (``GPU_PARALLEL_STABLE_IIR == True``): a custom sequential biquad
-    kernel (Direct-Form-II-transposed, ``cp.RawKernel``) that recurses in time
-    like scipy instead of using ``cupyx``'s internal parallel scan. Slower for a
-    single series, but bounded for stiff / marginally-unstable filters where the
-    scan can overflow. Under the numpy test-shim it falls back to a sequential
-    scipy ``lfilter``-per-biquad.
+    Apply a Second-Order-Sections IIR filter along time (axis 0) to ``x`` (shape
+    ``(L,)`` or ``(L, M)``) with ``cupyx.scipy.signal.sosfilt`` — bit-compatible
+    with the CPU ``sosfilt`` path and accurate for the stable filters the
+    parallel form produces. ``x`` for ``M`` channels is filtered in one call.
     """
     sos = np.asarray(sos, dtype=np.float64)
+    return _cp_sosfilt(cp.asarray(sos[:, :6], dtype=_dt()), x, axis=0)
 
-    if not GPU_PARALLEL_STABLE_IIR:
-        return _cp_sosfilt(cp.asarray(sos[:, :6], dtype=_dt()), x, axis=0)
 
-    # ---- stable sequential path (opt-in) ----
-    nsec = int(sos.shape[0])
-    if nsec > 8:                       # kernel holds up to 8 sections in registers
-        out = x
-        for i in range(0, nsec, 8):
-            out = _cupy_sos_apply(sos[i:i + 8], out)
-        return out
-
-    if not _HAS_RAWKERNEL:
-        # test-shim / no real GPU: sequential lfilter-per-biquad (scipy) — stable.
-        out = x
-        for sec in sos:
-            out = _cp_lfilter(cp.asarray(sec[0:3], dtype=_dt()),
-                              cp.asarray(sec[3:6], dtype=_dt()), out)
-        return out
-
-    one_d = (x.ndim == 1)
-    x2 = cp.ascontiguousarray(x[:, None] if one_d else x, dtype=_dt())
-    L, M = int(x2.shape[0]), int(x2.shape[1])
-    y = cp.empty_like(x2)
-    sos_d = cp.ascontiguousarray(cp.asarray(sos[:, :6], dtype=_dt()).ravel())
-    kern = _get_sos_kernel()
-    threads = 128
-    blocks = (M + threads - 1) // threads
-    kern((blocks,), (threads,),
-         (x2, y, np.int64(L), np.int64(M), np.int32(nsec), sos_d))
-    return y[:, 0] if one_d else y
+def _cupy_fir_taps(taps, x):
+    r"""
+    Causal FIR ``out[k] = sum_j taps[j] * x[k-j]`` (zero initial conditions) via
+    shift-and-add. ``x`` is ``(L,)`` or ``(L, B)``; a handful of elementwise FMAs,
+    no sequential recurrence. Equivalent to ``sosfilt`` of the numerator-only SOS.
+    The tap conversion (``_sos_to_fir_taps``) is shared with the CPU backend so
+    both produce bit-identical FIR output.
+    """
+    out = float(taps[0]) * x
+    for j in range(1, len(taps)):
+        tj = float(taps[j])
+        if tj != 0.0:
+            out[j:] += tj * x[:-j]
+    return out
 
 
 def _cupy_apply_fir(sos, extra_delay, y_sig, Lout):
-    r"""GPU analogue of ``_apply_fir``: numerator-only SOS pass + integer delay."""
-    result = cp.zeros(Lout, dtype=_dt())
+    r"""Apply the per-row FIR numerator as a cheap tap convolution, then shift by
+    the integer ``extra_delay`` into a length-``Lout`` buffer.
+
+    Handles both 1-D ``(L,)`` and batched 2-D ``(L, B)`` inputs; the trailing
+    channel axis (if any) is carried through.
+    """
+    result = cp.zeros((Lout,) + tuple(y_sig.shape[1:]), dtype=_dt())
     if sos is None:
         return result
-    filtered = _cupy_sos_apply(sos, y_sig)
-    end = min(extra_delay + len(filtered), Lout)
+    filtered = _cupy_fir_taps(_sos_to_fir_taps(sos), y_sig)
+    end = min(extra_delay + filtered.shape[0], Lout)
     result[extra_delay:end] = filtered[:end - extra_delay]
     return result
+
+
+def _cupy_parallel_iir_diff(sos_first, sos_second, sig_first, sig_second):
+    r"""
+    Per-row parallel IIR applied to the two boundary branches, returning their
+    difference ``IIR_first(sig_first) - IIR_second(sig_second)``.
+
+    When the two per-row denominators are identical — the common case, since both
+    branches share the same poles ``eigvals(gAT)`` and the QZ pole-zero
+    cancellation removes the same poles per row — this fuses via linearity to a
+    **single** IIR pass on the pre-differenced signal::
+
+        IIR(sig_first) - IIR(sig_second) == IIR(sig_first - sig_second)
+
+    That halves the IIR passes and is better conditioned: ``sig_first -
+    sig_second`` is the bounded windowed difference, so the IIR running state
+    stays small instead of subtracting two separately-grown (near-unit-pole) IIR
+    outputs. When the denominators differ (unequal pole-zero cancellation between
+    branches) it falls back to the exact two-pass form.
+    """
+    if sos_first is sos_second or np.array_equal(np.asarray(sos_first),
+                                                 np.asarray(sos_second)):
+        return _cupy_sos_apply(sos_first, sig_first - sig_second)
+    return _cupy_sos_apply(sos_first, sig_first) - _cupy_sos_apply(sos_second, sig_second)
 
 
 def cupy_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
@@ -828,11 +786,8 @@ def cupy_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da_li
         fb = _cupy_apply_fir(sos_b_list[n_], db_list[n_], y_db, Lout)
         fa = _cupy_apply_fir(sos_a_list[n_], da_list[n_], y_da, Lout)
         if use_per_row_iir:
-            # per-row reduced IIR (from QZ-based PZ cancellation), each branch
-            # filtered with its own SOS via the stable biquad-lfilter path.
-            ib = _cupy_sos_apply(sos_iir_b_list[n_], fb)
-            ia = _cupy_sos_apply(sos_iir_a_list[n_], fa)
-            iir = ib - ia
+            # per-row reduced IIR; fuse to one pass when b/a denominators match.
+            iir = _cupy_parallel_iir_diff(sos_iir_b_list[n_], sos_iir_a_list[n_], fb, fa)
         else:
             iir = _cupy_sos_apply(sos_iir, fb - fa)
 
@@ -875,9 +830,7 @@ def cupy_backward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da_l
         fa = _cupy_apply_fir(sos_a_list[n_], da_list[n_], y_da, Lout)
         fb = _cupy_apply_fir(sos_b_list[n_], db_list[n_], y_db, Lout)
         if use_per_row_iir:
-            ia = _cupy_sos_apply(sos_iir_a_list[n_], fa)
-            ib = _cupy_sos_apply(sos_iir_b_list[n_], fb)
-            iir = ia - ib
+            iir = _cupy_parallel_iir_diff(sos_iir_a_list[n_], sos_iir_b_list[n_], fa, fb)
         else:
             iir = _cupy_sos_apply(sos_iir, fa - fb)
 
@@ -1093,7 +1046,7 @@ def cupy_xi_asterisk_l_forward_parallel(xi, nd, a, b, delta, gamma, xi_N, v, bet
         fb = _cupy_apply_fir(sos_b_list[n_], db_list[n_], y_db, Lout)
         fa = _cupy_apply_fir(sos_a_list[n_], da_list[n_], y_da, Lout)
         if use_per_row_iir:
-            iir = _cupy_sos_apply(sos_iir_b_list[n_], fb) - _cupy_sos_apply(sos_iir_a_list[n_], fa)
+            iir = _cupy_parallel_iir_diff(sos_iir_b_list[n_], sos_iir_a_list[n_], fb, fa)
         else:
             iir = _cupy_sos_apply(sos_iir, fb - fa)
         if beta != 1:
@@ -1142,7 +1095,7 @@ def cupy_xi_asterisk_l_backward_parallel(xi, nd, a, b, delta, gamma, xi_N, v, be
         fa = _cupy_apply_fir(sos_a_list[n_], da_list[n_], y_da, Lout)
         fb = _cupy_apply_fir(sos_b_list[n_], db_list[n_], y_db, Lout)
         if use_per_row_iir:
-            iir = _cupy_sos_apply(sos_iir_a_list[n_], fa) - _cupy_sos_apply(sos_iir_b_list[n_], fb)
+            iir = _cupy_parallel_iir_diff(sos_iir_a_list[n_], sos_iir_b_list[n_], fa, fb)
         else:
             iir = _cupy_sos_apply(sos_iir, fa - fb)
         if beta != 1:
@@ -1205,3 +1158,151 @@ def cupy_xi_q_asterisk_l_recursion(xi_curr, q, A, C, a, b, direction, delta, gam
         cupy_xi_asterisk_l_forward_cascade(xi_curr, cp_ast, a, b, xi_prev, v, beta)
     else:
         cupy_xi_asterisk_l_backward_cascade(xi_curr, cp_ast, a, b, xi_prev, v, beta)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Batched (multi-channel) parallel filter form
+# ═════════════════════════════════════════════════════════════════════════════
+#
+# Like the cascade batched path, these process the whole channel batch in one GPU
+# sweep instead of one backend call per channel: the channel axis B is carried as
+# the trailing axis (L, B) so every sosfilt / FIR call filters all B channels at
+# once. Memory-bounded via the same adaptive chunking as the cascade path.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def cupy_forward_parallel_xi_batch(xi, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
+                                   a, b, delta, gamma, y, sample_weights, beta,
+                                   sos_iir_b_list=None, sos_iir_a_list=None):
+    r"""Batched GPU forward parallel xi filter. xi:(B,K,N) y:(B,K,Q) sw:(B,K)."""
+    gamma_a = gamma ** (a - 1 - delta)
+    gamma_b = gamma ** (b - delta)
+    B, K = int(y.shape[0]), int(y.shape[1])
+    N = xi.shape[-1]
+    y = cp.asarray(y, dtype=_dt())
+    sw = cp.asarray(sample_weights, dtype=_dt())
+    yw = cp.moveaxis((y * sw[:, :, None])[..., 0], 0, -1)     # (K, B)
+    K_append = (max(b - a + 1, b + 1) if (not np.isinf(a) and b >= 0)
+                else (b - a + 1 if not np.isinf(a) else 0))
+    L = K + K_append
+
+    y_db = cp.zeros((L, B), dtype=_dt()); y_db[:K] = yw * gamma_b
+    y_da = cp.zeros((L, B), dtype=_dt())
+    if not np.isinf(a):
+        y_da[K_append:K + K_append] = yw * gamma_a
+
+    use_per_row_iir = (sos_iir_b_list is not None and sos_iir_a_list is not None)
+    out_acc = cp.zeros((K, B, N), dtype=_dt())
+    for n_ in range(N):
+        Lout = L + max(db_list[n_], da_list[n_]) + 1
+        fb = _cupy_apply_fir(sos_b_list[n_], db_list[n_], y_db, Lout)
+        fa = _cupy_apply_fir(sos_a_list[n_], da_list[n_], y_da, Lout)
+        if use_per_row_iir:
+            iir = _cupy_parallel_iir_diff(sos_iir_b_list[n_], sos_iir_a_list[n_], fb, fa)
+        else:
+            iir = _cupy_sos_apply(sos_iir, fb - fa)
+        if beta != 1:
+            iir = iir * beta
+        if b >= 0:
+            out_acc[:, :, n_] = iir[b:b + K]
+        else:
+            out_acc[-b:, :, n_] = iir[0:K + b]
+    # contiguous transpose on-device so the device->host copy is coalesced
+    xi += cp.asnumpy(cp.ascontiguousarray(cp.moveaxis(out_acc, 1, 0)))   # (B, K, N)
+
+
+def cupy_backward_parallel_xi_batch(xi, sos_iir, sos_b_list, sos_a_list, db_list, da_list,
+                                    a, b, delta, gamma, y, sample_weights, beta,
+                                    sos_iir_b_list=None, sos_iir_a_list=None):
+    r"""Batched GPU backward parallel xi filter."""
+    gamma_a = gamma ** (a - delta)
+    gamma_b = gamma ** (b - delta + 1)
+    B, K = int(y.shape[0]), int(y.shape[1])
+    N = xi.shape[-1]
+    y = cp.asarray(y, dtype=_dt())
+    sw = cp.asarray(sample_weights, dtype=_dt())
+    yw = cp.moveaxis((y * sw[:, :, None])[..., 0], 0, -1)     # (K, B)
+    yw_flipped = yw[::-1]
+    K_append = (b - a + 1) if not np.isinf(b) else 0
+    L = K + K_append
+
+    y_da = cp.zeros((L, B), dtype=_dt()); y_da[:K] = yw_flipped * gamma_a
+    y_db = cp.zeros((L, B), dtype=_dt())
+    if not np.isinf(b):
+        y_db[K_append:] = yw_flipped * gamma_b
+
+    use_per_row_iir = (sos_iir_b_list is not None and sos_iir_a_list is not None)
+    out_acc = cp.zeros((K, B, N), dtype=_dt())
+    for n_ in range(N):
+        Lout = L + max(db_list[n_], da_list[n_]) + 1
+        fa = _cupy_apply_fir(sos_a_list[n_], da_list[n_], y_da, Lout)
+        fb = _cupy_apply_fir(sos_b_list[n_], db_list[n_], y_db, Lout)
+        if use_per_row_iir:
+            iir = _cupy_parallel_iir_diff(sos_iir_a_list[n_], sos_iir_b_list[n_], fa, fb)
+        else:
+            iir = _cupy_sos_apply(sos_iir, fa - fb)
+        if beta != 1:
+            iir = iir * beta
+        iir_flipped = iir[::-1]
+        if a >= 0:
+            end = K - a
+            if end > 0:
+                out_acc[:end, :, n_] = iir_flipped[-end:]
+        else:
+            out_acc[:, :, n_] = iir_flipped[b + 1:K + b + 1]
+    xi += cp.asnumpy(cp.ascontiguousarray(cp.moveaxis(out_acc, 1, 0)))
+
+
+def cupy_parallel_xi1_split_batch(xi1, plan, a, b, direction, delta, gamma, y, sample_weights, beta):
+    r"""Batched per-ALSSM parallel xi^{(1)}: xi1 (B,K,Ntot), y (B,K,Q), sw (B,K)."""
+    for n0, n1, nd in plan:
+        _iir_b = nd[5] if len(nd) > 5 else None
+        _iir_a = nd[6] if len(nd) > 6 else None
+        if direction == 'fw':
+            cupy_forward_parallel_xi_batch(xi1[..., n0:n1], nd[0], nd[1], nd[2], nd[3], nd[4],
+                                           a, b, delta, gamma, y, sample_weights, beta,
+                                           _iir_b, _iir_a)
+        elif direction == 'bw':
+            cupy_backward_parallel_xi_batch(xi1[..., n0:n1], nd[0], nd[1], nd[2], nd[3], nd[4],
+                                            a, b, delta, gamma, y, sample_weights, beta,
+                                            _iir_b, _iir_a)
+        else:
+            raise ValueError('direction must be either "forward" or "backward"')
+
+
+def cupy_xi_q_recursion_parallel_batch(xi, q, alssm, segment, y, sample_weights, beta,
+                                       plan, block_sizes=None):
+    r"""
+    Batched GPU parallel-form :math:`\xi^{(q)}` recursion over a whole channel
+    batch (memory-bounded chunking). Drop-in for the per-channel loop in
+    ``RLSAlssm._nd_xi_q_recursion`` when ``backend='cupy'`` and
+    ``filter_form='parallel'``.
+
+    q==1 -> per-ALSSM-block parallel realization; q==0 -> (cascade) energy
+    recursion; q==2 (parallel W) is not implemented.
+    """
+    if q == 2:
+        raise NotImplementedError("cupy parallel xi2 (time-varying W) not implemented.")
+    if q == 0:
+        # parallel kappa delegates to the (batched) cascade energy recursion
+        cupy_xi_q_recursion_batch(xi, 0, alssm, segment, y, sample_weights, beta)
+        return
+
+    # q == 1: chunk the channel batch
+    B = xi.shape[0]
+    K = xi.shape[1]
+    Nx = xi.shape[-1]
+    Q = np.shape(y)[-1]
+    chunk = _auto_chunk(B, K, Nx, Q)
+    lo = 0
+    while lo < B:
+        hi = min(B, lo + chunk)
+        try:
+            cupy_parallel_xi1_split_batch(
+                xi[lo:hi], plan, segment.a, segment.b, segment.direction,
+                segment.delta, segment.gamma, y[lo:hi], sample_weights[lo:hi], beta)
+            lo = hi
+        except _OOM:
+            _free_gpu_pool()
+            if chunk == 1:
+                raise
+            chunk = max(1, chunk // 2)
