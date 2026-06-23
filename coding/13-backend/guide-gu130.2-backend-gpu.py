@@ -34,6 +34,7 @@ backends = ['lfilter']
 if lm.is_backend_available('cupy'):
     backends.append('cupy')
     import cupy as cp
+    lm.set_gpu_dtype(np.float32)#switch to F32 for better performance
 else:
     print("cupy backend not available — benchmarking CPU backends only.")
 
