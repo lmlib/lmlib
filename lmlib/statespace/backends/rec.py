@@ -6,6 +6,8 @@ from .rec_lfilter import *
 from .rec_lfilter import _compute_cascade_params_asterisk, _build_parallel_ast_sos
 if 'jit' in available_backends:
     from .rec_jit import *
+if 'cupy' in available_backends:
+    from .rec_cupy import *
 import warnings
 from .statespace_tools import kron_q
 
@@ -69,6 +71,29 @@ def xi_q_asterisk_l_recursion(xi_curr, q, alssm, segment, xi_prev, v, beta, back
                                       segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                       INq, xi_prev,
                                       v, beta)
+        return
+
+    if backend == 'cupy':
+        # GPU asterisk-l recursion: parallel q==1 -> parallel realization;
+        # cascade (and parallel q==0) -> cascade asterisk. q==2 and
+        # non-upper-triangular A fall back to numpy.
+        if q in (0, 1):
+            try:
+                from .rec_cupy import cupy_xi_q_asterisk_l_recursion
+                cupy_xi_q_asterisk_l_recursion(
+                    xi_curr, q, A, C,
+                    segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                    xi_prev, v, beta, filter_form, block_sizes)
+            except ValueError:
+                numpy_xi_asterisk_l_recursion(xi_curr, A, C,
+                                              segment.a, segment.b, segment.direction,
+                                              segment.delta, segment.gamma,
+                                              INq, xi_prev, v, beta)
+        else:
+            numpy_xi_asterisk_l_recursion(xi_curr, A, C,
+                                          segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                          INq, xi_prev,
+                                          v, beta)
         return
 
     if backend == 'lfilter':
@@ -234,6 +259,44 @@ def xi_q_recursion(xi, q, alssm, segment, y, v, beta, backend, filter_form, bloc
                                     None, None, None,
                                     segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
                                     y, v, beta)
+            else:
+                raise ValueError("q value not supported: '{}'".format(q))
+        else:
+            raise ValueError("unknown filter-form: '{}'".format(filter_form))
+    elif backend == 'cupy':
+        # GPU cascade backend (1-D, upper-triangular A). The parallel filter
+        # form is not reimplemented on the GPU; route it to the numpy backend.
+        if filter_form == 'cascade':
+            if q == 2:
+                cupy_cascade_xi2(xi,
+                                 alssm.A, alssm.C,
+                                 segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                 y, v, beta)
+            elif q == 1:
+                cupy_cascade_xi1(xi,
+                                 alssm.A, alssm.C,
+                                 segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                 y, v, beta, block_sizes)
+            elif q == 0:
+                cupy_cascade_xi0(xi,
+                                 alssm.A, alssm.C,
+                                 segment.a, segment.b, segment.direction, segment.delta, segment.gamma,
+                                 y, v, beta)
+            else:
+                raise ValueError("q value not supported: '{}'".format(q))
+        elif filter_form == 'parallel':
+            # GPU parallel realization (mirrors lfilter parallel; reuses the
+            # host-built, cached parallel_plan).
+            if q == 2:
+                raise NotImplementedError("cupy_parallel_xi2 not implemented yet.")
+            elif q == 1:
+                cupy_parallel_xi1_split(xi, parallel_plan,
+                                        segment.a, segment.b, segment.direction,
+                                        segment.delta, segment.gamma, y, v, beta)
+            elif q == 0:
+                cupy_parallel_xi0(xi, None, None, None,
+                                  segment.a, segment.b, segment.direction,
+                                  segment.delta, segment.gamma, y, v, beta)
             else:
                 raise ValueError("q value not supported: '{}'".format(q))
         else:

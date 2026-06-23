@@ -11,7 +11,7 @@ Authors: Christof Baeriswyl, Frédéric Waldmann, Alexander Bertrand, Reto Wildh
 
 import numpy as np
 from numpy.linalg import inv, matrix_power, eigvals
-from scipy.signal import lfilter, convolve, zpk2sos, sosfilt, ss2tf
+from scipy.signal import lfilter, convolve, zpk2sos, sosfilt, ss2tf, sos2tf
 from lmlib.utils.profiling import profile
 
 
@@ -1074,7 +1074,7 @@ def _apply_fir_batched(sos, extra_delay, y_sig_2d, Lout):
     result = np.zeros((Lout, C))
     if sos is None:
         return result
-    filtered = sosfilt(sos, y_sig_2d.T).T          # (L, C)
+    filtered = _fir_taps(_sos_to_fir_taps(sos), y_sig_2d)   # (L, C)
     end = min(extra_delay + filtered.shape[0], Lout)
     result[extra_delay:end] = filtered[:end - extra_delay]
     return result
@@ -1287,24 +1287,10 @@ def lfilter_xi_asterisk_l_forward_parallel_recursion(xi, nd, a, b, delta, gamma,
         fa = _apply_fir_batched(sos_a_list[n_], da_list[n_], y_da, Lout)  # (Lout, S*Nprev)
 
         if use_per_row_iir:
-            if use_gamma_shift:
-                np_b = n_poles_b_list[n_]; np_a = n_poles_a_list[n_]
-                if np_b >= 2 and _poles_are_real(sos_iir_b_list[n_]):
-                    ib = np.column_stack(
-                        [_gamma_shift_iir(fb[:, ch], np_b, gamma_inv)
-                         for ch in range(S_flat * Nprev)])
-                else:
-                    ib = sosfilt(sos_iir_b_list[n_], fb.T).T
-                if np_a >= 2 and _poles_are_real(sos_iir_a_list[n_]):
-                    ia = np.column_stack(
-                        [_gamma_shift_iir(fa[:, ch], np_a, gamma_inv)
-                         for ch in range(S_flat * Nprev)])
-                else:
-                    ia = sosfilt(sos_iir_a_list[n_], fa.T).T
-            else:
-                ib = sosfilt(sos_iir_b_list[n_], fb.T).T
-                ia = sosfilt(sos_iir_a_list[n_], fa.T).T
-            iir = ib - ia                                  # (Lout, S*Nprev)
+            np_b = n_poles_b_list[n_] if use_gamma_shift else None
+            np_a = n_poles_a_list[n_] if use_gamma_shift else None
+            iir = _parallel_iir_diff(sos_iir_b_list[n_], sos_iir_a_list[n_], fb, fa,
+                                     gamma_inv, np_b, np_a, use_gamma_shift, batched=True)
         else:
             iir = sosfilt(sos_iir, (fb - fa).T).T          # (Lout, S*Nprev)
 
@@ -1396,24 +1382,10 @@ def lfilter_xi_asterisk_l_backward_parallel_recursion(xi, nd, a, b, delta, gamma
         fb = _apply_fir_batched(sos_b_list[n_], db_list[n_], y_db, Lout)
 
         if use_per_row_iir:
-            if use_gamma_shift:
-                np_b = n_poles_b_list[n_]; np_a = n_poles_a_list[n_]
-                if np_a >= 2 and _poles_are_real(sos_iir_a_list[n_]):
-                    ia = np.column_stack(
-                        [_gamma_shift_iir(fa[:, ch], np_a, gamma)
-                         for ch in range(S_flat * Nprev)])
-                else:
-                    ia = sosfilt(sos_iir_a_list[n_], fa.T).T
-                if np_b >= 2 and _poles_are_real(sos_iir_b_list[n_]):
-                    ib = np.column_stack(
-                        [_gamma_shift_iir(fb[:, ch], np_b, gamma)
-                         for ch in range(S_flat * Nprev)])
-                else:
-                    ib = sosfilt(sos_iir_b_list[n_], fb.T).T
-            else:
-                ia = sosfilt(sos_iir_a_list[n_], fa.T).T
-                ib = sosfilt(sos_iir_b_list[n_], fb.T).T
-            iir = ia - ib
+            np_a = n_poles_a_list[n_] if use_gamma_shift else None
+            np_b = n_poles_b_list[n_] if use_gamma_shift else None
+            iir = _parallel_iir_diff(sos_iir_a_list[n_], sos_iir_b_list[n_], fa, fb,
+                                     gamma, np_a, np_b, use_gamma_shift, batched=True)
         else:
             iir = sosfilt(sos_iir, (fa - fb).T).T
 
@@ -1792,8 +1764,48 @@ def _zpk_cancel_and_build_sos(zeros, gain, iir_poles, tol=1e-3, n_inf_zeros=0):
     return sos_fir, extra_delay, sos_iir_red
 
 
+_FIR_TAP_CACHE = {}
+
+
+def _sos_to_fir_taps(sos):
+    r"""Convert a numerator-only SOS (poles at 0) to its FIR tap vector, memoized.
+
+    The parallel-form numerators are short (1-3 taps after pole-zero
+    cancellation). Applying them with ``sosfilt`` runs the full sequential biquad
+    recurrence — the expensive K-long scan — just to compute a few-tap (often
+    single-tap, i.e. a scalar multiply) convolution. We instead apply them as a
+    direct causal convolution (``_fir_taps``), which is cheap and, on the GPU,
+    fully parallel. Shared by the lfilter and cupy backends so both stay
+    bit-for-bit identical.
+    """
+    key = np.asarray(sos, dtype=np.float64).tobytes()
+    taps = _FIR_TAP_CACHE.get(key)
+    if taps is None:
+        b, _a = sos2tf(np.asarray(sos, dtype=np.float64))
+        b = np.trim_zeros(np.asarray(b, dtype=np.float64).ravel(), 'b')
+        if b.size == 0:
+            b = np.zeros(1)
+        taps = b
+        _FIR_TAP_CACHE[key] = taps
+    return taps
+
+
+def _fir_taps(taps, x):
+    r"""Causal FIR ``out[k] = sum_j taps[j]*x[k-j]`` (zero IC) via shift-and-add.
+
+    ``x`` is ``(L,)`` or ``(L, C)``. Equivalent to ``sosfilt`` of the
+    numerator-only SOS but without the sequential recurrence.
+    """
+    out = taps[0] * x
+    for j in range(1, len(taps)):
+        if taps[j] != 0.0:
+            out[j:] += taps[j] * x[:-j]
+    return out
+
+
 def _apply_fir(sos, extra_delay, y_sig, Lout):
-    """Apply a numerator SOS filter with an additional integer delay.
+    """Apply a numerator SOS filter (as a cheap tap convolution) with an
+    additional integer delay.
 
     The output array always has length *Lout*.  Any samples beyond the
     filter's natural output are zero-padded; samples that would fall before
@@ -1802,7 +1814,7 @@ def _apply_fir(sos, extra_delay, y_sig, Lout):
     result = np.zeros(Lout)
     if sos is None:
         return result
-    filtered = sosfilt(sos, y_sig)          # length == len(y_sig)
+    filtered = _fir_taps(_sos_to_fir_taps(sos), y_sig)   # length == len(y_sig)
     end = min(extra_delay + len(filtered), Lout)
     result[extra_delay:end] = filtered[:end - extra_delay]
     return result
@@ -1855,6 +1867,39 @@ def _gamma_shift_iir(x, n_poles, gamma_inv):
     for _ in range(n_poles):
         u = np.cumsum(u)
     return u * (gamma_inv ** k)
+
+
+def _parallel_iir_diff(sos_b, sos_a, sig_b, sig_a, gamma_pole,
+                       np_b=None, np_a=None, use_gamma_shift=False, batched=False):
+    r"""
+    Per-row parallel IIR applied to the two boundary FIR branches, returning the
+    difference ``IIR_b(sig_b) - IIR_a(sig_a)``.
+
+    When the two branch denominators are identical — the common case, as both
+    branches share the poles ``eigvals(gAT)`` and the QZ pole-zero cancellation
+    removes the same poles per row — this fuses via linearity to a **single** IIR
+    pass on the pre-differenced signal (``IIR(sig_b - sig_a)``). That halves the
+    IIR passes and keeps the running state bounded (``sig_b - sig_a`` is the
+    windowed difference) instead of subtracting two separately-grown near-unit-
+    pole outputs, improving conditioning. Both realizations (``sosfilt`` and the
+    linear ``_gamma_shift_iir``) fuse; it falls back to the exact two-pass form
+    only when the denominators differ (unequal cancellation between branches).
+
+    ``batched`` selects the 2-D ``(L, C)`` path (channel axis as columns).
+    """
+    fuse = (np_b == np_a) and np.array_equal(np.asarray(sos_b), np.asarray(sos_a))
+
+    def _iir(sos, np_, sig):
+        if use_gamma_shift and np_ is not None and np_ >= 2 and _poles_are_real(sos):
+            if batched:
+                return np.column_stack([_gamma_shift_iir(sig[:, ch], np_, gamma_pole)
+                                        for ch in range(sig.shape[1])])
+            return _gamma_shift_iir(sig, np_, gamma_pole)
+        return sosfilt(sos, sig.T).T if batched else sosfilt(sos, sig)
+
+    if fuse:
+        return _iir(sos_b, np_b, sig_b - sig_a)
+    return _iir(sos_b, np_b, sig_b) - _iir(sos_a, np_a, sig_a)
 
 
 
@@ -1911,18 +1956,10 @@ def lfilter_forward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, da
         fb = _apply_fir(sos_b_list[n_], db_list[n_], y_db, Lout)
         fa = _apply_fir(sos_a_list[n_], da_list[n_], y_da, Lout)
         if use_per_row_iir:
-            if use_gamma_shift:
-                np_b = n_poles_b_list[n_]; np_a = n_poles_a_list[n_]
-                ib = (_gamma_shift_iir(fb, np_b, gamma_inv)
-                      if np_b >= 2 and _poles_are_real(sos_iir_b_list[n_])
-                      else sosfilt(sos_iir_b_list[n_], fb))
-                ia = (_gamma_shift_iir(fa, np_a, gamma_inv)
-                      if np_a >= 2 and _poles_are_real(sos_iir_a_list[n_])
-                      else sosfilt(sos_iir_a_list[n_], fa))
-            else:
-                ib = sosfilt(sos_iir_b_list[n_], fb)
-                ia = sosfilt(sos_iir_a_list[n_], fa)
-            iir = ib - ia
+            np_b = n_poles_b_list[n_] if use_gamma_shift else None
+            np_a = n_poles_a_list[n_] if use_gamma_shift else None
+            iir = _parallel_iir_diff(sos_iir_b_list[n_], sos_iir_a_list[n_], fb, fa,
+                                     gamma_inv, np_b, np_a, use_gamma_shift)
         else:
             iir = sosfilt(sos_iir, fb - fa)
 
@@ -1987,23 +2024,11 @@ def lfilter_backward_parallel_xi(xi, sos_iir, sos_b_list, sos_a_list, db_list, d
         fa = _apply_fir(sos_a_list[n_], da_list[n_], y_da, Lout)
         fb = _apply_fir(sos_b_list[n_], db_list[n_], y_db, Lout)
         if use_per_row_iir:
-            if use_gamma_shift:
-                np_b = n_poles_b_list[n_]; np_a = n_poles_a_list[n_]
-                # For the backward filter, gAT = gamma * A.T so the IIR poles
-                # equal gamma (not gamma_inv = 1/gamma as in the forward case).
-                # _gamma_shift_iir must receive the actual pole value.
-                # Only use gamma-shift for real poles; complex poles (e.g.
-                # AlssmSin) must fall back to sosfilt.
-                ia = (_gamma_shift_iir(fa, np_a, gamma)
-                      if np_a >= 2 and _poles_are_real(sos_iir_a_list[n_])
-                      else sosfilt(sos_iir_a_list[n_], fa))
-                ib = (_gamma_shift_iir(fb, np_b, gamma)
-                      if np_b >= 2 and _poles_are_real(sos_iir_b_list[n_])
-                      else sosfilt(sos_iir_b_list[n_], fb))
-            else:
-                ia = sosfilt(sos_iir_a_list[n_], fa)
-                ib = sosfilt(sos_iir_b_list[n_], fb)
-            iir = ia - ib
+            # backward IIR poles equal gamma (gAT = gamma * A.T), not gamma_inv.
+            np_a = n_poles_a_list[n_] if use_gamma_shift else None
+            np_b = n_poles_b_list[n_] if use_gamma_shift else None
+            iir = _parallel_iir_diff(sos_iir_a_list[n_], sos_iir_b_list[n_], fa, fb,
+                                     gamma, np_a, np_b, use_gamma_shift)
         else:
             iir = sosfilt(sos_iir, fa - fb)
 

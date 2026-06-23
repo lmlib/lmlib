@@ -2,7 +2,7 @@ import sys
 import numpy as np
 from numpy.linalg import inv, cond
 
-from lmlib.statespace.backend import get_backend
+from lmlib.statespace.backend import get_backend, available_backends
 from lmlib.statespace.cost import CompositeCost, CostSegment, NDCompositeCost
 from lmlib.statespace.model import AlssmSum
 from lmlib.utils.check import *
@@ -138,6 +138,11 @@ class RLSAlssm:
         self._nu = None
 
         self._backend = backend if backend is not None else get_backend(cost_terms)
+        assert self._backend in available_backends, (
+            f"backend '{self._backend}' is not available on this system. "
+            f"Available backends: {available_backends}. "
+            f"(The 'cupy' backend requires the cupy package and a visible CUDA device; "
+            f"'jit' requires numba.)")
 
         self._filter_form = filter_form
 
@@ -150,7 +155,7 @@ class RLSAlssm:
         # ------------------------------------------------------------------
         # check if filter form is valid for all segments
         # ------------------------------------------------------------------
-        if self._backend == 'lfilter' and self._filter_form == 'cascade':
+        if self._backend in ('lfilter', 'cupy') and self._filter_form == 'cascade':
             for ct in _sub_costs:
                 _alssms = [ct.alssm] if isinstance(ct, CostSegment) else list(ct.alssms)
                 for alssm in _alssms:
@@ -229,7 +234,7 @@ class RLSAlssm:
         The combined block-diagonal ``A`` / block-partitioned ``C`` are built
         once per segment here; the backend slices and decomposes each block.
         """
-        if not (self._filter_form == 'parallel' and self._backend == 'lfilter'):
+        if not (self._filter_form == 'parallel' and self._backend in ('lfilter', 'cupy')):
             return None
 
         from lmlib.statespace.backends.rec_lfilter import build_parallel_numdenom
@@ -1158,8 +1163,25 @@ class RLSAlssm:
         # which reshape silently returns a copy, so work on an explicit copy and
         # write the result back through the view.
         _xi_view = np.moveaxis(xi_curr, model_dimension, -2)
-        _xi_work = np.ascontiguousarray(_xi_view)
-        _xi_curr = np.reshape(_xi_work, (-1, *_xi_work.shape[-2:]))
+        if self._backend == 'cupy':
+            # The GPU backend writes its result with ``xi += asnumpy(...)``
+            # directly into the output view, so the two largest host-side
+            # transposes are pure waste: ``ascontiguousarray(_xi_view)`` copies a
+            # freshly-zeroed ~output-sized array, and the final write-back copies
+            # it back -- together ~2x the output through single-threaded numpy,
+            # which dominates the multichannel wall-clock.  ``reshape`` of the
+            # moveaxis view returns a *view* when only one batch axis is flattened
+            # (the common 1-D multichannel case), so the backend accumulates
+            # straight into ``xi_curr`` and no write-back is needed.  When reshape
+            # must copy (several ND batch axes) ``_writeback`` restores it.  The
+            # input copies are kept: ``cp.asarray`` needs a contiguous host buffer
+            # anyway, so contiguifying here is no more work and avoids surprises.
+            _xi_curr = np.reshape(_xi_view, (-1, *_xi_view.shape[-2:]))
+            _writeback = not np.shares_memory(_xi_curr, xi_curr)
+        else:
+            _xi_work = np.ascontiguousarray(_xi_view)
+            _xi_curr = np.reshape(_xi_work, (-1, *_xi_work.shape[-2:]))
+            _writeback = True
         _ym = np.ascontiguousarray(np.moveaxis(y, model_dimension, -2))
         _y = np.reshape(_ym, (-1, *_ym.shape[-2:]))
         _swm = np.ascontiguousarray(np.moveaxis(sample_weights, model_dimension, -1))
@@ -1169,13 +1191,28 @@ class RLSAlssm:
             combined = AlssmSum(alssms, F[:, p], force_MC=True)
             plan = (self._parallel_plan[dim_index][p]
                     if self._parallel_plan is not None else None)
-            for i in range(_y.shape[0]):
-                xi_q_recursion(
-                    _xi_curr[i], q, combined, segment,
-                    _y[i], _sw[i], betas[p],
-                    self._backend, self._filter_form, block_sizes, plan)
+            if self._backend == 'cupy' and self._filter_form == 'cascade':
+                # Process the whole channel batch in a single GPU sweep instead
+                # of one backend call per channel (see rec_cupy batched section).
+                from lmlib.statespace.backends.rec_cupy import cupy_xi_q_recursion_batch
+                cupy_xi_q_recursion_batch(
+                    _xi_curr, q, combined, segment,
+                    _y, _sw, betas[p], block_sizes)
+            elif self._backend == 'cupy' and self._filter_form == 'parallel':
+                # Batched parallel form: all channels in one GPU sweep.
+                from lmlib.statespace.backends.rec_cupy import cupy_xi_q_recursion_parallel_batch
+                cupy_xi_q_recursion_parallel_batch(
+                    _xi_curr, q, combined, segment,
+                    _y, _sw, betas[p], plan, block_sizes)
+            else:
+                for i in range(_y.shape[0]):
+                    xi_q_recursion(
+                        _xi_curr[i], q, combined, segment,
+                        _y[i], _sw[i], betas[p],
+                        self._backend, self._filter_form, block_sizes, plan)
 
-        _xi_view[:] = np.reshape(_xi_curr, _xi_view.shape)
+        if _writeback:
+            _xi_view[:] = np.reshape(_xi_curr, _xi_view.shape)
         return xi_curr
 
     # ------------------------------------------------------------------
