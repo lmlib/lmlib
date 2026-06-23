@@ -10,7 +10,7 @@ docutils==0.22.4
 fonttools==4.63.0
 ghp-import==2.1.0
 griffelib==2.0.2
-idna==3.13
+idna==3.18
 Jinja2==3.1.6
 kiwisolver==1.5.0
 Markdown==3.10.2
@@ -35,7 +35,7 @@ pillow==12.2.0
 platformdirs==4.9.4
 properdocs==1.6.7
 Pygments==2.20.0
-pymdown-extensions==10.21.2
+pymdown-extensions==10.21.3
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
 PyYAML==6.0.3
@@ -44,5 +44,5 @@ requests==2.33.1
 rst2md==0.1.1
 scipy==1.17.1
 six==1.17.0
-urllib3==2.6.3
+urllib3==2.7.0
 watchdog==6.0.0
