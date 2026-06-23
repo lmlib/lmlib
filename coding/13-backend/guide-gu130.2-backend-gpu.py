@@ -30,7 +30,7 @@ lm.WARNING_NOT_STEADY_STATE = False
 n_exe = 5
 
 # include 'cupy' only if a GPU is actually available
-backends = ['lfilter', 'numpy']
+backends = ['lfilter']
 if lm.is_backend_available('cupy'):
     backends.append('cupy')
     import cupy as cp
@@ -48,7 +48,7 @@ cost = lm.CompositeCost([alssm], [seg_l], F=[[1]])
 
 mspsecs_dict = {}
 for backend in backends:
-    rls = lm.RLSAlssm(cost, backend=backend)
+    rls = lm.RLSAlssm(cost, backend=backend,calc_kappa=False, calc_W=False, steady_state=False)
 
     if backend == 'cupy':
         # warm-up (allocations + first-call overhead) and synchronise
