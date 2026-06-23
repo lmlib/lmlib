@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fetch GitHub Releases and generate docs/news.md"""
 import os
+import re
 import requests
 import datetime
 from zoneinfo import ZoneInfo
@@ -45,6 +46,7 @@ def main():
         tag = release["tag_name"]
         date = format_date(release["published_at"])
         body = (release.get("body") or "").strip()
+        body = re.sub(r'([^\n])\n([-*+] )', r'\1\n\n\2', body)
 
         lines.append(f"## {tag} released\n")
         lines.append(f"{date} — {tag} has been released!\n")
