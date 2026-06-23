@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lmlib"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
   'numpy',
   'matplotlib',
