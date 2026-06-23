@@ -2300,17 +2300,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#13-backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        13 Backend
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#polynomials-basics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2541,13 +2530,6 @@
 </tbody>
 </table>
 
-<h2 id="13-backend">13 Backend<a class="headerlink" href="#13-backend" title="Permanent link">&para;</a></h2>
-<table class="gallery">
-<tbody>
-
-</tbody>
-</table>
-
 <h2 id="polynomials-basics">Polynomials Basics<a class="headerlink" href="#polynomials-basics" title="Permanent link">&para;</a></h2>
 <p>Working with polynomials in vector exponent notation.</p>
 <table class="gallery">
@@ -2586,27 +2568,17 @@
 skip-run:
   - coding-code910.0-backend.py
   - coding-code910.1-backend-nd.py
-  - coding-code911.0-compare.py
-  - coding-code911.1-compare-nd.py
 -->
 
 <table class="gallery">
 <tbody>
 <tr>
-  <td class="gallery-plot"><em>No Plot</em></td>
-  <td class="gallery-desc"><a href="91-backend/coding-code910.0-backend.html"><b>Benchmarking State-Space vs. Transfer-Function Backend [code910.0]</b><br><small>Measures the throughput (in mega-samples per second, MS/s) of the RLSAlssm filter for the numpy and lfilter backends on a single-channel signal. The lfilter backend converts the state-space recursion to a cascade of IIR/FIR transfer functions and uses scipy.signal.lfilter, which can be significantly faster for long signals when...</small></a></td>
+  <td class="gallery-plot"><a href="91-backend/coding-code910.0-backend.html"><img src="91-backend/coding-code910.0-backend.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="91-backend/coding-code910.0-backend.html"><b>Benchmarking ALSSM Backends: numpy, lfilter, jit, and GPU [code910.0]</b><br><small>Measures the throughput (in mega-samples per second, MS/s) of the RLSAlssm filter for the numpy, lfilter, jit, and cupy backends on a single-channel signal. The lfilter backend converts the state-space recursion to a cascade of IIR/FIR transfer functions and uses scipy.signal.lfilter, which can be significantly faster for long...</small></a></td>
 </tr>
 <tr>
-  <td class="gallery-plot"><em>No Plot</em></td>
-  <td class="gallery-desc"><a href="91-backend/coding-code910.1-backend-nd.html"><b>Benchmarking State-Space vs. Transfer-Function Backend (ND) [code910.1]</b><br><small>Measures the throughput (in mega-samples per second, MS/s) of the RLSAlssm filter using an NDCompositeCost for the numpy, lfilter, and (if available) jit backends. An NDCompositeCost over a 2-D signal (image) is built using the same separable polynomial basis as in example-ex801.0-Text-Recognition.py. Each backend processes a (K1 x...</small></a></td>
-</tr>
-<tr>
-  <td class="gallery-plot"><em>No Plot</em></td>
-  <td class="gallery-desc"><a href="91-backend/coding-code911.0-compare.html"><b>Benchmarking State-Space vs. Transfer-Function Backend [code911.0]</b><br><small>Measures and compares the throughput (MS/s) of the RLSAlssm filter across the numpy, lfilter, and (if available) jit backends for four configurations: • Single-channel, non-steady-state • Single-channel, steady-state • Multi-channel parallel (M=6), non-steady-state • Multi-channel parallel (M=6), steady-state Results are displayed as a horizontal bar chart.</small></a></td>
-</tr>
-<tr>
-  <td class="gallery-plot"><em>No Plot</em></td>
-  <td class="gallery-desc"><a href="91-backend/coding-code911.1-compare-nd.html"><b>Benchmarking State-Space vs. Transfer-Function Backend for ND Costs [code911.1]</b><br><small>Measures and compares the throughput (MS/s) of the RLSAlssm filter across the numpy, lfilter, and (if available) jit backends for four configurations using a 2-D NDCompositeCost: • Small image (100×100), low poly degree (1) • Small image (100×100), high poly degree (2) • Large image (300×300), low poly...</small></a></td>
+  <td class="gallery-plot"><a href="91-backend/coding-code910.1-backend-nd.html"><img src="91-backend/coding-code910.1-backend-nd.png" alt="Plot"></a></td>
+  <td class="gallery-desc"><a href="91-backend/coding-code910.1-backend-nd.html"><b>Benchmarking ALSSM ND Backends: numpy, lfilter, jit, and GPU [code910.1]</b><br><small>Measures the throughput (in mega-samples per second, MS/s) of the RLSAlssm filter using an NDCompositeCost for the numpy, lfilter, and (if available) jit and cupy backends. An NDCompositeCost over a 2-D signal (image) is built using the same separable polynomial basis as in example-ex801.0-Text-Recognition.py. Each backend processes a...</small></a></td>
 </tr>
 <tr>
   <td class="gallery-plot"><em>No Plot</em></td>

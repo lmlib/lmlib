@@ -2417,10 +2417,9 @@ window <code>[0, b_r1]</code>,</li>
 filtered with <a class="autorefs autorefs-internal" title="            RLSAlssm" href="../../../api/lmlib.statespace.rls/RLSAlssm.html#lmlib.statespace.rls.RLSAlssm"><code>RLSAlssm</code></a> in steady state
 (<code>filter(y, dim_order=[0, 1])</code>).  Four reference shapes of increasing length
 are evaluated.</p>
-<h2 id="plot">Plot<a class="headerlink" href="#plot" title="Permanent link">&para;</a></h2>
-<p><img alt="Plot" src="example-ex804_0-MCShapeDetection_sECG.png" /></p>
-<p><img alt="Plot" src="example-ex804_0-MCShapeDetection_sECG_2.png" /></p>
-<p><img alt="Plot" src="example-ex804_0-MCShapeDetection_sECG_3.png" /></p>
+<blockquote>
+<p><strong>Note:</strong> No graphical output.</p>
+</blockquote>
 <h2 id="data">Data<a class="headerlink" href="#data" title="Permanent link">&para;</a></h2>
 <p>This example uses the following data file(s):</p>
 <ul>
@@ -2429,6 +2428,16 @@ are evaluated.</p>
 <h2 id="console-output">Console Output<a class="headerlink" href="#console-output" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>/home/runner/work/lmlib/lmlib/examples/80-nDimensional/_temp_example-ex804_0-MCShapeDetection_sECG.py:22: SyntaxWarning: &quot;\d&quot; is an invalid escape sequence. Such sequences will not work in the future. Did you mean &quot;\\d&quot;? A raw string is also an option.
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  $CR = \dfrac{J_0}{J_1}$
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Traceback (most recent call last):
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  File &quot;/home/runner/work/lmlib/lmlib/examples/80-nDimensional/_temp_example-ex804_0-MCShapeDetection_sECG.py&quot;, line 130, in &lt;module&gt;
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    nd_cost, xs_ref, J_0, J_A, lcr, cr, peaks = fit_shape(
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                                                ~~~~~~~~~^
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        y, b_r1, b_r2, K_REF, M_REF, g)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>  File &quot;/home/runner/work/lmlib/lmlib/examples/80-nDimensional/_temp_example-ex804_0-MCShapeDetection_sECG.py&quot;, line 79, in fit_shape
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    rls = lm.RLSAlssm(nd_cost, steady_state=True,backend=lfilter)           # ND -&gt; steady state
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                                                         ^^^^^^^
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>NameError: name &#39;lfilter&#39; is not defined. Did you mean: &#39;filter&#39;?
 </code></pre></div>
 <h2 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="ch">#!/usr/bin/env python3</span>
@@ -2498,7 +2507,7 @@ are evaluated.</p>
 <a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a>    <span class="n">nd_cost</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">NDCompositeCost</span><span class="p">([</span><span class="n">lm</span><span class="o">.</span><span class="n">CostSegment</span><span class="p">(</span><span class="n">alssm_k1</span><span class="p">,</span> <span class="n">seg_k1</span><span class="p">),</span>
 <a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a>                                  <span class="n">lm</span><span class="o">.</span><span class="n">CostSegment</span><span class="p">(</span><span class="n">alssm_k2</span><span class="p">,</span> <span class="n">seg_k2</span><span class="p">)])</span>
 <a id="__codelineno-1-67" name="__codelineno-1-67" href="#__codelineno-1-67"></a>
-<a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a>    <span class="n">rls</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">RLSAlssm</span><span class="p">(</span><span class="n">nd_cost</span><span class="p">,</span> <span class="n">steady_state</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>           <span class="c1"># ND -&gt; steady state</span>
+<a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a>    <span class="n">rls</span> <span class="o">=</span> <span class="n">lm</span><span class="o">.</span><span class="n">RLSAlssm</span><span class="p">(</span><span class="n">nd_cost</span><span class="p">,</span> <span class="n">steady_state</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">backend</span><span class="o">=</span><span class="n">lfilter</span><span class="p">)</span>           <span class="c1"># ND -&gt; steady state</span>
 <a id="__codelineno-1-69" name="__codelineno-1-69" href="#__codelineno-1-69"></a>    <span class="n">rls</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">dim_order</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
 <a id="__codelineno-1-70" name="__codelineno-1-70" href="#__codelineno-1-70"></a>
 <a id="__codelineno-1-71" name="__codelineno-1-71" href="#__codelineno-1-71"></a>    <span class="n">xhat</span> <span class="o">=</span> <span class="n">rls</span><span class="o">.</span><span class="n">minimize_x</span><span class="p">()</span>                                 <span class="c1"># (K, M, N)</span>
