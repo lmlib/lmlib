@@ -34,6 +34,9 @@ classifiers = [
 [project.optional-dependencies]
 backend = ["numba"]
 
+[tool.hatch.build.targets.wheel]
+packages = ["lmlib"]
+
 [project.urls]
 Homepage = "https://lmlib.ch/"
 Documentation = "https://lmlib.ch/stable/html/"
