@@ -143,7 +143,7 @@ def main():
     parser.add_argument("root", nargs="?", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "coding"), help="Root folder to search (default: ../coding relative to this script)")
     parser.add_argument("--no-save-figures", action="store_true",
                         help="Disable saving matplotlib figures as PNG files (saving is on by default)")
-    parser.add_argument("--timeout", type=int, default=60,
+    parser.add_argument("--timeout", type=int, default=120,
                         help="Seconds before a script is killed (default: 60)")
     parser.add_argument("--ignore", action="append", default=[],
                         metavar="GLOB",

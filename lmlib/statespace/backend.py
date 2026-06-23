@@ -2,7 +2,6 @@ r"""Selection tool to switch between Python interpreter (default) and JIT (Just-
 
 import importlib.util
 import sys
-from lmlib.statespace.cost import NDCompositeCost
 
 __all__ = ['set_backend', 'is_backend_available', 'get_backend', 'BACKEND_TYPES', 'available_backends',
            'set_gpu_dtype', 'get_gpu_dtype']
@@ -111,10 +110,7 @@ def get_backend(cost_term):
     """
         
     global _backend
-    if isinstance(cost_term,NDCompositeCost):
-        return 'numpy' #backend unspecified, selecting 'numpy' for ND
-    else: 
-        return _backend
+    return _backend
 
 # check if numba is installed, when yes import and add to available_backends.
 if (spec := importlib.util.find_spec('numba')) is not None:

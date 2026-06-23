@@ -65,7 +65,7 @@ def fit_shape(y, b_r1, b_r2, K_REF, M_REF, g, poly_k1=5, poly_k2=5):
     nd_cost = lm.NDCompositeCost([lm.CostSegment(alssm_k1, seg_k1),
                                   lm.CostSegment(alssm_k2, seg_k2)])
 
-    rls = lm.RLSAlssm(nd_cost, steady_state=True)           # ND -> steady state
+    rls = lm.RLSAlssm(nd_cost, steady_state=True,backend=lfilter)           # ND -> steady state
     rls.filter(y, dim_order=[0, 1])
 
     xhat = rls.minimize_x()                                 # (K, M, N)

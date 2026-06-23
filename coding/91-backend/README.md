@@ -15,6 +15,4 @@ The `lmlib.statespace.backend` module enables Just-in-Time (JIT) compilation (vi
 skip-run:
   - coding-code910.0-backend.py
   - coding-code910.1-backend-nd.py
-  - coding-code911.0-compare.py
-  - coding-code911.1-compare-nd.py
 -->

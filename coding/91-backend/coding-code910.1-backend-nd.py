@@ -1,11 +1,11 @@
 """
-Benchmarking State-Space vs. Transfer-Function Backend (ND) [code910.1]
-======================================================================
+Benchmarking ALSSM ND Backends: numpy, lfilter, jit, and GPU [code910.1]
+=========================================================================
 
 Measures the throughput (in mega-samples per second, MS/s) of the
 [`RLSAlssm`][lmlib.statespace.rls.RLSAlssm] filter using an
 [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost] for the ``numpy``,
-``lfilter``, and (if available) ``jit`` backends.
+``lfilter``, and (if available) ``jit`` and ``cupy`` backends.
 
 An [`NDCompositeCost`][lmlib.statespace.cost.NDCompositeCost] over a 2-D signal (image) is built using
 the same separable polynomial basis as in example-ex801.0-Text-Recognition.py.
@@ -13,6 +13,12 @@ the same separable polynomial basis as in example-ex801.0-Text-Recognition.py.
 Each backend processes a (K1 x K2) image and results are reported in
 mega-samples per second (MS/s = K1 * K2 * n_exe / proc_time * 1e-6).
 
+Notes on fair GPU timing
+------------------------
+* CuPy kernel launches are asynchronous, so the device is synchronised around
+  each timed call (``cp.cuda.Device().synchronize()``).
+* The first GPU call pays one-off allocation/compilation costs; a warm-up call
+  is issued before timing starts.
 """
 import timeit
 import numpy as np
@@ -42,20 +48,37 @@ cost_d2 = lm.CompositeCost([alssm_l, alssm_r], [seg_l, seg_r], F)
 nd_cost = lm.NDCompositeCost([cost_d1, cost_d2])
 
 # ---- Backend selection -----------------------------------------------------
-backends     = ['numpy', 'lfilter']
-color_codes  = 'k', 'b', 'g'
+backends = ['numpy', 'lfilter']
 if lm.is_backend_available('jit'):
     backends.append('jit')
+if lm.is_backend_available('cupy'):
+    backends.append('cupy')
+    import cupy as cp
+    lm.set_gpu_dtype(np.float32)
+else:
+    print("cupy backend not available — benchmarking CPU backends only.")
 
-mspsecs_dict = {k: [] for k in backends}
+color_map = {'numpy': 'b', 'lfilter': 'k', 'jit': 'r', 'cupy': 'g'}
+mspsecs_dict = {}
 
 # ---- Benchmark loop --------------------------------------------------------
 for backend in backends:
     rls = lm.RLSAlssm(nd_cost, steady_state=True, backend=backend, filter_form='cascade')
-    rls.filter(Y)                               # warm-up / JIT compile
-    proc_time = timeit.timeit('rls.filter(Y)', globals=globals(), number=n_exe)
-    mspsec    = K1 * K2 * n_exe * 1e-6 / proc_time
-    mspsecs_dict[backend].append(mspsec)
+
+    if backend == 'cupy':
+        rls.filter(Y)
+        cp.cuda.Device().synchronize()
+
+        def _run():
+            rls.filter(Y)
+            cp.cuda.Device().synchronize()
+        proc_time = timeit.timeit(_run, number=n_exe)
+    else:
+        rls.filter(Y)  # warm-up / JIT compile
+        proc_time = timeit.timeit('rls.filter(Y)', globals=globals(), number=n_exe)
+
+    mspsec = K1 * K2 * n_exe * 1e-6 / proc_time
+    mspsecs_dict[backend] = mspsec
     print(f"  {backend:8s}  {mspsec:.3f} MS/s")
 
 # ---- Plot ------------------------------------------------------------------
@@ -65,17 +88,17 @@ width  = 0.25
 
 fig, ax = plt.subplots(figsize=(9, 4))
 
-for i, (backend, color) in enumerate(zip(backends, color_codes)):
-    rect_ = ax.barh(locs + width * i, mspsecs_dict[backend], width,
-                    label=backend, color=color)
+for i, backend in enumerate(backends):
+    rect_ = ax.barh(locs + width * i, [mspsecs_dict[backend]], width,
+                    label=backend, color=color_map.get(backend))
     ax.bar_label(rect_, fmt="%0.2f", padding=4)
 
-max_val = max(v[0] for v in mspsecs_dict.values())
+max_val = max(mspsecs_dict.values())
 ax.set_xlim(0, max_val * 1.25)
 ax.invert_yaxis()
 ax.set_xlabel('MS/s')
 ax.set_title(
-    'Benchmarking of ND ALSSM filters:\nState-Space vs. Transfer Function backends',
+    'Benchmarking of ND ALSSM filters:\nnumpy vs. lfilter vs. jit vs. GPU backends',
     pad=10,
 )
 ax.set_yticks(locs + width * (len(backends) - 1) / 2, labels, fontsize=9)

@@ -1,7 +1,8 @@
+
+
 # State-Space Tutorial
 
-Beginner's tutorial to start using the model-based signal
-processing library lmlib.
+Beginner's tutorial to start using the model-based signal processing library lmlib. If you're interested in more examples, visit the [Coding Examples Gallery](_generated/coding/coding.md).
 
 To start, [install lmlib](installation.md) .
 
@@ -294,3 +295,7 @@ plt.show()
 <!--
 ![image](state-space-tutorial_files/state-space-tutorial_27_0.png)
 -->
+
+
+## More examples
+More coding examples are found in the [Coding Examples Gallery](_generated/coding/coding.md).

@@ -183,6 +183,37 @@ def read_gallery_skiprun(folder_path):
     return set(data.get("skip-run", []) or [])
 
 
+def read_hardware_config(folder_path):
+    """Read ``hardware.md`` YAML frontmatter from a folder.
+
+    Returns an ordered dict of key/value pairs (e.g. GPU, CPU, RAM, OS, Date),
+    or ``None`` if no ``hardware.md`` exists or it has no frontmatter.
+    """
+    p = folder_path / "hardware.md"
+    if not p.exists():
+        return None
+    text = p.read_text(encoding="utf-8")
+    m = re.match(r'\s*---\s*\n(.*?)\n---', text, re.DOTALL)
+    if not m:
+        return None
+    data = yaml.safe_load(m.group(1))
+    return data if isinstance(data, dict) else None
+
+
+def hardware_config_md(hw: dict) -> str:
+    """Render a hardware config dict as a markdown admonition below a figure."""
+    rows = "\n".join(f"    | {k} | {v} |" for k, v in hw.items())
+    return (
+        "\n!!! info \"Hardware (locally generated figures)\"\n\n"
+        "    *These figures were generated locally on the hardware listed below "
+        "and cannot be reproduced on the CI build server.*\n\n"
+        "    | Component | Specification |\n"
+        "    |-----------|---------------|\n"
+        + rows
+        + "\n"
+    )
+
+
 def render_gallery_table(entries, link_prefix="", max_words=GALLERY_BLURB_WORDS):
     """Render gallery rows as a class-tagged HTML table.
 
@@ -274,6 +305,8 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
     # Examples whose figures are pre-rendered and committed (single source of
     # truth: the folder's README.md). Their execution is skipped below.
     skip_run = read_gallery_skiprun(folder_path)
+    # Hardware config for locally-generated figures (optional hardware.md in folder).
+    hardware_cfg = read_hardware_config(folder_path) if skip_run else None
     # Everything generated lands under docs/_generated/<category>/<folder_name>/,
     # regardless of where the source .py files are read from.
     target_output_dir = GENERATED_DIR / folder_parent
@@ -447,6 +480,8 @@ def process_folder(folder_path, folder_parent: str, starting_pattern: str,
             detail_md += "## Plot\n\n"
             for pf in all_plots:
                 detail_md += f"![Plot]({pf})\n\n"
+            if file_name in skip_run and hardware_cfg:
+                detail_md += hardware_config_md(hardware_cfg)
         else:
             detail_md += "> **Note:** No graphical output.\n\n"
 

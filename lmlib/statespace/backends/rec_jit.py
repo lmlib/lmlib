@@ -104,23 +104,24 @@ def jit_recursion_xi1(xi1, A, C, a, b, direction, delta, gamma, y, v, beta):
         gamma_a = gamma ** (a - 1 - delta)
         _a = -2**31 if np.isinf(a) else a
         Aa = matrix_power(_A, 0 if np.isinf(a) else _a - 1)
-        jit_forward_recursion_xi(xi1, _A, _C, _a, b, delta, gamma, y, v, beta, Aa, gamma_a)
+        Ab = matrix_power(_A, b)
+        jit_forward_recursion_xi(xi1, _A, _C, _a, b, delta, gamma, y, v, beta, Aa, gamma_a, Ab)
     elif direction == 'bw':
         gamma_b = gamma ** (b - delta + 1)
         _b = 2**31 if np.isinf(b) else b
         Ab = matrix_power(_A, 0 if np.isinf(b) else _b + 1)
-        jit_backward_recursion_xi(xi1, _A, _C, a, _b, delta, gamma, y, v, beta, Ab, gamma_b)
+        Aa = matrix_power(_A, a)
+        jit_backward_recursion_xi(xi1, _A, _C, a, _b, delta, gamma, y, v, beta, Ab, gamma_b, Aa)
     else:
         raise ValueError('direction must be either "forward" or "backward"')
 
-# @jit(nopython=True)
-def jit_forward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Aa, gamma_a) :
+@jit(nopython=True)
+def jit_forward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Aa, gamma_a, Ab) :
     """Equation  (28)  in Wildhaber 2018"""
 
     gamma_inv = 1 / gamma
     gamma_b = gamma ** (b - delta)
     A_inv = inv(A)
-    Ab = matrix_power(A, b)
     Aac = np.dot(Aa.T, C.T)
     Abc = np.dot(Ab.T, C.T)
 
@@ -143,11 +144,10 @@ def jit_forward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Aa, gamm
 
 
 @jit(nopython=True)
-def jit_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Ab, gamma_b):
+def jit_backward_recursion_xi(xi, A, C,  a, b, delta, gamma, y, v, beta, Ab, gamma_b, Aa):
     """Equation  (32)  in Wildhaber 2018"""
 
     gamma_a = gamma ** (a - delta)
-    Aa = matrix_power(A, a)
     Aac = np.dot(Aa.T, C.T)
     Abc = np.dot(Ab.T, C.T)
 
@@ -302,9 +302,9 @@ def jit_backward_recursion_nu(nu, a, b, delta, gamma, v, beta, gamma_b):
 
         if 2 <= k <= K + 1:
             if beta == 1:
-                nu[k - 2] += nu
+                nu[k - 2] += nu0
             else:
-                nu[k - 2] += nu * beta
+                nu[k - 2] += nu0 * beta
 
 
 
