@@ -2448,30 +2448,30 @@ both methods agree numerically and reports the speed-up of state reuse.</p>
 </ul>
 <h2 id="console-output">Console Output<a class="headerlink" href="#console-output" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>=== CAUSAL: numerical equivalence (interior k in [300, 1700)) ===
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>   L=  10   max|per-scale - reuse| = 6.883e-14
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>   L=  10   max|per-scale - reuse| = 5.929e-14
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>   L=  20   max|per-scale - reuse| = 8.356e-09
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>   L=  40   max|per-scale - reuse| = 7.878e-11
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>   L=  80   max|per-scale - reuse| = 8.544e-11
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>   L= 160   max|per-scale - reuse| = 1.399e-09
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>   L= 320   max|per-scale - reuse| = 1.603e-08
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>   worst over all scales = 1.603e-08
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>   L=  40   max|per-scale - reuse| = 7.544e-11
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>   L=  80   max|per-scale - reuse| = 7.249e-11
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>   L= 160   max|per-scale - reuse| = 1.080e-09
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>   L= 320   max|per-scale - reuse| = 2.159e-08
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>   worst over all scales = 2.159e-08
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>   timing over 30 runs (M=6 scales, K+overlap=2800):
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>     Method 1 per-scale RLS : mean   21.35 ms  best   21.14 ms
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>     Method 2 xi reuse      : mean    3.01 ms  best    2.97 ms
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>     mean speed-up          :  7.10x
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>     Method 1 per-scale RLS : mean   17.52 ms  best   17.38 ms
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>     Method 2 xi reuse      : mean    2.50 ms  best    2.45 ms
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>     mean speed-up          :  7.00x
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>=== CENTERED: numerical equivalence (interior k in [300, 1700)) ===
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>   L=  10   max|per-scale - reuse| = 7.105e-15
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>   L=  10   max|per-scale - reuse| = 8.993e-15
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>   L=  20   max|per-scale - reuse| = 1.504e-10
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>   L=  40   max|per-scale - reuse| = 7.242e-12
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>   L=  80   max|per-scale - reuse| = 7.095e-12
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>   L= 160   max|per-scale - reuse| = 5.052e-11
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>   L= 320   max|per-scale - reuse| = 1.526e-09
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>   worst over all scales = 1.526e-09
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>   L=  40   max|per-scale - reuse| = 7.442e-12
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>   L=  80   max|per-scale - reuse| = 1.756e-11
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>   L= 160   max|per-scale - reuse| = 3.031e-11
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>   L= 320   max|per-scale - reuse| = 3.409e-09
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>   worst over all scales = 3.409e-09
 <a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>   timing over 30 runs (M=6 scales, K+overlap=2800):
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>     Method 1 per-scale RLS : mean   21.36 ms  best   21.19 ms
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>     Method 2 xi reuse      : mean    3.15 ms  best    3.10 ms
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>     mean speed-up          :  6.78x
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>     Method 1 per-scale RLS : mean   17.66 ms  best   17.53 ms
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>     Method 2 xi reuse      : mean    2.64 ms  best    2.58 ms
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>     mean speed-up          :  6.68x
 </code></pre></div>
 <h2 id="code">Code<a class="headerlink" href="#code" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
