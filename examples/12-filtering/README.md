@@ -1,3 +1,3 @@
-# Filtering
+# Recursive Least-Squares Filtering
 
-ALSSM-based signal filters.
+ALSSM-based recursive least-squares filters.

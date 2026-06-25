@@ -52,29 +52,23 @@ alssm = lm.AlssmPolyJordan(poly_degree=N, label='Alssm')
 segment = lm.Segment(a=a, b=b, direction=lm.BACKWARD, g=3800)
 cost = lm.CostSegment(alssm, segment)
 
-# -- 2. Project observation y to ALSSM feature space --
-rls_y = lm.create_rls(cost, multi_channel_set=True)
-rls_y.filter(y_mc)  # Transform observations
-xs_hat = rls_y.minimize_x()  # get transformed observations
-
-# -- 3. Project template h to ALSSM feature space --
-rls_h = lm.create_rls(cost, multi_channel_set=True)
+# -- 2. Project template h to ALSSM feature space --
+rls_h = lm.RLSAlssm(cost)
 rls_h.filter(h_mc)  # Transform observations
 xs_h_hat = rls_h.minimize_x()  # get transformed observations
 xs_h = xs_h_hat[K_REF, :]  # get correlation template
 
-y_hat = cost.eval_alssm_output(xs_hat)  # signal reconstruction using ALSSM approximation (for illustration only)
-
-# -- 4. Fast correlation in ALSSM feature space (channel-wise) --
+# -- 3. Fast correlation in ALSSM feature space (channel-wise) --
+rls_y = lm.RLSAlssm(cost, calc_W=False,calc_kappa=False,steady_state=False)
 corr_alssm = rls_y.convolve(y_mc, xs_h)
 
-# -- 5. Standard correlation in sample space (channel-wise) (for comparison) --
+# -- 4. Standard correlation in sample space (channel-wise) (for comparison) --
 corr_native = np.zeros(y_mc.shape[0])
 h_mc_seg = h_mc[K_REF + a:K_REF + b + 1, :]  # cut out template segment
 for j in range(NOFCH):
     corr_native[-a:-a + K - (b - a)] += np.correlate(y_mc[:, j], h_mc_seg[:, j], 'valid')
 
-# -- 6. Plotting --
+# -- 5. Plotting --
 template_trajectory = lm.Trajectory.eval_y(cost, xs_h, K_REF, K, fill_value=0.0)
 
 _, axs = plt.subplots(3, 1, figsize=(7, 5), gridspec_kw={'height_ratios': [1, 1, 1]}, sharex='all')
