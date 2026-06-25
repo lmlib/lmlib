@@ -10,7 +10,7 @@ Detailed information and scientific background are available in our publications
 
 **Typical Fields of Applications**:
 
-- [Recursive least squares filters (options: weighted, windowed) ](_generated/examples/index.md#filtering)
+- [Recursive least squares filters (options: weighted, windowed) ](_generated/examples/index.md#recursive-least-squares-filtering)
 - [Recursive linear filters (convolutions and correlations)](_generated/examples/index.md#convolution)
 - [Shape Detection](_generated/examples/index.md#shape-detection), [event and feature detection, likelihood testing](_generated/examples/index.md#event-detection-with-two-sided-line-models)
 - for one-dimensional and [multi-dimensional data sets](_generated/examples/index.md#n-dimensional-signal-processing)

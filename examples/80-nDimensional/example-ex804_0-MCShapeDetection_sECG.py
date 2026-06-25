@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
+r"""
 Multi-Channel ECG Shape Detection with a 2-D ALSSM / Cost-Ratio [ex804.0]
 =========================================================================
 
